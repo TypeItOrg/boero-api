@@ -1,0 +1,28 @@
+services:
+  app:
+    container_name: boero-api-app-dev
+    build:
+      target: dev
+    command: ["/usr/local/bin/dev-entrypoint.sh"]
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/workspace
+      - gradle-cache:/root/.gradle
+
+  postgres:
+    container_name: boero-api-postgres-dev
+    ports:
+      - "5432:5432"
+
+volumes:
+  gradle-cache:
+    name: boero-api-gradle-cache-dev
+  postgres-data:
+    name: boero-api-postgres-data-dev
+
+networks:
+  default:
+    name: boero-api-network-dev

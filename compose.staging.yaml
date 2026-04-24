@@ -1,0 +1,26 @@
+services:
+  app:
+    container_name: boero-api-app-staging
+    build:
+      target: runtime
+    environment:
+      SPRING_PROFILES_ACTIVE: staging
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health-check"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  postgres:
+    container_name: boero-api-postgres-staging
+
+volumes:
+  postgres-data:
+    name: boero-api-postgres-data-staging
+
+networks:
+  default:
+    name: boero-api-network-staging
