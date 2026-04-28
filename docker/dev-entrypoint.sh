@@ -5,7 +5,7 @@ WATCH_PATHS="src build.gradle settings.gradle"
 APP_PID=""
 
 start_app() {
-  gradle bootRun &
+  ./gradlew bootRun &
   APP_PID=$!
   echo "Spring Boot iniciado con PID ${APP_PID}"
 }

@@ -45,10 +45,10 @@ RUN apt-get update \
 WORKDIR /app
 USER appuser
 
-COPY --from=extract /workspace/build/extracted/dependencies/ ./
-COPY --from=extract /workspace/build/extracted/spring-boot-loader/ ./
-COPY --from=extract /workspace/build/extracted/snapshot-dependencies/ ./
-COPY --from=extract /workspace/build/extracted/application/ ./
+COPY --chown=appuser:appuser --from=extract /workspace/build/extracted/dependencies/ ./
+COPY --chown=appuser:appuser --from=extract /workspace/build/extracted/spring-boot-loader/ ./
+COPY --chown=appuser:appuser --from=extract /workspace/build/extracted/snapshot-dependencies/ ./
+COPY --chown=appuser:appuser --from=extract /workspace/build/extracted/application/ ./
 
 EXPOSE 8080
 
@@ -64,13 +64,15 @@ RUN apt-get update \
     && apt-get install --yes --no-install-recommends inotify-tools \
     && rm -rf /var/lib/apt/lists/*
 
+COPY --chmod=0755 gradlew gradlew
+COPY gradle gradle
 COPY build.gradle settings.gradle ./
 COPY docker/dev-entrypoint.sh /usr/local/bin/dev-entrypoint.sh
 
 RUN chmod +x /usr/local/bin/dev-entrypoint.sh
 
 RUN --mount=type=cache,target=/root/.gradle \
-    gradle --no-daemon help
+    ./gradlew --no-daemon help
 
 EXPOSE 8080
 

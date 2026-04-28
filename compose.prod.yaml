@@ -5,11 +5,14 @@ services:
       target: runtime
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      DB_NAME: ${DB_NAME:?DB_NAME is required for production}
+      DB_USER: ${DB_USER:?DB_USER is required for production}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required for production}
     ports:
       - "8080:8080"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/health-check"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/actuator/health/readiness"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -17,6 +20,16 @@ services:
 
   postgres:
     container_name: boero-api-postgres-prod
+    environment:
+      DB_NAME: ${DB_NAME:?DB_NAME is required for production}
+      POSTGRES_USER: ${DB_USER:?DB_USER is required for production}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required for production}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:?DB_USER is required for production} -d ${DB_NAME:?DB_NAME is required for production}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
 
 volumes:

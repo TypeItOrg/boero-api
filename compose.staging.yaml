@@ -5,10 +5,13 @@ services:
       target: runtime
     environment:
       SPRING_PROFILES_ACTIVE: staging
+      DB_NAME: ${DB_NAME:?DB_NAME is required for staging}
+      DB_USER: ${DB_USER:?DB_USER is required for staging}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required for staging}
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/health-check"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/actuator/health/readiness"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -16,6 +19,16 @@ services:
 
   postgres:
     container_name: boero-api-postgres-staging
+    environment:
+      DB_NAME: ${DB_NAME:?DB_NAME is required for staging}
+      POSTGRES_USER: ${DB_USER:?DB_USER is required for staging}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required for staging}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:?DB_USER is required for staging} -d ${DB_NAME:?DB_NAME is required for staging}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   postgres-data:

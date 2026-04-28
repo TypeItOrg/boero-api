@@ -6,6 +6,9 @@ services:
     command: ["/usr/local/bin/dev-entrypoint.sh"]
     environment:
       SPRING_PROFILES_ACTIVE: dev
+      DB_NAME: ${DB_NAME:-boero_db}
+      DB_USER: ${DB_USER:-boero}
+      DB_PASSWORD: ${DB_PASSWORD:-boero}
     ports:
       - "8080:8080"
     volumes:
@@ -14,6 +17,16 @@ services:
 
   postgres:
     container_name: boero-api-postgres-dev
+    environment:
+      DB_NAME: ${DB_NAME:-boero_db}
+      POSTGRES_USER: ${DB_USER:-boero}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-boero}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-boero} -d ${DB_NAME:-boero_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     ports:
       - "5432:5432"
 

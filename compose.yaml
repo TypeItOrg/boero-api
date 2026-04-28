@@ -8,9 +8,6 @@ services:
       SERVER_PORT: ${SERVER_PORT:-8080}
       DB_HOST: ${DB_HOST:-postgres}
       DB_PORT: ${DB_PORT:-5432}
-      DB_NAME: ${DB_NAME:-boero}
-      DB_USER: ${DB_USER:-boero}
-      DB_PASSWORD: ${DB_PASSWORD:-boero}
     depends_on:
       postgres:
         condition: service_healthy
@@ -20,17 +17,8 @@ services:
     command: ["/bin/sh", "/usr/local/bin/postgres-entrypoint.sh"]
     environment:
       POSTGRES_DB: postgres
-      DB_NAME: ${DB_NAME:-boero}
-      POSTGRES_USER: ${DB_USER:-boero}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-boero}
     expose:
       - "5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-boero} -d ${DB_NAME:-boero}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./docker/postgres-entrypoint.sh:/usr/local/bin/postgres-entrypoint.sh:ro
