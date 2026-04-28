@@ -21,7 +21,8 @@ public class SecurityConfig {
 
     // By default, all requests are authenticated
     http.authorizeHttpRequests(
-        auth -> auth.requestMatchers("/health-check").permitAll().anyRequest().authenticated());
+        auth ->
+            auth.requestMatchers("/actuator/health/**").permitAll().anyRequest().authenticated());
 
     return http.build();
   }
