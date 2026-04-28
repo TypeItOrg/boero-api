@@ -36,7 +36,7 @@ El código fuente se monta con bind mount dentro de `/workspace`, por eso editar
 
 ### Staging
 
-En `staging` la aplicación ya no corre con `bootRun`, sino con la imagen final del target `runtime`. **Ese entorno está pensado para parecerse mucho más a producción.** Sigue usando PostgreSQL, levanta la app empaquetada y expone un healthcheck sobre `http://localhost:8080/health-check`.
+En `staging` la aplicación ya no corre con `bootRun`, sino con la imagen final del target `runtime`. **Ese entorno está pensado para parecerse mucho más a producción.** Sigue usando PostgreSQL, levanta la app empaquetada y expone un healthcheck operativo sobre `http://localhost:8080/actuator/health/readiness`.
 
 ### Producción
 
@@ -54,7 +54,7 @@ El resultado es que no hace falta mantener un `Dockerfile` para desarrollo y otr
 
 El archivo `compose.yaml` define la base común. Ahí viven el servicio `app`, el servicio `postgres`, las variables compartidas, la dependencia de la app hacia la base y el healthcheck de **PostgreSQL**. El servicio `postgres` usa `postgres:16-alpine`, expone el puerto interno `5432` y monta el volumen persistente de datos junto al script `docker/postgres-entrypoint.sh`.
 
-Los archivos de override cambian lo que corresponde a cada entorno. En `dev` se activa el target `dev`, se publica `8080` y `5432`, se montan el proyecto y la caché de **Gradle**, y se asignan nombres explícitos a contenedores, red y volumen. En `staging` y `prod` se usa el target `runtime`, se activa el perfil **Spring** correcto y se definen healthchecks de aplicación. En `prod` además se habilita la política de restart.
+Los archivos de override cambian lo que corresponde a cada entorno. En `dev` se activa el target `dev`, se publica `8080` y `5432`, se montan el proyecto y la caché de **Gradle**, se asignan nombres explícitos a contenedores, red y volumen, y se definen defaults locales para la base. En `staging` y `prod` se usa el target `runtime`, se activa el perfil **Spring** correcto, se exigen variables de base de datos sin defaults sensibles y se definen healthchecks de aplicación. En `prod` además se habilita la política de restart.
 
 ## Nombres explícitos por entorno
 
@@ -68,7 +68,7 @@ Esto evita compartir accidentalmente red o persistencia entre entornos distintos
 
 ## Variables de entorno
 
-El único archivo versionable de variables de entorno es `.env.example`. Los archivos reales de cada entorno deben ser creados localmente por cada integrante del equipo y no deben subirse al repositorio. Las variables que usa la aplicación y Compose son `SERVER_PORT`, `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` y `DB_PASSWORD`.
+El único archivo versionable de variables de entorno es `.env.example`. En desarrollo no hace falta crear un archivo `.env.dev`: `make dev` usa defaults definidos en `compose.dev.yaml`. En `staging` y `prod`, en cambio, `DB_NAME`, `DB_USER` y `DB_PASSWORD` son obligatorias y Compose falla rápido si no están definidas. Los archivos reales de cada entorno pueden crearse localmente cuando se necesite sobrescribir valores y no deben subirse al repositorio. Las variables que usa la aplicación y Compose son `SERVER_PORT`, `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` y `DB_PASSWORD`.
 
 El archivo de referencia actual es:
 
@@ -81,15 +81,14 @@ DB_USER=boero
 DB_PASSWORD=boero
 ```
 
-Una práctica recomendada es crear localmente estos archivos a partir del ejemplo:
+Para `staging` y `prod`, o para personalizar desarrollo, se pueden crear archivos locales a partir del ejemplo:
 
 ```bash
-cp .env.example .env.dev
 cp .env.example .env.staging
 cp .env.example .env.prod
 ```
 
-Después cada uno se ajusta según el entorno. En particular, `prod` nunca debería reutilizar credenciales triviales ni valores de ejemplo. No se deben commitear secretos reales en el repositorio.
+Después cada uno se ajusta según el entorno. En particular, `staging` y `prod` no deben reutilizar credenciales triviales ni valores de ejemplo. No se deben commitear secretos reales en el repositorio.
 
 ## PostgreSQL y creación automática de la base
 
@@ -99,9 +98,9 @@ El script arranca **PostgreSQL**, espera hasta que responda sobre la base `postg
 
 ## Healthcheck de la aplicación
 
-El proyecto tiene Actuator habilitado, pero el healthcheck operativo actual no depende de `/actuator/health`. El endpoint real usado por Compose es `GET /health-check`.
+El proyecto tiene Actuator habilitado y el healthcheck operativo de `staging` y `prod` usa `GET /actuator/health/readiness`.
 
-Ese endpoint está implementado en `HealthCheckController` y la seguridad se ajusta en `SecurityConfig` para permitir el acceso público a `/health-check` mientras el resto de las rutas quedan autenticadas. Tanto `compose.staging.yaml` como `compose.prod.yaml` usan ese endpoint en sus healthchecks.
+La seguridad se ajusta en `SecurityConfig` para permitir el acceso público a `/actuator/health` y `/actuator/health/**` mientras el resto de las rutas quedan autenticadas. Los healthchecks de Compose usan Actuator readiness porque refleja mejor el estado operativo de Spring.
 
 ## Testing con H2
 
@@ -121,24 +120,25 @@ make staging-build
 make prod
 make prod-build
 make down
+make down-dev
+make down-staging
+make down-prod
 make logs
+make logs-dev
+make logs-staging
+make logs-prod
 make ps
+make ps-dev
+make ps-staging
+make ps-prod
 make test
 ```
 
-`make logs` y `make ps` están pensados principalmente para el entorno de desarrollo. `make test` ejecuta `./gradlew --no-daemon test` en la máquina host.
+`make down`, `make logs` y `make ps` apuntan al entorno de desarrollo para mantener comandos cortos en el día a día. Los targets con sufijo permiten operar explícitamente sobre `dev`, `staging` o `prod`. `make test` ejecuta `./gradlew --no-daemon test` en la máquina host.
 
 ## Primer arranque en una máquina nueva
 
-Lo más simple es crear primero los archivos locales a partir de `.env.example` y asegurarse de que los valores sean correctos para el entorno que se quiera levantar:
-
-```bash
-cp .env.example .env.dev
-cp .env.example .env.staging
-cp .env.example .env.prod
-```
-
-Luego, para un primer inicio de desarrollo, conviene usar:
+Para un primer inicio de desarrollo, conviene usar directamente:
 
 ```bash
 make dev-build
@@ -153,7 +153,7 @@ make dev
 Una vez levantado, se puede verificar la app con:
 
 ```bash
-curl http://localhost:8080/health-check
+curl http://localhost:8080/actuator/health/readiness
 ```
 
 Y los tests con:
@@ -179,7 +179,7 @@ ss -ltnp | grep 8080
 ss -ltnp | grep 5432
 ```
 
-Si querés resetear la base local de `dev`, primero baja los servicios con `make down` y después elimina el volumen `boero-api-postgres-data-dev`. Al volver a levantar, PostgreSQL recreará la base configurada.
+Si querés resetear la base local de `dev`, primero baja los servicios con `make down` o `make down-dev` y después elimina el volumen `boero-api-postgres-data-dev`. Al volver a levantar, PostgreSQL recreará la base configurada.
 
 Si `./gradlew test` falla por un lock de Gradle, normalmente significa que otro proceso del workspace está usando `.gradle`. En ese caso conviene esperar a que termine o revisar el estado con:
 
@@ -189,11 +189,11 @@ Si `./gradlew test` falla por un lock de Gradle, normalmente significa que otro 
 
 ## Buenas prácticas
 
-Como criterio general, usar `make dev` para el trabajo diario, reservar `make dev-build` para cambios de imagen, no commitear secretos reales y mantener alineadas las variables `DB_NAME`, `DB_USER` y `DB_PASSWORD` entre `.env.example`, los `.env` locales y la configuración documentada. También conviene no renombrar contenedores, redes ni volúmenes sin una razón clara, porque varios flujos operativos del equipo se apoyan en esos nombres explícitos.
+Como criterio general, usar `make dev` para el trabajo diario, reservar `make dev-build` para cambios de imagen, no commitear secretos reales y mantener alineadas las variables `DB_NAME`, `DB_USER` y `DB_PASSWORD` entre `.env.example`, los `.env` locales opcionales y la configuración documentada. Los defaults de credenciales existen solo para desarrollo; en `staging` y `prod` esas variables deben definirse explícitamente. También conviene no renombrar contenedores, redes ni volúmenes sin una razón clara, porque varios flujos operativos del equipo se apoyan en esos nombres explícitos.
 
 ## Estado actual de la configuración
 
-Hoy el proyecto tiene un único `Dockerfile`, entornos separados por **Compose**, **PostgreSQL** como base en `dev`, `staging` y `prod`, tests con **H2** y un endpoint operativo de salud en `/health-check`. La base de datos se crea automáticamente si no existe y el desarrollo corre completamente dentro de **Docker** con reinicio automático al guardar cambios.
+Hoy el proyecto tiene un único `Dockerfile`, entornos separados por **Compose**, **PostgreSQL** como base en `dev`, `staging` y `prod`, tests con **H2** y healthchecks operativos basados en Actuator readiness. La base de datos se crea automáticamente si no existe y el desarrollo corre completamente dentro de **Docker** con reinicio automático al guardar cambios.
 
 ## Próximos pasos sugeridos
 
