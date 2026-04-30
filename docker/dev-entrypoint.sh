@@ -7,7 +7,7 @@ APP_PID=""
 start_app() {
   ./gradlew bootRun &
   APP_PID=$!
-  echo "Spring Boot iniciado con PID ${APP_PID}"
+  echo ">>> Iniciando Spring Boot"
 }
 
 stop_app() {
@@ -27,7 +27,7 @@ trap shutdown INT TERM
 start_app
 
 while inotifywait -r -e modify,create,delete,move ${WATCH_PATHS}; do
-  echo "Cambio detectado, reiniciando Spring Boot"
+  echo ">>> Se han detectado cambios en el código fuente, reiniciando..."
   stop_app
   start_app
 done

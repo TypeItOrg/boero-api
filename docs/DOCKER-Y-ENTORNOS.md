@@ -25,6 +25,59 @@ La configuración de Spring se reparte entre `application.properties`, que conti
 
 También hay dos scripts auxiliares en `docker/`. `dev-entrypoint.sh` es el **responsable de arrancar Spring Boot en desarrollo y reiniciarlo cuando detecta cambios en el código**. El script `postgres-entrypoint.sh` extiende el arranque de PostgreSQL para asegurarse de que la base configurada por `DB_NAME` exista incluso si el volumen ya venía de una corrida anterior.
 
+## Interacción entre `compose.yaml` y los overrides
+
+La base **`compose.yaml`** fija la forma mínima del stack:
+
+- Servicio **`app`**: construcción desde el `Dockerfile` del repositorio con **`build.target: runtime`** (imagen de ejecución).
+- Variables de entorno por defecto (`SERVER_PORT`, `DB_HOST`, `DB_PORT`).
+- **`depends_on`** con **`condition: service_healthy`**: el arranque de `app` espera a que Postgres pase el healthcheck (definido en el override o en el propio servicio cuando aplica).
+- Servicio **`postgres`**: imagen oficial, script de entrypoint montado, volumen de datos.
+
+Los archivos **`compose.dev.yaml`**, **`compose.staging.yaml`** y **`compose.prod.yaml`** suelen **no repetir** `build.context` ni `dockerfile`: al combinarlos con la base, Compose **fusiona** la configuración; el segundo archivo **completa o sobrescribe** campos (por ejemplo `build.target`, puertos, volúmenes, nombres de red).
+
+Uso típico (el `Makefile` del repo suele encapsular esto):
+
+```bash
+docker compose -f compose.yaml -f compose.dev.yaml up
+docker compose -f compose.yaml -f compose.staging.yaml up
+docker compose -f compose.yaml -f compose.prod.yaml up
+```
+
+Resumen de cómo se diferencia cada override respecto a la idea de “solo base + entorno”:
+
+| Enfoque | `compose.dev.yaml` | `compose.staging.yaml` | `compose.prod.yaml` |
+|--------|--------------------|-------------------------|---------------------|
+| **`build.target`** | `dev` | `runtime` | `runtime` |
+| Objetivo | Código montado, caché Gradle, perfil Spring `dev`, entrypoint de desarrollo | Imagen empaquetada, credenciales obligatorias (`${VAR:?…}`), healthcheck HTTP | Igual que staging en tipo de imagen; **`restart: unless-stopped`** en app y Postgres |
+| Postgres | Puertos publicados, defaults locales para DB | Credenciales requeridas, healthcheck | Igual + restart |
+
+## Qué son los targets y para qué sirven
+
+En un **Dockerfile multi-stage**, cada bloque que comienza con `FROM imagen AS nombre` define una **etapa**. El **nombre** de esa etapa es lo que Docker y Compose llaman **target** cuando construís la imagen.
+
+**Para qué sirve:** elegís **en qué etapa “cortás” el build**. La imagen final es **solo esa etapa**, no un solo filesystem con todo mezclado. Eso permite:
+
+- **Un solo `Dockerfile`**, varias imágenes posibles (por ejemplo desarrollo vs producción).
+- **Imágenes más chicas** en runtime al no incluir JDK, Gradle ni capas de compilación innecesarias.
+- En **Docker Compose**, `build.target` indica: “al hacer `docker compose build`, la imagen del servicio debe ser la etapa llamada `X`”.
+
+En una frase: **un target es “construyo hasta esta etapa y esa capa es mi imagen final”**.
+
+### Targets en este proyecto
+
+La cadena para **producción / staging** (imagen liviana con JRE) es:
+
+1. **`deps`** — JDK, resolución de dependencias Gradle (sin `src` todavía).
+2. **`builder`** — añade `src` y genera el `bootJar`.
+3. **`extract`** — extrae capas del JAR (patrón habitual Spring Boot + Docker).
+4. **`runtime`** — imagen **`eclipse-temurin:21-jre-jammy`**, usuario no root, `curl` para healthchecks; arranque con `JarLauncher`.
+
+La etapa **`dev`** es **independiente** de esa cadena: parte de **`gradle:9.4.1-jdk21-jammy`**, no hereda de `deps` / `builder` / `extract` / `runtime`. Incluye herramientas de desarrollo y el `dev-entrypoint.sh`. Con **`build.target: dev`**, el código se trabaja sobre todo vía **bind mount** (`.: /workspace`); no hace falta que el JAR final esté empaquetado dentro de la imagen para desarrollo día a día.
+
+- Con **`target: runtime`**, Docker construye lo necesario para llegar a **`runtime`** (típicamente `deps` → `builder` → `extract` → `runtime`).
+- Con **`target: dev`**, Docker construye **solo la etapa `dev`** (y su imagen base); la rama multi-stage de producción no interviene en esa imagen.
+
 ## Cómo funciona cada entorno
 Esta sección explica el comportamiento de cada entorno, qué imagen utiliza, cómo arranca la aplicación y qué diferencias operativas existen entre desarrollo, staging y producción.
 
