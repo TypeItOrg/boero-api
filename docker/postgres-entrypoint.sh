@@ -1,6 +1,9 @@
 #!/bin/sh
 set -eu
 
+# Compose suele definir POSTGRES_DB; el script histórico usa DB_NAME
+app_db="${DB_NAME:-${POSTGRES_DB:-postgres}}"
+
 docker-entrypoint.sh postgres &
 postgres_pid=$!
 
@@ -15,10 +18,10 @@ until pg_isready -U "$POSTGRES_USER" -d postgres >/dev/null 2>&1; do
   sleep 1
 done
 
-db_exists="$(psql -U "$POSTGRES_USER" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'")"
+db_exists="$(psql -U "$POSTGRES_USER" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$app_db'")"
 
 if [ "$db_exists" != "1" ]; then
-  psql -U "$POSTGRES_USER" -d postgres -c "CREATE DATABASE \"$DB_NAME\""
+  psql -U "$POSTGRES_USER" -d postgres -c "CREATE DATABASE \"$app_db\""
 fi
 
 wait "$postgres_pid"

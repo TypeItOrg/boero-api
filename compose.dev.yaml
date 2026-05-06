@@ -4,11 +4,20 @@ services:
     build:
       target: dev
     command: ["/usr/local/bin/dev-entrypoint.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: postgres
       DB_NAME: ${DB_NAME:-boero_db}
       DB_USER: ${DB_USER:-boero}
       DB_PASSWORD: ${DB_PASSWORD:-boero}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      JWT_SECRET: ${JWT_SECRET:-0123456789abcdef0123456789abcdef}
     ports:
       - "8080:8080"
     volumes:
@@ -17,18 +26,35 @@ services:
 
   postgres:
     container_name: boero-api-postgres-dev
+    image: postgres:16-alpine
     environment:
       DB_NAME: ${DB_NAME:-boero_db}
+      POSTGRES_DB: ${DB_NAME:-boero_db}
       POSTGRES_USER: ${DB_USER:-boero}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-boero}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    # En Compose, $$ se envía como $ al shell del contenedor (expande POSTGRES_* del propio servicio)
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-boero} -d ${DB_NAME:-boero_db}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 15
+      start_period: 45s
     ports:
       - "5432:5432"
+
+  redis:
+    container_name: boero-api-redis-dev
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
 volumes:
   gradle-cache:
