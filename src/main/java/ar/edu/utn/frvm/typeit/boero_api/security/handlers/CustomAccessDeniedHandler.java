@@ -1,4 +1,6 @@
-package ar.edu.utn.frvm.typeit.boero_api.security;
+package ar.edu.utn.frvm.typeit.boero_api.security.handlers;
+
+import static ar.edu.utn.frvm.typeit.boero_api.security.handlers.SecurityErrorMessages.DEFAULT_FORBIDDEN_MESSAGE;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,7 +25,12 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
       @NonNull HttpServletResponse response,
       @NonNull AccessDeniedException accessDeniedException)
       throws IOException, ServletException {
-    responseWriter.write(
-        response, HttpStatus.FORBIDDEN, "No tenés permisos para acceder a este recurso.");
+
+    String message =
+        accessDeniedException.getMessage() != null
+            ? accessDeniedException.getMessage()
+            : DEFAULT_FORBIDDEN_MESSAGE;
+
+    responseWriter.write(response, HttpStatus.FORBIDDEN, message);
   }
 }

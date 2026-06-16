@@ -1,12 +1,15 @@
-package ar.edu.utn.frvm.typeit.boero_api.security;
+package ar.edu.utn.frvm.typeit.boero_api.security.config;
 
-import static ar.edu.utn.frvm.typeit.boero_api.security.SecurityConstants.AUTH_ROUTES;
-import static ar.edu.utn.frvm.typeit.boero_api.security.SecurityConstants.PUBLIC_ROUTES;
+import static ar.edu.utn.frvm.typeit.boero_api.security.config.PublicRoutes.GET_ONLY_ROUTES;
+import static ar.edu.utn.frvm.typeit.boero_api.security.config.PublicRoutes.PUBLIC_ROUTES;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -31,14 +34,22 @@ public class SecurityConfig {
   }
 
   @Bean
+  AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig)
+      throws Exception {
+    return authConfig.getAuthenticationManager();
+  }
+
+  @Bean
   SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
+    // Disable some security features that we don't need
     http.csrf(AbstractHttpConfigurer::disable);
     http.formLogin(AbstractHttpConfigurer::disable);
     http.httpBasic(AbstractHttpConfigurer::disable);
     http.logout(AbstractHttpConfigurer::disable);
     http.rememberMe(AbstractHttpConfigurer::disable);
-    http.sessionManagement(
-        session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+    http.sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
     http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -52,7 +63,7 @@ public class SecurityConfig {
         auth ->
             auth.requestMatchers(PUBLIC_ROUTES)
                 .permitAll()
-                .requestMatchers(AUTH_ROUTES)
+                .requestMatchers(HttpMethod.GET, GET_ONLY_ROUTES)
                 .permitAll()
                 .anyRequest()
                 .authenticated());

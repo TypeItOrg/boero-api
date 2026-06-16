@@ -1,7 +1,7 @@
-package ar.edu.utn.frvm.typeit.boero_api.security;
+package ar.edu.utn.frvm.typeit.boero_api.security.handlers;
 
-import ar.edu.utn.frvm.typeit.boero_api.auth.filters.AuthError;
-import ar.edu.utn.frvm.typeit.boero_api.auth.filters.AuthRequestAttributes;
+import static ar.edu.utn.frvm.typeit.boero_api.security.handlers.SecurityErrorMessages.DEFAULT_UNAUTHORIZED_MESSAGE;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,9 +17,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
-  private static final String DEFAULT_MESSAGE =
-      "Se requiere autenticación para acceder a este recurso.";
-
   private final SecurityErrorResponseWriter responseWriter;
 
   @Override
@@ -28,11 +25,12 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
       @NonNull HttpServletResponse response,
       @NonNull AuthenticationException authException)
       throws IOException, ServletException {
-    Object attr = request.getAttribute(AuthRequestAttributes.AUTH_ERROR);
-    if (attr instanceof AuthError authError) {
-      responseWriter.write(response, HttpStatus.UNAUTHORIZED, authError.getMessage());
-      return;
-    }
-    responseWriter.write(response, HttpStatus.UNAUTHORIZED, DEFAULT_MESSAGE);
+
+    String message =
+        authException.getMessage() != null
+            ? authException.getMessage()
+            : DEFAULT_UNAUTHORIZED_MESSAGE;
+
+    responseWriter.write(response, HttpStatus.UNAUTHORIZED, message);
   }
 }
