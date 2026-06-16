@@ -21,7 +21,7 @@ public class AssignPlatformRoleUseCase {
 
   @Transactional
   public void execute(PlatformAccount account, PlatformRoleCode roleCode) {
-    execute(account, roleCode, true);
+    execute(account, roleCode, false);
   }
 
   @Transactional

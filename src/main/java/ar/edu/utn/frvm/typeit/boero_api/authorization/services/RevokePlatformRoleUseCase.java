@@ -16,7 +16,6 @@ public class RevokePlatformRoleUseCase {
 
   private final RoleRepository roleRepository;
   private final PlatformAccountRoleRepository platformAccountRoleRepository;
-  private final SessionRevocationService sessionRevocationService;
 
   @Transactional
   public void execute(PlatformAccount account, PlatformRoleCode roleCode) {
@@ -29,10 +28,6 @@ public class RevokePlatformRoleUseCase {
     platformAccountRoleRepository.findByPlatformAccount_Id(account.getId()).stream()
         .filter(assignment -> assignment.getRole().getId().equals(role.getId()))
         .findFirst()
-        .ifPresent(
-            assignment -> {
-              platformAccountRoleRepository.delete(assignment);
-              sessionRevocationService.revokePlatformAccountSessions(account.getId());
-            });
+        .ifPresent(assignment -> platformAccountRoleRepository.delete(assignment));
   }
 }
