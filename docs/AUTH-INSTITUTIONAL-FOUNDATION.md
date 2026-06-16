@@ -34,7 +34,7 @@ El login (`POST /auth/login`) busca el usuario por documento e institución, val
 
 El refresh (`POST /auth/refresh`) implementa rotación. El servidor busca el hash del refresh token recibido, valida expiración y sesión activa, revoca el token actual, genera uno nuevo dentro de la misma familia y emite un nuevo access token. Si se recibe un refresh token ya revocado, se interpreta como reutilización y se revoca toda la familia junto con sus sesiones asociadas.
 
-El logout (`POST /auth/logout`) agrega el `jti` del access token a blacklist hasta su expiración, revoca los refresh tokens de la sesión actual y marca la sesión como inactiva con `endedAt`.
+El logout (`POST /auth/logout`) agrega el identificador del access token (claim `jti`) a blacklist hasta su expiración, revoca los refresh tokens de la sesión actual y marca la sesión como inactiva con `endedAt`.
 
 Las sesiones activas se consultan con `GET /auth/sessions`, que devuelve una respuesta paginada e indica cuál es la sesión actual. El usuario autenticado se consulta con `GET /auth/me`.
 
@@ -70,15 +70,15 @@ La regla práctica es usar builders para construir entidades nuevas con sus dato
 
 ## Testing
 
-La rama deja una estrategia de tests por slices.
+La rama deja una estrategia de tests robusta y por capas, combinando tests unitarios puros para la lógica de negocio y tests de slice para persistencia e infraestructura.
 
-Los tests JPA usan `@DataJpaTest` con H2 en modo PostgreSQL. Cubren auditoría, mapeos y queries principales de repositorios. Si aparecen diferencias específicas de dialecto, convendrá sumar tests con PostgreSQL real o Testcontainers.
+Los tests se organizan de la siguiente manera:
 
-Los tests JSON usan `@JsonTest` para fijar contratos de serialización de payloads de autenticación.
-
-Los tests MVC usan `@WebMvcTest`. Hay una clase para contratos HTTP exitosos de `AuthController` y otra dedicada a validaciones de payloads.
-
-`@SpringBootTest` queda como smoke test mínimo para comprobar que el contexto completo levanta.
+- **Tests unitarios de Lógica de Negocio (Use Cases y Servicios)**: Se testean los casos de uso (`LoginUseCase`, `RefreshTokenUseCase`, `LogoutUseCase`, `RegisterUserUseCase`, `GetCurrentUserUseCase`) y servicios de soporte (`JwtService`) de forma aislada utilizando Mockito (con `@ExtendWith(MockitoExtension.class)`). Esto asegura que la lógica crítica (como rotación de tokens, detección de reutilización, revocación en cascada de sesiones y encriptación de claves) esté completamente validada de manera rápida y sin acoplamiento a la base de datos o al contexto de Spring.
+- **Tests JPA**: Usan `@DataJpaTest` con H2 en modo PostgreSQL. Cubren auditoría, mapeos y queries principales de repositorios.
+- **Tests JSON**: Usan `@JsonTest` para fijar contratos de serialización de payloads de autenticación.
+- **Tests MVC / Web**: Usan `@WebMvcTest`. Hay una clase para contratos HTTP exitosos de `AuthController` y otra dedicada a validaciones de payloads.
+- **Tests de Integración**: `@SpringBootTest` queda como smoke test mínimo para comprobar que el contexto completo (incluyendo dependencias como Redis) levanta correctamente mediante Testcontainers.
 
 ## Comandos útiles
 
@@ -100,7 +100,7 @@ El `build.gradle` tiene configurado `testLogging` para mostrar los tests ejecuta
 
 Los refresh tokens nunca deberían persistirse crudos. La base solo debe guardar su hash.
 
-Un access token criptográficamente válido no alcanza si su sesión está inactiva o si el `jti` fue blacklisteado.
+Un access token criptográficamente válido no alcanza si su sesión está inactiva o si el identificador del token (`jti`) fue blacklisteado.
 
 Si se agregan nuevas entidades con `createdAt` y `updatedAt`, conviene extender `Auditable` en lugar de repetir callbacks.
 

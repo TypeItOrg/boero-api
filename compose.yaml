@@ -29,14 +29,14 @@ services:
       start_period: 5s
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     command: ["/bin/sh", "/usr/local/bin/postgres-entrypoint.sh"]
     environment:
       POSTGRES_DB: postgres
     expose:
       - "5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql
       - ./docker/postgres-entrypoint.sh:/usr/local/bin/postgres-entrypoint.sh:ro
 
 volumes:

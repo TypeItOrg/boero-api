@@ -1,6 +1,6 @@
 COMPOSE := docker compose
 
-.PHONY: dev dev-build staging staging-build prod prod-build down down-dev down-staging down-prod logs logs-dev logs-staging logs-prod ps ps-dev ps-staging ps-prod test
+.PHONY: dev dev-build staging staging-build prod prod-build down down-dev down-staging down-prod logs logs-dev logs-staging logs-prod ps ps-dev ps-staging ps-prod test format format-check
 
 dev:
 	$(COMPOSE) -f compose.yaml -f compose.dev.yaml up
@@ -58,3 +58,9 @@ ps-prod:
 
 test:
 	./gradlew --no-daemon test
+
+format:
+	./gradlew spotlessApply
+
+format-check:
+	./gradlew spotlessCheck

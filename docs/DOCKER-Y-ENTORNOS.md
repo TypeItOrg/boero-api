@@ -105,7 +105,7 @@ El resultado es que no hace falta mantener un `Dockerfile` para desarrollo y otr
 
 ## Docker Compose
 
-El archivo `compose.yaml` define la base común. Ahí viven el servicio `app`, el servicio `postgres`, las variables compartidas, la dependencia de la app hacia la base y el healthcheck de **PostgreSQL**. El servicio `postgres` usa `postgres:16-alpine`, expone el puerto interno `5432` y monta el volumen persistente de datos junto al script `docker/postgres-entrypoint.sh`.
+El archivo `compose.yaml` define la base común. Ahí viven el servicio `app`, el servicio `postgres`, las variables compartidas, la dependencia de la app hacia la base y el healthcheck de **PostgreSQL**. El servicio `postgres` usa `postgres:18-alpine`, expone el puerto interno `5432` y monta el volumen persistente en `/var/lib/postgresql` junto al script `docker/postgres-entrypoint.sh`.
 
 Los archivos de override cambian lo que corresponde a cada entorno. En `dev` se activa el target `dev`, se publica `8080` y `5432`, se montan el proyecto y la caché de **Gradle**, se asignan nombres explícitos a contenedores, red y volumen, y se definen defaults locales para la base. En `staging` y `prod` se usa el target `runtime`, se activa el perfil **Spring** correcto, se exigen variables de base de datos sin defaults sensibles y se definen healthchecks de aplicación. En `prod` además se habilita la política de restart.
 
