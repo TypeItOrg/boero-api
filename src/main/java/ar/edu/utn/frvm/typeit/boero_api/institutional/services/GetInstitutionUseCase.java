@@ -1,0 +1,29 @@
+package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
+
+import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionInactiveException;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionDetailResponse;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class GetInstitutionUseCase {
+
+  private final InstitutionRepository institutionRepository;
+
+  public InstitutionDetailResponse execute(UUID id) {
+    var institution =
+        institutionRepository
+            .findWithCityAndProvinceById(id)
+            .orElseThrow(InstitutionNotFoundException::new);
+
+    if (!institution.isActive()) {
+      throw new InstitutionInactiveException();
+    }
+
+    return InstitutionDetailResponse.from(institution);
+  }
+}
