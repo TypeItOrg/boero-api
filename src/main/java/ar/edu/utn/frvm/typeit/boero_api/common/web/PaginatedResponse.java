@@ -1,4 +1,4 @@
-package ar.edu.utn.frvm.typeit.boero_api.common;
+package ar.edu.utn.frvm.typeit.boero_api.common.web;
 
 import java.util.List;
 import lombok.Builder;

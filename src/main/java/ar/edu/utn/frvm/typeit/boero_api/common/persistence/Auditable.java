@@ -1,4 +1,4 @@
-package ar.edu.utn.frvm.typeit.boero_api.common;
+package ar.edu.utn.frvm.typeit.boero_api.common.persistence;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;

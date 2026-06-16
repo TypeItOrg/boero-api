@@ -1,11 +1,10 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.entities;
 
-import ar.edu.utn.frvm.typeit.boero_api.common.Auditable;
+import ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable;
+import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -38,7 +37,7 @@ import lombok.Setter;
 public class Province extends Auditable {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
+  @GeneratedUUIDv7
   @Column(name = "province_id")
   private UUID id;
 
@@ -51,5 +50,4 @@ public class Province extends Auditable {
 
   @Column(name = "georef_id", length = 20)
   private String georefId;
-
 }
