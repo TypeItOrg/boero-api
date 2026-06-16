@@ -1,6 +1,6 @@
-package ar.edu.utn.frvm.typeit.boero_api.security;
+package ar.edu.utn.frvm.typeit.boero_api.security.handlers;
 
-import ar.edu.utn.frvm.typeit.boero_api.common.ExceptionPayload;
+import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ExceptionPayload;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +17,7 @@ public class SecurityErrorResponseWriter {
 
   public void write(HttpServletResponse response, HttpStatus status, String message)
       throws IOException {
+
     response.setStatus(status.value());
     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
     response.setCharacterEncoding("UTF-8");
