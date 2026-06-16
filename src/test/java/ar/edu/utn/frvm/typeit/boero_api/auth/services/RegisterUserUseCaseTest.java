@@ -1,0 +1,235 @@
+package ar.edu.utn.frvm.typeit.boero_api.auth.services;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
+import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.UserAlreadyExistsException;
+import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
+import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RegisterRequest;
+import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.UserRegisteredResponse;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AssignPersonSystemRoleUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.City;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+@ExtendWith(MockitoExtension.class)
+class RegisterUserUseCaseTest {
+
+  @Mock private UserRepository userRepository;
+  @Mock private InstitutionRepository institutionRepository;
+  @Mock private PersonRepository personRepository;
+  @Mock private PasswordEncoder passwordEncoder;
+  @Mock private Validator validator;
+  @Mock private AssignPersonSystemRoleUseCase assignPersonSystemRoleUseCase;
+
+  private RegisterUserUseCase registerUserUseCase;
+
+  @BeforeEach
+  void setUp() {
+    registerUserUseCase =
+        new RegisterUserUseCase(
+            userRepository,
+            institutionRepository,
+            personRepository,
+            passwordEncoder,
+            validator,
+            assignPersonSystemRoleUseCase);
+  }
+
+  @Test
+  @DisplayName("Should register a new user and return their ids")
+  void execute_registersUserSuccessfully() {
+    UUID institutionId = UUID.randomUUID();
+    RegisterRequest request =
+        new RegisterRequest("Ana", "Garcia", "12345678", "password123", institutionId);
+
+    stubSuccessfulRegistration(institutionId, "password123", "encoded-hash");
+    when(userRepository.save(any(User.class)))
+        .thenAnswer(
+            inv -> {
+              User u = inv.getArgument(0);
+              u.setId(UUID.randomUUID());
+              return u;
+            });
+    when(personRepository.save(any(Person.class)))
+        .thenAnswer(
+            inv -> {
+              Person p = inv.getArgument(0);
+              p.setId(UUID.randomUUID());
+              return p;
+            });
+
+    UserRegisteredResponse response = registerUserUseCase.execute(request);
+
+    assertThat(response.userId()).isNotNull();
+    assertThat(response.documentNumber()).isEqualTo("12345678");
+    assertThat(response.institutionId()).isEqualTo(institutionId);
+  }
+
+  @Test
+  @DisplayName("Should assign APPLICANT role after registering a person")
+  void execute_assignsApplicantRole() {
+    UUID institutionId = UUID.randomUUID();
+    RegisterRequest request =
+        new RegisterRequest("Ana", "Garcia", "12345678", "password123", institutionId);
+
+    stubSuccessfulRegistration(institutionId, "password123", "encoded-hash");
+    when(personRepository.save(any(Person.class)))
+        .thenAnswer(
+            inv -> {
+              Person p = inv.getArgument(0);
+              p.setId(UUID.randomUUID());
+              return p;
+            });
+    when(userRepository.save(any(User.class)))
+        .thenAnswer(
+            inv -> {
+              User u = inv.getArgument(0);
+              u.setId(UUID.randomUUID());
+              return u;
+            });
+
+    registerUserUseCase.execute(request);
+
+    var personCaptor = ArgumentCaptor.forClass(Person.class);
+    verify(assignPersonSystemRoleUseCase)
+        .execute(personCaptor.capture(), eq(SystemRoleCode.APPLICANT), eq(false));
+  }
+
+  @Test
+  @DisplayName("Should encode the password before saving the user")
+  void execute_encodesPasswordBeforeSaving() {
+    UUID institutionId = UUID.randomUUID();
+    RegisterRequest request =
+        new RegisterRequest("Ana", "Garcia", "12345678", "plaintext", institutionId);
+
+    stubSuccessfulRegistration(institutionId, "plaintext", "bcrypt-hash");
+    when(personRepository.save(any(Person.class)))
+        .thenAnswer(
+            inv -> {
+              Person p = inv.getArgument(0);
+              p.setId(UUID.randomUUID());
+              return p;
+            });
+    when(userRepository.save(any(User.class)))
+        .thenAnswer(
+            inv -> {
+              User u = inv.getArgument(0);
+              u.setId(UUID.randomUUID());
+              return u;
+            });
+
+    registerUserUseCase.execute(request);
+
+    var userCaptor = ArgumentCaptor.forClass(User.class);
+    verify(userRepository).save(userCaptor.capture());
+    User savedUser = userCaptor.getValue();
+    assertThat(savedUser.getPassword()).isNotEqualTo("plaintext");
+    assertThat(savedUser.getPassword()).isEqualTo("bcrypt-hash");
+  }
+
+  @Test
+  @DisplayName("Should throw when the institution does not exist")
+  void execute_throwsWhenInstitutionNotFound() {
+    UUID institutionId = UUID.randomUUID();
+    RegisterRequest request =
+        new RegisterRequest("Ana", "Garcia", "12345678", "password123", institutionId);
+
+    when(institutionRepository.findById(institutionId)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> registerUserUseCase.execute(request))
+        .isInstanceOf(InstitutionNotFoundException.class);
+
+    verify(personRepository, never()).save(any());
+    verify(userRepository, never()).save(any());
+    verify(assignPersonSystemRoleUseCase, never()).execute(any(), any());
+  }
+
+  @Test
+  @DisplayName(
+      "Should throw when a person with the same document already exists in the institution")
+  void execute_throwsWhenPersonAlreadyExistsInInstitution() {
+    UUID institutionId = UUID.randomUUID();
+    RegisterRequest request =
+        new RegisterRequest("Ana", "Garcia", "12345678", "password123", institutionId);
+    Institution institution = institutionWith(institutionId);
+
+    when(institutionRepository.findById(institutionId)).thenReturn(Optional.of(institution));
+    when(personRepository.existsByDocumentNumberAndInstitution_Id("12345678", institutionId))
+        .thenReturn(true);
+
+    assertThatThrownBy(() -> registerUserUseCase.execute(request))
+        .isInstanceOf(UserAlreadyExistsException.class);
+
+    verify(personRepository, never()).save(any());
+    verify(userRepository, never()).save(any());
+    verify(assignPersonSystemRoleUseCase, never()).execute(any(), any());
+  }
+
+  @Test
+  @DisplayName("Should throw when the person entity fails Bean Validation")
+  @SuppressWarnings("unchecked")
+  void execute_throwsWhenPersonValidationFails() {
+    UUID institutionId = UUID.randomUUID();
+    RegisterRequest request =
+        new RegisterRequest("Ana", "Garcia", "12345678", "password123", institutionId);
+    Institution institution = institutionWith(institutionId);
+    ConstraintViolation<Person> violation =
+        (ConstraintViolation<Person>) org.mockito.Mockito.mock(ConstraintViolation.class);
+
+    when(institutionRepository.findById(institutionId)).thenReturn(Optional.of(institution));
+    when(personRepository.existsByDocumentNumberAndInstitution_Id("12345678", institutionId))
+        .thenReturn(false);
+    when(validator.validate(any(Person.class))).thenReturn(Set.of(violation));
+
+    assertThatThrownBy(() -> registerUserUseCase.execute(request))
+        .isInstanceOf(ConstraintViolationException.class);
+
+    verify(personRepository, never()).save(any());
+    verify(userRepository, never()).save(any());
+    verify(assignPersonSystemRoleUseCase, never()).execute(any(), any());
+  }
+
+  private void stubSuccessfulRegistration(
+      UUID institutionId, String password, String encodedPassword) {
+    Institution institution = institutionWith(institutionId);
+    when(institutionRepository.findById(institutionId)).thenReturn(Optional.of(institution));
+    when(personRepository.existsByDocumentNumberAndInstitution_Id("12345678", institutionId))
+        .thenReturn(false);
+    when(validator.validate(any(Person.class))).thenReturn(Set.of());
+    when(passwordEncoder.encode(password)).thenReturn(encodedPassword);
+  }
+
+  private static Institution institutionWith(UUID id) {
+    return Institution.builder()
+        .id(id)
+        .name("Conservatorio Boero")
+        .slug("boero")
+        .city(City.builder().build())
+        .build();
+  }
+}

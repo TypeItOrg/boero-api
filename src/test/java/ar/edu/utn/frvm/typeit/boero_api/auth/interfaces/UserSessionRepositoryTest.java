@@ -52,7 +52,8 @@ class UserSessionRepositoryTest {
     UserSession session = userSessionRepository.saveAndFlush(userSession(userId, true));
 
     assertThat(userSessionRepository.findByIdAndUserId(session.getId(), userId)).contains(session);
-    assertThat(userSessionRepository.findByIdAndUserId(session.getId(), UUID.randomUUID())).isEmpty();
+    assertThat(userSessionRepository.findByIdAndUserId(session.getId(), UUID.randomUUID()))
+        .isEmpty();
   }
 
   private static UserSession userSession(UUID userId, boolean active) {

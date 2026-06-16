@@ -41,8 +41,14 @@ class AuditingJpaTest {
     entityManager.flush();
 
     assertThat(user.getId()).isNotNull();
+    assertThat(user.getId().version()).isEqualTo(7);
     assertThat(user.getInstitution().getId()).isEqualTo(institution.getId());
     assertThat(user.getPerson().getId()).isEqualTo(person.getId());
+    assertThat(country.getId().version()).isEqualTo(7);
+    assertThat(province.getId().version()).isEqualTo(7);
+    assertThat(city.getId().version()).isEqualTo(7);
+    assertThat(institution.getId().version()).isEqualTo(7);
+    assertThat(person.getId().version()).isEqualTo(7);
     assertAudited(country);
     assertAudited(province);
     assertAudited(city);
@@ -80,6 +86,7 @@ class AuditingJpaTest {
     entityManager.flush();
 
     assertThat(refreshToken.getId()).isNotNull();
+    assertThat(refreshToken.getId().version()).isEqualTo(7);
     assertThat(refreshToken.getCreatedAt()).isNotNull();
   }
 
@@ -98,10 +105,12 @@ class AuditingJpaTest {
     entityManager.flush();
 
     assertThat(session.getId()).isNotNull();
+    assertThat(session.getId().version()).isEqualTo(7);
     assertThat(session.getStartedAt()).isNotNull();
   }
 
-  private static void assertAudited(ar.edu.utn.frvm.typeit.boero_api.common.Auditable entity) {
+  private static void assertAudited(
+      ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable entity) {
     assertThat(entity.getCreatedAt()).isNotNull();
     assertThat(entity.getUpdatedAt()).isNotNull();
   }

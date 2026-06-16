@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.controllers;
 
+import static ar.edu.utn.frvm.typeit.boero_api.support.AuthTestData.institutionalPrincipal;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -10,7 +11,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
-import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.LoginRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RefreshTokenRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RegisterRequest;
@@ -22,13 +22,14 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.UserRegisteredRe
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.UserResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.GetActiveSessionsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.GetCurrentUserUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.JwtService;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.LoginUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.LogoutUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RefreshTokenUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RegisterUserUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.TokenBlacklistService;
-import ar.edu.utn.frvm.typeit.boero_api.common.PaginatedResponse;
+import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -41,20 +42,25 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.util.PathMatcher;
 
 @WebMvcTest(AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class AuthControllerWebMvcTest {
 
   private static final UUID USER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
+  private static final UUID PERSON_ID = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
   private static final UUID INSTITUTION_ID =
       UUID.fromString("22222222-2222-2222-2222-222222222222");
   private static final UUID SESSION_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
 
   @Autowired private MockMvc mockMvc;
 
+  @MockitoBean private PathMatcher pathMatcher;
+  @MockitoBean private AuthenticationEntryPoint authenticationEntryPoint;
   @MockitoBean private RegisterUserUseCase registerUserUseCase;
   @MockitoBean private LoginUseCase loginUseCase;
   @MockitoBean private RefreshTokenUseCase refreshTokenUseCase;
@@ -63,13 +69,22 @@ class AuthControllerWebMvcTest {
   @MockitoBean private GetCurrentUserUseCase getCurrentUserUseCase;
   @MockitoBean private JwtService jwtService;
   @MockitoBean private TokenBlacklistService tokenBlacklistService;
-  @MockitoBean private UserSessionRepository userSessionRepository;
+  @MockitoBean private IsSessionActiveUseCase isSessionActiveUseCase;
+
+  @MockitoBean
+  private ar.edu.utn.frvm.typeit.boero_api.authorization.services.IsPlatformSessionActiveUseCase
+      isPlatformSessionActiveUseCase;
 
   @Test
   @DisplayName("Should register user and return created response")
   void shouldRegisterUserAndReturnCreatedResponse() throws Exception {
     when(registerUserUseCase.execute(any(RegisterRequest.class)))
-        .thenReturn(new UserRegisteredResponse(USER_ID, "12345678", INSTITUTION_ID));
+        .thenReturn(
+            UserRegisteredResponse.builder()
+                .userId(USER_ID)
+                .documentNumber("12345678")
+                .institutionId(INSTITUTION_ID)
+                .build());
 
     mockMvc
         .perform(
@@ -111,6 +126,7 @@ class AuthControllerWebMvcTest {
                     """))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.user.userId").value(USER_ID.toString()))
+        .andExpect(jsonPath("$.user.personId").value(PERSON_ID.toString()))
         .andExpect(jsonPath("$.tokens.accessToken").value("access-token"))
         .andExpect(jsonPath("$.tokens.refreshToken").value("refresh-token"));
   }
@@ -140,12 +156,24 @@ class AuthControllerWebMvcTest {
   void shouldReturnCurrentUser() throws Exception {
     JwtAuthenticatedUser principal = principal();
     when(getCurrentUserUseCase.execute(principal))
-        .thenReturn(UserResponse.builder().user(userPayload()).build());
+        .thenReturn(
+            UserResponse.builder()
+                .user(
+                    UserPayload.builder()
+                        .userId(USER_ID)
+                        .personId(PERSON_ID)
+                        .name("Ana")
+                        .lastName("Garcia")
+                        .documentNumber("12345678")
+                        .institutionId(INSTITUTION_ID)
+                        .build())
+                .build());
 
     mockMvc
         .perform(get("/api/v1/auth/me").principal(authentication(principal)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.user.userId").value(USER_ID.toString()));
+        .andExpect(jsonPath("$.user.userId").value(USER_ID.toString()))
+        .andExpect(jsonPath("$.user.personId").value(PERSON_ID.toString()));
   }
 
   @Test
@@ -153,8 +181,13 @@ class AuthControllerWebMvcTest {
   void shouldReturnActiveSessions() throws Exception {
     JwtAuthenticatedUser principal = principal();
     ActiveSessionResponse session =
-        new ActiveSessionResponse(
-            SESSION_ID, "192.0.2.10", "Mozilla/5.0", LocalDateTime.now(), true);
+        ActiveSessionResponse.builder()
+            .sessionId(SESSION_ID)
+            .ipAddress("192.0.2.10")
+            .userAgent("Mozilla/5.0")
+            .startedAt(LocalDateTime.now())
+            .currentSession(true)
+            .build();
     PaginatedResponse<ActiveSessionResponse> response =
         PaginatedResponse.<ActiveSessionResponse>builder()
             .items(List.of(session))
@@ -189,7 +222,15 @@ class AuthControllerWebMvcTest {
 
   private static AuthResponse authResponse() {
     return AuthResponse.builder()
-        .user(userPayload())
+        .user(
+            UserPayload.builder()
+                .userId(USER_ID)
+                .personId(PERSON_ID)
+                .name("Ana")
+                .lastName("Garcia")
+                .documentNumber("12345678")
+                .institutionId(INSTITUTION_ID)
+                .build())
         .tokens(
             TokenResponse.builder()
                 .accessToken("access-token")
@@ -209,7 +250,7 @@ class AuthControllerWebMvcTest {
   }
 
   private static JwtAuthenticatedUser principal() {
-    return new JwtAuthenticatedUser(USER_ID, "12345678", INSTITUTION_ID, SESSION_ID, "jti");
+    return institutionalPrincipal(USER_ID, INSTITUTION_ID, SESSION_ID);
   }
 
   private static TestingAuthenticationToken authentication(JwtAuthenticatedUser principal) {

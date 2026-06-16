@@ -14,7 +14,9 @@ import org.springframework.boot.test.json.JacksonTester;
 class AuthPayloadJsonTest {
 
   private static final UUID USER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
-  private static final UUID INSTITUTION_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
+  private static final UUID PERSON_ID = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+  private static final UUID INSTITUTION_ID =
+      UUID.fromString("22222222-2222-2222-2222-222222222222");
 
   @Autowired private JacksonTester<AuthResponse> authResponseJson;
   @Autowired private JacksonTester<UserResponse> userResponseJson;
@@ -27,20 +29,31 @@ class AuthPayloadJsonTest {
     AuthResponse response =
         AuthResponse.builder()
             .user(userPayload())
-            .tokens(TokenResponse.builder().accessToken("access-token").refreshToken("refresh-token").build())
+            .tokens(
+                TokenResponse.builder()
+                    .accessToken("access-token")
+                    .refreshToken("refresh-token")
+                    .build())
             .build();
 
     var json = authResponseJson.write(response);
 
     assertThat(json).extractingJsonPathStringValue("$.user.userId").isEqualTo(USER_ID.toString());
+    assertThat(json)
+        .extractingJsonPathStringValue("$.user.personId")
+        .isEqualTo(PERSON_ID.toString());
     assertThat(json).extractingJsonPathStringValue("$.user.name").isEqualTo("Ana");
     assertThat(json).extractingJsonPathStringValue("$.user.lastName").isEqualTo("Garcia");
     assertThat(json).extractingJsonPathStringValue("$.user.documentNumber").isEqualTo("12345678");
     assertThat(json)
         .extractingJsonPathStringValue("$.user.institutionId")
         .isEqualTo(INSTITUTION_ID.toString());
-    assertThat(json).extractingJsonPathStringValue("$.tokens.accessToken").isEqualTo("access-token");
-    assertThat(json).extractingJsonPathStringValue("$.tokens.refreshToken").isEqualTo("refresh-token");
+    assertThat(json)
+        .extractingJsonPathStringValue("$.tokens.accessToken")
+        .isEqualTo("access-token");
+    assertThat(json)
+        .extractingJsonPathStringValue("$.tokens.refreshToken")
+        .isEqualTo("refresh-token");
   }
 
   @Test
@@ -57,7 +70,12 @@ class AuthPayloadJsonTest {
   @Test
   @DisplayName("Should serialize registered user id as userId")
   void shouldSerializeRegisteredUserIdAsUserId() throws IOException {
-    UserRegisteredResponse response = new UserRegisteredResponse(USER_ID, "12345678", INSTITUTION_ID);
+    UserRegisteredResponse response =
+        UserRegisteredResponse.builder()
+            .userId(USER_ID)
+            .documentNumber("12345678")
+            .institutionId(INSTITUTION_ID)
+            .build();
 
     var json = userRegisteredResponseJson.write(response);
 
@@ -80,6 +98,7 @@ class AuthPayloadJsonTest {
   private static UserPayload userPayload() {
     return UserPayload.builder()
         .userId(USER_ID)
+        .personId(PERSON_ID)
         .name("Ana")
         .lastName("Garcia")
         .documentNumber("12345678")
