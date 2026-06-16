@@ -17,7 +17,6 @@ public class RevokePersonSystemRoleUseCase {
 
   private final RoleRepository roleRepository;
   private final PersonRoleAssignmentRepository personRoleAssignmentRepository;
-  private final SessionRevocationService sessionRevocationService;
 
   @Transactional
   public void execute(Person person, SystemRoleCode roleCode) {
@@ -31,11 +30,6 @@ public class RevokePersonSystemRoleUseCase {
     personRoleAssignmentRepository
         .findByPerson_IdAndRole_IdAndInstitution_Id(
             person.getId(), role.getId(), institution.getId())
-        .ifPresent(
-            assignment -> {
-              personRoleAssignmentRepository.delete(assignment);
-              sessionRevocationService.revokeInstitutionalSessionsForPerson(
-                  person.getId(), institution.getId());
-            });
+        .ifPresent(assignment -> personRoleAssignmentRepository.delete(assignment));
   }
 }

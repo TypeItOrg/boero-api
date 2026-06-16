@@ -22,7 +22,7 @@ public class AssignPersonSystemRoleUseCase {
 
   @Transactional
   public void execute(Person person, SystemRoleCode roleCode) {
-    execute(person, roleCode, true);
+    execute(person, roleCode, false);
   }
 
   @Transactional

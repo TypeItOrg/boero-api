@@ -6,7 +6,7 @@ Spring Security está configurado con `SessionCreationPolicy.STATELESS`. Sin emb
 
 - Cada access token está ligado a un `sessionId`
 - El filtro JWT verifica que la sesión siga activa en cada request
-- Permite revocar todos los tokens de una sesión (logout, cambio de roles, incidentes de seguridad)
+- Permite revocar todos los tokens de una sesión (logout, incidentes de seguridad)
 - Permite listar sesiones activas (`GET /api/v1/auth/sessions`)
 
 ## ¿Por qué los permisos no van en el JWT?
@@ -47,9 +47,11 @@ La primera authority no se puede crear con el endpoint regular de asignación de
 
 `RevokePersonRoleUseCase` (`src/main/java/.../authorization/services/RevokePersonRoleUseCase.java`) verifica que no se pueda revocar el último `INSTITUTIONAL_AUTHORITY` de una institución. Si solo queda uno, lanza `LastInstitutionalAuthorityRevocationException` (HTTP 409).
 
-## Revocación de sesiones al cambiar roles
+## Cambio de roles sin revocar sesiones
 
-`SessionRevocationService` (`src/main/java/.../authorization/services/SessionRevocationService.java`) invalida todas las sesiones activas de una persona o cuenta plataforma cuando se asignan o revocan roles. Esto fuerza al usuario a re-autenticarse para obtener un token que refleje los nuevos permisos.
+Cuando se asigna o revoca un rol, la sesión del usuario **no se revoca**. Esto es una decisión deliberada de UX: como los permisos se resuelven dinámicamente desde la base de datos en cada request, el cambio de rol tiene efecto inmediato sin obligar al usuario a volver a loguearse.
+
+`SessionRevocationService` (`src/main/java/.../authorization/services/SessionRevocationService.java`) sigue existiendo como utilidad disponible para uso futuro (por ejemplo, un admin que quiera cerrar todas las sesiones de un usuario manualmente), pero los flujos automáticos de asignación/revocación de roles no lo invocan.
 
 ## Usuario de desarrollo
 
