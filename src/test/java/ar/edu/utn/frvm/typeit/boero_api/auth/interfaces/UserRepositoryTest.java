@@ -42,7 +42,8 @@ class UserRepositoryTest {
     createUser(entityManager, boero, "12345678");
     entityManager.flush();
 
-    assertThat(userRepository.findByPersonDocumentNumberAndInstitution_Id("12345678", other.getId()))
+    assertThat(
+            userRepository.findByPersonDocumentNumberAndInstitution_Id("12345678", other.getId()))
         .isEmpty();
   }
 

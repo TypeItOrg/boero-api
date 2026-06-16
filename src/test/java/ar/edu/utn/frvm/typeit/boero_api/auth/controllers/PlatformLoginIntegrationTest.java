@@ -1,0 +1,59 @@
+package ar.edu.utn.frvm.typeit.boero_api.auth.controllers;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@Testcontainers
+class PlatformLoginIntegrationTest {
+
+  @Container
+  static final GenericContainer<?> REDIS =
+      new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
+
+  @DynamicPropertySource
+  static void registerRedisProperties(DynamicPropertyRegistry registry) {
+    registry.add("spring.data.redis.host", REDIS::getHost);
+    registry.add("spring.data.redis.port", () -> String.valueOf(REDIS.getMappedPort(6379)));
+  }
+
+  @Autowired private MockMvc mockMvc;
+
+  @Test
+  @DisplayName("Should login platform admin with security filters enabled")
+  void shouldLoginPlatformAdmin() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/auth/platform/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "email": "admin@plataforma.com",
+                      "password": "admin123"
+                    }
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.account.email").value("admin@plataforma.com"))
+        .andExpect(jsonPath("$.account.name").value("Administrador"))
+        .andExpect(jsonPath("$.account.lastName").value("Plataforma"))
+        .andExpect(jsonPath("$.tokens.accessToken").isNotEmpty())
+        .andExpect(jsonPath("$.tokens.refreshToken").isNotEmpty());
+  }
+}

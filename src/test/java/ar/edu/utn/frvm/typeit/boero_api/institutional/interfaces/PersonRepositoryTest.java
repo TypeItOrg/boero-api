@@ -29,7 +29,8 @@ class PersonRepositoryTest {
     Person person = persist(entityManager, person(institution, "12345678"));
     entityManager.flush();
 
-    assertThat(personRepository.findByDocumentNumberAndInstitution_Id("12345678", institution.getId()))
+    assertThat(
+            personRepository.findByDocumentNumberAndInstitution_Id("12345678", institution.getId()))
         .contains(person);
   }
 

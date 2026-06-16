@@ -13,8 +13,7 @@ import org.testcontainers.utility.DockerImageName;
 @Testcontainers
 class BoeroApiApplicationTests {
 
-  @Container
-  static final GenericContainer<?> REDIS = createRedisContainer();
+  @Container static final GenericContainer<?> REDIS = createRedisContainer();
 
   @SuppressWarnings("resource")
   private static GenericContainer<?> createRedisContainer() {

@@ -47,7 +47,11 @@ public final class InstitutionalTestData {
   }
 
   public static User user(Institution institution, Person person) {
-    return User.builder().institution(institution).person(person).password("encoded-password").build();
+    return User.builder()
+        .institution(institution)
+        .person(person)
+        .password("encoded-password")
+        .build();
   }
 
   public static Institution createInstitution(EntityManager entityManager, String slug) {
