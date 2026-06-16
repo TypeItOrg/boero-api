@@ -1,10 +1,9 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.entities;
 
+import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
@@ -29,7 +28,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 public class RefreshToken {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
+  @GeneratedUUIDv7
   @Column(name = "refresh_token_id")
   private UUID id;
 

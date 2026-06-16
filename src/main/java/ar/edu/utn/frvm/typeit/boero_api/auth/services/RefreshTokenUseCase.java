@@ -52,23 +52,34 @@ public class RefreshTokenUseCase {
     }
 
     User user =
-        userRepository.findById(session.getUserId()).orElseThrow(TokenRefreshException::invalid);
+        userRepository
+            .findWithPersonAndInstitutionById(session.getUserId())
+            .orElseThrow(TokenRefreshException::invalid);
 
     current.setRevoked(true);
     refreshTokenRepository.save(current);
 
-    String rawRefresh = jwtService.generateRefreshToken();
+    String rawRefresh = UUID.randomUUID().toString();
     RefreshToken next =
         RefreshToken.builder()
             .sessionId(session.getId())
             .tokenHash(JwtService.hashToken(rawRefresh))
             .familyId(current.getFamilyId())
-            .expiresAt(LocalDateTime.now().plus(refreshDuration(session.isRememberMe())))
+            .expiresAt(
+                LocalDateTime.now().plus(jwtProperties.refreshExpiration(session.isRememberMe())))
             .build();
     refreshTokenRepository.save(next);
 
-    String accessToken = jwtService.generateAccessToken(user, session.getId());
-    return AuthResponse.of(user, accessToken, rawRefresh);
+    String accessToken =
+        jwtService.generateAccessToken(
+            InstitutionalAccessTokenInput.builder()
+                .userId(user.getId())
+                .personId(user.getPerson().getId())
+                .institutionId(user.getInstitutionId())
+                .documentNumber(user.getDocumentNumber())
+                .sessionId(session.getId())
+                .build());
+    return AuthResponse.of(user, user.getPerson().getId(), accessToken, rawRefresh);
   }
 
   private void handleReuse(RefreshToken current) {
@@ -79,22 +90,9 @@ public class RefreshTokenUseCase {
     }
     refreshTokenRepository.revokeByFamilyId(current.getFamilyId());
     LocalDateTime now = LocalDateTime.now();
-    for (UUID sessionId : sessionIds) {
-      userSessionRepository
-          .findById(sessionId)
-          .ifPresent(
-              s -> {
-                s.setActive(false);
-                s.setEndedAt(now);
-                userSessionRepository.save(s);
-              });
+    if (!sessionIds.isEmpty()) {
+      userSessionRepository.deactivateByIds(sessionIds, now);
     }
     throw TokenRefreshException.reuse();
-  }
-
-  private java.time.Duration refreshDuration(boolean rememberMe) {
-    return rememberMe
-        ? jwtProperties.rememberMeTokenExpiration()
-        : jwtProperties.refreshTokenExpiration();
   }
 }

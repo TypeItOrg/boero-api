@@ -1,11 +1,10 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.entities;
 
+import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -15,8 +14,11 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "user_sessions")
 @Getter
 @Setter
@@ -26,7 +28,7 @@ import lombok.Setter;
 public class UserSession {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
+  @GeneratedUUIDv7
   @Column(name = "user_session_id")
   private UUID id;
 
@@ -39,6 +41,7 @@ public class UserSession {
   @Column(name = "user_agent")
   private String userAgent;
 
+  @CreatedDate
   @Column(name = "started_at", nullable = false, updatable = false)
   private LocalDateTime startedAt;
 
@@ -52,9 +55,4 @@ public class UserSession {
   @Column(name = "remember_me", nullable = false)
   @Builder.Default
   private boolean rememberMe = false;
-
-  @PrePersist
-  protected void onCreate() {
-    startedAt = LocalDateTime.now();
-  }
 }
