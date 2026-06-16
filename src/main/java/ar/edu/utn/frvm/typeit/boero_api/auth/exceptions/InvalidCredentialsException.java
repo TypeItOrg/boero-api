@@ -1,11 +1,12 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.exceptions;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.INVALID_CREDENTIALS;
 
-@ResponseStatus(HttpStatus.UNAUTHORIZED)
-public class InvalidCredentialsException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
+public class InvalidCredentialsException extends ResponseStatusException {
   public InvalidCredentialsException() {
-    super(AuthMessages.INVALID_CREDENTIALS);
+    super(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS);
   }
 }

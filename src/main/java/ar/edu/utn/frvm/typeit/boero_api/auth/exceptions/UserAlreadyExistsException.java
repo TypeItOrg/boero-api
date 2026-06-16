@@ -1,11 +1,12 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.exceptions;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.USER_ALREADY_EXISTS;
 
-@ResponseStatus(HttpStatus.CONFLICT)
-public class UserAlreadyExistsException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
+public class UserAlreadyExistsException extends ResponseStatusException {
   public UserAlreadyExistsException() {
-    super(AuthMessages.USER_ALREADY_EXISTS);
+    super(HttpStatus.CONFLICT, USER_ALREADY_EXISTS);
   }
 }

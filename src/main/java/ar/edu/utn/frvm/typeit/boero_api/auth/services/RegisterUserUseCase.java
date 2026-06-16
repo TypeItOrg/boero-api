@@ -1,15 +1,21 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
-import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InstitutionNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.UserAlreadyExistsException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RegisterRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.UserRegisteredResponse;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AssignPersonSystemRoleUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,6 +29,8 @@ public class RegisterUserUseCase {
   private final InstitutionRepository institutionRepository;
   private final PersonRepository personRepository;
   private final PasswordEncoder passwordEncoder;
+  private final Validator validator;
+  private final AssignPersonSystemRoleUseCase assignPersonSystemRoleUseCase;
 
   @Transactional
   public UserRegisteredResponse execute(RegisterRequest request) {
@@ -43,6 +51,7 @@ public class RegisterUserUseCase {
             .lastName(request.lastName())
             .documentNumber(request.documentNumber())
             .build();
+    assertPersonValid(person);
     personRepository.save(person);
 
     User user =
@@ -52,6 +61,18 @@ public class RegisterUserUseCase {
             .password(passwordEncoder.encode(request.password()))
             .build();
     userRepository.save(user);
-    return new UserRegisteredResponse(user.getId(), user.getDocumentNumber(), user.getInstitutionId());
+    assignPersonSystemRoleUseCase.execute(person, SystemRoleCode.APPLICANT, false);
+    return UserRegisteredResponse.builder()
+        .userId(user.getId())
+        .documentNumber(user.getDocumentNumber())
+        .institutionId(user.getInstitutionId())
+        .build();
+  }
+
+  private void assertPersonValid(Person person) {
+    Set<ConstraintViolation<Person>> violations = validator.validate(person);
+    if (!violations.isEmpty()) {
+      throw new ConstraintViolationException(violations);
+    }
   }
 }
