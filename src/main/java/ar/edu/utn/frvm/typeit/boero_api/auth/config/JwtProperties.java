@@ -8,4 +8,9 @@ public record JwtProperties(
     String secret,
     Duration accessTokenExpiration,
     Duration refreshTokenExpiration,
-    Duration rememberMeTokenExpiration) {}
+    Duration rememberMeTokenExpiration) {
+
+  public Duration refreshExpiration(boolean rememberMe) {
+    return rememberMe ? rememberMeTokenExpiration() : refreshTokenExpiration();
+  }
+}

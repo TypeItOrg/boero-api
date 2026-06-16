@@ -1,15 +1,15 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.config.JwtProperties;
-import ar.edu.utn.frvm.typeit.boero_api.auth.entities.RefreshToken;
-import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
-import ar.edu.utn.frvm.typeit.boero_api.auth.entities.UserSession;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidCredentialsException;
-import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.RefreshTokenRepository;
-import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
-import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.LoginRequest;
-import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.AuthResponse;
-import ar.edu.utn.frvm.typeit.boero_api.auth.security.InstitutionalUsername;
+import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PlatformLoginRequest;
+import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PlatformAuthResponse;
+import ar.edu.utn.frvm.typeit.boero_api.auth.security.PlatformUsername;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PlatformAccount;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PlatformRefreshToken;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PlatformSession;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PlatformRefreshTokenRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PlatformSessionRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -23,18 +23,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class LoginUseCase {
+public class PlatformLoginUseCase {
 
   private final AuthenticationManager authenticationManager;
-  private final UserSessionRepository userSessionRepository;
-  private final RefreshTokenRepository refreshTokenRepository;
+  private final PlatformSessionRepository platformSessionRepository;
+  private final PlatformRefreshTokenRepository platformRefreshTokenRepository;
   private final JwtService jwtService;
   private final JwtProperties jwtProperties;
 
   @Transactional
-  public AuthResponse execute(LoginRequest request, HttpServletRequest httpRequest) {
-    String principal =
-        InstitutionalUsername.format(request.institutionId(), request.documentNumber());
+  public PlatformAuthResponse execute(
+      PlatformLoginRequest request, HttpServletRequest httpRequest) {
+    String principal = PlatformUsername.format(request.email());
 
     Authentication authentication;
     try {
@@ -45,39 +45,37 @@ public class LoginUseCase {
       throw new InvalidCredentialsException();
     }
 
-    User user = (User) authentication.getPrincipal();
-
+    PlatformAccount account = (PlatformAccount) authentication.getPrincipal();
     boolean rememberMe = Boolean.TRUE.equals(request.rememberMe());
 
-    UserSession session =
-        UserSession.builder()
-            .userId(user.getId())
+    PlatformSession session =
+        PlatformSession.builder()
+            .platformAccountId(account.getId())
             .ipAddress(AuthRequestMetadata.clientIp(httpRequest))
             .userAgent(httpRequest.getHeader("User-Agent"))
             .rememberMe(rememberMe)
             .build();
-    userSessionRepository.save(session);
+    platformSessionRepository.save(session);
 
     String familyId = UUID.randomUUID().toString();
     String rawRefresh = UUID.randomUUID().toString();
-    RefreshToken refreshToken =
-        RefreshToken.builder()
-            .sessionId(session.getId())
+    PlatformRefreshToken refreshToken =
+        PlatformRefreshToken.builder()
+            .platformSessionId(session.getId())
+            .platformAccountId(account.getId())
             .tokenHash(JwtService.hashToken(rawRefresh))
             .familyId(familyId)
             .expiresAt(LocalDateTime.now().plus(jwtProperties.refreshExpiration(rememberMe)))
             .build();
-    refreshTokenRepository.save(refreshToken);
+    platformRefreshTokenRepository.save(refreshToken);
 
     String accessToken =
-        jwtService.generateAccessToken(
-            InstitutionalAccessTokenInput.builder()
-                .userId(user.getId())
-                .personId(user.getPerson().getId())
-                .institutionId(user.getInstitutionId())
-                .documentNumber(user.getDocumentNumber())
+        jwtService.generatePlatformAccessToken(
+            PlatformAccessTokenInput.builder()
+                .platformAccountId(account.getId())
+                .email(account.getEmail())
                 .sessionId(session.getId())
                 .build());
-    return AuthResponse.of(user, user.getPerson().getId(), accessToken, rawRefresh);
+    return PlatformAuthResponse.of(account, accessToken, rawRefresh);
   }
 }
