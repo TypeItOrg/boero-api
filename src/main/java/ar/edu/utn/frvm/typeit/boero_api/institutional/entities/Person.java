@@ -1,16 +1,28 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.entities;
 
-import ar.edu.utn.frvm.typeit.boero_api.common.Auditable;
+import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.CHECK_SQL_PEOPLE_DOCUMENT_NUMBER;
+import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.CHECK_SQL_PEOPLE_FIRST_NAME_LENGTH;
+import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.CHECK_SQL_PEOPLE_LAST_NAME_LENGTH;
+import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.DOCUMENT_LENGTH;
+import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.DOCUMENT_PATTERN;
+import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_MAX;
+import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_MIN;
+import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_PATTERN;
+
+import ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable;
+import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -20,6 +32,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Letras en nombre/apellido: solo Bean Validation; documento y longitudes: también {@link
+ * CheckConstraint}.
+ */
 @Entity
 @Table(
     name = "people",
@@ -30,6 +46,17 @@ import lombok.Setter;
       @UniqueConstraint(
           name = "people_document_number_unique",
           columnNames = {"institution_id", "document_number"})
+    },
+    check = {
+      @CheckConstraint(
+          name = "people_document_number_format",
+          constraint = CHECK_SQL_PEOPLE_DOCUMENT_NUMBER),
+      @CheckConstraint(
+          name = "people_first_name_length",
+          constraint = CHECK_SQL_PEOPLE_FIRST_NAME_LENGTH),
+      @CheckConstraint(
+          name = "people_last_name_length",
+          constraint = CHECK_SQL_PEOPLE_LAST_NAME_LENGTH)
     })
 @Getter
 @Setter
@@ -39,7 +66,7 @@ import lombok.Setter;
 public class Person extends Auditable {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
+  @GeneratedUUIDv7
   @Column(name = "person_id")
   private UUID id;
 
@@ -59,13 +86,29 @@ public class Person extends Auditable {
   @JoinColumn(name = "nationality_country_id")
   private Country nationalityCountry;
 
-  @Column(name = "document_number", nullable = false, length = 30)
+  @NotBlank(message = "El número de documento es requerido.")
+  @Pattern(
+      regexp = DOCUMENT_PATTERN,
+      message = "El número de documento debe tener exactamente 8 dígitos numéricos.")
+  @Column(name = "document_number", nullable = false, length = DOCUMENT_LENGTH)
   private String documentNumber;
 
-  @Column(name = "first_name", nullable = false, length = 100)
+  @NotBlank(message = "El nombre es requerido.")
+  @Size.List({
+    @Size(min = NAME_MIN, message = "El nombre debe tener al menos 3 caracteres."),
+    @Size(max = NAME_MAX, message = "El nombre debe tener menos de 255 caracteres.")
+  })
+  @Pattern(regexp = NAME_PATTERN, message = "El nombre solo puede contener letras y espacios.")
+  @Column(name = "first_name", nullable = false, length = NAME_MAX)
   private String firstName;
 
-  @Column(name = "last_name", nullable = false, length = 100)
+  @NotBlank(message = "El apellido es requerido.")
+  @Size.List({
+    @Size(min = NAME_MIN, message = "El apellido debe tener al menos 3 caracteres."),
+    @Size(max = NAME_MAX, message = "El apellido debe tener menos de 255 caracteres.")
+  })
+  @Pattern(regexp = NAME_PATTERN, message = "El apellido solo puede contener letras y espacios.")
+  @Column(name = "last_name", nullable = false, length = NAME_MAX)
   private String lastName;
 
   @Column(name = "birth_date")
@@ -76,5 +119,4 @@ public class Person extends Auditable {
 
   @Column(length = 150)
   private String email;
-
 }

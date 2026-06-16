@@ -1,6 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api;
 
-import ar.edu.utn.frvm.typeit.boero_api.common.Version;
+import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;

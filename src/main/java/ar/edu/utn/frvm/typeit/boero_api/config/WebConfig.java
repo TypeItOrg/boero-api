@@ -1,6 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.config;
 
-import ar.edu.utn.frvm.typeit.boero_api.common.UnversionedRestController;
+import ar.edu.utn.frvm.typeit.boero_api.common.web.UnversionedRestController;
 import java.util.function.Predicate;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.AnnotatedElementUtils;

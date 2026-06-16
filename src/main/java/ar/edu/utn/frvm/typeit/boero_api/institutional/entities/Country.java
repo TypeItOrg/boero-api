@@ -1,10 +1,9 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.entities;
 
-import ar.edu.utn.frvm.typeit.boero_api.common.Auditable;
+import ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable;
+import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -31,7 +30,7 @@ import lombok.Setter;
 public class Country extends Auditable {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
+  @GeneratedUUIDv7
   @Column(name = "country_id")
   private UUID id;
 
@@ -40,5 +39,4 @@ public class Country extends Auditable {
 
   @Column(name = "iso_code", length = 3)
   private String isoCode;
-
 }
