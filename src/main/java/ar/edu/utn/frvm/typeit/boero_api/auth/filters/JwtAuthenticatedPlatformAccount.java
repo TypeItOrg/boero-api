@@ -5,22 +5,16 @@ import java.util.UUID;
 import lombok.Builder;
 
 @Builder
-public record JwtAuthenticatedUser(
-    UUID userId,
-    UUID personId,
-    String documentNumber,
-    UUID institutionId,
-    UUID sessionId,
-    String tokenId)
-    implements JwtPrincipal {
+public record JwtAuthenticatedPlatformAccount(
+    UUID platformAccountId, String email, UUID sessionId, String tokenId) implements JwtPrincipal {
 
   @Override
   public AccountType accountType() {
-    return AccountType.INSTITUTION;
+    return AccountType.PLATFORM;
   }
 
   @Override
   public String getName() {
-    return documentNumber;
+    return email;
   }
 }

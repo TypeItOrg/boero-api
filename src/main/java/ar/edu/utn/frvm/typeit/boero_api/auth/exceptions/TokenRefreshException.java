@@ -1,19 +1,21 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.exceptions;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.REFRESH_TOKEN_INVALID;
+import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.REFRESH_TOKEN_REUSE;
 
-@ResponseStatus(HttpStatus.UNAUTHORIZED)
-public class TokenRefreshException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
+public class TokenRefreshException extends ResponseStatusException {
   public TokenRefreshException(String message) {
-    super(message);
+    super(HttpStatus.UNAUTHORIZED, message);
   }
 
   public static TokenRefreshException invalid() {
-    return new TokenRefreshException(AuthMessages.REFRESH_TOKEN_INVALID);
+    return new TokenRefreshException(REFRESH_TOKEN_INVALID);
   }
 
   public static TokenRefreshException reuse() {
-    return new TokenRefreshException(AuthMessages.REFRESH_TOKEN_REUSE);
+    return new TokenRefreshException(REFRESH_TOKEN_REUSE);
   }
 }

@@ -14,8 +14,8 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.services.LoginUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.LogoutUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RefreshTokenUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RegisterUserUseCase;
-import ar.edu.utn.frvm.typeit.boero_api.common.PaginatedResponse;
-import ar.edu.utn.frvm.typeit.boero_api.common.Version;
+import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
+import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -38,12 +38,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
-  private final RegisterUserUseCase registerUserUseCase;
-  private final LoginUseCase loginUseCase;
-  private final RefreshTokenUseCase refreshTokenUseCase;
-  private final LogoutUseCase logoutUseCase;
   private final GetActiveSessionsUseCase getActiveSessionsUseCase;
   private final GetCurrentUserUseCase getCurrentUserUseCase;
+  private final LoginUseCase loginUseCase;
+  private final LogoutUseCase logoutUseCase;
+  private final RefreshTokenUseCase refreshTokenUseCase;
+  private final RegisterUserUseCase registerUserUseCase;
 
   @PostMapping(version = Version.V1, path = "/register")
   @ResponseStatus(HttpStatus.CREATED)
