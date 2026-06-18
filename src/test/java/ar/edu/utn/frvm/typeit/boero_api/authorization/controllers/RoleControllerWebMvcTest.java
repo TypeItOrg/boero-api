@@ -37,6 +37,7 @@ import ar.edu.utn.frvm.typeit.boero_api.config.WebConfig;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +46,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -98,6 +100,11 @@ class RoleControllerWebMvcTest {
                 INSTITUTION_ID,
                 PERSON_ID))
         .andExpect(status().isForbidden());
+  }
+
+  @AfterEach
+  void clearSecurityContext() {
+    SecurityContextHolder.clearContext();
   }
 
   @Test
@@ -262,6 +269,93 @@ class RoleControllerWebMvcTest {
                     PERSON_ID)
                 .principal(authentication))
         .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @DisplayName("Should allow platform admin to list roles for any institution")
+  void listPersonRoles_returnsRolesForPlatformAdmin() throws Exception {
+    var authentication =
+        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+    stubPlatformAdminAccess(true);
+    when(listPersonRolesUseCase.execute(INSTITUTION_ID, PERSON_ID))
+        .thenReturn(List.of(personRoleResponse(SystemRoleCode.TEACHER)));
+
+    mockMvc
+        .perform(
+            get(
+                    "/api/v1/institutions/{institutionId}/people/{personId}/roles",
+                    INSTITUTION_ID,
+                    PERSON_ID)
+                .principal(authentication))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].roleCode").value("TEACHER"));
+  }
+
+  @Test
+  @DisplayName("Should allow platform admin to assign roles for any institution")
+  void assignPersonRole_returnsCreatedForPlatformAdmin() throws Exception {
+    var authentication =
+        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+    stubPlatformAdminAccess(true);
+    when(assignPersonRoleUseCase.execute(
+            eq(INSTITUTION_ID), eq(PERSON_ID), any(AssignRoleRequest.class)))
+        .thenReturn(personRoleResponse(SystemRoleCode.TEACHER));
+
+    mockMvc
+        .perform(
+            post(
+                    "/api/v1/institutions/{institutionId}/people/{personId}/roles",
+                    INSTITUTION_ID,
+                    PERSON_ID)
+                .principal(authentication)
+                .contentType(APPLICATION_JSON)
+                .content("{\"role\":\"TEACHER\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.roleCode").value("TEACHER"));
+  }
+
+  @Test
+  @DisplayName("Should allow platform admin to revoke roles for any institution")
+  void revokePersonRole_returnsNoContentForPlatformAdmin() throws Exception {
+    var authentication =
+        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+    stubPlatformAdminAccess(true);
+
+    mockMvc
+        .perform(
+            delete(
+                    "/api/v1/institutions/{institutionId}/people/{personId}/roles/{roleCode}",
+                    INSTITUTION_ID,
+                    PERSON_ID,
+                    SystemRoleCode.TEACHER)
+                .principal(authentication))
+        .andExpect(status().isNoContent());
+
+    verify(revokePersonRoleUseCase).execute(INSTITUTION_ID, PERSON_ID, SystemRoleCode.TEACHER);
+  }
+
+  @Test
+  @DisplayName("Should allow platform admin to list system roles via god mode")
+  void listSystemRoles_returnsCatalogForPlatformAdmin() throws Exception {
+    var authentication =
+        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+    stubPlatformAdminAccess(true);
+    when(listSystemRolesUseCase.execute())
+        .thenReturn(
+            List.of(
+                SystemRoleResponse.builder()
+                    .code(SystemRoleCode.TEACHER)
+                    .displayName("Docente")
+                    .build()));
+
+    mockMvc
+        .perform(get("/api/v1/roles/system").principal(authentication))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.roles[0].code").value("TEACHER"));
   }
 
   private void stubPermission(PermissionCode permission, boolean allowed) {
