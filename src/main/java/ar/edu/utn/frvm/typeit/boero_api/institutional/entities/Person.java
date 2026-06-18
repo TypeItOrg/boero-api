@@ -119,4 +119,8 @@ public class Person extends Auditable {
 
   @Column(length = 150)
   private String email;
+
+  @Column(name = "deleted", nullable = false)
+  @Builder.Default
+  private boolean deleted = false;
 }

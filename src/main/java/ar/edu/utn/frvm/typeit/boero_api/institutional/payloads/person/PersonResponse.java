@@ -19,7 +19,8 @@ public record PersonResponse(
     String institutionName,
     AddressResponse address,
     CitySummaryResponse birthCity,
-    CountrySummaryResponse nationalityCountry) {
+    CountrySummaryResponse nationalityCountry,
+    boolean deleted) {
 
   public static PersonResponse from(Person person) {
     return PersonResponse.builder()
@@ -46,6 +47,7 @@ public record PersonResponse(
             person.getNationalityCountry() != null
                 ? CountrySummaryResponse.from(person.getNationalityCountry())
                 : null)
+        .deleted(person.isDeleted())
         .build();
   }
 }
