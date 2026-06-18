@@ -15,6 +15,9 @@ public interface PersonRoleAssignmentRepository extends JpaRepository<PersonRole
   boolean existsByPerson_IdAndRole_IdAndInstitution_Id(
       UUID personId, UUID roleId, UUID institutionId);
 
+  boolean existsByPerson_IdAndRole_CodeAndInstitution_Id(
+      UUID personId, String roleCode, UUID institutionId);
+
   Optional<PersonRoleAssignment> findByPerson_IdAndRole_IdAndInstitution_Id(
       UUID personId, UUID roleId, UUID institutionId);
 
@@ -22,6 +25,17 @@ public interface PersonRoleAssignmentRepository extends JpaRepository<PersonRole
   List<PersonRoleAssignment> findByPerson_IdAndInstitution_Id(UUID personId, UUID institutionId);
 
   long countByInstitution_IdAndRole_Code(UUID institutionId, String roleCode);
+
+  @Query(
+      """
+      SELECT COUNT(pra)
+      FROM PersonRoleAssignment pra
+      WHERE pra.institution.id = :institutionId
+      AND pra.role.code = :roleCode
+      AND pra.person.deleted = false
+      """)
+  long countActivePeopleByInstitutionIdAndRoleCode(
+      @Param("institutionId") UUID institutionId, @Param("roleCode") String roleCode);
 
   @Query(
       """

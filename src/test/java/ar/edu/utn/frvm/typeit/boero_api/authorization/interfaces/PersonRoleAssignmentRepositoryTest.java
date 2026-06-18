@@ -86,4 +86,30 @@ class PersonRoleAssignmentRepositoryTest {
     assertThat(roles).hasSize(SystemRoleCode.values().length);
     assertThat(roles).extracting(Role::getCode).contains(SystemRoleCode.TEACHER.name());
   }
+
+  @Test
+  @DisplayName("Should count only active people with institutional authority role")
+  void countActivePeopleByInstitutionIdAndRoleCode_countsOnlyNotDeletedPeople() {
+    Person deletedAuthority = persist(entityManager, person(institution, "33333333"));
+    deletedAuthority.setDeleted(true);
+    entityManager.persist(deletedAuthority);
+    Role authorityRole =
+        roleRepository
+            .findByScopeAndCodeAndInstitutionIsNull(
+                RoleScope.INSTITUTION, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name())
+            .orElseThrow();
+    entityManager.persist(
+        PersonRoleAssignment.builder()
+            .person(deletedAuthority)
+            .institution(institution)
+            .role(authorityRole)
+            .build());
+    entityManager.flush();
+
+    long count =
+        personRoleAssignmentRepository.countActivePeopleByInstitutionIdAndRoleCode(
+            institution.getId(), SystemRoleCode.INSTITUTIONAL_AUTHORITY.name());
+
+    assertThat(count).isEqualTo(1);
+  }
 }
