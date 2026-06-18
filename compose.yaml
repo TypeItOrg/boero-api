@@ -1,26 +1,42 @@
 services:
-  app:
+  dev:
+    container_name: boero-api-dev
+    image: boero-api:dev
     build:
       context: .
       dockerfile: Dockerfile
-      target: runtime
+      target: dev
+    command: ["/usr/local/bin/dev-entrypoint.sh"]
+    env_file:
+      - path: .env.dev
+        required: false
     environment:
       SERVER_PORT: ${SERVER_PORT:-8080}
       DB_HOST: ${DB_HOST:-postgres}
       DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME:-boero_db}
+      DB_USER: ${DB_USER:-boero}
+      DB_PASSWORD: ${DB_PASSWORD:-boero}
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       JWT_SECRET: ${JWT_SECRET:-0123456789abcdef0123456789abcdef}
+      SPRING_PROFILES_ACTIVE: dev
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/workspace
+      - gradle-cache:/root/.gradle
 
   redis:
+    container_name: boero-api-redis-dev
     image: redis:7-alpine
-    expose:
-      - "6379"
+    ports:
+      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -29,15 +45,32 @@ services:
       start_period: 5s
 
   postgres:
+    container_name: boero-api-postgres-dev
     image: postgres:18-alpine
     command: ["/bin/sh", "/usr/local/bin/postgres-entrypoint.sh"]
     environment:
-      POSTGRES_DB: postgres
-    expose:
-      - "5432"
+      DB_NAME: ${DB_NAME:-boero_db}
+      POSTGRES_DB: ${DB_NAME:-boero_db}
+      POSTGRES_USER: ${DB_USER:-boero}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-boero}
+    ports:
+      - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql
       - ./docker/postgres-entrypoint.sh:/usr/local/bin/postgres-entrypoint.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 45s
 
 volumes:
+  gradle-cache:
+    name: boero-api-gradle-cache-dev
   postgres-data:
+    name: boero-api-postgres-data-dev
+
+networks:
+  default:
+    name: boero-api-network-dev

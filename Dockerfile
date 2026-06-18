@@ -26,7 +26,7 @@ WORKDIR /workspace
 
 RUN java -Djarmode=tools -jar build/libs/*.jar extract --layers --launcher --destination build/extracted
 
-FROM eclipse-temurin:21-jre-jammy AS runtime
+FROM eclipse-temurin:21-jre-jammy AS prod
 
 ARG UID=10001
 

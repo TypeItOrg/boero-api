@@ -1,60 +1,47 @@
 COMPOSE := docker compose
+.DEFAULT_GOAL := dev
 
-.PHONY: dev dev-build staging staging-build prod prod-build down down-dev down-staging down-prod logs logs-dev logs-staging logs-prod ps ps-dev ps-staging ps-prod test format format-check
+.PHONY: dev staging prod down logs build-staging build-prod clean ps ps-dev ps-staging ps-prod test format format-check
 
 dev:
-	$(COMPOSE) -f compose.yaml -f compose.dev.yaml up
-
-dev-build:
-	$(COMPOSE) -f compose.yaml -f compose.dev.yaml up --build
+	$(COMPOSE) up --build dev
 
 staging:
-	$(COMPOSE) --env-file .env.staging -f compose.yaml -f compose.staging.yaml up -d
-
-staging-build:
-	$(COMPOSE) --env-file .env.staging -f compose.yaml -f compose.staging.yaml up --build -d
+	$(COMPOSE) --env-file .env.staging -f compose.staging.yaml up --build -d staging
 
 prod:
-	$(COMPOSE) --env-file .env.prod -f compose.yaml -f compose.prod.yaml up -d
+	$(COMPOSE) --env-file .env.prod -f compose.prod.yaml up --build -d prod
 
-prod-build:
-	$(COMPOSE) --env-file .env.prod -f compose.yaml -f compose.prod.yaml up --build -d
+build-staging:
+	$(COMPOSE) --env-file .env.staging -f compose.staging.yaml build staging
+
+build-prod:
+	$(COMPOSE) --env-file .env.prod -f compose.prod.yaml build prod
 
 down:
-	$(COMPOSE) -f compose.yaml -f compose.dev.yaml down --remove-orphans
-
-down-dev:
-	$(COMPOSE) -f compose.yaml -f compose.dev.yaml down --remove-orphans
-
-down-staging:
-	$(COMPOSE) --env-file .env.staging -f compose.yaml -f compose.staging.yaml down --remove-orphans
-
-down-prod:
-	$(COMPOSE) --env-file .env.prod -f compose.yaml -f compose.prod.yaml down --remove-orphans
+	$(COMPOSE) down --remove-orphans
+	DB_NAME=unused DB_USER=unused DB_PASSWORD=unused JWT_SECRET=unused $(COMPOSE) -f compose.staging.yaml down --remove-orphans
+	DB_NAME=unused DB_USER=unused DB_PASSWORD=unused JWT_SECRET=unused $(COMPOSE) -f compose.prod.yaml down --remove-orphans
 
 logs:
-	$(COMPOSE) -f compose.yaml -f compose.dev.yaml logs -f
+	$(COMPOSE) logs -f dev
 
-logs-dev:
-	$(COMPOSE) -f compose.yaml -f compose.dev.yaml logs -f
-
-logs-staging:
-	$(COMPOSE) --env-file .env.staging -f compose.yaml -f compose.staging.yaml logs -f
-
-logs-prod:
-	$(COMPOSE) --env-file .env.prod -f compose.yaml -f compose.prod.yaml logs -f
+clean:
+	$(COMPOSE) down --volumes --remove-orphans
+	DB_NAME=unused DB_USER=unused DB_PASSWORD=unused JWT_SECRET=unused $(COMPOSE) -f compose.staging.yaml down --volumes --remove-orphans
+	DB_NAME=unused DB_USER=unused DB_PASSWORD=unused JWT_SECRET=unused $(COMPOSE) -f compose.prod.yaml down --volumes --remove-orphans
 
 ps:
-	$(COMPOSE) -f compose.yaml -f compose.dev.yaml ps
+	$(COMPOSE) ps
 
 ps-dev:
-	$(COMPOSE) -f compose.yaml -f compose.dev.yaml ps
+	$(COMPOSE) ps
 
 ps-staging:
-	$(COMPOSE) --env-file .env.staging -f compose.yaml -f compose.staging.yaml ps
+	$(COMPOSE) --env-file .env.staging -f compose.staging.yaml ps
 
 ps-prod:
-	$(COMPOSE) --env-file .env.prod -f compose.yaml -f compose.prod.yaml ps
+	$(COMPOSE) --env-file .env.prod -f compose.prod.yaml ps
 
 test:
 	./gradlew --no-daemon test

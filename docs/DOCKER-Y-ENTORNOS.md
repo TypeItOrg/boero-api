@@ -19,36 +19,35 @@ docker compose version
 
 ## Estructura de la configuración
 
-La base del sistema está distribuida en algunos archivos clave. `Dockerfile` define tanto la imagen de desarrollo como la imagen final de runtime. El archivo `compose.yaml` contiene la configuración común a todos los entornos. Encima de ese archivo base se montan `compose.dev.yaml`, `compose.staging.yaml` y `compose.prod.yaml`, que agregan o sobrescriben lo necesario para cada caso.
+La base del sistema está distribuida en algunos archivos clave. `Dockerfile` define tanto la imagen de desarrollo como la imagen final de prod. `compose.yaml` contiene el stack de `dev`, `compose.staging.yaml` contiene el stack de `staging` y `compose.prod.yaml` contiene el stack de `prod`.
 
 La configuración de Spring se reparte entre `application.properties`, que contiene lo común, y los archivos por perfil `application-dev.properties`, `application-staging.properties` y `application-prod.properties`. Para los tests se usa `src/test/resources/application.properties`, de modo que H2 quede completamente encapsulado en el contexto de testing.
 
 También hay dos scripts auxiliares en `docker/`. `dev-entrypoint.sh` es el **responsable de arrancar Spring Boot en desarrollo y reiniciarlo cuando detecta cambios en el código**. El script `postgres-entrypoint.sh` extiende el arranque de PostgreSQL para asegurarse de que la base configurada por `DB_NAME` exista incluso si el volumen ya venía de una corrida anterior.
 
-## Interacción entre `compose.yaml` y los overrides
+## Archivos Compose por entorno
 
-La base **`compose.yaml`** fija la forma mínima del stack:
+Cada entorno tiene su propio archivo Compose para evitar que Docker reutilice accidentalmente una imagen de otro entorno:
 
-- Servicio **`app`**: construcción desde el `Dockerfile` del repositorio con **`build.target: runtime`** (imagen de ejecución).
-- Variables de entorno por defecto (`SERVER_PORT`, `DB_HOST`, `DB_PORT`).
-- **`depends_on`** con **`condition: service_healthy`**: el arranque de `app` espera a que Postgres pase el healthcheck (definido en el override o en el propio servicio cuando aplica).
-- Servicio **`postgres`**: imagen oficial, script de entrypoint montado, volumen de datos.
+- `compose.yaml`: `dev`, `postgres` y `redis` para desarrollo local.
+- `compose.staging.yaml`: `staging`, `postgres` y `redis` para staging.
+- `compose.prod.yaml`: `prod`, `postgres` y `redis` para producción.
 
-Los archivos **`compose.dev.yaml`**, **`compose.staging.yaml`** y **`compose.prod.yaml`** suelen **no repetir** `build.context` ni `dockerfile`: al combinarlos con la base, Compose **fusiona** la configuración; el segundo archivo **completa o sobrescribe** campos (por ejemplo `build.target`, puertos, volúmenes, nombres de red).
+Los servicios de aplicación se llaman igual que el entorno (`dev`, `staging`, `prod`) y declaran imágenes distintas (`boero-api:dev`, `boero-api:staging`, `boero-api:prod`). Esto impide que `make prod` use una imagen construida previamente desde el target de desarrollo.
 
 Uso típico (el `Makefile` del repo suele encapsular esto):
 
 ```bash
-docker compose -f compose.yaml -f compose.dev.yaml up
-docker compose -f compose.yaml -f compose.staging.yaml up
-docker compose -f compose.yaml -f compose.prod.yaml up
+docker compose up --build dev
+docker compose --env-file .env.staging -f compose.staging.yaml up --build staging
+docker compose --env-file .env.prod -f compose.prod.yaml up --build prod
 ```
 
 Resumen de cómo se diferencia cada override respecto a la idea de “solo base + entorno”:
 
-| Enfoque | `compose.dev.yaml` | `compose.staging.yaml` | `compose.prod.yaml` |
+| Enfoque | `compose.yaml` | `compose.staging.yaml` | `compose.prod.yaml` |
 |--------|--------------------|-------------------------|---------------------|
-| **`build.target`** | `dev` | `runtime` | `runtime` |
+| **`build.target`** | `dev` | `prod` | `prod` |
 | Objetivo | Código montado, caché Gradle, perfil Spring `dev`, entrypoint de desarrollo | Imagen empaquetada, credenciales obligatorias (`${VAR:?…}`), healthcheck HTTP | Igual que staging en tipo de imagen; **`restart: unless-stopped`** en app y Postgres |
 | Postgres | Puertos publicados, defaults locales para DB | Credenciales requeridas, healthcheck | Igual + restart |
 
@@ -71,11 +70,11 @@ La cadena para **producción / staging** (imagen liviana con JRE) es:
 1. **`deps`** — JDK, resolución de dependencias Gradle (sin `src` todavía).
 2. **`builder`** — añade `src` y genera el `bootJar`.
 3. **`extract`** — extrae capas del JAR (patrón habitual Spring Boot + Docker).
-4. **`runtime`** — imagen **`eclipse-temurin:21-jre-jammy`**, usuario no root, `curl` para healthchecks; arranque con `JarLauncher`.
+4. **`prod`** — imagen **`eclipse-temurin:21-jre-jammy`**, usuario no root, `curl` para healthchecks; arranque con `JarLauncher`.
 
-La etapa **`dev`** es **independiente** de esa cadena: parte de **`gradle:9.4.1-jdk21-jammy`**, no hereda de `deps` / `builder` / `extract` / `runtime`. Incluye herramientas de desarrollo y el `dev-entrypoint.sh`. Con **`build.target: dev`**, el código se trabaja sobre todo vía **bind mount** (`.: /workspace`); no hace falta que el JAR final esté empaquetado dentro de la imagen para desarrollo día a día.
+La etapa **`dev`** es **independiente** de esa cadena: parte de **`gradle:9.4.1-jdk21-jammy`**, no hereda de `deps` / `builder` / `extract` / `prod`. Incluye herramientas de desarrollo y el `dev-entrypoint.sh`. Con **`build.target: dev`**, el código se trabaja sobre todo vía **bind mount** (`.: /workspace`); no hace falta que el JAR final esté empaquetado dentro de la imagen para desarrollo día a día.
 
-- Con **`target: runtime`**, Docker construye lo necesario para llegar a **`runtime`** (típicamente `deps` → `builder` → `extract` → `runtime`).
+- Con **`target: prod`**, Docker construye lo necesario para llegar a **`prod`** (típicamente `deps` → `builder` → `extract` → `prod`).
 - Con **`target: dev`**, Docker construye **solo la etapa `dev`** (y su imagen base); la rama multi-stage de producción no interviene en esa imagen.
 
 ## Cómo funciona cada entorno
@@ -89,7 +88,7 @@ El código fuente se monta con bind mount dentro de `/workspace`, por eso editar
 
 ### Staging
 
-En `staging` la aplicación ya no corre con `bootRun`, sino con la imagen final del target `runtime`. **Ese entorno está pensado para parecerse mucho más a producción.** Sigue usando PostgreSQL, levanta la app empaquetada y expone un healthcheck operativo sobre `http://localhost:8080/actuator/health/readiness`.
+En `staging` la aplicación ya no corre con `bootRun`, sino con la imagen final del target `prod`. **Ese entorno está pensado para parecerse mucho más a producción.** Sigue usando PostgreSQL, levanta la app empaquetada y expone un healthcheck operativo sobre `http://localhost:8080/actuator/health/readiness`.
 
 ### Producción
 
@@ -97,31 +96,31 @@ En `prod` la estrategia es la misma que en `staging`, pero con una configuració
 
 ## Dockerfile
 
-El proyecto usa un único `Dockerfile` con cinco targets: `deps`, `builder`, `extract`, `runtime` y `dev`.
+El proyecto usa un único `Dockerfile` con cinco targets: `deps`, `builder`, `extract`, `prod` y `dev`.
 
-El target `deps` resuelve dependencias y aprovecha caché de build. El target `builder` compila y genera el `bootJar`. El target `extract` separa las capas del jar de Spring Boot para mejorar el cacheo de la imagen final. El target `runtime` construye la imagen liviana para `staging` y `prod` usando `eclipse-temurin:21-jre-jammy`, crea un usuario no root y ejecuta la aplicación con `JarLauncher`. `dev` prepara la imagen orientada a desarrollo, instala `inotify-tools`, precalienta Gradle y deja listo el entorno para `gradle bootRun`.
+El target `deps` resuelve dependencias y aprovecha caché de build. El target `builder` compila y genera el `bootJar`. El target `extract` separa las capas del jar de Spring Boot para mejorar el cacheo de la imagen final. El target `prod` construye la imagen liviana para `staging` y `prod` usando `eclipse-temurin:21-jre-jammy`, crea un usuario no root y ejecuta la aplicación con `JarLauncher`. `dev` prepara la imagen orientada a desarrollo, instala `inotify-tools`, precalienta Gradle y deja listo el entorno para `gradle bootRun`.
 
 El resultado es que no hace falta mantener un `Dockerfile` para desarrollo y otro para producción. Toda la lógica vive en un solo lugar y **Compose decide qué target usar según el entorno**.
 
 ## Docker Compose
 
-El archivo `compose.yaml` define la base común. Ahí viven el servicio `app`, el servicio `postgres`, las variables compartidas, la dependencia de la app hacia la base y el healthcheck de **PostgreSQL**. El servicio `postgres` usa `postgres:18-alpine`, expone el puerto interno `5432` y monta el volumen persistente en `/var/lib/postgresql` junto al script `docker/postgres-entrypoint.sh`.
+Cada archivo Compose define un stack completo para su entorno. El servicio de aplicación se llama `dev`, `staging` o `prod`; cada stack incluye su propio PostgreSQL, Redis, red y volumen de datos.
 
-Los archivos de override cambian lo que corresponde a cada entorno. En `dev` se activa el target `dev`, se publica `8080` y `5432`, se montan el proyecto y la caché de **Gradle**, se asignan nombres explícitos a contenedores, red y volumen, y se definen defaults locales para la base. En `staging` y `prod` se usa el target `runtime`, se activa el perfil **Spring** correcto, se exigen variables de base de datos sin defaults sensibles y se definen healthchecks de aplicación. En `prod` además se habilita la política de restart.
+En `dev` se activa el target `dev`, se publica `8080` y `5432`, se montan el proyecto y la caché de **Gradle**, se asignan nombres explícitos a contenedores, red y volumen, y se definen defaults locales para la base. En `staging` y `prod` se usa el target `prod`, se activa el perfil **Spring** correcto, se exigen variables de base de datos sin defaults sensibles y se definen healthchecks de aplicación. En `prod` además se habilita la política de restart.
 
 ## Nombres explícitos por entorno
 
-En `dev` los contenedores son `boero-api-app-dev` y `boero-api-postgres-dev`, la red es `boero-api-network-dev` y los volúmenes son `boero-api-gradle-cache-dev` y `boero-api-postgres-data-dev`.
+En `dev` los contenedores son `boero-api-dev`, `boero-api-postgres-dev` y `boero-api-redis-dev`, la red es `boero-api-network-dev` y los volúmenes son `boero-api-gradle-cache-dev` y `boero-api-postgres-data-dev`.
 
-En `staging` los contenedores son `boero-api-app-staging` y `boero-api-postgres-staging`, la red es `boero-api-network-staging` y el volumen de datos es `boero-api-postgres-data-staging`.
+En `staging` los contenedores son `boero-api-staging`, `boero-api-postgres-staging` y `boero-api-redis-staging`, la red es `boero-api-network-staging` y el volumen de datos es `boero-api-postgres-data-staging`.
 
-En `prod` los contenedores son `boero-api-app-prod` y `boero-api-postgres-prod`, la red es `boero-api-network-prod` y el volumen de datos es `boero-api-postgres-data-prod`.
+En `prod` los contenedores son `boero-api-prod`, `boero-api-postgres-prod` y `boero-api-redis-prod`, la red es `boero-api-network-prod` y el volumen de datos es `boero-api-postgres-data-prod`.
 
 Esto evita compartir accidentalmente red o persistencia entre entornos distintos y hace que la inspección operativa sea mucho más clara.
 
 ## Variables de entorno
 
-El único archivo versionable de variables de entorno es `.env.example`. En desarrollo no hace falta crear un archivo `.env.dev`: `make dev` usa defaults definidos en `compose.dev.yaml`. En `staging` y `prod`, en cambio, `DB_NAME`, `DB_USER` y `DB_PASSWORD` son obligatorias y Compose falla rápido si no están definidas. Los archivos reales de cada entorno pueden crearse localmente cuando se necesite sobrescribir valores y no deben subirse al repositorio. Las variables que usa la aplicación y Compose son `SERVER_PORT`, `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` y `DB_PASSWORD`.
+Los archivos versionables de variables de entorno son `.env.example`, `.env.dev.example`, `.env.staging.example` y `.env.prod.example`. En desarrollo no hace falta crear `.env.dev` porque `make dev` usa defaults definidos en `compose.yaml`. En `staging` y `prod`, en cambio, `DB_NAME`, `DB_USER`, `DB_PASSWORD` y `JWT_SECRET` son obligatorias y Compose falla rápido si no están definidas. Los archivos reales de cada entorno pueden crearse localmente cuando se necesite sobrescribir valores y no deben subirse al repositorio.
 
 El archivo de referencia actual es:
 
@@ -137,8 +136,8 @@ DB_PASSWORD=boero
 Para `staging` y `prod`, o para personalizar desarrollo, se pueden crear archivos locales a partir del ejemplo:
 
 ```bash
-cp .env.example .env.staging
-cp .env.example .env.prod
+cp .env.staging.example .env.staging
+cp .env.prod.example .env.prod
 ```
 
 Después cada uno se ajusta según el entorno. En particular, `staging` y `prod` no deben reutilizar credenciales triviales ni valores de ejemplo. No se deben commitear secretos reales en el repositorio.
@@ -161,25 +160,18 @@ Los tests no usan PostgreSQL. Spring toma la configuración desde `src/test/reso
 
 ## Comandos disponibles
 
-El `Makefile` **centraliza la operación más común del proyecto**. Para el trabajo diario en desarrollo conviene usar `make dev`. Si cambiaste el `Dockerfile`, scripts bajo `docker/` o cualquier cosa que impacte en la imagen del contenedor, entonces conviene usar `make dev-build`.
+El `Makefile` **centraliza la operación más común del proyecto**. Para el trabajo diario en desarrollo conviene usar `make` o `make dev`. Igual que el frontend, los targets de entorno ejecutan `up --build` para evitar reutilizar una imagen de otro entorno.
 
 Los comandos principales son:
 
 ```bash
 make dev
-make dev-build
 make staging
-make staging-build
 make prod
-make prod-build
+make build-staging
+make build-prod
 make down
-make down-dev
-make down-staging
-make down-prod
 make logs
-make logs-dev
-make logs-staging
-make logs-prod
 make ps
 make ps-dev
 make ps-staging
@@ -187,14 +179,14 @@ make ps-prod
 make test
 ```
 
-`make down`, `make logs` y `make ps` apuntan al entorno de desarrollo para mantener comandos cortos en el día a día. Los targets con sufijo permiten operar explícitamente sobre `dev`, `staging` o `prod`. `make test` ejecuta `./gradlew --no-daemon test` en la máquina host.
+`make`, `make dev`, `make logs` y `make ps` apuntan al entorno de desarrollo para mantener comandos cortos en el día a día. `make staging` y `make prod` operan explícitamente sobre sus entornos. `make test` ejecuta `./gradlew --no-daemon test` en la máquina host.
 
 ## Primer arranque en una máquina nueva
 
-Para un primer inicio de desarrollo, conviene usar directamente:
+Para un primer inicio de desarrollo, usá directamente:
 
 ```bash
-make dev-build
+make dev
 ```
 
 Eso fuerza la construcción de la imagen y deja el sistema listo. A partir de ahí, el comando habitual pasa a ser:
@@ -219,11 +211,11 @@ make test
 
 El flujo normal del equipo debería ser levantar `dev`, editar código localmente, guardar y dejar que el contenedor reinicie Spring automáticamente. Si aparece el mensaje `Setting up watches...`, es normal: corresponde al watcher de archivos. Si aparece `Starting a Gradle Daemon`, también es normal: significa que Gradle está dejando un daemon listo para acelerar las corridas siguientes.
 
-En otras palabras, el camino rápido para el día a día es `make dev`, no `make dev-build`.
+En otras palabras, el camino rápido para el día a día es `make` o `make dev`.
 
 ## Troubleshooting
 
-Si el primer `make dev-build` tarda, lo normal es que Docker esté descargando imágenes base, instalando paquetes del contenedor y resolviendo dependencias del proyecto. **Eso suele pasar una sola vez o cuando la caché fue invalidada.**
+Si el primer `make dev` tarda, lo normal es que Docker esté descargando imágenes base, instalando paquetes del contenedor y resolviendo dependencias del proyecto. **Eso suele pasar una sola vez o cuando la caché fue invalidada.**
 
 Si el puerto `8080` o `5432` ya está ocupado, hay que liberar el puerto o cambiar la publicación correspondiente. Una forma rápida de inspeccionarlo es:
 
@@ -242,7 +234,7 @@ Si `./gradlew test` falla por un lock de Gradle, normalmente significa que otro 
 
 ## Buenas prácticas
 
-Como criterio general, usar `make dev` para el trabajo diario, reservar `make dev-build` para cambios de imagen, no commitear secretos reales y mantener alineadas las variables `DB_NAME`, `DB_USER` y `DB_PASSWORD` entre `.env.example`, los `.env` locales opcionales y la configuración documentada. Los defaults de credenciales existen solo para desarrollo; en `staging` y `prod` esas variables deben definirse explícitamente. También conviene no renombrar contenedores, redes ni volúmenes sin una razón clara, porque varios flujos operativos del equipo se apoyan en esos nombres explícitos.
+Como criterio general, usar `make` o `make dev` para el trabajo diario, no commitear secretos reales y mantener alineadas las variables `DB_NAME`, `DB_USER`, `DB_PASSWORD` y `JWT_SECRET` entre los `.env.*.example`, los `.env` locales opcionales y la configuración documentada. Los defaults de credenciales existen solo para desarrollo; en `staging` y `prod` esas variables deben definirse explícitamente. También conviene no renombrar contenedores, redes ni volúmenes sin una razón clara, porque varios flujos operativos del equipo se apoyan en esos nombres explícitos.
 
 ## Estado actual de la configuración
 

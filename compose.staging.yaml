@@ -1,13 +1,30 @@
 services:
-  app:
-    container_name: boero-api-app-staging
+  staging:
+    container_name: boero-api-staging
+    image: boero-api:staging
     build:
-      target: runtime
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+    env_file:
+      - path: .env.staging
+        required: false
     environment:
+      SERVER_PORT: ${SERVER_PORT:-8080}
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required for staging}
       SPRING_PROFILES_ACTIVE: staging
       DB_NAME: ${DB_NAME:?DB_NAME is required for staging}
       DB_USER: ${DB_USER:?DB_USER is required for staging}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required for staging}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "8080:8080"
     healthcheck:
@@ -17,12 +34,32 @@ services:
       retries: 3
       start_period: 30s
 
+  redis:
+    container_name: boero-api-redis-staging
+    image: redis:7-alpine
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
   postgres:
     container_name: boero-api-postgres-staging
+    image: postgres:18-alpine
+    command: ["/bin/sh", "/usr/local/bin/postgres-entrypoint.sh"]
     environment:
       DB_NAME: ${DB_NAME:?DB_NAME is required for staging}
+      POSTGRES_DB: postgres
       POSTGRES_USER: ${DB_USER:?DB_USER is required for staging}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required for staging}
+    expose:
+      - "5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./docker/postgres-entrypoint.sh:/usr/local/bin/postgres-entrypoint.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:?DB_USER is required for staging} -d ${DB_NAME:?DB_NAME is required for staging}"]
       interval: 10s
