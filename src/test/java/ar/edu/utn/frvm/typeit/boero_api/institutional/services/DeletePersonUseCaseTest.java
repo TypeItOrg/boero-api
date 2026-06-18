@@ -1,0 +1,146 @@
+package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
+import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.LastInstitutionalAuthorityDeletionException;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.PersonNotFoundInInstitutionException;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionPersonResolver;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.SessionRevocationService;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class DeletePersonUseCaseTest {
+
+  @Mock private InstitutionPersonResolver institutionPersonResolver;
+  @Mock private PersonRepository personRepository;
+  @Mock private UserRepository userRepository;
+  @Mock private PersonRoleAssignmentRepository personRoleAssignmentRepository;
+  @Mock private SessionRevocationService sessionRevocationService;
+
+  @InjectMocks private DeletePersonUseCase deletePersonUseCase;
+
+  private UUID institutionId;
+  private UUID personId;
+  private Person person;
+  private User user;
+
+  @BeforeEach
+  void setUp() {
+    institutionId = UUID.randomUUID();
+    personId = UUID.randomUUID();
+    Institution institution = Institution.builder().id(institutionId).name("Boero").build();
+    person =
+        Person.builder()
+            .id(personId)
+            .institution(institution)
+            .firstName("Ana")
+            .lastName("García")
+            .documentNumber("12345678")
+            .build();
+    user = User.builder().institution(institution).person(person).password("encoded").build();
+  }
+
+  @Test
+  @DisplayName("Should soft delete person, disable user, and revoke sessions")
+  void execute_softDeletesAndRevokesSessions() {
+    when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
+        .thenReturn(person);
+    when(personRoleAssignmentRepository.existsByPerson_IdAndRole_CodeAndInstitution_Id(
+            personId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name(), institutionId))
+        .thenReturn(false);
+    when(userRepository.findByPerson_IdAndInstitution_Id(personId, institutionId))
+        .thenReturn(Optional.of(user));
+
+    deletePersonUseCase.execute(institutionId, personId);
+
+    assertThat(person.isDeleted()).isTrue();
+    assertThat(user.isEnabled()).isFalse();
+    verify(personRepository).save(person);
+    verify(userRepository).save(user);
+    verify(sessionRevocationService).revokeInstitutionalSessionsForPerson(personId, institutionId);
+  }
+
+  @Test
+  @DisplayName("Should be idempotent if person is already deleted")
+  void execute_isIdempotentOnAlreadyDeleted() {
+    person.setDeleted(true);
+    when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
+        .thenReturn(person);
+    when(personRoleAssignmentRepository.existsByPerson_IdAndRole_CodeAndInstitution_Id(
+            personId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name(), institutionId))
+        .thenReturn(false);
+
+    deletePersonUseCase.execute(institutionId, personId);
+
+    verify(personRepository, never()).save(person);
+    verify(userRepository, never()).findByPerson_IdAndInstitution_Id(personId, institutionId);
+    verify(sessionRevocationService, never())
+        .revokeInstitutionalSessionsForPerson(personId, institutionId);
+  }
+
+  @Test
+  @DisplayName("Should throw LastInstitutionalAuthorityDeletionException when last authority")
+  void execute_throwsOnLastAuthority() {
+    when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
+        .thenReturn(person);
+    when(personRoleAssignmentRepository.existsByPerson_IdAndRole_CodeAndInstitution_Id(
+            personId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name(), institutionId))
+        .thenReturn(true);
+    when(personRoleAssignmentRepository.countActivePeopleByInstitutionIdAndRoleCode(
+            institutionId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name()))
+        .thenReturn(1L);
+
+    assertThatThrownBy(() -> deletePersonUseCase.execute(institutionId, personId))
+        .isInstanceOf(LastInstitutionalAuthorityDeletionException.class);
+
+    verify(personRepository, never()).save(person);
+  }
+
+  @Test
+  @DisplayName("Should allow deletion when authority count is greater than 1")
+  void execute_allowsWhenMultipleAuthorities() {
+    when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
+        .thenReturn(person);
+    when(personRoleAssignmentRepository.existsByPerson_IdAndRole_CodeAndInstitution_Id(
+            personId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name(), institutionId))
+        .thenReturn(true);
+    when(personRoleAssignmentRepository.countActivePeopleByInstitutionIdAndRoleCode(
+            institutionId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name()))
+        .thenReturn(2L);
+    when(userRepository.findByPerson_IdAndInstitution_Id(personId, institutionId))
+        .thenReturn(Optional.of(user));
+
+    deletePersonUseCase.execute(institutionId, personId);
+
+    assertThat(person.isDeleted()).isTrue();
+  }
+
+  @Test
+  @DisplayName("Should propagate not-found from resolver")
+  void execute_propagatesNotFound() {
+    when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
+        .thenThrow(new PersonNotFoundInInstitutionException());
+
+    assertThatThrownBy(() -> deletePersonUseCase.execute(institutionId, personId))
+        .isInstanceOf(PersonNotFoundInInstitutionException.class);
+  }
+}
