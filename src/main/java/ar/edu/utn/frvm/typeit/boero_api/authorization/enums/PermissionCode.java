@@ -14,6 +14,16 @@ public enum PermissionCode {
       "institution:person:read-any",
       PermissionScope.INSTITUTION,
       "Leer datos de cualquier persona"),
+  INSTITUTION_PERSON_CREATE(
+      "institution:person:create", PermissionScope.INSTITUTION, "Crear personas institucionales"),
+  INSTITUTION_PERSON_UPDATE_ANY(
+      "institution:person:update-any",
+      PermissionScope.INSTITUTION,
+      "Actualizar datos de cualquier persona"),
+  INSTITUTION_PERSON_DELETE(
+      "institution:person:delete",
+      PermissionScope.INSTITUTION,
+      "Eliminar personas institucionales"),
   INSTITUTION_ROLE_ASSIGN(
       "institution:roles:assign", PermissionScope.INSTITUTION, "Asignar roles institucionales"),
   INSTITUTION_ROLE_REVOKE(
