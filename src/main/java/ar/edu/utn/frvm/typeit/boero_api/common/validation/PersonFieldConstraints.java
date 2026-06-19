@@ -12,6 +12,8 @@ public final class PersonFieldConstraints {
 
   public static final String NAME_PATTERN = "^[\\p{L} ]+$";
 
+  public static final String EMAIL_PATTERN = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
+
   public static final int PASSWORD_MIN = 8;
   public static final int PASSWORD_MAX = 255;
 

@@ -33,6 +33,7 @@ public class ListPeopleUseCase {
       List<Predicate> predicates = new ArrayList<>();
       predicates.add(builder.equal(root.get("institution").get("id"), institutionId));
       predicates.add(builder.isFalse(root.get("deleted")));
+
       if (StringUtils.hasText(search)) {
         String value = "%" + search.toLowerCase() + "%";
         predicates.add(
@@ -41,6 +42,7 @@ public class ListPeopleUseCase {
                 builder.like(builder.lower(root.get("lastName")), value),
                 builder.like(root.get("documentNumber"), value)));
       }
+
       return builder.and(predicates.toArray(Predicate[]::new));
     };
   }

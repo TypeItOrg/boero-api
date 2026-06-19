@@ -4,6 +4,4 @@ public final class InstitutionFieldConstraints {
 
   public static final int SLUG_MAX = 100;
   public static final String SLUG_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
-
-  private InstitutionFieldConstraints() {}
 }

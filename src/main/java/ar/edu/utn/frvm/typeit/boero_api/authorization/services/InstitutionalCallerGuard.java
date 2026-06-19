@@ -18,9 +18,7 @@ public class InstitutionalCallerGuard {
   private final AuthorizationService authorizationService;
 
   public void ensureInstitutionalPrincipal(Authentication authentication) {
-    if (isPlatformAdmin(authentication)) {
-      return;
-    }
+    if (isPlatformAdmin(authentication)) return;
 
     if (authentication == null
         || !(authentication.getPrincipal() instanceof JwtAuthenticatedUser)) {
@@ -29,9 +27,7 @@ public class InstitutionalCallerGuard {
   }
 
   public void ensureCallerBelongsToInstitution(Authentication authentication, UUID institutionId) {
-    if (isPlatformAdmin(authentication)) {
-      return;
-    }
+    if (isPlatformAdmin(authentication)) return;
 
     if (authentication == null
         || !(authentication.getPrincipal() instanceof JwtAuthenticatedUser user)) {

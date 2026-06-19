@@ -26,6 +26,7 @@ public class UpdatePersonByAdminUseCase {
     Person person = institutionPersonResolver.requirePersonInInstitution(institutionId, personId);
     PersonMutationSupport.applyBasicFields(person, request, validator);
     personRepository.save(person);
+
     return personRepository
         .findWithDetailsByIdAndInstitution_Id(personId, institutionId)
         .map(PersonResponse::from)

@@ -32,10 +32,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Letras en nombre/apellido: solo Bean Validation; documento y longitudes: también {@link
- * CheckConstraint}.
- */
 @Entity
 @Table(
     name = "people",
