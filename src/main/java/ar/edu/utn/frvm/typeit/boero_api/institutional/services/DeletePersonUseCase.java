@@ -27,6 +27,7 @@ public class DeletePersonUseCase {
   public void execute(final UUID institutionId, final UUID personId) {
     Person person = institutionPersonResolver.requirePersonInInstitution(institutionId, personId);
     preventDeletingLastInstitutionalAuthority(institutionId, personId);
+
     if (person.isDeleted()) {
       return;
     }
@@ -40,6 +41,7 @@ public class DeletePersonUseCase {
               user.setEnabled(false);
               userRepository.save(user);
             });
+
     sessionRevocationService.revokeInstitutionalSessionsForPerson(personId, institutionId);
   }
 
@@ -51,9 +53,11 @@ public class DeletePersonUseCase {
     if (!personHasAuthority) {
       return;
     }
+
     long authorityCount =
         personRoleAssignmentRepository.countActivePeopleByInstitutionIdAndRoleCode(
             institutionId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name());
+
     if (authorityCount <= 1) {
       throw new LastInstitutionalAuthorityDeletionException();
     }

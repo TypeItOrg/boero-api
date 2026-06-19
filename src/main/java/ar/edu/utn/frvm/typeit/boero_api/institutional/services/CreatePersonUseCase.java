@@ -36,6 +36,7 @@ public class CreatePersonUseCase {
         institutionRepository
             .findById(institutionId)
             .orElseThrow(InstitutionNotFoundException::new);
+
     if (personRepository.existsByDocumentNumberAndInstitution_Id(
         request.documentNumber(), institutionId)) {
       throw new PersonAlreadyExistsException();
@@ -51,6 +52,7 @@ public class CreatePersonUseCase {
             .phoneNumber(request.phoneNumber())
             .birthDate(request.birthDate())
             .build();
+
     PersonMutationSupport.assertValid(person, validator);
     personRepository.save(person);
 
@@ -60,11 +62,13 @@ public class CreatePersonUseCase {
             .person(person)
             .password(passwordEncoder.encode(request.password()))
             .build();
+
     userRepository.save(user);
 
     SystemRoleCode role =
         request.initialRole() != null ? request.initialRole() : SystemRoleCode.APPLICANT;
     assignPersonSystemRoleUseCase.execute(person, role);
+
     return PersonResponse.from(person);
   }
 }

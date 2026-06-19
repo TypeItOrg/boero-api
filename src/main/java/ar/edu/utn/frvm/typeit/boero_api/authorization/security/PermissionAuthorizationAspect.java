@@ -21,23 +21,19 @@ public class PermissionAuthorizationAspect {
 
   private final AuthorizationService authorizationService;
 
-  // Platform admin implicitly satisfies institutional permission checks. This is the god mode
-  // for PLATFORM_ADMIN.
   @Before("@annotation(requiresPermission)")
   public void checkPermission(RequiresPermission requiresPermission) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (isPlatformAdmin(authentication)) {
-      return;
-    }
+    if (isPlatformAdmin(authentication)) return;
+
     denyUnless(authorizationService.hasPermission(authentication, requiresPermission.value()));
   }
 
   @Before("@annotation(requiresAnyPermission)")
   public void checkAnyPermission(RequiresAnyPermission requiresAnyPermission) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (isPlatformAdmin(authentication)) {
-      return;
-    }
+    if (isPlatformAdmin(authentication)) return;
+
     denyUnless(
         authorizationService.hasAnyPermission(authentication, requiresAnyPermission.value()));
   }

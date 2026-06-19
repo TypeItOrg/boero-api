@@ -40,15 +40,19 @@ public class UpdatePersonUseCase {
     if (request.firstName() != null) {
       person.setFirstName(request.firstName());
     }
+
     if (request.lastName() != null) {
       person.setLastName(request.lastName());
     }
+
     if (request.birthDate() != null) {
       person.setBirthDate(request.birthDate());
     }
+
     if (request.email() != null) {
       person.setEmail(request.email());
     }
+
     if (request.phoneNumber() != null) {
       person.setPhoneNumber(request.phoneNumber());
     }
@@ -58,6 +62,7 @@ public class UpdatePersonUseCase {
           cityRepository.findById(request.birthCityId()).orElseThrow(CityNotFoundException::new);
       person.setBirthCity(birthCity);
     }
+
     if (request.nationalityCountryId() != null) {
       var country =
           countryRepository
@@ -69,6 +74,7 @@ public class UpdatePersonUseCase {
     if (request.address() != null) {
       var addressRequest = request.address();
       Address address = person.getAddress();
+
       if (address == null) {
         address = new Address();
         address.setInstitution(person.getInstitution());
@@ -99,8 +105,6 @@ public class UpdatePersonUseCase {
 
   private void assertPersonValid(Person person) {
     Set<ConstraintViolation<Person>> violations = validator.validate(person);
-    if (!violations.isEmpty()) {
-      throw new ConstraintViolationException(violations);
-    }
+    if (!violations.isEmpty()) throw new ConstraintViolationException(violations);
   }
 }

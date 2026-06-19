@@ -33,12 +33,14 @@ public class ListProvincesUseCase {
     if (!countryRepository.existsById(countryId)) {
       throw new CountryNotFoundException();
     }
+
     if (search != null && !search.isBlank()) {
       return PaginatedResponse.from(
           provinceRepository
               .searchByCountryIdAndName(countryId, search, pageable)
               .map(ProvinceListItemResponse::from));
     }
+
     return PaginatedResponse.from(
         provinceRepository
             .findByCountryId(countryId, pageable)
