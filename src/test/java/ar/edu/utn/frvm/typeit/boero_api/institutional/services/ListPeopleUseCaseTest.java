@@ -1,8 +1,8 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
@@ -19,7 +19,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 
 @ExtendWith(MockitoExtension.class)
 class ListPeopleUseCaseTest {
@@ -29,43 +28,69 @@ class ListPeopleUseCaseTest {
   @InjectMocks private ListPeopleUseCase listPeopleUseCase;
 
   @Test
-  @DisplayName("Should list people in institution")
-  @SuppressWarnings("unchecked")
-  void execute_listsPeople() {
+  @DisplayName("Should list people in institution when no search provided")
+  void execute_listsPeopleWithoutSearch() {
     UUID institutionId = UUID.randomUUID();
     Pageable pageable = PageRequest.of(0, 20);
     Person person = personWith(institutionId, "11111111", "Ana", "García");
-    when(personRepository.findAll(any(Specification.class), eq(pageable)))
+    when(personRepository.findByInstitution_IdAndDeletedFalse(institutionId, pageable))
         .thenReturn(new PageImpl<>(List.of(person), pageable, 1));
 
     var response = listPeopleUseCase.execute(institutionId, null, pageable);
 
     assertThat(response.items()).hasSize(1);
+    assertThat(response.items().getFirst().firstName()).isEqualTo("Ana");
+    assertThat(response.items().getFirst().lastName()).isEqualTo("García");
     assertThat(response.items().getFirst().documentNumber()).isEqualTo("11111111");
   }
 
   @Test
-  @DisplayName("Should pass search term to specification")
-  @SuppressWarnings("unchecked")
-  void execute_passesSearchTerm() {
+  @DisplayName("Should delegate to search when search term is provided")
+  void execute_delegatesToSearchWhenSearchProvided() {
     UUID institutionId = UUID.randomUUID();
     Pageable pageable = PageRequest.of(0, 20);
-    when(personRepository.findAll(any(Specification.class), eq(pageable)))
-        .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+    Person person = personWith(institutionId, "11111111", "Ana", "García");
+    when(personRepository.search(institutionId, "ana", pageable))
+        .thenReturn(new PageImpl<>(List.of(person), pageable, 1));
 
     var response = listPeopleUseCase.execute(institutionId, "ana", pageable);
 
-    assertThat(response.items()).isEmpty();
-    assertThat(response.totalItems()).isZero();
+    assertThat(response.items()).hasSize(1);
+    assertThat(response.items().getFirst().firstName()).isEqualTo("Ana");
+  }
+
+  @Test
+  @DisplayName("Should trim the search before delegating to repository")
+  void execute_trimsSearchBeforeDelegating() {
+    UUID institutionId = UUID.randomUUID();
+    Pageable pageable = PageRequest.of(0, 20);
+    when(personRepository.search(institutionId, "matias", pageable))
+        .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+    listPeopleUseCase.execute(institutionId, "  matias  ", pageable);
+
+    verify(personRepository).search(institutionId, "matias", pageable);
+  }
+
+  @Test
+  @DisplayName("Should treat whitespace-only search as no search")
+  void execute_treatsWhitespaceOnlyAsNoSearch() {
+    UUID institutionId = UUID.randomUUID();
+    Pageable pageable = PageRequest.of(0, 20);
+    when(personRepository.findByInstitution_IdAndDeletedFalse(institutionId, pageable))
+        .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+    listPeopleUseCase.execute(institutionId, "   ", pageable);
+
+    verify(personRepository, never()).search(institutionId, "   ", pageable);
   }
 
   @Test
   @DisplayName("Should return empty page when no matches")
-  @SuppressWarnings("unchecked")
   void execute_returnsEmptyWhenNoMatch() {
     UUID institutionId = UUID.randomUUID();
     Pageable pageable = PageRequest.of(0, 20);
-    when(personRepository.findAll(any(Specification.class), eq(pageable)))
+    when(personRepository.search(institutionId, "nope", pageable))
         .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
     var response = listPeopleUseCase.execute(institutionId, "nope", pageable);

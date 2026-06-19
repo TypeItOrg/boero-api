@@ -15,8 +15,7 @@ public interface ProvinceRepository extends JpaRepository<Province, UUID> {
   @Query(
       """
       SELECT p FROM Province p
-      WHERE LOWER(FUNCTION('TRANSLATE', p.name, 'áéíóúÁÉÍÓÚüÜñÑ', 'aeiouAEIOUuUnN'))
-            LIKE LOWER(FUNCTION('TRANSLATE', CONCAT('%', :search, '%'), 'áéíóúÁÉÍÓÚüÜñÑ', 'aeiouAEIOUuUnN'))
+      WHERE UNACCENT_LOWER(p.name) LIKE UNACCENT_LOWER(CONCAT('%', :search, '%'))
       """)
   Page<Province> searchByName(@Param("search") String search, Pageable pageable);
 
@@ -26,8 +25,7 @@ public interface ProvinceRepository extends JpaRepository<Province, UUID> {
       """
       SELECT p FROM Province p
       WHERE p.country.id = :countryId
-        AND LOWER(FUNCTION('TRANSLATE', p.name, 'áéíóúÁÉÍÓÚüÜñÑ', 'aeiouAEIOUuUnN'))
-            LIKE LOWER(FUNCTION('TRANSLATE', CONCAT('%', :search, '%'), 'áéíóúÁÉÍÓÚüÜñÑ', 'aeiouAEIOUuUnN'))
+        AND UNACCENT_LOWER(p.name) LIKE UNACCENT_LOWER(CONCAT('%', :search, '%'))
       """)
   Page<Province> searchByCountryIdAndName(
       @Param("countryId") UUID countryId, @Param("search") String search, Pageable pageable);
