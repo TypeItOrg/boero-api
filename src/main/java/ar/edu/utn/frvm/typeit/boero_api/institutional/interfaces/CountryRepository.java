@@ -15,8 +15,7 @@ public interface CountryRepository extends JpaRepository<Country, UUID> {
   @Query(
       """
       SELECT c FROM Country c
-      WHERE LOWER(FUNCTION('TRANSLATE', c.name, 'áéíóúÁÉÍÓÚüÜñÑ', 'aeiouAEIOUuUnN'))
-            LIKE LOWER(FUNCTION('TRANSLATE', CONCAT('%', :search, '%'), 'áéíóúÁÉÍÓÚüÜñÑ', 'aeiouAEIOUuUnN'))
+      WHERE UNACCENT_LOWER(c.name) LIKE UNACCENT_LOWER(CONCAT('%', :search, '%'))
       """)
   Page<Country> searchByName(@Param("search") String search, Pageable pageable);
 }

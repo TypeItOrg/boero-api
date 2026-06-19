@@ -18,10 +18,8 @@ public interface CityRepository extends JpaRepository<City, UUID> {
   @Query(
       """
       SELECT c FROM City c JOIN FETCH c.province p
-      WHERE       LOWER(FUNCTION('TRANSLATE', c.name, 'áéíóúÁÉÍÓÚüÜñÑ', 'aeiouAEIOUuUnN'))
-            LIKE LOWER(FUNCTION('TRANSLATE', CONCAT('%', :search, '%'), 'áéíóúÁÉÍÓÚüÜñÑ', 'aeiouAEIOUuUnN'))
-         OR LOWER(FUNCTION('TRANSLATE', p.name, 'áéíóúÁÉÍÓÚüÜñÑ', 'aeiouAEIOUuUnN'))
-            LIKE LOWER(FUNCTION('TRANSLATE', CONCAT('%', :search, '%'), 'áéíóúÁÉÍÓÚüÜñÑ', 'aeiouAEIOUuUnN'))
+      WHERE       UNACCENT_LOWER(c.name) LIKE UNACCENT_LOWER(CONCAT('%', :search, '%'))
+             OR UNACCENT_LOWER(p.name) LIKE UNACCENT_LOWER(CONCAT('%', :search, '%'))
       """)
   Page<City> searchByNameOrProvince(@Param("search") String search, Pageable pageable);
 
@@ -29,8 +27,7 @@ public interface CityRepository extends JpaRepository<City, UUID> {
       """
       SELECT c FROM City c JOIN FETCH c.province p
       WHERE p.id = :provinceId
-        AND LOWER(FUNCTION('TRANSLATE', c.name, 'áéíóúÁÉÍÓÚüÜñÑ', 'aeiouAEIOUuUnN'))
-            LIKE LOWER(FUNCTION('TRANSLATE', CONCAT('%', :search, '%'), 'áéíóúÁÉÍÓÚüÜñÑ', 'aeiouAEIOUuUnN'))
+        AND UNACCENT_LOWER(c.name) LIKE UNACCENT_LOWER(CONCAT('%', :search, '%'))
       """)
   Page<City> searchByProvinceAndName(
       @Param("provinceId") UUID provinceId, @Param("search") String search, Pageable pageable);
