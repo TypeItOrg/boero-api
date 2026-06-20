@@ -15,6 +15,8 @@ public final class AuthMessages {
   public static final String REFRESH_TOKEN_INVALID = "El refresh token es inválido o ha expirado.";
   public static final String REFRESH_TOKEN_REUSE =
       "Se detectó reutilización del refresh token. Todas las sesiones fueron revocadas.";
+  public static final String PLATFORM_ACCOUNT_DISABLED =
+      "La cuenta de plataforma se encuentra deshabilitada.";
 
   private AuthMessages() {}
 }
