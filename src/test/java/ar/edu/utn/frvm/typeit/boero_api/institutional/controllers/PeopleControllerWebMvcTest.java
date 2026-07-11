@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.JwtService;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.TokenBlacklistService;
@@ -22,10 +23,11 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.LastInstitutionalAuthorityDeletionException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.PersonNotFoundInInstitutionException;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.security.InstitutionAccessAspect;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.security.PermissionAuthorizationAspect;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InitialRoleAssignmentGuard;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.services.IsPlatformSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.GlobalExceptionHandler;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.config.WebConfig;
@@ -63,6 +65,7 @@ import org.springframework.util.PathMatcher;
 @WebMvcTest(PeopleController.class)
 @Import({
   PermissionAuthorizationAspect.class,
+  InstitutionAccessAspect.class,
   InstitutionalCallerGuard.class,
   GlobalExceptionHandler.class,
   WebConfig.class
@@ -89,6 +92,7 @@ class PeopleControllerWebMvcTest {
   @MockitoBean private IsSessionActiveUseCase isSessionActiveUseCase;
   @MockitoBean private IsPlatformSessionActiveUseCase isPlatformSessionActiveUseCase;
   @MockitoBean private AuthorizationService authorizationService;
+  @MockitoBean private InitialRoleAssignmentGuard initialRoleAssignmentGuard;
   @MockitoBean private ListPeopleUseCase listPeopleUseCase;
   @MockitoBean private GetPersonByIdUseCase getPersonByIdUseCase;
   @MockitoBean private CreatePersonUseCase createPersonUseCase;

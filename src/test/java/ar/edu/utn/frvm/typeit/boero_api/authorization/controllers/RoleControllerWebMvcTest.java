@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.JwtService;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.TokenBlacklistService;
@@ -22,13 +23,13 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.AssignRoleRequest;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.PersonRoleResponse;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.SystemRoleResponse;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.security.InstitutionAccessAspect;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.security.PermissionAuthorizationAspect;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.security.RoleAuthorizationAspect;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AssignPersonRoleUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.BootstrapInstitutionalAuthorityUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.services.IsPlatformSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ListPersonRolesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ListSystemRolesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.RevokePersonRoleUseCase;
@@ -56,6 +57,7 @@ import org.springframework.util.PathMatcher;
 @Import({
   RoleAuthorizationAspect.class,
   PermissionAuthorizationAspect.class,
+  InstitutionAccessAspect.class,
   InstitutionalCallerGuard.class,
   GlobalExceptionHandler.class,
   WebConfig.class
