@@ -3,7 +3,11 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.interfaces;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.RefreshToken;
+import ar.edu.utn.frvm.typeit.boero_api.auth.entities.UserSession;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
+import ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData;
 import ar.edu.utn.frvm.typeit.boero_api.support.JpaAuditingTestConfig;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -17,11 +21,13 @@ import org.springframework.context.annotation.Import;
 class RefreshTokenRepositoryTest {
 
   @Autowired private RefreshTokenRepository refreshTokenRepository;
+  @Autowired private EntityManager entityManager;
 
   @Test
   @DisplayName("Should find refresh token by hash, family and session")
   void shouldFindRefreshTokenByHashFamilyAndSession() {
-    UUID sessionId = UUID.randomUUID();
+    Institution institution = InstitutionalTestData.createInstitution(entityManager, "tokens-one");
+    UUID sessionId = createSessionId(institution, "10000001");
     RefreshToken token = refreshToken("hash-1", "family-1", sessionId);
     refreshTokenRepository.saveAndFlush(token);
 
@@ -33,9 +39,13 @@ class RefreshTokenRepositoryTest {
   @Test
   @DisplayName("Should revoke only tokens from selected family")
   void shouldRevokeOnlyTokensFromSelectedFamily() {
-    RefreshToken first = refreshToken("hash-1", "family-1", UUID.randomUUID());
-    RefreshToken second = refreshToken("hash-2", "family-1", UUID.randomUUID());
-    RefreshToken other = refreshToken("hash-3", "family-2", UUID.randomUUID());
+    Institution institution = InstitutionalTestData.createInstitution(entityManager, "tokens-two");
+    RefreshToken first =
+        refreshToken("hash-1", "family-1", createSessionId(institution, "20000001"));
+    RefreshToken second =
+        refreshToken("hash-2", "family-1", createSessionId(institution, "20000002"));
+    RefreshToken other =
+        refreshToken("hash-3", "family-2", createSessionId(institution, "20000003"));
     refreshTokenRepository.save(first);
     refreshTokenRepository.save(second);
     refreshTokenRepository.saveAndFlush(other);
@@ -53,10 +63,13 @@ class RefreshTokenRepositoryTest {
   @Test
   @DisplayName("Should revoke only tokens from selected session")
   void shouldRevokeOnlyTokensFromSelectedSession() {
-    UUID sessionId = UUID.randomUUID();
+    Institution institution =
+        InstitutionalTestData.createInstitution(entityManager, "tokens-three");
+    UUID sessionId = createSessionId(institution, "30000001");
     RefreshToken first = refreshToken("hash-1", "family-1", sessionId);
     RefreshToken second = refreshToken("hash-2", "family-2", sessionId);
-    RefreshToken other = refreshToken("hash-3", "family-3", UUID.randomUUID());
+    RefreshToken other =
+        refreshToken("hash-3", "family-3", createSessionId(institution, "30000002"));
     refreshTokenRepository.save(first);
     refreshTokenRepository.save(second);
     refreshTokenRepository.saveAndFlush(other);
@@ -78,5 +91,18 @@ class RefreshTokenRepositoryTest {
         .familyId(familyId)
         .expiresAt(LocalDateTime.now().plusDays(7))
         .build();
+  }
+
+  private UUID createSessionId(final Institution institution, final String documentNumber) {
+    final var user = InstitutionalTestData.createUser(entityManager, institution, documentNumber);
+    final var session =
+        UserSession.builder()
+            .userId(user.getId())
+            .ipAddress("192.0.2.10")
+            .userAgent("Mozilla/5.0")
+            .active(true)
+            .build();
+    entityManager.persist(session);
+    return session.getId();
   }
 }

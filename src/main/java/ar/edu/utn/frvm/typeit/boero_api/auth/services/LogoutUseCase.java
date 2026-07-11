@@ -18,6 +18,9 @@ public class LogoutUseCase {
   private final UserSessionRepository userSessionRepository;
   private final JwtService jwtService;
 
+  @org.springframework.cache.annotation.CacheEvict(
+      value = "activeSessions",
+      key = "#principal.sessionId")
   @Transactional
   public void execute(JwtAuthenticatedUser principal, String accessToken) {
     switch (jwtService.parseAccessToken(accessToken)) {

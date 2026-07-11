@@ -11,6 +11,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.services.GetCurrentPlatformAccountU
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.PlatformLoginUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.PlatformLogoutUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.PlatformRefreshTokenUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.common.utils.HeaderUtils;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -63,13 +64,6 @@ public class PlatformAuthController {
     if (!(authentication.getPrincipal() instanceof JwtAuthenticatedPlatformAccount principal)) {
       throw new AccessDeniedException(DEFAULT_FORBIDDEN_MESSAGE);
     }
-    platformLogoutUseCase.execute(principal, bearerValue(authorization));
-  }
-
-  private static String bearerValue(String authorization) {
-    if (authorization != null && authorization.regionMatches(true, 0, "Bearer ", 0, 7)) {
-      return authorization.substring(7).trim();
-    }
-    return "";
+    platformLogoutUseCase.execute(principal, HeaderUtils.bearerValue(authorization));
   }
 }

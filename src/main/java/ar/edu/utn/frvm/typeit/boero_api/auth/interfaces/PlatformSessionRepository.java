@@ -1,6 +1,6 @@
-package ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces;
+package ar.edu.utn.frvm.typeit.boero_api.auth.interfaces;
 
-import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PlatformSession;
+import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformSession;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;

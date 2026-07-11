@@ -1,6 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses;
 
-import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PlatformAccount;
+import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
 import lombok.Builder;
 
 @Builder

@@ -24,6 +24,29 @@ public interface UserSessionRepository extends JpaRepository<UserSession, UUID> 
 
   boolean existsByIdAndActiveTrue(UUID id);
 
+  @Query(
+      """
+      SELECT CASE WHEN COUNT(s) > 0 THEN true ELSE false END
+      FROM UserSession s, User u
+      WHERE s.id = :sessionId
+        AND s.userId = u.id
+        AND s.active = true
+        AND u.enabled = true
+        AND u.person.deleted = false
+        AND u.institution.active = true
+      """)
+  boolean existsUsableById(@Param("sessionId") UUID sessionId);
+
+  @Query(
+      """
+      SELECT s
+      FROM UserSession s, User u
+      WHERE s.userId = u.id
+        AND u.institution.id = :institutionId
+        AND s.active = true
+      """)
+  List<UserSession> findActiveByInstitutionId(@Param("institutionId") UUID institutionId);
+
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query(
       """

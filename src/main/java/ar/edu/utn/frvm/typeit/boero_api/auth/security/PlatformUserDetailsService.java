@@ -1,6 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.security;
 
-import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PlatformAccountRepository;
+import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformAccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

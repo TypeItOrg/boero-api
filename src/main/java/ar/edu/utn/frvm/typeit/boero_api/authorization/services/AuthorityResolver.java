@@ -21,6 +21,9 @@ public class AuthorityResolver {
   private final PlatformAccountRoleRepository platformAccountRoleRepository;
   private final RolePermissionRepository rolePermissionRepository;
 
+  @org.springframework.cache.annotation.Cacheable(
+      value = "personPermissions",
+      key = "#personId + '-' + #institutionId")
   @Transactional(readOnly = true)
   public Set<PermissionCode> resolveForPerson(UUID personId, UUID institutionId) {
     return permissionsForRoleIds(
@@ -28,12 +31,18 @@ public class AuthorityResolver {
             personId, institutionId));
   }
 
+  @org.springframework.cache.annotation.Cacheable(
+      value = "platformAccountPermissions",
+      key = "#platformAccountId")
   @Transactional(readOnly = true)
   public Set<PermissionCode> resolveForPlatformAccount(UUID platformAccountId) {
     return permissionsForRoleIds(
         platformAccountRoleRepository.findRoleIdsByPlatformAccountId(platformAccountId));
   }
 
+  @org.springframework.cache.annotation.Cacheable(
+      value = "platformAccountRoles",
+      key = "#platformAccountId")
   @Transactional(readOnly = true)
   public Set<PlatformRoleCode> resolvePlatformRoles(UUID platformAccountId) {
     return platformAccountRoleRepository

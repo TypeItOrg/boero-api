@@ -11,7 +11,8 @@ public class IsSessionActiveUseCase {
 
   private final UserSessionRepository userSessionRepository;
 
+  @org.springframework.cache.annotation.Cacheable(value = "activeSessions", key = "#sessionId")
   public boolean execute(UUID sessionId) {
-    return userSessionRepository.existsByIdAndActiveTrue(sessionId);
+    return userSessionRepository.existsUsableById(sessionId);
   }
 }

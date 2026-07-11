@@ -72,7 +72,7 @@ class AuthControllerWebMvcTest {
   @MockitoBean private IsSessionActiveUseCase isSessionActiveUseCase;
 
   @MockitoBean
-  private ar.edu.utn.frvm.typeit.boero_api.authorization.services.IsPlatformSessionActiveUseCase
+  private ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUseCase
       isPlatformSessionActiveUseCase;
 
   @Test

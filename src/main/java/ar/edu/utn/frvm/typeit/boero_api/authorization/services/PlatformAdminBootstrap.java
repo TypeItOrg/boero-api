@@ -1,9 +1,9 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
+import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformAccountRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.config.PlatformAdminProperties;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PlatformAccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;

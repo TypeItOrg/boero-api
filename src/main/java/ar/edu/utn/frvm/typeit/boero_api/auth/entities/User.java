@@ -11,6 +11,8 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.util.Collection;
@@ -89,6 +91,15 @@ public class User extends Auditable implements UserDetails {
 
   @Override
   public boolean isEnabled() {
-    return enabled;
+    return enabled && institution.isActive() && !person.isDeleted();
+  }
+
+  @PrePersist
+  @PreUpdate
+  private void validateInstitutionConsistency() {
+    if (!institution.getId().equals(person.getInstitution().getId())) {
+      throw new IllegalStateException(
+          "El usuario y la persona deben pertenecer a la misma institución.");
+    }
   }
 }

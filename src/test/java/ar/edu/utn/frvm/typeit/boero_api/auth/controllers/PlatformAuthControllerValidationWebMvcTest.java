@@ -6,13 +6,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.GetCurrentPlatformAccountUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.JwtService;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.PlatformLoginUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.PlatformLogoutUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.PlatformRefreshTokenUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.TokenBlacklistService;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.services.IsPlatformSessionActiveUseCase;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

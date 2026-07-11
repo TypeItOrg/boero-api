@@ -12,6 +12,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssig
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RolePermissionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RoleRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
+import jakarta.persistence.EntityManager;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.cache.CacheManager;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
@@ -33,6 +35,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RequiredArgsConstructor
 public class PermissionRoleSeed implements ApplicationRunner {
+
+  private static final long SEED_LOCK_ID = 7_439_201_884L;
+  private static final List<String> AUTHORITY_CACHE_NAMES =
+      List.of("personPermissions", "platformAccountPermissions", "platformAccountRoles");
 
   private static final Map<SystemRoleCode, Set<PermissionCode>> INSTITUTIONAL_ROLE_PERMISSIONS =
       Map.of(
@@ -55,16 +61,30 @@ public class PermissionRoleSeed implements ApplicationRunner {
   private final PersonRoleAssignmentRepository personRoleAssignmentRepository;
   private final AssignPersonSystemRoleUseCase assignPersonSystemRoleUseCase;
   private final Environment environment;
+  private final CacheManager cacheManager;
+  private final EntityManager entityManager;
 
   @Override
   @Transactional
-  public void run(ApplicationArguments args) {
-    Map<PermissionCode, Permission> permissions = syncPermissions();
+  public void run(final ApplicationArguments args) {
+    acquireSeedLock();
+    final Map<PermissionCode, Permission> permissions = syncPermissions();
     syncInstitutionalRoles(permissions);
     syncPlatformRoles(permissions);
     if (shouldBackfillApplicants()) {
       backfillApplicantRoleForPersonsWithoutRoles();
     }
+    clearAuthorityCaches();
+  }
+
+  private void acquireSeedLock() {
+    if (environment.acceptsProfiles(Profiles.of("test"))) {
+      return;
+    }
+    entityManager
+        .createNativeQuery("select pg_advisory_xact_lock(:lockId)")
+        .setParameter("lockId", SEED_LOCK_ID)
+        .getSingleResult();
   }
 
   private Map<PermissionCode, Permission> syncPermissions() {
@@ -156,6 +176,15 @@ public class PermissionRoleSeed implements ApplicationRunner {
     List<Person> persons = personRoleAssignmentRepository.findPersonsWithoutRoleAssignments();
     for (Person person : persons) {
       assignPersonSystemRoleUseCase.execute(person, SystemRoleCode.APPLICANT);
+    }
+  }
+
+  private void clearAuthorityCaches() {
+    for (final String cacheName : AUTHORITY_CACHE_NAMES) {
+      final var cache = cacheManager.getCache(cacheName);
+      if (cache != null) {
+        cache.clear();
+      }
     }
   }
 }

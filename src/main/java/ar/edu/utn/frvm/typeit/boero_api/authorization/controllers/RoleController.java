@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.controllers;
 
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresAnyPermission;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresInstitutionAccess;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPermission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPlatformRole;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
@@ -42,6 +43,7 @@ public class RoleController {
   private final BootstrapInstitutionalAuthorityUseCase bootstrapInstitutionalAuthorityUseCase;
 
   @GetMapping(value = "/institutions/{institutionId}/people/{personId}/roles", version = Version.V1)
+  @RequiresInstitutionAccess
   @RequiresAnyPermission({
     PermissionCode.INSTITUTION_ROLE_ASSIGN,
     PermissionCode.INSTITUTION_ROLE_REVOKE
@@ -50,7 +52,6 @@ public class RoleController {
       @PathVariable UUID institutionId,
       @PathVariable UUID personId,
       Authentication authentication) {
-    institutionalCallerGuard.ensureCallerBelongsToInstitution(authentication, institutionId);
     return listPersonRolesUseCase.execute(institutionId, personId);
   }
 
@@ -58,13 +59,13 @@ public class RoleController {
       value = "/institutions/{institutionId}/people/{personId}/roles",
       version = Version.V1)
   @ResponseStatus(HttpStatus.CREATED)
+  @RequiresInstitutionAccess
   @RequiresPermission(PermissionCode.INSTITUTION_ROLE_ASSIGN)
   public PersonRoleResponse assignPersonRole(
       @PathVariable UUID institutionId,
       @PathVariable UUID personId,
       @Valid @RequestBody AssignRoleRequest request,
       Authentication authentication) {
-    institutionalCallerGuard.ensureCallerBelongsToInstitution(authentication, institutionId);
     return assignPersonRoleUseCase.execute(institutionId, personId, request);
   }
 
@@ -72,13 +73,13 @@ public class RoleController {
       value = "/institutions/{institutionId}/people/{personId}/roles/{roleCode}",
       version = Version.V1)
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @RequiresInstitutionAccess
   @RequiresPermission(PermissionCode.INSTITUTION_ROLE_REVOKE)
   public void revokePersonRole(
       @PathVariable UUID institutionId,
       @PathVariable UUID personId,
       @PathVariable SystemRoleCode roleCode,
       Authentication authentication) {
-    institutionalCallerGuard.ensureCallerBelongsToInstitution(authentication, institutionId);
     revokePersonRoleUseCase.execute(institutionId, personId, roleCode);
   }
 

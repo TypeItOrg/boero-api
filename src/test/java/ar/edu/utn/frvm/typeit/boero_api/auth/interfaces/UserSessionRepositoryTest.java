@@ -3,6 +3,9 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.interfaces;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.UserSession;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
+import ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData;
+import jakarta.persistence.EntityManager;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,14 +17,17 @@ import org.springframework.data.domain.PageRequest;
 class UserSessionRepositoryTest {
 
   @Autowired private UserSessionRepository userSessionRepository;
+  @Autowired private EntityManager entityManager;
 
   @Test
   @DisplayName("Should find active sessions for user")
   void shouldFindActiveSessionsForUser() {
-    UUID userId = UUID.randomUUID();
+    Institution institution =
+        InstitutionalTestData.createInstitution(entityManager, "sessions-one");
+    UUID userId = createUserId(institution, "10000001");
     UserSession active = userSession(userId, true);
     UserSession inactive = userSession(userId, false);
-    UserSession otherUser = userSession(UUID.randomUUID(), true);
+    UserSession otherUser = userSession(createUserId(institution, "10000002"), true);
     userSessionRepository.save(active);
     userSessionRepository.save(inactive);
     userSessionRepository.saveAndFlush(otherUser);
@@ -32,7 +38,9 @@ class UserSessionRepositoryTest {
   @Test
   @DisplayName("Should page active sessions and count them")
   void shouldPageActiveSessionsAndCountThem() {
-    UUID userId = UUID.randomUUID();
+    Institution institution =
+        InstitutionalTestData.createInstitution(entityManager, "sessions-two");
+    UUID userId = createUserId(institution, "20000001");
     UserSession first = userSession(userId, true);
     UserSession second = userSession(userId, true);
     userSessionRepository.save(first);
@@ -48,7 +56,9 @@ class UserSessionRepositoryTest {
   @Test
   @DisplayName("Should find session only for owning user")
   void shouldFindSessionOnlyForOwningUser() {
-    UUID userId = UUID.randomUUID();
+    Institution institution =
+        InstitutionalTestData.createInstitution(entityManager, "sessions-three");
+    UUID userId = createUserId(institution, "30000001");
     UserSession session = userSessionRepository.saveAndFlush(userSession(userId, true));
 
     assertThat(userSessionRepository.findByIdAndUserId(session.getId(), userId)).contains(session);
@@ -63,5 +73,9 @@ class UserSessionRepositoryTest {
         .userAgent("Mozilla/5.0")
         .active(active)
         .build();
+  }
+
+  private UUID createUserId(final Institution institution, final String documentNumber) {
+    return InstitutionalTestData.createUser(entityManager, institution, documentNumber).getId();
   }
 }

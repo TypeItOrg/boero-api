@@ -5,6 +5,9 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -19,7 +22,12 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "refresh_tokens")
+@Table(
+    name = "refresh_tokens",
+    indexes = {
+      @Index(name = "refresh_tokens_family_idx", columnList = "family_id"),
+      @Index(name = "refresh_tokens_session_idx", columnList = "session_id")
+    })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -34,6 +42,10 @@ public class RefreshToken {
 
   @Column(name = "session_id", nullable = false)
   private UUID sessionId;
+
+  @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY, optional = false)
+  @JoinColumn(name = "session_id", insertable = false, updatable = false, nullable = false)
+  private UserSession session;
 
   @Column(name = "token_hash", nullable = false, unique = true)
   private String tokenHash;

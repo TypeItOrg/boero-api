@@ -74,9 +74,12 @@ class AuditingJpaTest {
   @Test
   @DisplayName("Should audit refresh token creation")
   void shouldAuditRefreshTokenCreation() {
+    Institution institution = createInstitution("refresh-audit");
+    User user = createUser(institution, "20000001");
+    UserSession session = persist(entityManager, userSession(user));
     RefreshToken refreshToken =
         RefreshToken.builder()
-            .sessionId(UUID.randomUUID())
+            .sessionId(session.getId())
             .tokenHash("refresh-hash")
             .familyId(UUID.randomUUID().toString())
             .expiresAt(LocalDateTime.now().plusDays(7))
@@ -93,13 +96,9 @@ class AuditingJpaTest {
   @Test
   @DisplayName("Should set session start time when user session is created")
   void shouldSetSessionStartTimeWhenUserSessionIsCreated() {
-    UserSession session =
-        UserSession.builder()
-            .userId(UUID.randomUUID())
-            .ipAddress("192.0.2.10")
-            .userAgent("Mozilla/5.0")
-            .rememberMe(true)
-            .build();
+    Institution institution = createInstitution("session-audit");
+    User user = createUser(institution, "30000001");
+    UserSession session = userSession(user);
 
     persist(entityManager, session);
     entityManager.flush();
@@ -107,6 +106,25 @@ class AuditingJpaTest {
     assertThat(session.getId()).isNotNull();
     assertThat(session.getId().version()).isEqualTo(7);
     assertThat(session.getStartedAt()).isNotNull();
+  }
+
+  private Institution createInstitution(final String slug) {
+    return ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.createInstitution(
+        entityManager, slug);
+  }
+
+  private User createUser(final Institution institution, final String documentNumber) {
+    return ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.createUser(
+        entityManager, institution, documentNumber);
+  }
+
+  private static UserSession userSession(final User user) {
+    return UserSession.builder()
+        .userId(user.getId())
+        .ipAddress("192.0.2.10")
+        .userAgent("Mozilla/5.0")
+        .rememberMe(true)
+        .build();
   }
 
   private static void assertAudited(

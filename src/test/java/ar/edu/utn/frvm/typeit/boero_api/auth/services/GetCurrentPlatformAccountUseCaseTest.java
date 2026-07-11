@@ -5,10 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidCredentialsException;
+import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformAccountRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PlatformAccountResponse;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PlatformAccount;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PlatformAccountRepository;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;

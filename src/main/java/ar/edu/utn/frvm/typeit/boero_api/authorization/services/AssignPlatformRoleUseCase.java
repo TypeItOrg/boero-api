@@ -1,6 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
-import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PlatformAccount;
+import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PlatformAccountRole;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
@@ -19,11 +19,29 @@ public class AssignPlatformRoleUseCase {
   private final PlatformAccountRoleRepository platformAccountRoleRepository;
   private final SessionRevocationService sessionRevocationService;
 
+  @org.springframework.cache.annotation.Caching(
+      evict = {
+        @org.springframework.cache.annotation.CacheEvict(
+            value = "platformAccountPermissions",
+            key = "#account.id"),
+        @org.springframework.cache.annotation.CacheEvict(
+            value = "platformAccountRoles",
+            key = "#account.id")
+      })
   @Transactional
   public void execute(PlatformAccount account, PlatformRoleCode roleCode) {
     execute(account, roleCode, false);
   }
 
+  @org.springframework.cache.annotation.Caching(
+      evict = {
+        @org.springframework.cache.annotation.CacheEvict(
+            value = "platformAccountPermissions",
+            key = "#account.id"),
+        @org.springframework.cache.annotation.CacheEvict(
+            value = "platformAccountRoles",
+            key = "#account.id")
+      })
   @Transactional
   public void execute(PlatformAccount account, PlatformRoleCode roleCode, boolean revokeSessions) {
     Role role =

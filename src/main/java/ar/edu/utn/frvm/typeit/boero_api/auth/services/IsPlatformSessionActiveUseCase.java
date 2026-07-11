@@ -1,6 +1,6 @@
-package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
+package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
-import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PlatformSessionRepository;
+import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformSessionRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -11,6 +11,9 @@ public class IsPlatformSessionActiveUseCase {
 
   private final PlatformSessionRepository platformSessionRepository;
 
+  @org.springframework.cache.annotation.Cacheable(
+      value = "activePlatformSessions",
+      key = "#sessionId")
   public boolean execute(UUID sessionId) {
     return platformSessionRepository.existsByIdAndActiveTrue(sessionId);
   }

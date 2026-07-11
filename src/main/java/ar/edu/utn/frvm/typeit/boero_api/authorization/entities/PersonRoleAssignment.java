@@ -8,8 +8,11 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.util.UUID;
@@ -26,7 +29,15 @@ import lombok.Setter;
     uniqueConstraints =
         @UniqueConstraint(
             name = "person_role_assignments_unique",
-            columnNames = {"person_id", "role_id", "institution_id"}))
+            columnNames = {"person_id", "role_id", "institution_id"}),
+    indexes = {
+      @Index(
+          name = "person_role_assignments_person_institution_idx",
+          columnList = "person_id, institution_id"),
+      @Index(
+          name = "person_role_assignments_institution_role_idx",
+          columnList = "institution_id, role_id")
+    })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -50,4 +61,20 @@ public class PersonRoleAssignment extends Auditable {
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "institution_id", nullable = false)
   private Institution institution;
+
+  @PrePersist
+  @PreUpdate
+  private void validateInstitutionConsistency() {
+    final UUID institutionId = institution.getId();
+    final UUID roleInstitutionId =
+        role.getInstitution() == null ? null : role.getInstitution().getId();
+    final boolean personMatches = institutionId.equals(person.getInstitution().getId());
+    final boolean roleMatches =
+        roleInstitutionId == null || institutionId.equals(roleInstitutionId);
+
+    if (!personMatches || !roleMatches) {
+      throw new IllegalStateException(
+          "La persona, el rol y la asignación deben pertenecer a la misma institución.");
+    }
+  }
 }

@@ -5,6 +5,9 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -19,7 +22,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "user_sessions")
+@Table(
+    name = "user_sessions",
+    indexes = @Index(name = "user_sessions_user_active_idx", columnList = "user_id, active"))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -34,6 +39,10 @@ public class UserSession {
 
   @Column(name = "user_id", nullable = false)
   private UUID userId;
+
+  @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY, optional = false)
+  @JoinColumn(name = "user_id", insertable = false, updatable = false, nullable = false)
+  private User user;
 
   @Column(name = "ip_address", length = 45)
   private String ipAddress;

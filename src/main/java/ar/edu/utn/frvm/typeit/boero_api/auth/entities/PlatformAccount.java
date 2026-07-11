@@ -1,4 +1,4 @@
-package ar.edu.utn.frvm.typeit.boero_api.authorization.entities;
+package ar.edu.utn.frvm.typeit.boero_api.auth.entities;
 
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_MAX;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_MIN;

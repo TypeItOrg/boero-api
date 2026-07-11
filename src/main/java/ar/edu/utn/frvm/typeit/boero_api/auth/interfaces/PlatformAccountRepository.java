@@ -1,6 +1,6 @@
-package ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces;
+package ar.edu.utn.frvm.typeit.boero_api.auth.interfaces;
 
-import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PlatformAccount;
+import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;

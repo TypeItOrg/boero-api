@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,16 +23,19 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RefreshTokenUseCase {
 
+  private static final String ACTIVE_SESSIONS_CACHE = "activeSessions";
+
   private final RefreshTokenRepository refreshTokenRepository;
   private final UserSessionRepository userSessionRepository;
   private final UserRepository userRepository;
   private final JwtService jwtService;
   private final JwtProperties jwtProperties;
+  private final CacheManager cacheManager;
 
-  @Transactional
-  public AuthResponse execute(RefreshTokenRequest request) {
-    String hash = JwtService.hashToken(request.refreshToken());
-    RefreshToken current =
+  @Transactional(noRollbackFor = TokenRefreshException.class)
+  public AuthResponse execute(final RefreshTokenRequest request) {
+    final String hash = JwtService.hashToken(request.refreshToken());
+    final RefreshToken current =
         refreshTokenRepository.findByTokenHash(hash).orElseThrow(TokenRefreshException::invalid);
 
     if (current.isRevoked()) {
@@ -55,6 +59,10 @@ public class RefreshTokenUseCase {
         userRepository
             .findWithPersonAndInstitutionById(session.getUserId())
             .orElseThrow(TokenRefreshException::invalid);
+
+    if (!user.isEnabled()) {
+      throw TokenRefreshException.invalid();
+    }
 
     current.setRevoked(true);
     refreshTokenRepository.save(current);
@@ -92,6 +100,10 @@ public class RefreshTokenUseCase {
     LocalDateTime now = LocalDateTime.now();
     if (!sessionIds.isEmpty()) {
       userSessionRepository.deactivateByIds(sessionIds, now);
+      final var cache = cacheManager.getCache(ACTIVE_SESSIONS_CACHE);
+      if (cache != null) {
+        sessionIds.forEach(cache::evict);
+      }
     }
     throw TokenRefreshException.reuse();
   }

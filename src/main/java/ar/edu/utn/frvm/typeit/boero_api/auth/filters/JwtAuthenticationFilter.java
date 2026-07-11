@@ -8,11 +8,11 @@ import static ar.edu.utn.frvm.typeit.boero_api.security.config.PublicRoutes.GET_
 import static ar.edu.utn.frvm.typeit.boero_api.security.config.PublicRoutes.PUBLIC_ROUTES;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.AccessTokenParseResult;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.JwtService;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.TokenBlacklistService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.AccountType;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.services.IsPlatformSessionActiveUseCase;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

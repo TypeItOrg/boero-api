@@ -1,10 +1,13 @@
-package ar.edu.utn.frvm.typeit.boero_api.authorization.entities;
+package ar.edu.utn.frvm.typeit.boero_api.auth.entities;
 
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -19,7 +22,12 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "platform_refresh_tokens")
+@Table(
+    name = "platform_refresh_tokens",
+    indexes = {
+      @Index(name = "platform_refresh_tokens_family_idx", columnList = "family_id"),
+      @Index(name = "platform_refresh_tokens_session_idx", columnList = "platform_session_id")
+    })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -35,8 +43,16 @@ public class PlatformRefreshToken {
   @Column(name = "platform_account_id", nullable = false)
   private UUID platformAccountId;
 
+  @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY, optional = false)
+  @JoinColumn(name = "platform_account_id", insertable = false, updatable = false, nullable = false)
+  private PlatformAccount platformAccount;
+
   @Column(name = "platform_session_id", nullable = false)
   private UUID platformSessionId;
+
+  @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY, optional = false)
+  @JoinColumn(name = "platform_session_id", insertable = false, updatable = false, nullable = false)
+  private PlatformSession platformSession;
 
   @Column(name = "token_hash", nullable = false, unique = true)
   private String tokenHash;

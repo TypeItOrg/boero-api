@@ -9,6 +9,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AssignPersonSystemRoleUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionInactiveException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
@@ -17,6 +18,7 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +41,10 @@ public class RegisterUserUseCase {
             .findById(request.institutionId())
             .orElseThrow(InstitutionNotFoundException::new);
 
+    if (!institution.isActive()) {
+      throw new InstitutionInactiveException();
+    }
+
     if (personRepository.existsByDocumentNumberAndInstitution_Id(
         request.documentNumber(), request.institutionId())) {
       throw new UserAlreadyExistsException();
@@ -52,7 +58,12 @@ public class RegisterUserUseCase {
             .documentNumber(request.documentNumber())
             .build();
     assertPersonValid(person);
-    personRepository.save(person);
+    try {
+      personRepository.save(person);
+      personRepository.flush();
+    } catch (DataIntegrityViolationException exception) {
+      throw new UserAlreadyExistsException();
+    }
 
     User user =
         User.builder()

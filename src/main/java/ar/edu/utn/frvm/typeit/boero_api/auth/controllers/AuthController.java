@@ -14,6 +14,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.services.LoginUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.LogoutUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RefreshTokenUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RegisterUserUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.common.utils.HeaderUtils;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
 import jakarta.servlet.http.HttpServletRequest;
@@ -68,7 +69,7 @@ public class AuthController {
       @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
       Authentication authentication) {
     JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
-    String token = bearerValue(authorization);
+    String token = HeaderUtils.bearerValue(authorization);
     logoutUseCase.execute(principal, token);
   }
 
@@ -85,12 +86,5 @@ public class AuthController {
   public UserResponse me(Authentication authentication) {
     JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
     return getCurrentUserUseCase.execute(principal);
-  }
-
-  private static String bearerValue(String authorization) {
-    if (authorization != null && authorization.regionMatches(true, 0, "Bearer ", 0, 7)) {
-      return authorization.substring(7).trim();
-    }
-    return "";
   }
 }

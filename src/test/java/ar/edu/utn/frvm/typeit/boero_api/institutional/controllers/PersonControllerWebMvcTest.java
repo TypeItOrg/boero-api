@@ -10,13 +10,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.JwtService;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.TokenBlacklistService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.security.PermissionAuthorizationAspect;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.services.IsPlatformSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.GlobalExceptionHandler;
 import ar.edu.utn.frvm.typeit.boero_api.config.WebConfig;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.AddressResponse;

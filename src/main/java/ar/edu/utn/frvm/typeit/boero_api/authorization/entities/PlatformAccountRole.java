@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.entities;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import jakarta.persistence.Column;
