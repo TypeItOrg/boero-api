@@ -5,7 +5,7 @@ import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.per
 import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.person;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PlatformAccount;
+import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DataJpaTest
 @Import({
@@ -30,6 +31,8 @@ import org.springframework.context.annotation.Import;
   SessionRevocationService.class
 })
 class AuthorityResolverTest {
+
+  @MockitoBean private org.springframework.cache.CacheManager cacheManager;
 
   @Autowired private EntityManager entityManager;
   @Autowired private PermissionRoleSeed permissionRoleSeed;
