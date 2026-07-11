@@ -16,7 +16,7 @@ Incluir permisos en el JWT haría que:
 - El token sea más grande (especialmente con muchos permisos)
 - Revocar permisos requiera blacklistear tokens activos
 
-La decisión fue token pequeño + resolución dinámica. El costo: una query extra por request autorizado.
+La decisión fue token pequeño + resolución dinámica con caché. El primer acceso resuelve desde base de datos y los siguientes reutilizan la entrada hasta una invalidación o hasta el TTL.
 
 ## Bootstrap del admin de plataforma
 
@@ -37,6 +37,8 @@ La decisión fue token pequeño + resolución dinámica. El costo: una query ext
 4. Asigna permisos a roles según un mapeo fijo
 5. En dev/test, asigna el rol `APPLICANT` a personas sin rol
 
+En PostgreSQL, el seed adquiere un advisory lock transaccional antes de sincronizar. Esto serializa el arranque de varias instancias y evita que dos nodos intenten crear simultáneamente los mismos roles globales. Al finalizar limpia los cachés de autorización.
+
 ## Bootstrap de authority institucional
 
 `BootstrapInstitutionalAuthorityUseCase` (endpoint `POST /api/v1/platform/institutions/{id}/authority/{personId}`) es la única forma de crear el primer `INSTITUTIONAL_AUTHORITY` de una institución. Solo `PLATFORM_ADMIN` puede ejecutarlo.
@@ -45,13 +47,31 @@ La primera authority no se puede crear con el endpoint regular de asignación de
 
 ## Protección del último authority
 
-`RevokePersonRoleUseCase` (`src/main/java/.../authorization/services/RevokePersonRoleUseCase.java`) verifica que no se pueda revocar el último `INSTITUTIONAL_AUTHORITY` de una institución. Si solo queda uno, lanza `LastInstitutionalAuthorityRevocationException` (HTTP 409).
+`RevokePersonRoleUseCase` (`src/main/java/.../authorization/services/RevokePersonRoleUseCase.java`) verifica que no se pueda revocar el último `INSTITUTIONAL_AUTHORITY` de una institución. La eliminación lógica de una persona aplica la misma regla. Ambas operaciones bloquean pesimísticamente la institución antes de contar y modificar autoridades, para que dos transacciones concurrentes no puedan eliminar cada una una autoridad distinta dejando a la institución sin ninguna. El conflicto se informa con HTTP 409.
+
+## Roles iniciales al crear personas
+
+Crear una persona con rol inicial `APPLICANT` no requiere privilegios adicionales. Solicitar cualquier rol inicial más poderoso requiere `INSTITUTION_ROLE_ASSIGN` o una cuenta `PLATFORM_ADMIN`. `InitialRoleAssignmentGuard` realiza esta comprobación antes de crear la persona y evita usar el endpoint de alta como escalada de privilegios.
 
 ## Cambio de roles sin revocar sesiones
 
 Cuando se asigna o revoca un rol, la sesión del usuario **no se revoca**. Esto es una decisión deliberada de UX: como los permisos se resuelven dinámicamente desde la base de datos en cada request, el cambio de rol tiene efecto inmediato sin obligar al usuario a volver a loguearse.
 
-`SessionRevocationService` (`src/main/java/.../authorization/services/SessionRevocationService.java`) sigue existiendo como utilidad disponible para uso futuro (por ejemplo, un admin que quiera cerrar todas las sesiones de un usuario manualmente), pero los flujos automáticos de asignación/revocación de roles no lo invocan.
+`SessionRevocationService` (`src/main/java/.../authorization/services/SessionRevocationService.java`) centraliza el cierre de sesiones y refresh tokens para personas, usuarios, instituciones y cuentas plataforma. Los cambios de roles no lo invocan, pero la eliminación de una persona y la desactivación de una institución sí revocan sus sesiones.
+
+## Desactivación de una institución
+
+Solo `PLATFORM_ADMIN` puede cambiar el estado mediante `PATCH /api/v1/platform/institutions/{id}/status`.
+
+Al desactivar una institución:
+
+1. Se actualiza `Institution.active`.
+2. Se buscan todas sus sesiones institucionales activas.
+3. Se revocan sus refresh tokens.
+4. Se desactivan las sesiones.
+5. Se desalojan las entradas de caché de actividad.
+
+Además, login, refresh y validación de access tokens comprueban el estado de la institución. La protección no depende solamente de que la revocación masiva haya finalizado correctamente.
 
 ## Usuario de desarrollo
 

@@ -24,10 +24,13 @@ El flujo (`RefreshTokenUseCase`, `src/main/java/.../auth/services/RefreshTokenUs
 3. Si el token ya está revocado → detecta reutilización y revoca toda la familia
 4. Si expiró → error `TOKEN_REFRESH_INVALID`
 5. Verifica que la sesión siga activa
-6. Revoca el token actual
-7. Genera un NUEVO raw refresh token en la **misma familia**
-8. Genera un nuevo access token
-9. Devuelve ambos
+6. Verifica que el usuario o cuenta asociada siga habilitada; para usuarios institucionales esto incluye institución activa y persona no eliminada
+7. Revoca el token actual
+8. Genera un NUEVO raw refresh token en la **misma familia**
+9. Genera un nuevo access token
+10. Devuelve ambos
+
+La consulta del token usa un lock pesimista de escritura. Dos requests no pueden rotar simultáneamente la misma fila: el segundo espera a que finalice el primero y luego observa el token revocado.
 
 ### Detección de reutilización
 
@@ -38,7 +41,21 @@ Si alguien reenvía un refresh token ya revocado:
 3. Se desactivan TODAS las sesiones asociadas a esos tokens
 4. Se lanza `TokenRefreshException.reuse()`
 
+La transacción de refresh está configurada para confirmar estas revocaciones aunque termine lanzando `TokenRefreshException`. Sin esa excepción transaccional, responder `401` podría revertir exactamente las revocaciones realizadas para contener el incidente.
+
+Cuando se desactivan las sesiones, también se desalojan sus entradas de `activeSessions` o `activePlatformSessions`.
+
 Esto protege contra ataques de robo de tokens: si un atacante usa un token que la víctima ya consumió, el sistema invalida todo.
+
+### Resultado ante dos rotaciones concurrentes
+
+Si dos requests presentan el mismo refresh token al mismo tiempo:
+
+1. Uno obtiene el lock, rota el token y confirma.
+2. El segundo continúa después del commit y detecta que el token ya está revocado.
+3. Se trata como reutilización: revoca la familia completa y desactiva las sesiones relacionadas.
+
+El primer request puede haber recibido tokens, pero su access token deja de ser utilizable porque el filtro comprueba el estado de la sesión en cada request.
 
 ## Logout
 

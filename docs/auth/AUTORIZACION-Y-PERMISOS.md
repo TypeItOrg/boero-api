@@ -2,9 +2,9 @@
 
 ## ¿Por qué `getAuthorities()` devuelve vacío?
 
-`User` (`src/main/java/.../auth/entities/User.java:86-88`) y `PlatformAccount` (`src/main/java/.../authorization/entities/PlatformAccount.java:80-82`) devuelven `List.of()` de `getAuthorities()`.
+`User` (`src/main/java/.../auth/entities/User.java`) y `PlatformAccount` (`src/main/java/.../auth/entities/PlatformAccount.java`) devuelven `List.of()` de `getAuthorities()`.
 
-Esto es intencional. No cargamos permisos ni en el JWT ni en las authorities de Spring Security. En su lugar, los resolvemos dinámicamente desde la base de datos en cada request.
+Esto es intencional. No cargamos permisos ni en el JWT ni en las authorities de Spring Security. En su lugar, se resuelven desde la base de datos y se cachea el resultado por principal.
 
 ## ¿Por qué no usamos `@PreAuthorize`?
 
@@ -55,12 +55,27 @@ Ambos leen el `Authentication` del `SecurityContext`, llaman a `AuthorizationSer
 
 ## Guarda de llamada institucional
 
-`InstitutionalCallerGuard` verifica que el caller sea un `JwtAuthenticatedUser` y que pertenezca a la institución indicada. Se usa en operaciones de gestión de roles para evitar que un usuario de institución A intente modificar roles de institución B.
+`@RequiresInstitutionAccess`, interceptada por `InstitutionAccessAspect`, protege controllers cuyo recurso está identificado por `institutionId`. Para un principal institucional exige que el ID del JWT coincida con el ID de la ruta. Una cuenta plataforma solamente atraviesa esta guarda si tiene `PLATFORM_ADMIN`.
+
+`InstitutionalCallerGuard` aplica la misma separación en operaciones de servicio o autorización que necesitan una comprobación explícita. Estas dos capas evitan que un usuario de la institución A lea o modifique recursos de la institución B cambiando un path variable.
+
+## Caché e invalidación
+
+`AuthorityResolver` usa tres cachés:
+
+| Caché | Clave conceptual | Contenido |
+|---|---|---|
+| `personPermissions` | persona + institución | permisos institucionales |
+| `platformAccountPermissions` | cuenta plataforma | permisos de plataforma |
+| `platformAccountRoles` | cuenta plataforma | roles de plataforma |
+
+Las entradas Redis tienen TTL de 5 minutos. La asignación o revocación de roles desaloja las claves afectadas, por lo que el cambio tiene efecto en el siguiente request sin esperar al vencimiento del JWT ni del TTL. El seed limpia los tres cachés después de sincronizar el catálogo.
 
 ## Trade-off
 
-- **Ventaja**: permisos siempre frescos — cambiar un rol tiene efecto inmediato, sin esperar a que el token expire
-- **Desventaja**: query extra a la base de datos por cada request autorizado
+- **Ventaja**: cambiar un rol tiene efecto inmediato mediante invalidación, sin esperar a que el token expire.
+- **Ventaja**: requests repetidos no consultan la base en cada autorización.
+- **Costo**: la corrección depende de invalidar la caché en cada operación que cambie roles o permisos; el TTL limita el impacto de una omisión.
 
 ## Flujo completo
 
@@ -68,7 +83,7 @@ Ambos leen el `Authentication` del `SecurityContext`, llaman a `AuthorizationSer
 Request → JwtAuthenticationFilter (autentica) → Controller
   → @RequiresPermission (anotación) → PermissionAuthorizationAspect
   → AuthorizationService.hasPermission()
-  → AuthorityResolver.resolveForPerson() → BD
+  → AuthorityResolver.resolveForPerson() → caché Redis o BD
   → Si autorizado → ejecuta el método
   → Si no → AccessDeniedException → 403
 ```

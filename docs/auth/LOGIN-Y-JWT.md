@@ -71,6 +71,10 @@ El JWT se genera con HMAC-SHA256 en `JwtService` (`src/main/java/.../auth/servic
 9. Construye el principal (`JwtAuthenticatedUser` o `JwtAuthenticatedPlatformAccount`)
 10. Lo guarda en el `SecurityContext`
 
+Para una sesión institucional, “activa” no significa solamente `UserSession.active = true`. `IsSessionActiveUseCase` consulta que también estén habilitados el usuario y la institución, y que la persona no esté eliminada. Por eso desactivar una institución invalida los access tokens institucionales aunque el JWT todavía no haya expirado.
+
+Los resultados de actividad de sesión se cachean en Redis para evitar una consulta por request. Las entradas tienen TTL global de 5 minutos y se eliminan explícitamente en logout, detección de reutilización y revocaciones administrativas. La invalidación explícita es la garantía principal; el TTL funciona como límite defensivo ante una entrada que no hubiera sido desalojada.
+
 ## Principales autenticados
 
 `JwtPrincipal` (`src/main/java/.../auth/filters/JwtPrincipal.java`) es un sealed interface con dos implementaciones:

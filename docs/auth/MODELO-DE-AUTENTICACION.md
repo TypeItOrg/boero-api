@@ -19,9 +19,17 @@ El `User` implementa `UserDetails`. Su `getUsername()` devuelve el número de do
 - `Person` — datos de la persona (nombre, apellido, documento)
 - `Institution` — institución a la que pertenece
 
+Una cuenta institucional solo se considera habilitada cuando se cumplen simultáneamente estas condiciones:
+
+- `User.enabled` es `true`.
+- La `Institution` está activa.
+- La `Person` no está eliminada lógicamente.
+
+Además, antes de persistir o actualizar un `User`, la entidad verifica que `User.institution` y `Person.institution` sean la misma. Esta validación evita construir una cuenta que autentique a una persona bajo otra institución.
+
 ## Usuario plataforma
 
-Las cuentas de plataforma (`PlatformAccount`, `src/main/java/.../authorization/entities/PlatformAccount.java`) son independientes de cualquier institución. Se autentican con email + password.
+Las cuentas de plataforma (`PlatformAccount`, `src/main/java/.../auth/entities/PlatformAccount.java`) son independientes de cualquier institución. Se autentican con email + password.
 
 - `PlatformAccount` — cuenta global con email y contraseña
 

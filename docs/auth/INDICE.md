@@ -11,6 +11,7 @@ Esta carpeta contiene la documentación de los subsistemas de autenticación y a
 | [`REFRESH-Y-LOGOUT.md`](REFRESH-Y-LOGOUT.md) | Rotación de refresh tokens, detección de reutilización, blacklist en Redis y cierre de sesión |
 | [`AUTORIZACION-Y-PERMISOS.md`](AUTORIZACION-Y-PERMISOS.md) | Cómo se resuelven permisos dinámicamente, anotaciones custom, aspectos y diferencias entre roles y permisos |
 | [`CASOS-PARTICULARES.md`](CASOS-PARTICULARES.md) | Decisiones de diseño no obvias, edge cases, bootstrap de admin y protecciones |
+| [`ESTADO-DE-SEGURIDAD.md`](ESTADO-DE-SEGURIDAD.md) | Estado implementado, invariantes de seguridad, aislamiento institucional, concurrencia y cobertura de pruebas |
 
 ## Orden recomendado de lectura
 
@@ -19,6 +20,7 @@ Esta carpeta contiene la documentación de los subsistemas de autenticación y a
 3. `REFRESH-Y-LOGOUT.md` — cómo se mantiene la sesión
 4. `AUTORIZACION-Y-PERMISOS.md` — cómo se autorizan las acciones
 5. `CASOS-PARTICULARES.md` — decisiones y escenarios especiales
+6. `ESTADO-DE-SEGURIDAD.md` — garantías actuales y puntos a considerar al extender el sistema
 
 ## Documentación relacionada
 
