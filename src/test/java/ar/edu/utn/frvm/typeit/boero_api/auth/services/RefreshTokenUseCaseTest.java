@@ -35,6 +35,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.CacheManager;
 
 @ExtendWith(MockitoExtension.class)
 class RefreshTokenUseCaseTest {
@@ -43,6 +44,7 @@ class RefreshTokenUseCaseTest {
   @Mock private UserSessionRepository userSessionRepository;
   @Mock private UserRepository userRepository;
   @Mock private JwtService jwtService;
+  @Mock private CacheManager cacheManager;
 
   private RefreshTokenUseCase refreshTokenUseCase;
   private JwtProperties jwtProperties;
@@ -56,7 +58,8 @@ class RefreshTokenUseCaseTest {
             userSessionRepository,
             userRepository,
             jwtService,
-            jwtProperties);
+            jwtProperties,
+            cacheManager);
   }
 
   @Test
@@ -192,6 +195,27 @@ class RefreshTokenUseCaseTest {
 
     assertThatThrownBy(() -> refreshTokenUseCase.execute(new RefreshTokenRequest(rawToken)))
         .isInstanceOf(TokenRefreshException.class);
+  }
+
+  @Test
+  @DisplayName("Should reject refresh when the institution is inactive")
+  void execute_throwsWhenInstitutionIsInactive() {
+    final String rawToken = "inactive-institution-token";
+    final String tokenHash = JwtService.hashToken(rawToken);
+    final UUID sessionId = UUID.randomUUID();
+    final UUID userId = UUID.randomUUID();
+    final RefreshToken token = activeToken(tokenHash, "family-1", sessionId);
+    final UserSession session = activeSession(sessionId, userId, false);
+    final User user = userWith(userId);
+    user.getInstitution().setActive(false);
+    when(refreshTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(token));
+    when(userSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+    when(userRepository.findWithPersonAndInstitutionById(userId)).thenReturn(Optional.of(user));
+
+    assertThatThrownBy(() -> refreshTokenUseCase.execute(new RefreshTokenRequest(rawToken)))
+        .isInstanceOf(TokenRefreshException.class);
+
+    verify(refreshTokenRepository, never()).save(any());
   }
 
   @Test

@@ -4,6 +4,8 @@ import static ar.edu.utn.frvm.typeit.boero_api.support.AuthTestData.institutiona
 import static ar.edu.utn.frvm.typeit.boero_api.support.AuthTestData.platformPrincipal;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -12,24 +14,30 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.JwtService;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.TokenBlacklistService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.security.RoleAuthorizationAspect;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.services.IsPlatformSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.GlobalExceptionHandler;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.config.WebConfig;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.CityNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.CitySummaryResponse;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.CountryLocationResponse;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionAdminListItemResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionDetailResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionListItemResponse;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.ProvinceSummaryResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.requests.CreateInstitutionRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.requests.UpdateInstitutionRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.CreateInstitutionUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.GetInstitutionUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ListInstitutionsAdminUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ListInstitutionsUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdateInstitutionStatusUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdateInstitutionUseCase;
 import java.util.List;
 import java.util.UUID;
@@ -46,7 +54,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.util.PathMatcher;
 
-@WebMvcTest(InstitutionController.class)
+@WebMvcTest({InstitutionController.class, PlatformInstitutionController.class})
 @Import({RoleAuthorizationAspect.class, GlobalExceptionHandler.class, WebConfig.class})
 @EnableAspectJAutoProxy
 @AutoConfigureMockMvc(addFilters = false)
@@ -55,6 +63,8 @@ class InstitutionControllerWebMvcTest {
   private static final UUID INSTITUTION_ID =
       UUID.fromString("22222222-2222-2222-2222-222222222222");
   private static final UUID CITY_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
+  private static final UUID PROVINCE_ID = UUID.fromString("55555555-5555-5555-5555-555555555555");
+  private static final UUID COUNTRY_ID = UUID.fromString("66666666-6666-6666-6666-666666666666");
   private static final UUID PLATFORM_ACCOUNT_ID =
       UUID.fromString("44444444-4444-4444-4444-444444444444");
 
@@ -68,9 +78,11 @@ class InstitutionControllerWebMvcTest {
   @MockitoBean private IsPlatformSessionActiveUseCase isPlatformSessionActiveUseCase;
   @MockitoBean private AuthorizationService authorizationService;
   @MockitoBean private ListInstitutionsUseCase listInstitutionsUseCase;
+  @MockitoBean private ListInstitutionsAdminUseCase listInstitutionsAdminUseCase;
   @MockitoBean private GetInstitutionUseCase getInstitutionUseCase;
   @MockitoBean private CreateInstitutionUseCase createInstitutionUseCase;
   @MockitoBean private UpdateInstitutionUseCase updateInstitutionUseCase;
+  @MockitoBean private UpdateInstitutionStatusUseCase updateInstitutionStatusUseCase;
 
   @Test
   @DisplayName("Should list institutions without authentication")
@@ -84,8 +96,15 @@ class InstitutionControllerWebMvcTest {
                             .id(INSTITUTION_ID)
                             .name("Conservatorio Boero")
                             .slug("boero-villa-maria")
+                            .country(
+                                CountryLocationResponse.builder()
+                                    .countryId(COUNTRY_ID)
+                                    .name("Argentina")
+                                    .isoCode("ARG")
+                                    .build())
                             .city("Villa Maria")
                             .province("Cordoba")
+                            .active(true)
                             .build()))
                 .page(0)
                 .size(20)
@@ -98,6 +117,10 @@ class InstitutionControllerWebMvcTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items[0].id").value(INSTITUTION_ID.toString()))
         .andExpect(jsonPath("$.items[0].slug").value("boero-villa-maria"))
+        .andExpect(jsonPath("$.items[0].country.countryId").value(COUNTRY_ID.toString()))
+        .andExpect(jsonPath("$.items[0].country.name").value("Argentina"))
+        .andExpect(jsonPath("$.items[0].country.isoCode").value("ARG"))
+        .andExpect(jsonPath("$.items[0].active").value(true))
         .andExpect(jsonPath("$.items[0].email").doesNotExist())
         .andExpect(jsonPath("$.items[0].phoneNumber").doesNotExist());
   }
@@ -111,7 +134,14 @@ class InstitutionControllerWebMvcTest {
         .perform(get("/api/v1/institutions/{id}", INSTITUTION_ID))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value(INSTITUTION_ID.toString()))
-        .andExpect(jsonPath("$.slug").value("boero-villa-maria"));
+        .andExpect(jsonPath("$.slug").value("boero-villa-maria"))
+        .andExpect(jsonPath("$.city.cityId").value(CITY_ID.toString()))
+        .andExpect(jsonPath("$.city.name").value("Villa Maria"))
+        .andExpect(jsonPath("$.province.provinceId").value(PROVINCE_ID.toString()))
+        .andExpect(jsonPath("$.province.name").value("Cordoba"))
+        .andExpect(jsonPath("$.country.countryId").value(COUNTRY_ID.toString()))
+        .andExpect(jsonPath("$.country.name").value("Argentina"))
+        .andExpect(jsonPath("$.country.isoCode").value("ARG"));
   }
 
   @Test
@@ -265,6 +295,94 @@ class InstitutionControllerWebMvcTest {
         .andExpect(status().isBadRequest());
   }
 
+  @Test
+  @DisplayName("Should forbid unauthenticated admin institution listing")
+  void adminList_returnsForbiddenWithoutAuthentication() throws Exception {
+    mockMvc.perform(get("/api/v1/platform/institutions")).andExpect(status().isForbidden());
+  }
+
+  @Test
+  @DisplayName("Should forbid institutional principals from listing admin institutions")
+  void adminList_returnsForbiddenForInstitutionalPrincipal() throws Exception {
+    var authentication =
+        new TestingAuthenticationToken(
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+    stubPlatformAdminAccess(false);
+
+    mockMvc
+        .perform(get("/api/v1/platform/institutions").principal(authentication))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @DisplayName("Should return admin institution list with userCount for platform admin")
+  void adminList_returnsAdminListForPlatformAdmin() throws Exception {
+    var authentication =
+        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    stubPlatformAdminAccess(true);
+    when(listInstitutionsAdminUseCase.execute(isNull(), isNull(), any()))
+        .thenReturn(
+            PaginatedResponse.<InstitutionAdminListItemResponse>builder()
+                .items(
+                    List.of(
+                        InstitutionAdminListItemResponse.builder()
+                            .id(INSTITUTION_ID)
+                            .name("Conservatorio Boero")
+                            .slug("boero-villa-maria")
+                            .country(
+                                CountryLocationResponse.builder()
+                                    .countryId(COUNTRY_ID)
+                                    .name("Argentina")
+                                    .isoCode("ARG")
+                                    .build())
+                            .city("Villa Maria")
+                            .province("Cordoba")
+                            .active(true)
+                            .userCount(7)
+                            .build()))
+                .page(0)
+                .size(20)
+                .totalItems(1)
+                .totalPages(1)
+                .build());
+
+    mockMvc
+        .perform(get("/api/v1/platform/institutions").principal(authentication))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].id").value(INSTITUTION_ID.toString()))
+        .andExpect(jsonPath("$.items[0].userCount").value(7))
+        .andExpect(jsonPath("$.items[0].email").doesNotExist())
+        .andExpect(jsonPath("$.items[0].phoneNumber").doesNotExist());
+  }
+
+  @Test
+  @DisplayName("Should pass admin institution filters to use case")
+  void adminList_passesFiltersToUseCase() throws Exception {
+    var authentication =
+        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    stubPlatformAdminAccess(true);
+    when(listInstitutionsAdminUseCase.execute(eq("boero"), eq(true), any()))
+        .thenReturn(
+            PaginatedResponse.<InstitutionAdminListItemResponse>builder()
+                .items(List.of())
+                .page(0)
+                .size(20)
+                .totalItems(0)
+                .totalPages(0)
+                .build());
+
+    mockMvc
+        .perform(
+            get("/api/v1/platform/institutions")
+                .principal(authentication)
+                .param("search", "boero")
+                .param("active", "true")
+                .param("sort", "active,desc"))
+        .andExpect(status().isOk());
+
+    verify(listInstitutionsAdminUseCase).execute(eq("boero"), eq(true), any());
+  }
+
   private void stubPlatformAdminAccess(boolean allowed) {
     when(authorizationService.hasPlatformRole(any(), eq(PlatformRoleCode.PLATFORM_ADMIN)))
         .thenReturn(allowed);
@@ -275,8 +393,14 @@ class InstitutionControllerWebMvcTest {
         .id(INSTITUTION_ID)
         .name("Conservatorio Boero")
         .slug("boero-villa-maria")
-        .city("Villa Maria")
-        .province("Cordoba")
+        .city(CitySummaryResponse.builder().cityId(CITY_ID).name("Villa Maria").build())
+        .province(ProvinceSummaryResponse.builder().provinceId(PROVINCE_ID).name("Cordoba").build())
+        .country(
+            CountryLocationResponse.builder()
+                .countryId(COUNTRY_ID)
+                .name("Argentina")
+                .isoCode("ARG")
+                .build())
         .street("San Martin")
         .number("123")
         .neighborhood("Centro")

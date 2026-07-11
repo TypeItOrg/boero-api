@@ -16,6 +16,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -53,7 +54,9 @@ import lombok.Setter;
       @CheckConstraint(
           name = "people_last_name_length",
           constraint = CHECK_SQL_PEOPLE_LAST_NAME_LENGTH)
-    })
+    },
+    indexes =
+        @Index(name = "people_institution_deleted_idx", columnList = "institution_id, deleted"))
 @Getter
 @Setter
 @NoArgsConstructor

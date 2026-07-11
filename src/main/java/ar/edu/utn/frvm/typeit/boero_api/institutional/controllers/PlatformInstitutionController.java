@@ -1,0 +1,55 @@
+package ar.edu.utn.frvm.typeit.boero_api.institutional.controllers;
+
+import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPlatformRole;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
+import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
+import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionAdminListItemResponse;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.requests.UpdateInstitutionStatusRequest;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ListInstitutionsAdminUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdateInstitutionStatusUseCase;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+@Validated
+@RestController
+@RequestMapping("/platform/institutions")
+@RequiredArgsConstructor
+public class PlatformInstitutionController {
+
+  private final ListInstitutionsAdminUseCase listInstitutionsAdminUseCase;
+  private final UpdateInstitutionStatusUseCase updateInstitutionStatusUseCase;
+
+  @GetMapping(version = Version.V1)
+  @RequiresPlatformRole(PlatformRoleCode.PLATFORM_ADMIN)
+  public PaginatedResponse<InstitutionAdminListItemResponse> list(
+      @RequestParam(required = false) @Size(max = 100) final String search,
+      @RequestParam(required = false) final Boolean active,
+      @PageableDefault(sort = "name", direction = Sort.Direction.ASC) Pageable pageable) {
+    return listInstitutionsAdminUseCase.execute(search, active, pageable);
+  }
+
+  @PatchMapping(value = "/{id}/status", version = Version.V1)
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @RequiresPlatformRole(PlatformRoleCode.PLATFORM_ADMIN)
+  public void updateStatus(
+      @PathVariable final UUID id,
+      @Valid @RequestBody final UpdateInstitutionStatusRequest request) {
+    updateInstitutionStatusUseCase.execute(id, request.active());
+  }
+}

@@ -3,11 +3,13 @@ package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.City;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Country;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Province;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.CityNotFoundException;
@@ -24,6 +26,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @ExtendWith(MockitoExtension.class)
 class CreateInstitutionUseCaseTest {
@@ -70,7 +73,7 @@ class CreateInstitutionUseCaseTest {
                   .active(institution.isActive())
                   .build();
             });
-    when(institutionRepository.findWithCityAndProvinceById(savedId))
+    when(institutionRepository.findWithLocationById(savedId))
         .thenReturn(
             Optional.of(
                 Institution.builder()
@@ -92,7 +95,8 @@ class CreateInstitutionUseCaseTest {
     verify(institutionRepository).save(captor.capture());
     assertThat(captor.getValue().isActive()).isTrue();
     assertThat(response.slug()).isEqualTo("boero-villa-maria");
-    assertThat(response.city()).isEqualTo("Villa Maria");
+    assertThat(response.city().name()).isEqualTo("Villa Maria");
+    assertThat(response.country().isoCode()).isEqualTo("ARG");
   }
 
   @Test
@@ -135,8 +139,30 @@ class CreateInstitutionUseCaseTest {
     verify(institutionRepository, never()).save(any());
   }
 
+  @Test
+  @DisplayName("Should map a concurrent slug constraint violation to conflict")
+  void execute_mapsConcurrentSlugConflict() {
+    final UUID cityId = UUID.randomUUID();
+    final CreateInstitutionRequest request =
+        new CreateInstitutionRequest(
+            "Conservatorio Boero", "boero-race", cityId, null, null, null, null, null, null);
+    when(institutionRepository.existsBySlug("boero-race")).thenReturn(false);
+    when(cityRepository.findById(cityId)).thenReturn(Optional.of(cityWith(cityId)));
+    when(institutionRepository.save(any(Institution.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    doThrow(new DataIntegrityViolationException("duplicate slug"))
+        .when(institutionRepository)
+        .flush();
+
+    assertThatThrownBy(() -> createInstitutionUseCase.execute(request))
+        .isInstanceOf(SlugAlreadyExistsException.class);
+  }
+
   private static City cityWith(UUID cityId) {
-    Province province = Province.builder().name("Cordoba").build();
+    Country country =
+        Country.builder().id(UUID.randomUUID()).name("Argentina").isoCode("ARG").build();
+    Province province =
+        Province.builder().id(UUID.randomUUID()).country(country).name("Cordoba").build();
     return City.builder().id(cityId).name("Villa Maria").province(province).build();
   }
 }

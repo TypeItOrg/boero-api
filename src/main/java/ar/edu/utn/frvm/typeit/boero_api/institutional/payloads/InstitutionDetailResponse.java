@@ -9,8 +9,9 @@ public record InstitutionDetailResponse(
     UUID id,
     String name,
     String slug,
-    String city,
-    String province,
+    CitySummaryResponse city,
+    ProvinceSummaryResponse province,
+    CountryLocationResponse country,
     String street,
     String number,
     String neighborhood,
@@ -20,12 +21,17 @@ public record InstitutionDetailResponse(
     boolean active) {
 
   public static InstitutionDetailResponse from(Institution institution) {
+    var city = institution.getCity();
+    var province = city.getProvince();
+    var country = province.getCountry();
+
     return InstitutionDetailResponse.builder()
         .id(institution.getId())
         .name(institution.getName())
         .slug(institution.getSlug())
-        .city(institution.getCity().getName())
-        .province(institution.getCity().getProvince().getName())
+        .city(CitySummaryResponse.from(city))
+        .province(ProvinceSummaryResponse.from(province))
+        .country(CountryLocationResponse.from(country))
         .street(institution.getStreet())
         .number(institution.getNumber())
         .neighborhood(institution.getNeighborhood())

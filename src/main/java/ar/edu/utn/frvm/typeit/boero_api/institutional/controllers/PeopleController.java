@@ -1,8 +1,9 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.controllers;
 
+import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresInstitutionAccess;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPermission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InitialRoleAssignmentGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.CreatePersonRequest;
@@ -39,14 +40,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/institutions/{institutionId}/people")
 @RequiredArgsConstructor
+@RequiresInstitutionAccess
 public class PeopleController {
 
-  private final InstitutionalCallerGuard institutionalCallerGuard;
   private final ListPeopleUseCase listPeopleUseCase;
   private final GetPersonByIdUseCase getPersonByIdUseCase;
   private final CreatePersonUseCase createPersonUseCase;
   private final UpdatePersonByAdminUseCase updatePersonByAdminUseCase;
   private final DeletePersonUseCase deletePersonUseCase;
+  private final InitialRoleAssignmentGuard initialRoleAssignmentGuard;
 
   @GetMapping(version = Version.V1)
   @RequiresPermission(PermissionCode.INSTITUTION_PERSON_READ_ANY)
@@ -56,7 +58,6 @@ public class PeopleController {
       @PageableDefault(size = 20, sort = "lastName", direction = Sort.Direction.ASC)
           final Pageable pageable,
       final Authentication authentication) {
-    institutionalCallerGuard.ensureCallerBelongsToInstitution(authentication, institutionId);
     return listPeopleUseCase.execute(institutionId, search, pageable);
   }
 
@@ -66,7 +67,6 @@ public class PeopleController {
       @PathVariable final UUID institutionId,
       @PathVariable final UUID personId,
       final Authentication authentication) {
-    institutionalCallerGuard.ensureCallerBelongsToInstitution(authentication, institutionId);
     return getPersonByIdUseCase.execute(institutionId, personId);
   }
 
@@ -77,7 +77,7 @@ public class PeopleController {
       @PathVariable final UUID institutionId,
       @Valid @RequestBody final CreatePersonRequest request,
       final Authentication authentication) {
-    institutionalCallerGuard.ensureCallerBelongsToInstitution(authentication, institutionId);
+    initialRoleAssignmentGuard.check(authentication, request.initialRole());
     return createPersonUseCase.execute(institutionId, request);
   }
 
@@ -88,7 +88,6 @@ public class PeopleController {
       @PathVariable final UUID personId,
       @Valid @RequestBody final UpdatePersonByAdminRequest request,
       final Authentication authentication) {
-    institutionalCallerGuard.ensureCallerBelongsToInstitution(authentication, institutionId);
     return updatePersonByAdminUseCase.execute(institutionId, personId, request);
   }
 
@@ -99,7 +98,6 @@ public class PeopleController {
       @PathVariable final UUID institutionId,
       @PathVariable final UUID personId,
       final Authentication authentication) {
-    institutionalCallerGuard.ensureCallerBelongsToInstitution(authentication, institutionId);
     deletePersonUseCase.execute(institutionId, personId);
   }
 }

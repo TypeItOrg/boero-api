@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.City;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Country;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Province;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
@@ -26,10 +27,10 @@ class ListInstitutionsUseCaseTest {
   @InjectMocks private ListInstitutionsUseCase listInstitutionsUseCase;
 
   @Test
-  @DisplayName("Should list only active institutions without administrative fields")
-  void execute_returnsActiveInstitutionsWithoutAdministrativeData() {
+  @DisplayName("Should list active and inactive institutions with location and status")
+  void execute_returnsInstitutionsWithLocationAndStatus() {
     Institution institution = activeInstitution();
-    when(institutionRepository.findByActiveTrue(PageRequest.of(0, 20)))
+    when(institutionRepository.findAllWithLocation(PageRequest.of(0, 20)))
         .thenReturn(new PageImpl<>(List.of(institution)));
 
     var response = listInstitutionsUseCase.execute(PageRequest.of(0, 20));
@@ -41,13 +42,17 @@ class ListInstitutionsUseCaseTest {
               assertThat(item.id()).isEqualTo(institution.getId());
               assertThat(item.name()).isEqualTo("Conservatorio Boero");
               assertThat(item.slug()).isEqualTo("boero-villa-maria");
+              assertThat(item.country().name()).isEqualTo("Argentina");
+              assertThat(item.country().isoCode()).isEqualTo("ARG");
               assertThat(item.city()).isEqualTo("Villa Maria");
               assertThat(item.province()).isEqualTo("Cordoba");
+              assertThat(item.active()).isTrue();
             });
   }
 
   private static Institution activeInstitution() {
-    Province province = Province.builder().name("Cordoba").build();
+    Country country = Country.builder().name("Argentina").isoCode("ARG").build();
+    Province province = Province.builder().country(country).name("Cordoba").build();
     City city = City.builder().name("Villa Maria").province(province).build();
 
     return Institution.builder()

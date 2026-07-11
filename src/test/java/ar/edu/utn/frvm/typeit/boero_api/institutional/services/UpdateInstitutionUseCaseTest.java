@@ -7,7 +7,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.City;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Country;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Province;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.CityNotFoundException;
@@ -30,6 +32,7 @@ class UpdateInstitutionUseCaseTest {
 
   @Mock private CityRepository cityRepository;
   @Mock private InstitutionRepository institutionRepository;
+  @Mock private SessionRevocationService sessionRevocationService;
 
   @InjectMocks private UpdateInstitutionUseCase updateInstitutionUseCase;
 
@@ -53,7 +56,7 @@ class UpdateInstitutionUseCaseTest {
             "nuevo@boero.edu.ar",
             false);
 
-    when(institutionRepository.findWithCityAndProvinceById(institutionId))
+    when(institutionRepository.findWithLocationById(institutionId))
         .thenReturn(Optional.of(institution));
     when(institutionRepository.existsBySlugAndIdNot("boero-actualizado", institutionId))
         .thenReturn(false);
@@ -65,7 +68,8 @@ class UpdateInstitutionUseCaseTest {
     assertThat(response.name()).isEqualTo("Boero Actualizado");
     assertThat(response.slug()).isEqualTo("boero-actualizado");
     assertThat(response.active()).isFalse();
-    assertThat(response.city()).isEqualTo("Villa Maria");
+    assertThat(response.city().name()).isEqualTo("Villa Maria");
+    assertThat(response.country().isoCode()).isEqualTo("ARG");
   }
 
   @Test
@@ -74,8 +78,7 @@ class UpdateInstitutionUseCaseTest {
     UUID institutionId = UUID.randomUUID();
     UpdateInstitutionRequest request = updateRequest(UUID.randomUUID(), true);
 
-    when(institutionRepository.findWithCityAndProvinceById(institutionId))
-        .thenReturn(Optional.empty());
+    when(institutionRepository.findWithLocationById(institutionId)).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> updateInstitutionUseCase.execute(institutionId, request))
         .isInstanceOf(InstitutionNotFoundException.class);
@@ -88,7 +91,7 @@ class UpdateInstitutionUseCaseTest {
   void execute_throwsWhenSlugBelongsToAnotherInstitution() {
     UUID institutionId = UUID.randomUUID();
     UpdateInstitutionRequest request = updateRequest(UUID.randomUUID(), true);
-    when(institutionRepository.findWithCityAndProvinceById(institutionId))
+    when(institutionRepository.findWithLocationById(institutionId))
         .thenReturn(Optional.of(institutionWith(institutionId)));
     when(institutionRepository.existsBySlugAndIdNot(request.slug(), institutionId))
         .thenReturn(true);
@@ -106,7 +109,7 @@ class UpdateInstitutionUseCaseTest {
     UUID cityId = UUID.randomUUID();
     UpdateInstitutionRequest request = updateRequest(cityId, true);
 
-    when(institutionRepository.findWithCityAndProvinceById(institutionId))
+    when(institutionRepository.findWithLocationById(institutionId))
         .thenReturn(Optional.of(institutionWith(institutionId)));
     when(institutionRepository.existsBySlugAndIdNot(request.slug(), institutionId))
         .thenReturn(false);
@@ -133,7 +136,10 @@ class UpdateInstitutionUseCaseTest {
   }
 
   private static Institution institutionWith(UUID id) {
-    Province province = Province.builder().name("Cordoba").build();
+    Country country =
+        Country.builder().id(UUID.randomUUID()).name("Argentina").isoCode("ARG").build();
+    Province province =
+        Province.builder().id(UUID.randomUUID()).country(country).name("Cordoba").build();
     City city = City.builder().name("Villa Maria").province(province).build();
 
     return Institution.builder()
@@ -146,7 +152,10 @@ class UpdateInstitutionUseCaseTest {
   }
 
   private static City cityWith(UUID cityId) {
-    Province province = Province.builder().name("Cordoba").build();
+    Country country =
+        Country.builder().id(UUID.randomUUID()).name("Argentina").isoCode("ARG").build();
+    Province province =
+        Province.builder().id(UUID.randomUUID()).country(country).name("Cordoba").build();
     return City.builder().id(cityId).name("Villa Maria").province(province).build();
   }
 }

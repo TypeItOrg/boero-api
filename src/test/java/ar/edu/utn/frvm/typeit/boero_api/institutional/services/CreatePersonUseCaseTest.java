@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,6 +34,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
@@ -150,5 +152,35 @@ class CreatePersonUseCaseTest {
                         "admin-pass-123",
                         SystemRoleCode.TEACHER)))
         .isInstanceOf(InstitutionNotFoundException.class);
+  }
+
+  @Test
+  @DisplayName("Should map a concurrent document constraint violation to conflict")
+  void execute_mapsConcurrentDocumentConflict() {
+    when(institutionRepository.findById(institutionId)).thenReturn(Optional.of(institution));
+    when(personRepository.existsByDocumentNumberAndInstitution_Id("12345678", institutionId))
+        .thenReturn(false);
+    when(personRepository.save(any(Person.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    doThrow(new DataIntegrityViolationException("duplicate document"))
+        .when(personRepository)
+        .flush();
+
+    assertThatThrownBy(
+            () ->
+                createPersonUseCase.execute(
+                    institutionId,
+                    new CreatePersonRequest(
+                        "Ana",
+                        "García",
+                        "12345678",
+                        null,
+                        null,
+                        null,
+                        "admin-pass-123",
+                        SystemRoleCode.TEACHER)))
+        .isInstanceOf(PersonAlreadyExistsException.class);
+
+    verify(userRepository, never()).save(any());
   }
 }

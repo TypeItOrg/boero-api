@@ -15,6 +15,6 @@ public class ListInstitutionsUseCase {
 
   public PaginatedResponse<InstitutionListItemResponse> execute(Pageable pageable) {
     return PaginatedResponse.from(
-        institutionRepository.findByActiveTrue(pageable).map(InstitutionListItemResponse::from));
+        institutionRepository.findAllWithLocation(pageable).map(InstitutionListItemResponse::from));
   }
 }

@@ -32,7 +32,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(Exception.class)
   @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
   public ExceptionPayload handleException(Exception ex) {
-    log.error(UNHANDLED_EXCEPTION_MESSAGE, ex.getMessage());
+    log.error(UNHANDLED_EXCEPTION_MESSAGE, ex.getMessage(), ex);
     return ExceptionPayload.builder()
         .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
         .message(INTERNAL_SERVER_ERROR_MESSAGE)
@@ -47,6 +47,18 @@ public class GlobalExceptionHandler {
             ExceptionPayload.builder()
                 .status(ex.getStatusCode().value())
                 .message(ex.getReason())
+                .build());
+  }
+
+  @ExceptionHandler(FieldConflictException.class)
+  public ResponseEntity<ExceptionPayload> handleFieldConflictException(
+      final FieldConflictException ex) {
+    return ResponseEntity.status(ex.getStatusCode())
+        .body(
+            ExceptionPayload.builder()
+                .status(ex.getStatusCode().value())
+                .message(ex.getReason())
+                .fieldErrors(ex.getFieldErrors())
                 .build());
   }
 

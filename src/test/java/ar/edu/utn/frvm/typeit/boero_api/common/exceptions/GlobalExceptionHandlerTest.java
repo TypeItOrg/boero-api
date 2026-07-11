@@ -41,6 +41,22 @@ class GlobalExceptionHandlerTest {
   }
 
   @Test
+  @DisplayName("Should map field conflicts to their field errors")
+  void shouldMapFieldConflictExceptionToPayload() {
+    final ResponseEntity<ExceptionPayload> response =
+        handler.handleFieldConflictException(
+            new FieldConflictException("slug", "Ya existe una institución con ese slug."));
+
+    assertThat(response.getStatusCode().value()).isEqualTo(409);
+    assertThat(response.getBody()).isNotNull();
+    assertThat(response.getBody().status()).isEqualTo(409);
+    assertThat(response.getBody().message()).isEqualTo("Ya existe una institución con ese slug.");
+    assertThat(response.getBody().fieldErrors())
+        .containsEntry("slug", "Ya existe una institución con ese slug.")
+        .hasSize(1);
+  }
+
+  @Test
   @DisplayName("Should map HttpMessageNotReadableException to bad request payload")
   void shouldMapHttpMessageNotReadableExceptionToBadRequest() {
     ExceptionPayload payload =

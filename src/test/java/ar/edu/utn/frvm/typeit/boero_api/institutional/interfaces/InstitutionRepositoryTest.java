@@ -30,8 +30,8 @@ class InstitutionRepositoryTest {
   @Autowired private InstitutionRepository institutionRepository;
 
   @Test
-  @DisplayName("Should list only active institutions with city and province loaded")
-  void findByActiveTrue_returnsOnlyActiveInstitutionsWithLocation() {
+  @DisplayName("Should list active and inactive institutions with full location loaded")
+  void findAllWithLocation_returnsAllInstitutionsWithLocation() {
     Institution active = createInstitution(entityManager, "boero-active");
     Institution inactive = createInstitution(entityManager, "boero-inactive");
     inactive.setActive(false);
@@ -39,13 +39,52 @@ class InstitutionRepositoryTest {
     entityManager.flush();
     entityManager.clear();
 
-    var page = institutionRepository.findByActiveTrue(PageRequest.of(0, 10));
+    var page = institutionRepository.findAllWithLocation(PageRequest.of(0, 10));
+
+    assertThat(page.getTotalElements()).isEqualTo(2);
+    assertThat(page.getContent())
+        .extracting(Institution::getSlug)
+        .contains("boero-active", "boero-inactive");
+    assertThat(page.getContent())
+        .allSatisfy(
+            institution -> {
+              assertThat(institution.getCity().getName()).isEqualTo("Villa Maria");
+              assertThat(institution.getCity().getProvince().getName()).isEqualTo("Cordoba");
+              assertThat(institution.getCity().getProvince().getCountry().getIsoCode())
+                  .isNotBlank();
+            });
+  }
+
+  @Test
+  @DisplayName("Should filter admin institution list by search and active status")
+  void findWithLocationByFilters_filtersBySearchAndActive() {
+    Institution active = createInstitution(entityManager, "boero-active");
+    active.setName("Conservatorio Superior de Música Felipe Boero");
+    entityManager.merge(active);
+
+    Institution inactive = createInstitution(entityManager, "boero-inactive");
+    inactive.setActive(false);
+    entityManager.merge(inactive);
+
+    Institution other = createInstitution(entityManager, "other-institution");
+    other.setName("Escuela Municipal");
+    entityManager.merge(other);
+    entityManager.flush();
+    entityManager.clear();
+
+    var page =
+        institutionRepository.findWithLocationByFilters("musica", true, PageRequest.of(0, 10));
 
     assertThat(page.getTotalElements()).isEqualTo(1);
-    Institution found = page.getContent().getFirst();
-    assertThat(found.getSlug()).isEqualTo("boero-active");
-    assertThat(found.getCity().getName()).isEqualTo("Villa Maria");
-    assertThat(found.getCity().getProvince().getName()).isEqualTo("Cordoba");
+    assertThat(page.getContent()).extracting(Institution::getSlug).containsExactly("boero-active");
+    assertThat(page.getContent())
+        .allSatisfy(
+            institution -> {
+              assertThat(institution.getCity().getName()).isEqualTo("Villa Maria");
+              assertThat(institution.getCity().getProvince().getName()).isEqualTo("Cordoba");
+              assertThat(institution.getCity().getProvince().getCountry().getIsoCode())
+                  .isNotBlank();
+            });
   }
 
   @Test
@@ -69,8 +108,8 @@ class InstitutionRepositoryTest {
   }
 
   @Test
-  @DisplayName("Should fetch institution with city and province by id")
-  void findWithCityAndProvinceById_loadsAssociations() {
+  @DisplayName("Should fetch institution with location by id")
+  void findWithLocationById_loadsAssociations() {
     Country countryEntity = persist(entityManager, country("ARG"));
     Province provinceEntity = persist(entityManager, province(countryEntity, "14"));
     City cityEntity = persist(entityManager, city(provinceEntity, "140182"));
@@ -78,10 +117,10 @@ class InstitutionRepositoryTest {
     entityManager.flush();
     entityManager.clear();
 
-    Institution found =
-        institutionRepository.findWithCityAndProvinceById(saved.getId()).orElseThrow();
+    Institution found = institutionRepository.findWithLocationById(saved.getId()).orElseThrow();
 
     assertThat(found.getCity().getName()).isEqualTo("Villa Maria");
     assertThat(found.getCity().getProvince().getName()).isEqualTo("Cordoba");
+    assertThat(found.getCity().getProvince().getCountry().getIsoCode()).isEqualTo("ARG");
   }
 }

@@ -5,17 +5,18 @@ import java.util.UUID;
 import lombok.Builder;
 
 @Builder
-public record InstitutionListItemResponse(
+public record InstitutionAdminListItemResponse(
     UUID id,
     String name,
     String slug,
     CountryLocationResponse country,
     String city,
     String province,
-    boolean active) {
+    boolean active,
+    long userCount) {
 
-  public static InstitutionListItemResponse from(Institution institution) {
-    return InstitutionListItemResponse.builder()
+  public static InstitutionAdminListItemResponse from(Institution institution, long userCount) {
+    return InstitutionAdminListItemResponse.builder()
         .id(institution.getId())
         .name(institution.getName())
         .slug(institution.getSlug())
@@ -23,6 +24,7 @@ public record InstitutionListItemResponse(
         .city(institution.getCity().getName())
         .province(institution.getCity().getProvince().getName())
         .active(institution.isActive())
+        .userCount(userCount)
         .build();
   }
 }

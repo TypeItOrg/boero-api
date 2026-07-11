@@ -16,6 +16,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionPerson
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,6 +36,7 @@ class DeletePersonUseCaseTest {
   @Mock private UserRepository userRepository;
   @Mock private PersonRoleAssignmentRepository personRoleAssignmentRepository;
   @Mock private SessionRevocationService sessionRevocationService;
+  @Mock private InstitutionRepository institutionRepository;
 
   @InjectMocks private DeletePersonUseCase deletePersonUseCase;
 
@@ -48,6 +50,8 @@ class DeletePersonUseCaseTest {
     institutionId = UUID.randomUUID();
     personId = UUID.randomUUID();
     Institution institution = Institution.builder().id(institutionId).name("Boero").build();
+    when(institutionRepository.findByIdForUpdate(institutionId))
+        .thenReturn(Optional.of(institution));
     person =
         Person.builder()
             .id(personId)

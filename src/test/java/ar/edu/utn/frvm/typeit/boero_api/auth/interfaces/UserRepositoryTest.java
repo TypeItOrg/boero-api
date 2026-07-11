@@ -8,6 +8,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.support.JpaAuditingTestConfig;
 import jakarta.persistence.EntityManager;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,5 +63,27 @@ class UserRepositoryTest {
             userRepository.existsByPersonDocumentNumberAndInstitution_Id(
                 "87654321", institution.getId()))
         .isFalse();
+  }
+
+  @Test
+  @DisplayName("Should count enabled users grouped by institution id for a set of institution ids")
+  void countEnabledUsersByInstitutionIdIn_countsEnabledUsersPerInstitution() {
+    Institution boero = createInstitution(entityManager, "boero");
+    Institution other = createInstitution(entityManager, "other-school");
+    createUser(entityManager, boero, "11111111");
+    createUser(entityManager, boero, "22222222");
+    User disabled = createUser(entityManager, boero, "33333333");
+    disabled.setEnabled(false);
+    entityManager.merge(disabled);
+    entityManager.flush();
+    entityManager.clear();
+
+    var counts =
+        userRepository.countEnabledUsersByInstitutionIdIn(List.of(boero.getId(), other.getId()));
+
+    assertThat(counts).hasSize(1);
+    var boeroCount = counts.getFirst();
+    assertThat(boeroCount.getInstitutionId()).isEqualTo(boero.getId());
+    assertThat(boeroCount.getUserCount()).isEqualTo(2L);
   }
 }

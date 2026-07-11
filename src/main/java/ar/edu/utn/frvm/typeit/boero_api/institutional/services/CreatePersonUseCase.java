@@ -15,6 +15,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.PersonResp
 import jakarta.validation.Validator;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,7 +55,12 @@ public class CreatePersonUseCase {
             .build();
 
     PersonMutationSupport.assertValid(person, validator);
-    personRepository.save(person);
+    try {
+      personRepository.save(person);
+      personRepository.flush();
+    } catch (DataIntegrityViolationException exception) {
+      throw new PersonAlreadyExistsException();
+    }
 
     User user =
         User.builder()

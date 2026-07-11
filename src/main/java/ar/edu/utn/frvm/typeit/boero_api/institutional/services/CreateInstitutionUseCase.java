@@ -8,6 +8,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepo
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionDetailResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.requests.CreateInstitutionRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,10 +41,16 @@ public class CreateInstitutionUseCase {
             .active(true)
             .build();
 
-    Institution saved = institutionRepository.save(institution);
+    Institution saved;
+    try {
+      saved = institutionRepository.save(institution);
+      institutionRepository.flush();
+    } catch (DataIntegrityViolationException exception) {
+      throw new SlugAlreadyExistsException();
+    }
 
     return institutionRepository
-        .findWithCityAndProvinceById(saved.getId())
+        .findWithLocationById(saved.getId())
         .map(InstitutionDetailResponse::from)
         .orElseThrow();
   }

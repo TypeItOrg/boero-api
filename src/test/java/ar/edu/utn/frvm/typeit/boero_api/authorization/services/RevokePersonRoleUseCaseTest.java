@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -13,7 +14,10 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.PersonNotFoundI
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
+import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,8 +32,18 @@ class RevokePersonRoleUseCaseTest {
   @Mock private InstitutionalSystemRoleResolver institutionalSystemRoleResolver;
   @Mock private PersonRoleAssignmentRepository personRoleAssignmentRepository;
   @Mock private RevokePersonSystemRoleUseCase revokePersonSystemRoleUseCase;
+  @Mock private InstitutionRepository institutionRepository;
 
   @InjectMocks private RevokePersonRoleUseCase revokePersonRoleUseCase;
+
+  @BeforeEach
+  void setUp() {
+    when(institutionRepository.findByIdForUpdate(any(UUID.class)))
+        .thenAnswer(
+            invocation ->
+                Optional.of(
+                    Institution.builder().id(invocation.getArgument(0)).name("Boero").build()));
+  }
 
   @Test
   @DisplayName("Should revoke role from person")
@@ -65,7 +79,38 @@ class RevokePersonRoleUseCaseTest {
     when(personRoleAssignmentRepository.existsByPerson_IdAndRole_IdAndInstitution_Id(
             personId, role.getId(), institutionId))
         .thenReturn(true);
-    when(personRoleAssignmentRepository.countByInstitution_IdAndRole_Code(
+    when(personRoleAssignmentRepository.countActivePeopleByInstitutionIdAndRoleCode(
+            institutionId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name()))
+        .thenReturn(1L);
+
+    assertThatThrownBy(
+            () ->
+                revokePersonRoleUseCase.execute(
+                    institutionId, personId, SystemRoleCode.INSTITUTIONAL_AUTHORITY))
+        .isInstanceOf(LastInstitutionalAuthorityRevocationException.class);
+
+    verify(revokePersonSystemRoleUseCase, never())
+        .execute(person, SystemRoleCode.INSTITUTIONAL_AUTHORITY);
+  }
+
+  @Test
+  @DisplayName("Should throw when revoking and other authorities in database are soft-deleted")
+  void execute_throwsWhenOtherAuthoritiesAreSoftDeleted() {
+    UUID institutionId = UUID.randomUUID();
+    UUID personId = UUID.randomUUID();
+    Person person = personWith(institutionId, personId);
+    Role role = roleWith(SystemRoleCode.INSTITUTIONAL_AUTHORITY);
+
+    when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
+        .thenReturn(person);
+    when(institutionalSystemRoleResolver.requireInstitutionalSystemRole(
+            SystemRoleCode.INSTITUTIONAL_AUTHORITY))
+        .thenReturn(role);
+    when(personRoleAssignmentRepository.existsByPerson_IdAndRole_IdAndInstitution_Id(
+            personId, role.getId(), institutionId))
+        .thenReturn(true);
+    // There are 2 authority assignments, but only 1 belongs to an active (non-deleted) person
+    when(personRoleAssignmentRepository.countActivePeopleByInstitutionIdAndRoleCode(
             institutionId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name()))
         .thenReturn(1L);
 

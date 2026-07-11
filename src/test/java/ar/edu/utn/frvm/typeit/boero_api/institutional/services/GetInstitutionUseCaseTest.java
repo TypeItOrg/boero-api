@@ -5,9 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.City;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Country;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Province;
-import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionInactiveException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import java.util.Optional;
@@ -31,7 +31,7 @@ class GetInstitutionUseCaseTest {
   void execute_returnsActiveInstitutionDetail() {
     UUID institutionId = UUID.randomUUID();
     Institution institution = institutionWith(institutionId, true);
-    when(institutionRepository.findWithCityAndProvinceById(institutionId))
+    when(institutionRepository.findWithLocationById(institutionId))
         .thenReturn(Optional.of(institution));
 
     var response = getInstitutionUseCase.execute(institutionId);
@@ -39,34 +39,40 @@ class GetInstitutionUseCaseTest {
     assertThat(response.id()).isEqualTo(institutionId);
     assertThat(response.name()).isEqualTo("Conservatorio Boero");
     assertThat(response.active()).isTrue();
-    assertThat(response.city()).isEqualTo("Villa Maria");
-    assertThat(response.province()).isEqualTo("Cordoba");
+    assertThat(response.city().name()).isEqualTo("Villa Maria");
+    assertThat(response.province().name()).isEqualTo("Cordoba");
+    assertThat(response.country().name()).isEqualTo("Argentina");
+    assertThat(response.country().isoCode()).isEqualTo("ARG");
   }
 
   @Test
   @DisplayName("Should throw when institution does not exist")
   void execute_throwsWhenInstitutionNotFound() {
     UUID institutionId = UUID.randomUUID();
-    when(institutionRepository.findWithCityAndProvinceById(institutionId))
-        .thenReturn(Optional.empty());
+    when(institutionRepository.findWithLocationById(institutionId)).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> getInstitutionUseCase.execute(institutionId))
         .isInstanceOf(InstitutionNotFoundException.class);
   }
 
   @Test
-  @DisplayName("Should throw when institution is inactive")
-  void execute_throwsWhenInstitutionInactive() {
+  @DisplayName("Should return inactive institution detail")
+  void execute_returnsInactiveInstitutionDetail() {
     UUID institutionId = UUID.randomUUID();
-    when(institutionRepository.findWithCityAndProvinceById(institutionId))
+    when(institutionRepository.findWithLocationById(institutionId))
         .thenReturn(Optional.of(institutionWith(institutionId, false)));
 
-    assertThatThrownBy(() -> getInstitutionUseCase.execute(institutionId))
-        .isInstanceOf(InstitutionInactiveException.class);
+    var response = getInstitutionUseCase.execute(institutionId);
+
+    assertThat(response.id()).isEqualTo(institutionId);
+    assertThat(response.active()).isFalse();
   }
 
   private static Institution institutionWith(UUID id, boolean active) {
-    Province province = Province.builder().name("Cordoba").build();
+    Country country =
+        Country.builder().id(UUID.randomUUID()).name("Argentina").isoCode("ARG").build();
+    Province province =
+        Province.builder().id(UUID.randomUUID()).country(country).name("Cordoba").build();
     City city = City.builder().name("Villa Maria").province(province).build();
 
     return Institution.builder()

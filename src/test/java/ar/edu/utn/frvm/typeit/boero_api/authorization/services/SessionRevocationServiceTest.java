@@ -5,11 +5,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.UserSession;
+import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformRefreshTokenRepository;
+import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformSessionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.RefreshTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PlatformRefreshTokenRepository;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PlatformSessionRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +31,7 @@ class SessionRevocationServiceTest {
   @Mock private RefreshTokenRepository refreshTokenRepository;
   @Mock private PlatformSessionRepository platformSessionRepository;
   @Mock private PlatformRefreshTokenRepository platformRefreshTokenRepository;
+  @Mock private org.springframework.cache.CacheManager cacheManager;
 
   @Captor private ArgumentCaptor<List<UUID>> sessionIdsCaptor;
   @Captor private ArgumentCaptor<LocalDateTime> endedAtCaptor;
@@ -59,6 +60,36 @@ class SessionRevocationServiceTest {
         .deactivateByIds(sessionIdsCaptor.capture(), endedAtCaptor.capture());
     assertThat(sessionIdsCaptor.getValue()).containsExactly(sessionId);
     assertThat(endedAtCaptor.getValue()).isNotNull();
+  }
+
+  @Test
+  @DisplayName("Should deactivate every active session from an institution")
+  void revokeInstitutionalSessionsForInstitution_closesActiveSessions() {
+    final UUID institutionId = UUID.randomUUID();
+    final UUID firstSessionId = UUID.randomUUID();
+    final UUID secondSessionId = UUID.randomUUID();
+    final UserSession first = session(firstSessionId);
+    final UserSession second = session(secondSessionId);
+    when(userSessionRepository.findActiveByInstitutionId(institutionId))
+        .thenReturn(List.of(first, second));
+
+    sessionRevocationService.revokeInstitutionalSessionsForInstitution(institutionId);
+
+    verify(refreshTokenRepository).revokeBySessionIds(sessionIdsCaptor.capture());
+    assertThat(sessionIdsCaptor.getValue()).containsExactly(firstSessionId, secondSessionId);
+    verify(userSessionRepository)
+        .deactivateByIds(sessionIdsCaptor.capture(), endedAtCaptor.capture());
+  }
+
+  private static UserSession session(final UUID sessionId) {
+    final UserSession session =
+        UserSession.builder()
+            .userId(UUID.randomUUID())
+            .ipAddress("127.0.0.1")
+            .userAgent("JUnit")
+            .build();
+    session.setId(sessionId);
+    return session;
   }
 
   private void whenUserFound(UUID personId, UUID institutionId, UUID userId) {

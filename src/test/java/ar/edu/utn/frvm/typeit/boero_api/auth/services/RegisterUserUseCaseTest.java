@@ -18,6 +18,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AssignPersonSyste
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.City;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionInactiveException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
@@ -167,6 +168,23 @@ class RegisterUserUseCaseTest {
     verify(personRepository, never()).save(any());
     verify(userRepository, never()).save(any());
     verify(assignPersonSystemRoleUseCase, never()).execute(any(), any());
+  }
+
+  @Test
+  @DisplayName("Should reject registration for an inactive institution")
+  void execute_throwsWhenInstitutionIsInactive() {
+    final UUID institutionId = UUID.randomUUID();
+    final RegisterRequest request =
+        new RegisterRequest("Ana", "Garcia", "12345678", "password123", institutionId);
+    final Institution institution = institutionWith(institutionId);
+    institution.setActive(false);
+    when(institutionRepository.findById(institutionId)).thenReturn(Optional.of(institution));
+
+    assertThatThrownBy(() -> registerUserUseCase.execute(request))
+        .isInstanceOf(InstitutionInactiveException.class);
+
+    verify(personRepository, never()).save(any());
+    verify(userRepository, never()).save(any());
   }
 
   @Test

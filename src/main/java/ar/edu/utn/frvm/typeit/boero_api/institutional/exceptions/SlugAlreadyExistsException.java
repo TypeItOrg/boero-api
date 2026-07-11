@@ -2,11 +2,10 @@ package ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions;
 
 import static ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionMessages.SLUG_ALREADY_EXISTS;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
+import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.FieldConflictException;
 
-public class SlugAlreadyExistsException extends ResponseStatusException {
+public class SlugAlreadyExistsException extends FieldConflictException {
   public SlugAlreadyExistsException() {
-    super(HttpStatus.CONFLICT, SLUG_ALREADY_EXISTS);
+    super("slug", SLUG_ALREADY_EXISTS);
   }
 }
