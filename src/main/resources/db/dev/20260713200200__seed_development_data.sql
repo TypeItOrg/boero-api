@@ -4081,4 +4081,3 @@ INSERT INTO public.cities (created_at, updated_at, city_id, province_id, departm
 
 INSERT INTO public.institutions (created_at, updated_at, active, city_id, institution_id, phone_number, number, slug, email, additional_info, name, neighborhood, street) VALUES (CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true, '019e18e4-cee5-74a1-9a6d-54cc0be88405', institution_id, '0353-4619146', '1174', 'felipe-boero', 'conserfelipeboero@gmail.com', null, 'Conservatorio Superior de Música Felipe Boero', '', 'Bv. España') ON CONFLICT DO NOTHING;
 END $$;
-@@
