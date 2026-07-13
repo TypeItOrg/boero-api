@@ -84,7 +84,6 @@ class LoginUseCaseTest {
     UUID institutionId = UUID.randomUUID();
     LoginRequest request = loginRequest(institutionId, false);
     User user = userWith(institutionId, "12345678");
-    when(httpRequest.getHeader("X-Forwarded-For")).thenReturn(null);
     when(httpRequest.getHeader("User-Agent")).thenReturn("Mozilla/5.0");
     when(httpRequest.getRemoteAddr()).thenReturn("192.0.2.1");
     stubAuthManager(user);
@@ -103,13 +102,13 @@ class LoginUseCaseTest {
   }
 
   @Test
-  @DisplayName("Should extract the client IP from X-Forwarded-For when present")
-  void execute_extractsIpFromXForwardedFor() {
+  @DisplayName("Should use the remote address resolved by the servlet container")
+  void execute_usesContainerResolvedRemoteAddress() {
     UUID institutionId = UUID.randomUUID();
     LoginRequest request = loginRequest(institutionId, false);
     User user = userWith(institutionId, "12345678");
-    when(httpRequest.getHeader("X-Forwarded-For")).thenReturn("10.0.0.1, 192.168.1.1");
     when(httpRequest.getHeader("User-Agent")).thenReturn("JUnit");
+    when(httpRequest.getRemoteAddr()).thenReturn("10.0.0.1");
     stubAuthManager(user);
     stubSessionSave();
 
@@ -219,7 +218,6 @@ class LoginUseCaseTest {
   }
 
   private void stubSuccessfulAuth(User user) {
-    when(httpRequest.getHeader("X-Forwarded-For")).thenReturn(null);
     when(httpRequest.getHeader("User-Agent")).thenReturn("JUnit");
     when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
     stubAuthManager(user);
