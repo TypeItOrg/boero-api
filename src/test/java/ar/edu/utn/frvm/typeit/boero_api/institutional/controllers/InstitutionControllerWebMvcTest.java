@@ -34,6 +34,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.ProvinceSummaryRe
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.requests.CreateInstitutionRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.requests.UpdateInstitutionRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.CreateInstitutionUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.GetInstitutionAdminUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.GetInstitutionUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ListInstitutionsAdminUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ListInstitutionsUseCase;
@@ -80,6 +81,7 @@ class InstitutionControllerWebMvcTest {
   @MockitoBean private ListInstitutionsUseCase listInstitutionsUseCase;
   @MockitoBean private ListInstitutionsAdminUseCase listInstitutionsAdminUseCase;
   @MockitoBean private GetInstitutionUseCase getInstitutionUseCase;
+  @MockitoBean private GetInstitutionAdminUseCase getInstitutionAdminUseCase;
   @MockitoBean private CreateInstitutionUseCase createInstitutionUseCase;
   @MockitoBean private UpdateInstitutionUseCase updateInstitutionUseCase;
   @MockitoBean private UpdateInstitutionStatusUseCase updateInstitutionStatusUseCase;

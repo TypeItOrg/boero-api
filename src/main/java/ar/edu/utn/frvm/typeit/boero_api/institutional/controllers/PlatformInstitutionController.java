@@ -4,8 +4,10 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPlatformRole;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionAdminDetailResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionAdminListItemResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.requests.UpdateInstitutionStatusRequest;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.GetInstitutionAdminUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ListInstitutionsAdminUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdateInstitutionStatusUseCase;
 import jakarta.validation.Valid;
@@ -33,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PlatformInstitutionController {
 
   private final ListInstitutionsAdminUseCase listInstitutionsAdminUseCase;
+  private final GetInstitutionAdminUseCase getInstitutionAdminUseCase;
   private final UpdateInstitutionStatusUseCase updateInstitutionStatusUseCase;
 
   @GetMapping(version = Version.V1)
@@ -42,6 +45,12 @@ public class PlatformInstitutionController {
       @RequestParam(required = false) final Boolean active,
       @PageableDefault(sort = "name", direction = Sort.Direction.ASC) Pageable pageable) {
     return listInstitutionsAdminUseCase.execute(search, active, pageable);
+  }
+
+  @GetMapping(value = "/{id}", version = Version.V1)
+  @RequiresPlatformRole(PlatformRoleCode.PLATFORM_ADMIN)
+  public InstitutionAdminDetailResponse get(@PathVariable final UUID id) {
+    return getInstitutionAdminUseCase.execute(id);
   }
 
   @PatchMapping(value = "/{id}/status", version = Version.V1)
