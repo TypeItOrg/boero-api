@@ -455,7 +455,8 @@ class PeopleControllerWebMvcTest {
   }
 
   private static PersonSummaryResponse personSummary() {
-    return new PersonSummaryResponse(PERSON_ID, "Ana", "García", "12345678", "ana@example.com");
+    return new PersonSummaryResponse(
+        PERSON_ID, "Ana", "García", "12345678", "ana@example.com", null, List.of());
   }
 
   private static PersonResponse personResponse() {
