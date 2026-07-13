@@ -32,7 +32,9 @@ jobs:
         run: ./gradlew --no-daemon spotlessCheck test
 
   publish-image:
-    if: github.event_name == 'push'
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref_name == 'staging' || github.ref_name == 'main')
     needs: test
     runs-on: ubuntu-latest
     permissions:

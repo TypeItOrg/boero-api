@@ -37,7 +37,7 @@ Staging y producción consumen una imagen de GHCR identificada por una etiqueta 
 ghcr.io/typeitorg/boero-api:sha-<commit>
 ```
 
-GitHub Actions ejecuta `spotlessCheck` y los tests antes de publicar la imagen. También publica una etiqueta mutable con el nombre de la rama para inspección, pero los despliegues deben usar siempre `sha-<commit>`.
+GitHub Actions ejecuta `spotlessCheck` y los tests en `develop`, `staging` y `main`. Sólo los pushes a `staging` y `main` publican una imagen. También se publica una etiqueta mutable con el nombre de esas ramas para inspección, pero los despliegues deben usar siempre `sha-<commit>`.
 
 ## Desarrollo
 
@@ -127,7 +127,7 @@ El archivo real no se versiona. En el VPS debe pertenecer al usuario operativo y
 
 ### Primera instalación de staging
 
-El workflow publica una imagen cuando se hace push a `develop`, `staging` o `main`. Para preparar una versión candidata, hacer el merge `develop → staging` y esperar que termine correctamente el job `publish-image` ejecutado sobre `staging`.
+El workflow valida los pushes a `develop`, `staging` y `main`, pero sólo publica imágenes desde `staging` y `main`. Para preparar una versión candidata, hacer el merge `develop → staging` y esperar que termine correctamente el job `publish-image` ejecutado sobre `staging`.
 
 Después del merge, obtener el SHA exacto de la rama remota:
 
