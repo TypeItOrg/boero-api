@@ -19,7 +19,7 @@ No describe funcionalidades futuras como si ya existieran. Cuando una garantía 
 | Integridad entre tenants | Implementado | Entidades críticas validan coherencia de institución y las consultas incluyen el tenant |
 | Conflictos concurrentes de unicidad | Implementado | Las restricciones se fuerzan con `flush()` y se convierten a excepciones HTTP 409 |
 | Pruebas PostgreSQL de refresh | Implementado | Se prueba commit tras reutilización y rotación concurrente con Testcontainers |
-| Migraciones de esquema | Fuera del alcance actual | Se usa `spring.jpa.hibernate.ddl-auto=update`; Flyway no forma parte de esta implementación |
+| Migraciones de esquema | Implementado | Flyway versiona las transiciones y Hibernate valida el resultado contra las entidades |
 
 ## Invariantes que no deben romperse
 
@@ -106,7 +106,7 @@ Las comprobaciones `exists...` producen mensajes tempranos, pero no reemplazan u
 | `platformAccountPermissions` | asignación/revocación de rol plataforma y seed |
 | `platformAccountRoles` | asignación/revocación de rol plataforma y seed |
 
-Redis aplica un TTL de 5 minutos a las entradas de Spring Cache. Al agregar una mutación nueva de sesiones, roles o permisos, debe agregarse su invalidación en la misma entrega.
+Redis aplica un TTL de 5 minutos a las entradas de Spring Cache. En staging y producción usa AOF sobre un volumen persistente para conservar la blacklist de access tokens después de un reinicio. Al agregar una mutación nueva de sesiones, roles o permisos, debe agregarse su invalidación en la misma entrega.
 
 ## Persistencia e índices relevantes
 
@@ -118,13 +118,13 @@ Redis aplica un TTL de 5 minutos a las entradas de Spring Cache. Al agregar una 
 
 ### Evolución del esquema
 
-El esquema se actualiza actualmente mediante Hibernate con `ddl-auto=update`. No hay migraciones versionadas. En consecuencia:
+Flyway es la única herramienta que crea o modifica el esquema. Hibernate usa `ddl-auto=validate` y detiene el arranque si las entidades no coinciden con la base.
 
-- Los cambios de anotaciones JPA expresan el esquema deseado, pero no documentan por sí solos una transición segura desde cada versión anterior.
-- Un cambio destructivo o una transformación de datos necesita una estrategia operativa explícita antes de desplegarse.
-- Las pruebas con una base creada desde cero no garantizan que una base existente pueda actualizarse sin intervención.
-
-Flyway quedó deliberadamente fuera del alcance de esta etapa. Esta sección debe revisarse si cambia esa decisión.
+- Cada cambio persistente incluye la modificación del `@Entity` y una migración SQL nueva.
+- Los nombres usan timestamps UTC con formato `yyyyMMddHHmmss__description.sql`.
+- Una migración aplicada no se modifica ni se renombra; cualquier corrección avanza con una migración posterior.
+- Las migraciones comunes viven en `db/migration`; `db/dev` contiene únicamente datos de desarrollo.
+- La migración inicial se verifica contra PostgreSQL mediante Testcontainers antes de publicar la imagen.
 
 ## Cobertura automatizada
 

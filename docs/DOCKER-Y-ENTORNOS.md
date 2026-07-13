@@ -1,245 +1,279 @@
-# Configuración de Docker y Entornos
+# Docker, Entornos y Despliegue
 
-Este documento sirve como guía completa del entorno Docker del proyecto, incluyendo desarrollo con recarga automática, staging, producción, PostgreSQL, testing con H2 y operación local paso a paso.
+## Arquitectura
 
-## Introducción
+El proyecto usa un único `Dockerfile` y tres stacks de Compose:
 
-Este proyecto fue preparado para trabajar con una única base técnica y tres entornos operativos claros: `dev`, `staging` y `prod`. En los tres casos la aplicación usa **PostgreSQL**. Los tests, en cambio, no dependen de Docker ni de PostgreSQL porque **Spring levanta H2** en memoria desde `src/test/resources/application.properties`.
+- `compose.yaml`: desarrollo con código montado y reinicio automático.
+- `compose.staging.yaml`: imagen inmutable, PostgreSQL y Redis persistente.
+- `compose.prod.yaml`: misma topología que staging con configuración productiva.
 
-La idea principal del setup es mantener una sola forma de construir la aplicación, un solo `Dockerfile`, y separar el comportamiento por entorno usando **Docker Compose** y **perfiles de Spring Boot**. Eso permite que el equipo trabaje con una experiencia consistente y que, al mismo tiempo, cada entorno tenga sus propias reglas de ejecución, nombres de contenedores y persistencia de datos.
+La topología objetivo para un VPS único es:
 
-## Requisitos previos
-
-Para usar el proyecto localmente hace falta tener instalado **Docker** y **Docker Compose**. Si además querés correr comandos Gradle fuera de contenedor, como `./gradlew test`, también necesitás **Java 21** disponible en la máquina. Una verificación mínima sería ejecutar:
-
-```bash
-docker --version
-docker compose version
+```text
+Internet
+  → Nginx del host en 80
+  → 127.0.0.1:8080
+  → boero-api
+      → PostgreSQL en la red de Compose
+      → Redis en la red de Compose
 ```
 
-## Estructura de la configuración
+PostgreSQL y Redis no publican puertos en staging o producción. El puerto del API se enlaza únicamente a loopback, de modo que Nginx sea el único punto de entrada público.
 
-La base del sistema está distribuida en algunos archivos clave. `Dockerfile` define tanto la imagen de desarrollo como la imagen final de prod. `compose.yaml` contiene el stack de `dev`, `compose.staging.yaml` contiene el stack de `staging` y `compose.prod.yaml` contiene el stack de `prod`.
+## Imagen de la aplicación
 
-La configuración de Spring se reparte entre `application.properties`, que contiene lo común, y los archivos por perfil `application-dev.properties`, `application-staging.properties` y `application-prod.properties`. Para los tests se usa `src/test/resources/application.properties`, de modo que H2 quede completamente encapsulado en el contexto de testing.
+El target `prod` del `Dockerfile`:
 
-También hay dos scripts auxiliares en `docker/`. `dev-entrypoint.sh` es el **responsable de arrancar Spring Boot en desarrollo y reiniciarlo cuando detecta cambios en el código**. El script `postgres-entrypoint.sh` extiende el arranque de PostgreSQL para asegurarse de que la base configurada por `DB_NAME` exista incluso si el volumen ya venía de una corrida anterior.
+- compila con Java 21 y Gradle Wrapper;
+- genera y extrae las capas del `bootJar`;
+- ejecuta con un JRE, sin Gradle ni código fuente;
+- usa el usuario sin privilegios `appuser`;
+- arranca mediante `JarLauncher`.
 
-## Archivos Compose por entorno
+Staging y producción consumen una imagen de GHCR identificada por una etiqueta inmutable:
 
-Cada entorno tiene su propio archivo Compose para evitar que Docker reutilice accidentalmente una imagen de otro entorno:
-
-- `compose.yaml`: `dev`, `postgres` y `redis` para desarrollo local.
-- `compose.staging.yaml`: `staging`, `postgres` y `redis` para staging.
-- `compose.prod.yaml`: `prod`, `postgres` y `redis` para producción.
-
-Los servicios de aplicación se llaman igual que el entorno (`dev`, `staging`, `prod`) y declaran imágenes distintas (`boero-api:dev`, `boero-api:staging`, `boero-api:prod`). Esto impide que `make prod` use una imagen construida previamente desde el target de desarrollo.
-
-Uso típico (el `Makefile` del repo suele encapsular esto):
-
-```bash
-docker compose up --build dev
-docker compose --env-file .env.staging -f compose.staging.yaml up --build staging
-docker compose --env-file .env.prod -f compose.prod.yaml up --build prod
+```text
+ghcr.io/typeitorg/boero-api:sha-<commit>
 ```
 
-Resumen de cómo se diferencia cada override respecto a la idea de “solo base + entorno”:
+GitHub Actions ejecuta `spotlessCheck` y los tests antes de publicar la imagen. También publica una etiqueta mutable con el nombre de la rama para inspección, pero los despliegues deben usar siempre `sha-<commit>`.
 
-| Enfoque | `compose.yaml` | `compose.staging.yaml` | `compose.prod.yaml` |
-|--------|--------------------|-------------------------|---------------------|
-| **`build.target`** | `dev` | `prod` | `prod` |
-| Objetivo | Código montado, caché Gradle, perfil Spring `dev`, entrypoint de desarrollo | Imagen empaquetada, credenciales obligatorias (`${VAR:?…}`), healthcheck HTTP | Igual que staging en tipo de imagen; **`restart: unless-stopped`** en app y Postgres |
-| Postgres | Puertos publicados, defaults locales para DB | Credenciales requeridas, healthcheck | Igual + restart |
+## Desarrollo
 
-## Qué son los targets y para qué sirven
+Preparación:
 
-En un **Dockerfile multi-stage**, cada bloque que comienza con `FROM imagen AS nombre` define una **etapa**. El **nombre** de esa etapa es lo que Docker y Compose llaman **target** cuando construís la imagen.
+```bash
+cp .env.dev.example .env.dev
+make dev
+```
 
-**Para qué sirve:** elegís **en qué etapa “cortás” el build**. La imagen final es **solo esa etapa**, no un solo filesystem con todo mezclado. Eso permite:
+El servicio `dev` usa el target de desarrollo, monta el repositorio en `/workspace` y reinicia `bootRun` al detectar cambios.
 
-- **Un solo `Dockerfile`**, varias imágenes posibles (por ejemplo desarrollo vs producción).
-- **Imágenes más chicas** en runtime al no incluir JDK, Gradle ni capas de compilación innecesarias.
-- En **Docker Compose**, `build.target` indica: “al hacer `docker compose build`, la imagen del servicio debe ser la etapa llamada `X`”.
+PostgreSQL, Redis y el API publican puertos locales para facilitar la inspección durante el desarrollo. Estos defaults no se reutilizan en producción.
 
-En una frase: **un target es “construyo hasta esta etapa y esa capa es mi imagen final”**.
+## Flyway y evolución del esquema
 
-### Targets en este proyecto
+Flyway es el único mecanismo que crea o modifica el esquema. Hibernate usa:
 
-La cadena para **producción / staging** (imagen liviana con JRE) es:
+```properties
+spring.jpa.hibernate.ddl-auto=validate
+```
 
-1. **`deps`** — JDK, resolución de dependencias Gradle (sin `src` todavía).
-2. **`builder`** — añade `src` y genera el `bootJar`.
-3. **`extract`** — extrae capas del JAR (patrón habitual Spring Boot + Docker).
-4. **`prod`** — imagen **`eclipse-temurin:21-jre-jammy`**, usuario no root, `curl` para healthchecks; arranque con `JarLauncher`.
+Un modelo persistente se representa en dos lugares:
 
-La etapa **`dev`** es **independiente** de esa cadena: parte de **`gradle:9.4.1-jdk21-jammy`**, no hereda de `deps` / `builder` / `extract` / `prod`. Incluye herramientas de desarrollo y el `dev-entrypoint.sh`. Con **`build.target: dev`**, el código se trabaja sobre todo vía **bind mount** (`.: /workspace`); no hace falta que el JAR final esté empaquetado dentro de la imagen para desarrollo día a día.
+- el `@Entity` define el mapping Java/JPA;
+- una migración SQL define la transición de la base.
 
-- Con **`target: prod`**, Docker construye lo necesario para llegar a **`prod`** (típicamente `deps` → `builder` → `extract` → `prod`).
-- Con **`target: dev`**, Docker construye **solo la etapa `dev`** (y su imagen base); la rama multi-stage de producción no interviene en esa imagen.
+Las migraciones comunes viven en:
 
-## Cómo funciona cada entorno
-Esta sección explica el comportamiento de cada entorno, qué imagen utiliza, cómo arranca la aplicación y qué diferencias operativas existen entre desarrollo, staging y producción.
+```text
+src/main/resources/db/migration
+```
 
-### Desarrollo
+Los datos exclusivos de desarrollo viven en:
 
-En `dev` **la aplicación corre dentro de Docker** usando el target `dev` del `Dockerfile`. Ese target parte de `gradle:9.4.1-jdk21-jammy`, ya trae Gradle instalado y evita la descarga del wrapper en cada arranque. El contenedor ejecuta `gradle bootRun` y, al mismo tiempo, un watcher basado en `inotifywait` observa cambios en `src`, `build.gradle` y `settings.gradle`. **Cuando detecta una modificación, reinicia la aplicación.**
+```text
+src/main/resources/db/dev
+```
 
-El código fuente se monta con bind mount dentro de `/workspace`, por eso editar localmente y guardar se refleja dentro del contenedor. Además existe un volumen dedicado para la caché de Gradle, lo que mejora bastante los tiempos después del primer arranque.
+Los nombres usan timestamps UTC, sin prefijo `V`:
 
-### Staging
+```text
+yyyyMMddHHmmss__description.sql
+20260713200130__initial_schema.sql
+20260714101532__create_courses.sql
+```
 
-En `staging` la aplicación ya no corre con `bootRun`, sino con la imagen final del target `prod`. **Ese entorno está pensado para parecerse mucho más a producción.** Sigue usando PostgreSQL, levanta la app empaquetada y expone un healthcheck operativo sobre `http://localhost:8080/actuator/health/readiness`.
+Para crear el archivo con el timestamp UTC actual:
+
+```bash
+make migration add_description_to_users_table
+```
+
+El nombre debe comenzar con una letra minúscula y usar `snake_case`. El comando crea el archivo vacío dentro de `src/main/resources/db/migration` para completar con el cambio SQL correspondiente.
+
+Cada versión debe ser única. Una migración aplicada no se modifica ni se renombra; una corrección se entrega con un timestamp posterior.
+
+El perfil `dev` admite automáticamente como baseline la migración inicial cuando encuentra un volumen histórico creado por Hibernate. Esto permite conservar una base local existente y aplicar desde allí las migraciones posteriores. Staging y producción no habilitan baseline automático: se espera una base nueva o una transición revisada explícitamente.
+
+Los tests rápidos siguen usando H2 con Flyway deshabilitado. La migración completa y los datos de desarrollo se verifican además contra PostgreSQL real mediante Testcontainers y Hibernate `validate`.
+
+## Configuración de staging y producción
+
+Crear el archivo de entorno y restringir sus permisos:
+
+```bash
+cp .env.prod.example .env.prod
+chmod 600 .env.prod
+```
+
+Variables principales:
+
+| Variable | Uso |
+|---|---|
+| `APP_IMAGE` | Imagen OCI; por defecto `ghcr.io/typeitorg/boero-api` |
+| `APP_VERSION` | Etiqueta inmutable `sha-<commit>`; obligatoria |
+| `APP_HOST_PORT` | Puerto loopback consumido por Nginx; por defecto `8080` |
+| `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Credenciales PostgreSQL obligatorias |
+| `JWT_SECRET` | Secreto HS256 obligatorio, aleatorio y de al menos 32 bytes |
+| `APP_MEMORY_LIMIT`, `APP_CPU_LIMIT` | Límites del contenedor Java |
+| `POSTGRES_MEMORY_LIMIT`, `POSTGRES_CPU_LIMIT` | Límites de PostgreSQL |
+| `REDIS_MEMORY_LIMIT`, `REDIS_CPU_LIMIT` | Límites de Redis |
+
+El archivo real no se versiona. En el VPS debe pertenecer al usuario operativo y tener modo `600`.
+
+## Despliegue y rollback
+
+### Primera instalación de staging
+
+El workflow publica una imagen cuando se hace push a `develop`, `staging` o `main`. Para preparar una versión candidata, hacer el merge `develop → staging` y esperar que termine correctamente el job `publish-image` ejecutado sobre `staging`.
+
+Después del merge, obtener el SHA exacto de la rama remota:
+
+```bash
+git fetch origin
+git rev-parse origin/staging
+```
+
+La imagen publicada tendrá la etiqueta inmutable `ghcr.io/typeitorg/boero-api:sha-<sha-completo>`. Aunque CI también publica la etiqueta mutable `staging`, los despliegues deben fijar siempre la etiqueta basada en SHA.
+
+En el VPS, clonar el repositorio para disponer de Compose, el Makefile y los scripts operativos:
+
+```bash
+sudo mkdir -p /opt/boero-api
+sudo chown "$USER":"$USER" /opt/boero-api
+git clone --branch staging git@github.com:TypeItOrg/boero-api.git /opt/boero-api
+cd /opt/boero-api
+cp .env.staging.example .env.staging
+chmod 600 .env.staging
+```
+
+Editar `.env.staging` y reemplazar, como mínimo:
+
+```dotenv
+APP_VERSION=sha-<sha-completo-del-commit>
+DB_NAME=boero_staging
+DB_USER=boero
+DB_PASSWORD=<secreto-aleatorio>
+JWT_SECRET=<secreto-aleatorio-de-al-menos-32-bytes>
+PLATFORM_ADMIN_EMAIL=<email-del-administrador-inicial>
+PLATFORM_ADMIN_PASSWORD=<contraseña-fuerte-del-administrador-inicial>
+```
+
+Estas dos últimas variables crean la primera cuenta administradora de plataforma de forma idempotente. Una vez creada y comprobado el acceso, `PLATFORM_ADMIN_PASSWORD` puede quitarse del archivo y el siguiente arranque omitirá el bootstrap sin borrar la cuenta.
+
+Si el paquete de GHCR es privado, iniciar sesión una sola vez con un personal access token classic que tenga `read:packages`:
+
+```bash
+export CR_PAT=<token>
+echo "$CR_PAT" | docker login ghcr.io -u <usuario-github> --password-stdin
+unset CR_PAT
+```
+
+Levantar y verificar el stack:
+
+```bash
+make staging
+make ps-staging
+curl --fail http://127.0.0.1:8080/actuator/health/readiness
+```
+
+Flyway crea el esquema automáticamente durante el primer arranque. Los datos exclusivos de `dev` no se cargan en staging.
+
+Instalar el proxy en un VPS Debian o Ubuntu:
+
+```bash
+sudo cp deploy/nginx/boero-api.conf.example /etc/nginx/sites-available/boero-api
+sudo ln -s /etc/nginx/sites-available/boero-api /etc/nginx/sites-enabled/boero-api
+sudo unlink /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl reload nginx
+curl --fail http://<ip-del-vps>/api/v1/institutions
+```
+
+El comando `unlink` sólo es necesario si el sitio default existe. Si ya fue eliminado, se puede omitir.
 
 ### Producción
 
-En `prod` la estrategia es la misma que en `staging`, pero con una configuración más estricta para operación continua. El contenedor de la aplicación usa `restart: unless-stopped`, el contenedor de PostgreSQL también, y ambos tienen nombres explícitos para que la operación sea más clara.
-
-## Dockerfile
-
-El proyecto usa un único `Dockerfile` con cinco targets: `deps`, `builder`, `extract`, `prod` y `dev`.
-
-El target `deps` resuelve dependencias y aprovecha caché de build. El target `builder` compila y genera el `bootJar`. El target `extract` separa las capas del jar de Spring Boot para mejorar el cacheo de la imagen final. El target `prod` construye la imagen liviana para `staging` y `prod` usando `eclipse-temurin:21-jre-jammy`, crea un usuario no root y ejecuta la aplicación con `JarLauncher`. `dev` prepara la imagen orientada a desarrollo, instala `inotify-tools`, precalienta Gradle y deja listo el entorno para `gradle bootRun`.
-
-El resultado es que no hace falta mantener un `Dockerfile` para desarrollo y otro para producción. Toda la lógica vive en un solo lugar y **Compose decide qué target usar según el entorno**.
-
-## Docker Compose
-
-Cada archivo Compose define un stack completo para su entorno. El servicio de aplicación se llama `dev`, `staging` o `prod`; cada stack incluye su propio PostgreSQL, Redis, red y volumen de datos.
-
-En `dev` se activa el target `dev`, se publica `8080` y `5432`, se montan el proyecto y la caché de **Gradle**, se asignan nombres explícitos a contenedores, red y volumen, y se definen defaults locales para la base. En `staging` y `prod` se usa el target `prod`, se activa el perfil **Spring** correcto, se exigen variables de base de datos sin defaults sensibles y se definen healthchecks de aplicación. En `prod` además se habilita la política de restart.
-
-## Nombres explícitos por entorno
-
-En `dev` los contenedores son `boero-api-dev`, `boero-api-postgres-dev` y `boero-api-redis-dev`, la red es `boero-api-network-dev` y los volúmenes son `boero-api-gradle-cache-dev` y `boero-api-postgres-data-dev`.
-
-En `staging` los contenedores son `boero-api-staging`, `boero-api-postgres-staging` y `boero-api-redis-staging`, la red es `boero-api-network-staging` y el volumen de datos es `boero-api-postgres-data-staging`.
-
-En `prod` los contenedores son `boero-api-prod`, `boero-api-postgres-prod` y `boero-api-redis-prod`, la red es `boero-api-network-prod` y el volumen de datos es `boero-api-postgres-data-prod`.
-
-Esto evita compartir accidentalmente red o persistencia entre entornos distintos y hace que la inspección operativa sea mucho más clara.
-
-## Variables de entorno
-
-Los archivos versionables de variables de entorno son `.env.example`, `.env.dev.example`, `.env.staging.example` y `.env.prod.example`. En desarrollo no hace falta crear `.env.dev` porque `make dev` usa defaults definidos en `compose.yaml`. En `staging` y `prod`, en cambio, `DB_NAME`, `DB_USER`, `DB_PASSWORD` y `JWT_SECRET` son obligatorias y Compose falla rápido si no están definidas. Los archivos reales de cada entorno pueden crearse localmente cuando se necesite sobrescribir valores y no deben subirse al repositorio.
-
-El archivo de referencia actual es:
-
-```env
-SERVER_PORT=8080
-DB_HOST=postgres
-DB_PORT=5432
-DB_NAME=boero_db
-DB_USER=boero
-DB_PASSWORD=boero
-```
-
-Para `staging` y `prod`, o para personalizar desarrollo, se pueden crear archivos locales a partir del ejemplo:
+Despliegue de producción:
 
 ```bash
-cp .env.staging.example .env.staging
-cp .env.prod.example .env.prod
-```
-
-Después cada uno se ajusta según el entorno. En particular, `staging` y `prod` no deben reutilizar credenciales triviales ni valores de ejemplo. No se deben commitear secretos reales en el repositorio.
-
-## PostgreSQL y creación automática de la base
-
-El servicio de **PostgreSQL** no solo levanta la instancia, sino que también garantiza que la base indicada por `DB_NAME` exista. Eso lo hace `docker/postgres-entrypoint.sh`.
-
-El script arranca **PostgreSQL**, espera hasta que responda sobre la base `postgres`, consulta si existe una base con el nombre configurado y, si no existe, ejecuta `CREATE DATABASE`. Esto resuelve muy bien el escenario en el que el volumen ya existe pero el nombre de base cambia entre corridas.
-
-## Healthcheck de la aplicación
-
-El proyecto tiene Actuator habilitado y el healthcheck operativo de `staging` y `prod` usa `GET /actuator/health/readiness`.
-
-La seguridad se ajusta en `SecurityConfig` para permitir el acceso público a `/actuator/health` y `/actuator/health/**` mientras el resto de las rutas quedan autenticadas. Los healthchecks de Compose usan Actuator readiness porque refleja mejor el estado operativo de Spring.
-
-## Testing con H2
-
-Los tests no usan PostgreSQL. Spring toma la configuración desde `src/test/resources/application.properties` y levanta **H2** en memoria. Esto simplifica mucho el flujo local porque `./gradlew test` funciona sin depender de contenedores, puertos o datos persistidos.
-
-## Comandos disponibles
-
-El `Makefile` **centraliza la operación más común del proyecto**. Para el trabajo diario en desarrollo conviene usar `make` o `make dev`. Igual que el frontend, los targets de entorno ejecutan `up --build` para evitar reutilizar una imagen de otro entorno.
-
-Los comandos principales son:
-
-```bash
-make dev
-make staging
 make prod
-make build-staging
-make build-prod
-make down
-make logs
-make ps
-make ps-dev
-make ps-staging
+curl --fail http://127.0.0.1:8080/actuator/health/readiness
+```
+
+`make prod` descarga la imagen indicada en `.env.prod` y recrea el servicio. No compila la aplicación en el VPS.
+
+Para un rollback, cambiar `APP_VERSION` por el SHA anterior y ejecutar nuevamente:
+
+```bash
+make prod
+```
+
+Flyway sólo avanza el esquema. Una versión anterior de la aplicación debe seguir siendo compatible con las migraciones ya aplicadas; los cambios destructivos deben dividirse en despliegues compatibles.
+
+## Nginx por HTTP
+
+`deploy/nginx/boero-api.conf.example` contiene la configuración actual para acceder por la IP del VPS. Escucha como servidor por defecto en el puerto `80` y no requiere dominio ni certificados.
+
+HTTP no cifra credenciales, tokens ni respuestas. Este staging no debe usar contraseñas o datos reales y conviene restringir el acceso por firewall o VPN si no necesita estar abierto a Internet.
+
+Nginx:
+
+- reenvía tráfico a `127.0.0.1:8080`;
+- bloquea `/actuator` desde Internet;
+- sobrescribe `X-Forwarded-For` con `$remote_addr`;
+- informa host y esquema mediante cabeceras reenviadas.
+
+La aplicación usa el soporte nativo de Tomcat para interpretar esas cabeceras y obtiene la IP desde `HttpServletRequest.getRemoteAddr()`. No debe exponerse el puerto `8080` públicamente ni cambiarse Nginx para conservar un `X-Forwarded-For` enviado por el cliente.
+
+El firewall del VPS debe permitir únicamente los puertos administrativos necesarios y el tráfico público en `80`. HTTPS queda pendiente para cuando staging disponga de dominio.
+
+## Persistencia y límites
+
+PostgreSQL conserva sus datos en `boero-api-postgres-data-<entorno>`.
+
+Redis usa AOF con `appendfsync everysec` y el volumen `boero-api-redis-data-<entorno>`. Esto evita que un reinicio normal elimine inmediatamente la blacklist de JWT.
+
+El API se ejecuta con:
+
+- filesystem raíz de solo lectura;
+- `/tmp` temporal;
+- capabilities eliminadas;
+- `no-new-privileges`;
+- límites de CPU y memoria;
+- apagado gradual de 30 segundos;
+- rotación local de logs Docker.
+
+Los valores por defecto están orientados a un VPS inicial de 2 vCPU y 4 GB de RAM. Deben ajustarse con métricas reales antes de aumentar carga o concurrencia.
+
+## Healthchecks
+
+Readiness incluye:
+
+- estado de readiness de Spring;
+- conectividad PostgreSQL;
+- conectividad Redis.
+
+Compose consulta:
+
+```text
+/actuator/health/readiness
+```
+
+El endpoint permanece accesible desde el host por loopback, pero Nginx no lo publica.
+
+Comandos de inspección:
+
+```bash
 make ps-prod
-make test
+docker compose --env-file .env.prod -f compose.prod.yaml logs --tail=200 prod
+curl --fail http://127.0.0.1:8080/actuator/health/readiness
 ```
 
-`make`, `make dev`, `make logs` y `make ps` apuntan al entorno de desarrollo para mantener comandos cortos en el día a día. `make staging` y `make prod` operan explícitamente sobre sus entornos. `make test` ejecuta `./gradlew --no-daemon test` en la máquina host.
+## Alcance operativo actual
 
-## Primer arranque en una máquina nueva
+La preparación incluye construcción reproducible, registry, migraciones, proxy HTTP mediante Nginx, persistencia de PostgreSQL y Redis, límites, healthchecks y rotación de logs.
 
-Para un primer inicio de desarrollo, usá directamente:
-
-```bash
-make dev
-```
-
-Eso fuerza la construcción de la imagen y deja el sistema listo. A partir de ahí, el comando habitual pasa a ser:
-
-```bash
-make dev
-```
-
-Una vez levantado, se puede verificar la app con:
-
-```bash
-curl http://localhost:8080/actuator/health/readiness
-```
-
-Y los tests con:
-
-```bash
-make test
-```
-
-## Flujo recomendado para desarrollo diario
-
-El flujo normal del equipo debería ser levantar `dev`, editar código localmente, guardar y dejar que el contenedor reinicie Spring automáticamente. Si aparece el mensaje `Setting up watches...`, es normal: corresponde al watcher de archivos. Si aparece `Starting a Gradle Daemon`, también es normal: significa que Gradle está dejando un daemon listo para acelerar las corridas siguientes.
-
-En otras palabras, el camino rápido para el día a día es `make` o `make dev`.
-
-## Troubleshooting
-
-Si el primer `make dev` tarda, lo normal es que Docker esté descargando imágenes base, instalando paquetes del contenedor y resolviendo dependencias del proyecto. **Eso suele pasar una sola vez o cuando la caché fue invalidada.**
-
-Si el puerto `8080` o `5432` ya está ocupado, hay que liberar el puerto o cambiar la publicación correspondiente. Una forma rápida de inspeccionarlo es:
-
-```bash
-ss -ltnp | grep 8080
-ss -ltnp | grep 5432
-```
-
-Si querés resetear la base local de `dev`, primero baja los servicios con `make down` o `make down-dev` y después elimina el volumen `boero-api-postgres-data-dev`. Al volver a levantar, PostgreSQL recreará la base configurada.
-
-Si `./gradlew test` falla por un lock de Gradle, normalmente significa que otro proceso del workspace está usando `.gradle`. En ese caso conviene esperar a que termine o revisar el estado con:
-
-```bash
-./gradlew --status
-```
-
-## Buenas prácticas
-
-Como criterio general, usar `make` o `make dev` para el trabajo diario, no commitear secretos reales y mantener alineadas las variables `DB_NAME`, `DB_USER`, `DB_PASSWORD` y `JWT_SECRET` entre los `.env.*.example`, los `.env` locales opcionales y la configuración documentada. Los defaults de credenciales existen solo para desarrollo; en `staging` y `prod` esas variables deben definirse explícitamente. También conviene no renombrar contenedores, redes ni volúmenes sin una razón clara, porque varios flujos operativos del equipo se apoyan en esos nombres explícitos.
-
-## Estado actual de la configuración
-
-Hoy el proyecto tiene un único `Dockerfile`, entornos separados por **Compose**, **PostgreSQL** como base en `dev`, `staging` y `prod`, tests con **H2** y healthchecks operativos basados en Actuator readiness. La base de datos se crea automáticamente si no existe y el desarrollo corre completamente dentro de **Docker** con reinicio automático al guardar cambios.
-
-## Próximos pasos sugeridos
-
-La base actual ya es operativa, pero a futuro tiene sentido sumar migraciones con **Flyway** o **Liquibase**, semillas de desarrollo, documentación de API y eventualmente automatización CI reutilizando esta misma estructura.
+La automatización de backups y restauración queda explícitamente fuera del alcance actual.

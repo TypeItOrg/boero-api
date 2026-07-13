@@ -1,6 +1,6 @@
 # boero-api
 
-Backend de TypeIt para gestión institucional. Está construido con Java 21, Spring Boot 4, Spring Security, JPA/Hibernate, PostgreSQL y Redis.
+Backend de TypeIt para gestión institucional. Está construido con Java 21, Spring Boot 4, Spring Security, JPA/Hibernate, Flyway, PostgreSQL y Redis.
 
 ## Estado actual
 
@@ -57,6 +57,16 @@ Comandos frecuentes:
 
 ## Base de datos
 
-PostgreSQL es la base objetivo. La configuración actual usa `spring.jpa.hibernate.ddl-auto=update` y no incorpora Flyway. Por lo tanto, cualquier cambio de entidades debe revisarse también desde el impacto sobre bases ya existentes; la ausencia de migraciones versionadas es una decisión del alcance actual, no una garantía de compatibilidad automática.
+PostgreSQL es la base objetivo. Flyway aplica las migraciones versionadas y Hibernate usa `spring.jpa.hibernate.ddl-auto=validate` para comprobar que el esquema coincide con las entidades.
+
+Las migraciones comunes viven en `src/main/resources/db/migration` y siguen la convención UTC `yyyyMMddHHmmss__description.sql`, sin prefijo `V`. Los datos de referencia exclusivos de desarrollo viven en `src/main/resources/db/dev`.
+
+Crear una migración vacía con timestamp UTC:
+
+```bash
+make migration add_description_to_users_table
+```
+
+Todo cambio persistente requiere actualizar el `@Entity` y agregar una migración nueva. Las migraciones que ya fueron aplicadas no se modifican ni se renombran.
 
 Las garantías dependientes de PostgreSQL —por ejemplo locks pesimistas o advisory locks— deben verificarse mediante Testcontainers y no solamente con H2.
