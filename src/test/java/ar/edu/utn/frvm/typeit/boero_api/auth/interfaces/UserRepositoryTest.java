@@ -86,4 +86,21 @@ class UserRepositoryTest {
     assertThat(boeroCount.getInstitutionId()).isEqualTo(boero.getId());
     assertThat(boeroCount.getUserCount()).isEqualTo(2L);
   }
+
+  @Test
+  @DisplayName("Should count only users with effective platform access")
+  void countUsersWithAccess_excludesUnavailableAccounts() {
+    Institution active = createInstitution(entityManager, "boero-active");
+    Institution inactive = createInstitution(entityManager, "boero-inactive");
+    inactive.setActive(false);
+    createUser(entityManager, active, "11111111");
+    User disabled = createUser(entityManager, active, "22222222");
+    disabled.setEnabled(false);
+    User deletedPerson = createUser(entityManager, active, "33333333");
+    deletedPerson.getPerson().setDeleted(true);
+    createUser(entityManager, inactive, "44444444");
+    entityManager.flush();
+
+    assertThat(userRepository.countUsersWithAccess()).isEqualTo(1);
+  }
 }

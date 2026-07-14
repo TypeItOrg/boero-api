@@ -18,6 +18,8 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
 
   boolean existsByDocumentNumberAndInstitution_Id(String documentNumber, UUID institutionId);
 
+  long countByDeletedFalse();
+
   Page<Person> findByInstitution_IdAndDeletedFalse(UUID institutionId, Pageable pageable);
 
   @Query(
@@ -34,6 +36,35 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
   Page<Person> search(
       @Param("institutionId") UUID institutionId,
       @Param("search") String search,
+      Pageable pageable);
+
+  @EntityGraph(attributePaths = "institution")
+  @Query(
+      """
+      SELECT person FROM Person person
+      WHERE person.deleted = false
+        AND (:institutionId IS NULL OR person.institution.id = :institutionId)
+        AND (
+          :roleCode IS NULL
+          OR EXISTS (
+            SELECT assignment.id FROM PersonRoleAssignment assignment
+            WHERE assignment.person = person
+              AND assignment.role.code = :roleCode
+          )
+        )
+        AND (
+          :search IS NULL
+          OR UNACCENT_LOWER(CONCAT(person.firstName, ' ', person.lastName))
+              LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
+          OR person.documentNumber LIKE CONCAT('%', CAST(:search AS string), '%')
+          OR UNACCENT_LOWER(COALESCE(person.email, ''))
+              LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
+        )
+      """)
+  Page<Person> findPlatformPeople(
+      @Param("search") String search,
+      @Param("institutionId") UUID institutionId,
+      @Param("roleCode") String roleCode,
       Pageable pageable);
 
   @EntityGraph(

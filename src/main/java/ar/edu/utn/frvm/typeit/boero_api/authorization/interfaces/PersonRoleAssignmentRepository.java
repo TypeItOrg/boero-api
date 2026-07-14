@@ -28,6 +28,9 @@ public interface PersonRoleAssignmentRepository extends JpaRepository<PersonRole
   List<PersonRoleAssignment> findByPerson_IdInAndInstitution_Id(
       List<UUID> personIds, UUID institutionId);
 
+  @EntityGraph(attributePaths = "role")
+  List<PersonRoleAssignment> findByPerson_IdIn(List<UUID> personIds);
+
   long countByInstitution_IdAndRole_Code(UUID institutionId, String roleCode);
 
   @Query(

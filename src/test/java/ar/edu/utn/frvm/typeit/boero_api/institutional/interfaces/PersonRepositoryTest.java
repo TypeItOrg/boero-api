@@ -5,6 +5,10 @@ import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.per
 import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.person;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.support.JpaAuditingTestConfig;
@@ -14,6 +18,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 @DataJpaTest
 @Import(JpaAuditingTestConfig.class)
@@ -48,5 +54,79 @@ class PersonRepositoryTest {
         .isTrue();
     assertThat(personRepository.existsByDocumentNumberAndInstitution_Id("12345678", other.getId()))
         .isFalse();
+  }
+
+  @Test
+  @DisplayName("Should count only people that are not deleted")
+  void countByDeletedFalse_excludesDeletedPeople() {
+    Institution institution = createInstitution(entityManager, "boero");
+    persist(entityManager, person(institution, "12345678"));
+    Person deleted = persist(entityManager, person(institution, "87654321"));
+    deleted.setDeleted(true);
+    entityManager.flush();
+
+    assertThat(personRepository.countByDeletedFalse()).isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("Should filter platform people across institutions")
+  void findPlatformPeople_filtersAcrossInstitutions() {
+    Institution boero = createInstitution(entityManager, "boero");
+    boero.setName("Boero");
+    Institution alberdi = createInstitution(entityManager, "alberdi");
+    alberdi.setName("Alberdi");
+    Person ana = persist(entityManager, person(boero, "12345678"));
+    ana.setEmail("ana@boero.edu.ar");
+    Person deleted = persist(entityManager, person(alberdi, "87654321"));
+    deleted.setDeleted(true);
+    Role teacher =
+        persist(
+            entityManager,
+            Role.builder()
+                .code(SystemRoleCode.TEACHER.name())
+                .name(SystemRoleCode.TEACHER.getDisplayName())
+                .scope(RoleScope.INSTITUTION)
+                .system(true)
+                .build());
+    persist(
+        entityManager,
+        PersonRoleAssignment.builder().person(ana).institution(boero).role(teacher).build());
+    entityManager.flush();
+    entityManager.clear();
+
+    var result =
+        personRepository.findPlatformPeople(
+            "ana@boero",
+            boero.getId(),
+            SystemRoleCode.TEACHER.name(),
+            PageRequest.of(0, 10, Sort.by("institution.name")));
+
+    assertThat(result.getContent()).hasSize(1);
+    assertThat(result.getContent().getFirst().getId()).isEqualTo(ana.getId());
+    assertThat(result.getContent().getFirst().getInstitution().getName()).isEqualTo("Boero");
+  }
+
+  @Test
+  @DisplayName("Should sort platform people by institution and exclude deleted people")
+  void findPlatformPeople_sortsByInstitutionAndExcludesDeletedPeople() {
+    Institution boero = createInstitution(entityManager, "boero");
+    boero.setName("Boero");
+    Institution alberdi = createInstitution(entityManager, "alberdi");
+    alberdi.setName("Alberdi");
+    persist(entityManager, person(boero, "12345678"));
+    persist(entityManager, person(alberdi, "23456789"));
+    Person deleted = persist(entityManager, person(alberdi, "87654321"));
+    deleted.setDeleted(true);
+    entityManager.flush();
+    entityManager.clear();
+
+    var result =
+        personRepository.findPlatformPeople(
+            null, null, null, PageRequest.of(0, 10, Sort.by("institution.name")));
+
+    assertThat(result.getContent()).hasSize(2);
+    assertThat(result.getContent())
+        .extracting(person -> person.getInstitution().getName())
+        .containsExactly("Alberdi", "Boero");
   }
 }

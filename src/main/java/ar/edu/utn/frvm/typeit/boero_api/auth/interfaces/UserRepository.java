@@ -33,4 +33,14 @@ public interface UserRepository extends JpaRepository<User, UUID> {
       group by u.institution.id
       """)
   List<InstitutionUserCount> countEnabledUsersByInstitutionIdIn(@Param("ids") Collection<UUID> ids);
+
+  @Query(
+      """
+      select count(u)
+      from User u
+      where u.enabled = true
+        and u.person.deleted = false
+        and u.institution.active = true
+      """)
+  long countUsersWithAccess();
 }

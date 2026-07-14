@@ -1,0 +1,111 @@
+package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.City;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Province;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.MonthlyInstitutionCount;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.util.List;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+class GetPlatformDashboardUseCaseTest {
+
+  private InstitutionRepository institutionRepository;
+  private PersonRepository personRepository;
+  private UserRepository userRepository;
+  private GetPlatformDashboardUseCase useCase;
+
+  @BeforeEach
+  void setUp() {
+    institutionRepository = mock(InstitutionRepository.class);
+    personRepository = mock(PersonRepository.class);
+    userRepository = mock(UserRepository.class);
+    useCase =
+        new GetPlatformDashboardUseCase(institutionRepository, personRepository, userRepository);
+  }
+
+  @Test
+  @DisplayName("Should return platform dashboard with a complete twelve month trend")
+  void execute_returnsDashboardWithCompleteTrend() {
+    final YearMonth currentMonth = YearMonth.of(2026, 7);
+    final MonthlyInstitutionCount novemberCount = monthlyCount(2025, 11, 3);
+    final Institution recentInstitution = recentInstitution();
+    when(institutionRepository.count()).thenReturn(9L);
+    when(institutionRepository.countByActiveTrue()).thenReturn(7L);
+    when(personRepository.countByDeletedFalse()).thenReturn(41L);
+    when(userRepository.countUsersWithAccess()).thenReturn(28L);
+    when(institutionRepository.countCreatedByMonth(
+            LocalDateTime.of(2025, 8, 1, 0, 0), LocalDateTime.of(2026, 8, 1, 0, 0)))
+        .thenReturn(List.of(novemberCount));
+    when(institutionRepository.findTop5ByOrderByCreatedAtDesc())
+        .thenReturn(List.of(recentInstitution));
+
+    final var response = useCase.execute(currentMonth);
+
+    assertThat(response.summary().institutions()).isEqualTo(9);
+    assertThat(response.summary().activeInstitutions()).isEqualTo(7);
+    assertThat(response.summary().inactiveInstitutions()).isEqualTo(2);
+    assertThat(response.summary().people()).isEqualTo(41);
+    assertThat(response.summary().usersWithAccess()).isEqualTo(28);
+    assertThat(response.institutionRegistrations()).hasSize(12);
+    assertThat(response.institutionRegistrations().getFirst().year()).isEqualTo(2025);
+    assertThat(response.institutionRegistrations().getFirst().month()).isEqualTo(8);
+    assertThat(response.institutionRegistrations().getFirst().count()).isZero();
+    assertThat(response.institutionRegistrations().get(3).count()).isEqualTo(3);
+    assertThat(response.institutionRegistrations().getLast().year()).isEqualTo(2026);
+    assertThat(response.institutionRegistrations().getLast().month()).isEqualTo(7);
+    assertThat(response.recentInstitutions()).hasSize(1);
+    assertThat(response.recentInstitutions().getFirst().name()).isEqualTo("Instituto Boero");
+  }
+
+  @Test
+  @DisplayName("Should return zero values and empty recent institutions when no data exists")
+  void execute_returnsEmptyDashboard() {
+    when(institutionRepository.countCreatedByMonth(
+            LocalDateTime.of(2025, 8, 1, 0, 0), LocalDateTime.of(2026, 8, 1, 0, 0)))
+        .thenReturn(List.of());
+    when(institutionRepository.findTop5ByOrderByCreatedAtDesc()).thenReturn(List.of());
+
+    final var response = useCase.execute(YearMonth.of(2026, 7));
+
+    assertThat(response.summary().institutions()).isZero();
+    assertThat(response.institutionRegistrations())
+        .allSatisfy(registration -> assertThat(registration.count()).isZero());
+    assertThat(response.recentInstitutions()).isEmpty();
+    verify(personRepository).countByDeletedFalse();
+    verify(userRepository).countUsersWithAccess();
+  }
+
+  private static MonthlyInstitutionCount monthlyCount(
+      final int year, final int month, final long count) {
+    final MonthlyInstitutionCount result = mock(MonthlyInstitutionCount.class);
+    when(result.getYear()).thenReturn(year);
+    when(result.getMonth()).thenReturn(month);
+    when(result.getInstitutionCount()).thenReturn(count);
+    return result;
+  }
+
+  private static Institution recentInstitution() {
+    final Province province = Province.builder().name("Córdoba").build();
+    final City city = City.builder().name("Villa María").province(province).build();
+    final Institution institution = mock(Institution.class);
+    when(institution.getId()).thenReturn(UUID.fromString("11111111-1111-1111-1111-111111111111"));
+    when(institution.getName()).thenReturn("Instituto Boero");
+    when(institution.getCity()).thenReturn(city);
+    when(institution.isActive()).thenReturn(true);
+    when(institution.getCreatedAt()).thenReturn(LocalDateTime.of(2026, 7, 10, 12, 0));
+    return institution;
+  }
+}

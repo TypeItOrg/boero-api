@@ -14,6 +14,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Province;
 import ar.edu.utn.frvm.typeit.boero_api.support.JpaAuditingTestConfig;
 import jakarta.persistence.EntityManager;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -122,5 +123,57 @@ class InstitutionRepositoryTest {
     assertThat(found.getCity().getName()).isEqualTo("Villa Maria");
     assertThat(found.getCity().getProvince().getName()).isEqualTo("Cordoba");
     assertThat(found.getCity().getProvince().getCountry().getIsoCode()).isEqualTo("ARG");
+  }
+
+  @Test
+  @DisplayName("Should aggregate institution creation counts by month")
+  void countCreatedByMonth_groupsInstitutionsByMonth() {
+    Institution first = createInstitution(entityManager, "boero-first");
+    Institution second = createInstitution(entityManager, "boero-second");
+    entityManager.flush();
+    updateCreatedAt(first, LocalDateTime.of(2026, 6, 4, 10, 0));
+    updateCreatedAt(second, LocalDateTime.of(2026, 6, 20, 15, 0));
+    entityManager.clear();
+
+    var counts =
+        institutionRepository.countCreatedByMonth(
+            LocalDateTime.of(2026, 5, 1, 0, 0), LocalDateTime.of(2026, 8, 1, 0, 0));
+
+    assertThat(counts).hasSize(1);
+    assertThat(counts.getFirst().getYear()).isEqualTo(2026);
+    assertThat(counts.getFirst().getMonth()).isEqualTo(6);
+    assertThat(counts.getFirst().getInstitutionCount()).isEqualTo(2);
+  }
+
+  @Test
+  @DisplayName("Should return the five most recently created institutions with location")
+  void findTop5ByOrderByCreatedAtDesc_returnsRecentInstitutions() {
+    for (int index = 0; index < 6; index++) {
+      Institution institution = createInstitution(entityManager, "boero-" + index);
+      entityManager.flush();
+      updateCreatedAt(institution, LocalDateTime.of(2026, 7, index + 1, 10, 0));
+    }
+    entityManager.clear();
+
+    var institutions = institutionRepository.findTop5ByOrderByCreatedAtDesc();
+
+    assertThat(institutions)
+        .extracting(Institution::getSlug)
+        .containsExactly("boero-5", "boero-4", "boero-3", "boero-2", "boero-1");
+    assertThat(institutions)
+        .allSatisfy(
+            institution -> {
+              assertThat(institution.getCity().getName()).isEqualTo("Villa Maria");
+              assertThat(institution.getCity().getProvince().getName()).isEqualTo("Cordoba");
+            });
+  }
+
+  private void updateCreatedAt(final Institution institution, final LocalDateTime createdAt) {
+    entityManager
+        .createQuery(
+            "UPDATE Institution institution SET institution.createdAt = :createdAt WHERE institution.id = :id")
+        .setParameter("createdAt", createdAt)
+        .setParameter("id", institution.getId())
+        .executeUpdate();
   }
 }
