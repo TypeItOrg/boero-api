@@ -59,6 +59,12 @@ Cuando se asigna o revoca un rol, la sesión del usuario **no se revoca**. Esto 
 
 `SessionRevocationService` (`src/main/java/.../authorization/services/SessionRevocationService.java`) centraliza el cierre de sesiones y refresh tokens para personas, usuarios, instituciones y cuentas plataforma. Los cambios de roles no lo invocan, pero la eliminación de una persona y la desactivación de una institución sí revocan sus sesiones.
 
+## Edición de cuentas de plataforma
+
+Solo `PLATFORM_ADMIN` puede editar una cuenta mediante `PUT /api/v1/platform/accounts/{id}`. El nombre, apellido y correo son obligatorios; la contraseña es opcional y, si se omite, se conserva la actual.
+
+Cambiar únicamente el nombre o apellido mantiene las sesiones activas. Cambiar el correo o la contraseña revoca todos los refresh tokens y sesiones de la cuenta, y desaloja sus entradas del caché de actividad. Si un administrador modifica sus propias credenciales, debe volver a iniciar sesión con los nuevos datos.
+
 ## Desactivación de una institución
 
 Solo `PLATFORM_ADMIN` puede cambiar el estado mediante `PATCH /api/v1/platform/institutions/{id}/status`.

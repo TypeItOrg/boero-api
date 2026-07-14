@@ -17,6 +17,14 @@ public final class AuthMessages {
       "Se detectó reutilización del refresh token. Todas las sesiones fueron revocadas.";
   public static final String PLATFORM_ACCOUNT_DISABLED =
       "La cuenta de plataforma se encuentra deshabilitada.";
+  public static final String PLATFORM_ACCOUNT_NOT_FOUND =
+      "La cuenta de plataforma especificada no existe.";
+  public static final String PLATFORM_ACCOUNT_EMAIL_ALREADY_EXISTS =
+      "Ya existe una cuenta de plataforma con ese correo electrónico.";
+  public static final String PLATFORM_ACCOUNT_SELF_DISABLE =
+      "No podés deshabilitar tu propia cuenta de plataforma.";
+  public static final String LAST_PLATFORM_ADMIN_DISABLE =
+      "No podés deshabilitar la última cuenta administradora activa.";
 
   private AuthMessages() {}
 }

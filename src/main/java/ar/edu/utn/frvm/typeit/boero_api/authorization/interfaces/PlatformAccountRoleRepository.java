@@ -30,4 +30,14 @@ public interface PlatformAccountRoleRepository extends JpaRepository<PlatformAcc
       """)
   List<String> findSystemRoleCodesByPlatformAccountId(
       @Param("platformAccountId") UUID platformAccountId);
+
+  @Query(
+      """
+      SELECT COUNT(par)
+      FROM PlatformAccountRole par
+      WHERE par.platformAccount.enabled = true
+      AND par.role.scope = ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope.PLATFORM
+      AND par.role.code = :roleCode
+      """)
+  long countEnabledAccountsByRoleCode(@Param("roleCode") String roleCode);
 }

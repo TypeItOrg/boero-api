@@ -101,7 +101,7 @@ Las comprobaciones `exists...` producen mensajes tempranos, pero no reemplazan u
 | Caché | Se invalida cuando |
 |---|---|
 | `activeSessions` | logout, reutilización de refresh, eliminación de persona o desactivación institucional |
-| `activePlatformSessions` | logout, reutilización de refresh o revocación de cuenta plataforma |
+| `activePlatformSessions` | logout, reutilización de refresh, desactivación o cambio de credenciales de cuenta plataforma |
 | `personPermissions` | asignación/revocación de rol institucional y seed |
 | `platformAccountPermissions` | asignación/revocación de rol plataforma y seed |
 | `platformAccountRoles` | asignación/revocación de rol plataforma y seed |
