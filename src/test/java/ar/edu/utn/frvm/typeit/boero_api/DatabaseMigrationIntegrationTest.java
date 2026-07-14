@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ar.edu.utn.frvm.typeit.boero_api.support.IntegrationTest;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import org.testcontainers.utility.DockerImageName;
 
 @SpringBootTest
 @Testcontainers(disabledWithoutDocker = true)
+@IntegrationTest
 class DatabaseMigrationIntegrationTest {
 
   @Container

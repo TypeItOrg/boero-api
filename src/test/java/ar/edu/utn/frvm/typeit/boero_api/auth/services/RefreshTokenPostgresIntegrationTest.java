@@ -15,6 +15,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RefreshTokenRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData;
+import ar.edu.utn.frvm.typeit.boero_api.support.IntegrationTest;
 import ar.edu.utn.frvm.typeit.boero_api.support.JpaAuditingTestConfig;
 import jakarta.persistence.EntityManager;
 import java.time.Duration;
@@ -46,6 +47,7 @@ import org.testcontainers.utility.DockerImageName;
 @Import({RefreshTokenUseCase.class, JpaAuditingTestConfig.class})
 @Testcontainers(disabledWithoutDocker = true)
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
+@IntegrationTest
 class RefreshTokenPostgresIntegrationTest {
 
   @Container

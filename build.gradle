@@ -57,10 +57,20 @@ spotless {
     }
 }
 
-tasks.named('test') {
+tasks.withType(Test).configureEach {
     useJUnitPlatform()
     testLogging {
         events = ['passed', 'skipped', 'failed']
         exceptionFormat = 'full'
+    }
+}
+
+tasks.register('fastTest', Test) {
+    group = 'verification'
+    description = 'Runs unit and slice tests without integration tests.'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        excludeTags 'integration'
     }
 }

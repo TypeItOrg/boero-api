@@ -2,6 +2,10 @@ name: CI
 
 on:
   pull_request:
+    branches:
+      - develop
+      - staging
+      - main
   push:
     branches:
       - develop
@@ -28,7 +32,18 @@ jobs:
           java-version: "21"
           cache: gradle
 
-      - name: Verify formatting and tests
+      - name: Verify formatting and fast test suite
+        if: >-
+          (github.event_name == 'push' && github.ref_name == 'develop') ||
+          (github.event_name == 'pull_request' && github.base_ref == 'develop')
+        run: ./gradlew --no-daemon spotlessCheck fastTest
+
+      - name: Verify formatting and full test suite
+        if: >-
+          (github.event_name == 'push' &&
+            (github.ref_name == 'staging' || github.ref_name == 'main')) ||
+          (github.event_name == 'pull_request' &&
+            (github.base_ref == 'staging' || github.base_ref == 'main'))
         run: ./gradlew --no-daemon spotlessCheck test
 
   publish-image:
