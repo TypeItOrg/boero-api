@@ -43,6 +43,8 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.services.GetPersonByIdUseC
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ListPeopleUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdatePersonByAdminUseCase;
 import jakarta.validation.ConstraintViolationException;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -242,6 +244,29 @@ class PeopleControllerWebMvcTest {
                 .contentType(APPLICATION_JSON)
                 .content(createBody()))
         .andExpect(status().isCreated());
+  }
+
+  @Test
+  @DisplayName("Should reject people younger than three")
+  void createPerson_returnsBadRequestForTooRecentBirthDate() throws Exception {
+    var authentication =
+        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+    stubPlatformAdminAccess(true);
+    LocalDate invalidBirthDate =
+        LocalDate.now(ZoneId.of("America/Argentina/Buenos_Aires")).minusYears(3).plusDays(1);
+
+    mockMvc
+        .perform(
+            post("/api/v1/institutions/{institutionId}/people", INSTITUTION_ID)
+                .principal(authentication)
+                .contentType(APPLICATION_JSON)
+                .content(createBody(invalidBirthDate)))
+        .andExpect(status().isBadRequest())
+        .andExpect(
+            jsonPath("$.fieldErrors.birthDate").value("La persona debe tener al menos 3 años."));
+
+    verify(createPersonUseCase, never()).execute(eq(INSTITUTION_ID), any());
   }
 
   @Test
@@ -477,6 +502,18 @@ class PeopleControllerWebMvcTest {
         + "\"firstName\":\"Ana\","
         + "\"lastName\":\"García\","
         + "\"documentNumber\":\"12345678\","
+        + "\"password\":\"admin-pass-123\""
+        + "}";
+  }
+
+  private static String createBody(LocalDate birthDate) {
+    return "{"
+        + "\"firstName\":\"Ana\","
+        + "\"lastName\":\"García\","
+        + "\"documentNumber\":\"12345678\","
+        + "\"birthDate\":\""
+        + birthDate
+        + "\","
         + "\"password\":\"admin-pass-123\""
         + "}";
   }

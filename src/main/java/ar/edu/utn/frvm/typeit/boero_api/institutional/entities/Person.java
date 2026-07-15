@@ -5,12 +5,14 @@ import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldCons
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.CHECK_SQL_PEOPLE_LAST_NAME_LENGTH;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.DOCUMENT_LENGTH;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.DOCUMENT_PATTERN;
+import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.MINIMUM_AGE;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_MAX;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_MIN;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_PATTERN;
 
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
+import ar.edu.utn.frvm.typeit.boero_api.common.validation.MinimumAge;
 import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -111,6 +113,7 @@ public class Person extends Auditable {
   private String lastName;
 
   @Column(name = "birth_date")
+  @MinimumAge(MINIMUM_AGE)
   private LocalDate birthDate;
 
   @Column(name = "phone_number", length = 30)

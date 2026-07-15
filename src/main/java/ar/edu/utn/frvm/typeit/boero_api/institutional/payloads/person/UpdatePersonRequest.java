@@ -1,9 +1,11 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person;
 
+import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.MINIMUM_AGE;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_MAX;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_MIN;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_PATTERN;
 
+import ar.edu.utn.frvm.typeit.boero_api.common.validation.MinimumAge;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
@@ -24,7 +26,7 @@ public record UpdatePersonRequest(
             regexp = NAME_PATTERN,
             message = "El apellido solo puede contener letras y espacios.")
         String lastName,
-    LocalDate birthDate,
+    @MinimumAge(MINIMUM_AGE) LocalDate birthDate,
     @Email(message = "El correo electrónico debe tener un formato válido.")
         @Size(max = 150, message = "El correo electrónico debe tener menos de 150 caracteres.")
         String email,

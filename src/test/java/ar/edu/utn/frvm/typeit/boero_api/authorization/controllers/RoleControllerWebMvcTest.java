@@ -35,7 +35,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ListSystemRolesUs
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.RevokePersonRoleUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.GlobalExceptionHandler;
 import ar.edu.utn.frvm.typeit.boero_api.config.WebConfig;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -127,7 +127,8 @@ class RoleControllerWebMvcTest {
                     PERSON_ID)
                 .principal(authentication))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].roleCode").value("TEACHER"));
+        .andExpect(jsonPath("$[0].roleCode").value("TEACHER"))
+        .andExpect(jsonPath("$[0].assignedAt").value("2026-01-15T10:00:00Z"));
   }
 
   @Test
@@ -378,7 +379,7 @@ class RoleControllerWebMvcTest {
     return PersonRoleResponse.builder()
         .roleCode(roleCode)
         .displayName(roleCode.getDisplayName())
-        .assignedAt(LocalDateTime.parse("2026-01-15T10:00:00"))
+        .assignedAt(OffsetDateTime.parse("2026-01-15T10:00:00Z"))
         .build();
   }
 }

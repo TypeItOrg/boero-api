@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person;
 
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.DOCUMENT_PATTERN;
+import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.MINIMUM_AGE;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_MAX;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_MIN;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_PATTERN;
@@ -8,6 +9,7 @@ import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldCons
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.PASSWORD_MIN;
 
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
+import ar.edu.utn.frvm.typeit.boero_api.common.validation.MinimumAge;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -40,7 +42,7 @@ public record CreatePersonRequest(
         String documentNumber,
     @Email(message = "El email debe tener un formato válido.") String email,
     String phoneNumber,
-    LocalDate birthDate,
+    @MinimumAge(MINIMUM_AGE) LocalDate birthDate,
     @NotBlank(message = "La contraseña es requerida.")
         @Size.List({
           @Size(min = PASSWORD_MIN, message = "La contraseña debe tener al menos 8 caracteres."),

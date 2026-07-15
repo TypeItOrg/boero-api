@@ -6,15 +6,18 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.LastInstitutionalAuthorityRevocationException;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.LastPersonRoleRevocationException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.PersonNotFoundInInstitutionException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,6 +64,34 @@ class RevokePersonRoleUseCaseTest {
     revokePersonRoleUseCase.execute(institutionId, personId, SystemRoleCode.TEACHER);
 
     verify(revokePersonSystemRoleUseCase).execute(person, SystemRoleCode.TEACHER);
+  }
+
+  @Test
+  @DisplayName("Should throw when revoking the person's only role")
+  void execute_throwsWhenRevokingOnlyRole() {
+    UUID institutionId = UUID.randomUUID();
+    UUID personId = UUID.randomUUID();
+    Person person = personWith(institutionId, personId);
+    Role role = roleWith(SystemRoleCode.TEACHER);
+    PersonRoleAssignment assignment =
+        PersonRoleAssignment.builder()
+            .person(person)
+            .role(role)
+            .institution(person.getInstitution())
+            .build();
+
+    when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
+        .thenReturn(person);
+    when(institutionalSystemRoleResolver.requireInstitutionalSystemRole(SystemRoleCode.TEACHER))
+        .thenReturn(role);
+    when(personRoleAssignmentRepository.findByPerson_IdAndInstitution_Id(personId, institutionId))
+        .thenReturn(List.of(assignment));
+
+    assertThatThrownBy(
+            () -> revokePersonRoleUseCase.execute(institutionId, personId, SystemRoleCode.TEACHER))
+        .isInstanceOf(LastPersonRoleRevocationException.class);
+
+    verify(revokePersonSystemRoleUseCase, never()).execute(person, SystemRoleCode.TEACHER);
   }
 
   @Test

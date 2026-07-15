@@ -53,6 +53,12 @@ La primera authority no se puede crear con el endpoint regular de asignación de
 
 Crear una persona con rol inicial `APPLICANT` no requiere privilegios adicionales. Solicitar cualquier rol inicial más poderoso requiere `INSTITUTION_ROLE_ASSIGN` o una cuenta `PLATFORM_ADMIN`. `InitialRoleAssignmentGuard` realiza esta comprobación antes de crear la persona y evita usar el endpoint de alta como escalada de privilegios.
 
+## Exclusividad y permanencia de roles
+
+Toda persona activa debe conservar al menos un rol. `RevokePersonRoleUseCase` rechaza con HTTP 409 la revocación del único rol asignado.
+
+`APPLICANT` es un rol exclusivo y no puede coexistir con ningún otro rol, incluido `ADMINISTRATIVE`. `AssignPersonSystemRoleUseCase` realiza ambos cambios de forma atómica: asignar un rol distinto reemplaza `APPLICANT`, y asignar `APPLICANT` reemplaza los roles actuales. Este último reemplazo se rechaza con HTTP 409 si quitaría la última autoridad institucional. Las asignaciones y revocaciones bloquean pesimísticamente la institución para mantener estas reglas ante operaciones concurrentes.
+
 ## Cambio de roles sin revocar sesiones
 
 Cuando se asigna o revoca un rol, la sesión del usuario **no se revoca**. Esto es una decisión deliberada de UX: como los permisos se resuelven dinámicamente desde la base de datos en cada request, el cambio de rol tiene efecto inmediato sin obligar al usuario a volver a loguearse.

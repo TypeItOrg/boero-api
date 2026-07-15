@@ -1,12 +1,15 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.LastInstitutionalAuthorityRevocationException;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.LastPersonRoleRevocationException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,12 +32,25 @@ public class RevokePersonRoleUseCase {
         .orElseThrow(InstitutionNotFoundException::new);
     Person person = institutionPersonResolver.requirePersonInInstitution(institutionId, personId);
     Role role = institutionalSystemRoleResolver.requireInstitutionalSystemRole(roleCode);
+    List<PersonRoleAssignment> currentAssignments =
+        personRoleAssignmentRepository.findByPerson_IdAndInstitution_Id(personId, institutionId);
 
     if (roleCode == SystemRoleCode.INSTITUTIONAL_AUTHORITY) {
       preventRevokingLastInstitutionalAuthority(institutionId, personId, role.getId());
     }
 
+    preventRevokingOnlyRole(currentAssignments, role.getId());
     revokePersonSystemRoleUseCase.execute(person, roleCode);
+  }
+
+  private void preventRevokingOnlyRole(
+      final List<PersonRoleAssignment> currentAssignments, final UUID roleId) {
+    boolean roleIsAssigned =
+        currentAssignments.stream()
+            .anyMatch(assignment -> assignment.getRole().getId().equals(roleId));
+    if (roleIsAssigned && currentAssignments.size() == 1) {
+      throw new LastPersonRoleRevocationException();
+    }
   }
 
   private void preventRevokingLastInstitutionalAuthority(
