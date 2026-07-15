@@ -3,11 +3,13 @@ package ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces;
 import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.city;
 import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.country;
 import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.createInstitution;
+import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.createUser;
 import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.institution;
 import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.persist;
 import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.province;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.City;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Country;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
@@ -86,6 +88,29 @@ class InstitutionRepositoryTest {
               assertThat(institution.getCity().getProvince().getCountry().getIsoCode())
                   .isNotBlank();
             });
+  }
+
+  @Test
+  @DisplayName("Should aggregate the complete platform dashboard summary in one query")
+  void getPlatformDashboardSummaryCounts_countsAvailableRecords() {
+    Institution active = createInstitution(entityManager, "boero-active");
+    Institution inactive = createInstitution(entityManager, "boero-inactive");
+    inactive.setActive(false);
+    createUser(entityManager, active, "11111111");
+    User disabled = createUser(entityManager, active, "22222222");
+    disabled.setEnabled(false);
+    User deletedPerson = createUser(entityManager, active, "33333333");
+    deletedPerson.getPerson().setDeleted(true);
+    createUser(entityManager, inactive, "44444444");
+    entityManager.flush();
+
+    PlatformDashboardSummaryCounts summary =
+        institutionRepository.getPlatformDashboardSummaryCounts();
+
+    assertThat(summary.getInstitutions()).isEqualTo(2);
+    assertThat(summary.getActiveInstitutions()).isEqualTo(1);
+    assertThat(summary.getPeople()).isEqualTo(3);
+    assertThat(summary.getUsersWithAccess()).isEqualTo(1);
   }
 
   @Test

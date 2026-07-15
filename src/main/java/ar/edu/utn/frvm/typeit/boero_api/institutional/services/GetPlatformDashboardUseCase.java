@@ -1,9 +1,8 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
-import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.MonthlyInstitutionCount;
-import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PlatformDashboardSummaryCounts;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.MonthlyInstitutionRegistrationResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.PlatformDashboardResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.PlatformDashboardSummaryResponse;
@@ -23,8 +22,6 @@ public class GetPlatformDashboardUseCase {
   private static final int TREND_MONTHS = 12;
 
   private final InstitutionRepository institutionRepository;
-  private final PersonRepository personRepository;
-  private final UserRepository userRepository;
 
   @Transactional(readOnly = true)
   public PlatformDashboardResponse execute() {
@@ -32,8 +29,10 @@ public class GetPlatformDashboardUseCase {
   }
 
   PlatformDashboardResponse execute(final YearMonth currentMonth) {
-    final long institutions = institutionRepository.count();
-    final long activeInstitutions = institutionRepository.countByActiveTrue();
+    final PlatformDashboardSummaryCounts summaryCounts =
+        institutionRepository.getPlatformDashboardSummaryCounts();
+    final long institutions = summaryCounts.getInstitutions();
+    final long activeInstitutions = summaryCounts.getActiveInstitutions();
     final YearMonth firstMonth = currentMonth.minusMonths(TREND_MONTHS - 1L);
     final Map<YearMonth, Long> registrationsByMonth =
         institutionRepository
@@ -52,8 +51,8 @@ public class GetPlatformDashboardUseCase {
                 .institutions(institutions)
                 .activeInstitutions(activeInstitutions)
                 .inactiveInstitutions(institutions - activeInstitutions)
-                .people(personRepository.countByDeletedFalse())
-                .usersWithAccess(userRepository.countUsersWithAccess())
+                .people(summaryCounts.getPeople())
+                .usersWithAccess(summaryCounts.getUsersWithAccess())
                 .build())
         .institutionRegistrations(
             IntStream.range(0, TREND_MONTHS)

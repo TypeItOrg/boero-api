@@ -2,16 +2,14 @@ package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.City;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Province;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.MonthlyInstitutionCount;
-import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PlatformDashboardSummaryCounts;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
@@ -23,17 +21,12 @@ import org.junit.jupiter.api.Test;
 class GetPlatformDashboardUseCaseTest {
 
   private InstitutionRepository institutionRepository;
-  private PersonRepository personRepository;
-  private UserRepository userRepository;
   private GetPlatformDashboardUseCase useCase;
 
   @BeforeEach
   void setUp() {
     institutionRepository = mock(InstitutionRepository.class);
-    personRepository = mock(PersonRepository.class);
-    userRepository = mock(UserRepository.class);
-    useCase =
-        new GetPlatformDashboardUseCase(institutionRepository, personRepository, userRepository);
+    useCase = new GetPlatformDashboardUseCase(institutionRepository);
   }
 
   @Test
@@ -42,10 +35,8 @@ class GetPlatformDashboardUseCaseTest {
     final YearMonth currentMonth = YearMonth.of(2026, 7);
     final MonthlyInstitutionCount novemberCount = monthlyCount(2025, 11, 3);
     final Institution recentInstitution = recentInstitution();
-    when(institutionRepository.count()).thenReturn(9L);
-    when(institutionRepository.countByActiveTrue()).thenReturn(7L);
-    when(personRepository.countByDeletedFalse()).thenReturn(41L);
-    when(userRepository.countUsersWithAccess()).thenReturn(28L);
+    final PlatformDashboardSummaryCounts summaryCounts = summaryCounts(9, 7, 41, 28);
+    when(institutionRepository.getPlatformDashboardSummaryCounts()).thenReturn(summaryCounts);
     when(institutionRepository.countCreatedByMonth(
             LocalDateTime.of(2025, 8, 1, 0, 0), LocalDateTime.of(2026, 8, 1, 0, 0)))
         .thenReturn(List.of(novemberCount));
@@ -73,6 +64,8 @@ class GetPlatformDashboardUseCaseTest {
   @Test
   @DisplayName("Should return zero values and empty recent institutions when no data exists")
   void execute_returnsEmptyDashboard() {
+    final PlatformDashboardSummaryCounts summaryCounts = summaryCounts(0, 0, 0, 0);
+    when(institutionRepository.getPlatformDashboardSummaryCounts()).thenReturn(summaryCounts);
     when(institutionRepository.countCreatedByMonth(
             LocalDateTime.of(2025, 8, 1, 0, 0), LocalDateTime.of(2026, 8, 1, 0, 0)))
         .thenReturn(List.of());
@@ -84,8 +77,19 @@ class GetPlatformDashboardUseCaseTest {
     assertThat(response.institutionRegistrations())
         .allSatisfy(registration -> assertThat(registration.count()).isZero());
     assertThat(response.recentInstitutions()).isEmpty();
-    verify(personRepository).countByDeletedFalse();
-    verify(userRepository).countUsersWithAccess();
+  }
+
+  private static PlatformDashboardSummaryCounts summaryCounts(
+      final long institutions,
+      final long activeInstitutions,
+      final long people,
+      final long usersWithAccess) {
+    final PlatformDashboardSummaryCounts result = mock(PlatformDashboardSummaryCounts.class);
+    when(result.getInstitutions()).thenReturn(institutions);
+    when(result.getActiveInstitutions()).thenReturn(activeInstitutions);
+    when(result.getPeople()).thenReturn(people);
+    when(result.getUsersWithAccess()).thenReturn(usersWithAccess);
+    return result;
   }
 
   private static MonthlyInstitutionCount monthlyCount(

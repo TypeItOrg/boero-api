@@ -57,6 +57,27 @@ public interface InstitutionRepository extends JpaRepository<Institution, UUID> 
   long countByActiveTrue();
 
   @Query(
+      value =
+          """
+          SELECT
+            (SELECT COUNT(*) FROM institutions) AS institutions,
+            (SELECT COUNT(*) FROM institutions WHERE active = true) AS "activeInstitutions",
+            (SELECT COUNT(*) FROM people WHERE deleted = false) AS people,
+            (
+              SELECT COUNT(*)
+              FROM users platform_user
+              JOIN people person ON person.person_id = platform_user.person_id
+              JOIN institutions institution
+                ON institution.institution_id = platform_user.institution_id
+              WHERE platform_user.enabled = true
+                AND person.deleted = false
+                AND institution.active = true
+            ) AS "usersWithAccess"
+          """,
+      nativeQuery = true)
+  PlatformDashboardSummaryCounts getPlatformDashboardSummaryCounts();
+
+  @Query(
       """
       SELECT YEAR(institution.createdAt) AS year,
              MONTH(institution.createdAt) AS month,
