@@ -14,6 +14,8 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required for staging}
+      REFRESH_REPLAY_ENCRYPTION_KEY: ${REFRESH_REPLAY_ENCRYPTION_KEY:?REFRESH_REPLAY_ENCRYPTION_KEY is required for staging}
+      REFRESH_REPLAY_TTL: ${REFRESH_REPLAY_TTL:-5s}
       SPRING_PROFILES_ACTIVE: staging
       DB_NAME: ${DB_NAME:?DB_NAME is required for staging}
       DB_USER: ${DB_USER:?DB_USER is required for staging}

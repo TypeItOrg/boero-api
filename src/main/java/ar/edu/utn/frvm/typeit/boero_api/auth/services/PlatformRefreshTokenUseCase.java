@@ -12,6 +12,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RefreshTokenReque
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PlatformAuthResponse;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class PlatformRefreshTokenUseCase {
   private final JwtService jwtService;
   private final JwtProperties jwtProperties;
   private final CacheManager cacheManager;
+  private final PlatformRefreshReplayCache replayCache;
 
   @Transactional(noRollbackFor = TokenRefreshException.class)
   public PlatformAuthResponse execute(final RefreshTokenRequest request) {
@@ -41,6 +43,13 @@ public class PlatformRefreshTokenUseCase {
             .orElseThrow(TokenRefreshException::invalid);
 
     if (current.isRevoked()) {
+      final Optional<PlatformRefreshReplay> replay = replayCache.get(hash);
+      if (replay.isPresent()) {
+        findActiveSession(current);
+        final PlatformAccount account = findEnabledAccount(current);
+        return PlatformAuthResponse.of(
+            account, replay.get().accessToken(), replay.get().refreshToken());
+      }
       handleReuse(current);
     }
 
@@ -48,23 +57,8 @@ public class PlatformRefreshTokenUseCase {
       throw TokenRefreshException.invalid();
     }
 
-    PlatformSession session =
-        platformSessionRepository
-            .findById(current.getPlatformSessionId())
-            .orElseThrow(TokenRefreshException::invalid);
-
-    if (!session.isActive()) {
-      throw TokenRefreshException.invalid();
-    }
-
-    PlatformAccount account =
-        platformAccountRepository
-            .findById(current.getPlatformAccountId())
-            .orElseThrow(TokenRefreshException::invalid);
-
-    if (!account.isEnabled()) {
-      throw TokenRefreshException.invalid();
-    }
+    final PlatformSession session = findActiveSession(current);
+    final PlatformAccount account = findEnabledAccount(current);
 
     current.setRevoked(true);
     platformRefreshTokenRepository.save(current);
@@ -88,7 +82,35 @@ public class PlatformRefreshTokenUseCase {
                 .email(account.getEmail())
                 .sessionId(session.getId())
                 .build());
-    return PlatformAuthResponse.of(account, accessToken, rawRefresh);
+    final PlatformAuthResponse response = PlatformAuthResponse.of(account, accessToken, rawRefresh);
+    replayCache.put(hash, new PlatformRefreshReplay(accessToken, rawRefresh));
+    return response;
+  }
+
+  private PlatformSession findActiveSession(final PlatformRefreshToken current) {
+    final PlatformSession session =
+        platformSessionRepository
+            .findById(current.getPlatformSessionId())
+            .orElseThrow(TokenRefreshException::invalid);
+
+    if (!session.isActive()) {
+      throw TokenRefreshException.invalid();
+    }
+
+    return session;
+  }
+
+  private PlatformAccount findEnabledAccount(final PlatformRefreshToken current) {
+    final PlatformAccount account =
+        platformAccountRepository
+            .findById(current.getPlatformAccountId())
+            .orElseThrow(TokenRefreshException::invalid);
+
+    if (!account.isEnabled()) {
+      throw TokenRefreshException.invalid();
+    }
+
+    return account;
   }
 
   private void handleReuse(PlatformRefreshToken current) {

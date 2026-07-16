@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
 import static ar.edu.utn.frvm.typeit.boero_api.support.AuthTestData.jwtProperties;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -36,6 +37,7 @@ class PlatformRefreshTokenUseCaseTest {
   @Mock private PlatformAccountRepository accountRepository;
   @Mock private JwtService jwtService;
   @Mock private CacheManager cacheManager;
+  @Mock private PlatformRefreshReplayCache replayCache;
 
   private PlatformRefreshTokenUseCase useCase;
 
@@ -48,7 +50,8 @@ class PlatformRefreshTokenUseCaseTest {
             accountRepository,
             jwtService,
             jwtProperties(),
-            cacheManager);
+            cacheManager,
+            replayCache);
   }
 
   @Test
@@ -99,6 +102,75 @@ class PlatformRefreshTokenUseCaseTest {
         .isInstanceOf(TokenRefreshException.class);
 
     verify(refreshTokenRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("Should replay the rotated tokens for concurrent refreshes")
+  void execute_replaysConcurrentRefresh() {
+    final String rawToken = "concurrent-platform-token";
+    final String hash = JwtService.hashToken(rawToken);
+    final UUID sessionId = UUID.randomUUID();
+    final UUID accountId = UUID.randomUUID();
+    final PlatformRefreshToken token = token(hash, "family-1", sessionId, accountId);
+    token.setRevoked(true);
+    final PlatformSession session =
+        PlatformSession.builder().platformAccountId(accountId).active(true).build();
+    session.setId(sessionId);
+    final PlatformAccount account =
+        PlatformAccount.builder()
+            .id(accountId)
+            .email("admin@example.com")
+            .name("Admin")
+            .lastName("Platform")
+            .password("encoded")
+            .enabled(true)
+            .build();
+    final PlatformRefreshReplay replay =
+        new PlatformRefreshReplay("replayed-access-token", "replayed-refresh-token");
+    when(refreshTokenRepository.findByTokenHash(hash)).thenReturn(Optional.of(token));
+    when(replayCache.get(hash)).thenReturn(Optional.of(replay));
+    when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+    when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
+
+    final var response = useCase.execute(new RefreshTokenRequest(rawToken));
+
+    assertThat(response.tokens().accessToken()).isEqualTo(replay.accessToken());
+    assertThat(response.tokens().refreshToken()).isEqualTo(replay.refreshToken());
+    verify(refreshTokenRepository, never()).revokeByFamilyId("family-1");
+    verify(refreshTokenRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("Should cache the result of a successful platform refresh")
+  void execute_cachesSuccessfulRefresh() {
+    final String rawToken = "successful-platform-token";
+    final String hash = JwtService.hashToken(rawToken);
+    final UUID sessionId = UUID.randomUUID();
+    final UUID accountId = UUID.randomUUID();
+    final PlatformRefreshToken token = token(hash, "family-1", sessionId, accountId);
+    final PlatformSession session =
+        PlatformSession.builder().platformAccountId(accountId).active(true).build();
+    session.setId(sessionId);
+    final PlatformAccount account =
+        PlatformAccount.builder()
+            .id(accountId)
+            .email("admin@example.com")
+            .name("Admin")
+            .lastName("Platform")
+            .password("encoded")
+            .enabled(true)
+            .build();
+    when(refreshTokenRepository.findByTokenHash(hash)).thenReturn(Optional.of(token));
+    when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+    when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
+    when(jwtService.generatePlatformAccessToken(any())).thenReturn("access-token");
+
+    final var response = useCase.execute(new RefreshTokenRequest(rawToken));
+
+    assertThat(response.tokens().accessToken()).isEqualTo("access-token");
+    assertThat(response.tokens().refreshToken()).isNotBlank();
+    verify(replayCache)
+        .put(hash, new PlatformRefreshReplay("access-token", response.tokens().refreshToken()));
   }
 
   private static PlatformRefreshToken token(
