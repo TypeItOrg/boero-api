@@ -56,7 +56,7 @@ class PermissionCatalogControllerWebMvcTest {
   @Test
   @DisplayName("Should forbid unauthenticated access to permission catalog")
   void list_returnsForbiddenWithoutAuthentication() throws Exception {
-    mockMvc.perform(get("/api/v1/permissions")).andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/admin/permissions")).andExpect(status().isForbidden());
   }
 
   @Test
@@ -68,7 +68,7 @@ class PermissionCatalogControllerWebMvcTest {
     stubPlatformAdminAccess(false);
 
     mockMvc
-        .perform(get("/api/v1/permissions").principal(authentication))
+        .perform(get("/api/v1/admin/permissions").principal(authentication))
         .andExpect(status().isForbidden());
   }
 
@@ -80,7 +80,7 @@ class PermissionCatalogControllerWebMvcTest {
     stubPlatformAdminAccess(true);
 
     mockMvc
-        .perform(get("/api/v1/permissions").principal(authentication))
+        .perform(get("/api/v1/admin/permissions").principal(authentication))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.length()").value(10))
         .andExpect(jsonPath("$[0].scope").value("INSTITUTION"))

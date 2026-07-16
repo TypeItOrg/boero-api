@@ -42,7 +42,7 @@ class PlatformLoginIntegrationTest {
   void shouldLoginPlatformAdmin() throws Exception {
     mockMvc
         .perform(
-            post("/api/v1/auth/platform/login")
+            post("/api/v1/admin/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """

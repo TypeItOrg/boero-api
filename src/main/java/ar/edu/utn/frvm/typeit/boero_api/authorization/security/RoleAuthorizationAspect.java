@@ -20,6 +20,15 @@ public class RoleAuthorizationAspect {
 
   @Before("@annotation(requiresPlatformRole)")
   public void checkPlatformRole(RequiresPlatformRole requiresPlatformRole) {
+    authorize(requiresPlatformRole);
+  }
+
+  @Before("@within(requiresPlatformRole)")
+  public void checkTypePlatformRole(RequiresPlatformRole requiresPlatformRole) {
+    authorize(requiresPlatformRole);
+  }
+
+  private void authorize(RequiresPlatformRole requiresPlatformRole) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     denyUnless(authorizationService.hasPlatformRole(authentication, requiresPlatformRole.value()));
   }

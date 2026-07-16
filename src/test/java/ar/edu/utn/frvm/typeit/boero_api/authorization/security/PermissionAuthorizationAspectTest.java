@@ -1,7 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.security;
 
 import static ar.edu.utn.frvm.typeit.boero_api.support.AuthTestData.platformPrincipal;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
@@ -11,7 +10,6 @@ import static org.mockito.Mockito.when;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresAnyPermission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPermission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -41,38 +39,34 @@ class PermissionAuthorizationAspectTest {
   }
 
   @Test
-  @DisplayName("Should allow platform admin for single permission checks")
-  void checkPermission_allowsPlatformAdmin() {
+  @DisplayName("Should reject platform admin on institutional permission checks")
+  void checkPermission_rejectsPlatformAdmin() {
     var authentication =
         new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
     SecurityContextHolder.getContext().setAuthentication(authentication);
-    when(authorizationService.hasPlatformRole(authentication, PlatformRoleCode.PLATFORM_ADMIN))
-        .thenReturn(true);
-    lenient()
-        .when(permissionRequired().value())
-        .thenReturn(PermissionCode.INSTITUTION_PERSON_READ_ANY);
+    when(authorizationService.hasPermission(
+            authentication, PermissionCode.INSTITUTION_PERSON_READ_ANY))
+        .thenReturn(false);
 
-    assertThatCode(() -> permissionAuthorizationAspect.checkPermission(permissionRequired()))
-        .doesNotThrowAnyException();
+    assertThatThrownBy(() -> permissionAuthorizationAspect.checkPermission(permissionRequired()))
+        .isInstanceOf(AccessDeniedException.class);
   }
 
   @Test
-  @DisplayName("Should allow platform admin for any-permission checks")
-  void checkAnyPermission_allowsPlatformAdmin() {
+  @DisplayName("Should reject platform admin on institutional any-permission checks")
+  void checkAnyPermission_rejectsPlatformAdmin() {
     var authentication =
         new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
     SecurityContextHolder.getContext().setAuthentication(authentication);
-    when(authorizationService.hasPlatformRole(authentication, PlatformRoleCode.PLATFORM_ADMIN))
-        .thenReturn(true);
-    lenient()
-        .when(anyPermissionRequired().value())
-        .thenReturn(
-            new PermissionCode[] {
-              PermissionCode.INSTITUTION_PERSON_READ_ANY, PermissionCode.INSTITUTION_ROLE_ASSIGN
-            });
+    when(authorizationService.hasAnyPermission(
+            authentication,
+            PermissionCode.INSTITUTION_PERSON_READ_ANY,
+            PermissionCode.INSTITUTION_ROLE_ASSIGN))
+        .thenReturn(false);
 
-    assertThatCode(() -> permissionAuthorizationAspect.checkAnyPermission(anyPermissionRequired()))
-        .doesNotThrowAnyException();
+    assertThatThrownBy(
+            () -> permissionAuthorizationAspect.checkAnyPermission(anyPermissionRequired()))
+        .isInstanceOf(AccessDeniedException.class);
   }
 
   @Test
@@ -81,8 +75,6 @@ class PermissionAuthorizationAspectTest {
     var authentication =
         new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
     SecurityContextHolder.getContext().setAuthentication(authentication);
-    when(authorizationService.hasPlatformRole(authentication, PlatformRoleCode.PLATFORM_ADMIN))
-        .thenReturn(false);
     when(authorizationService.hasPermission(
             authentication, PermissionCode.INSTITUTION_PERSON_READ_ANY))
         .thenReturn(false);
@@ -97,8 +89,6 @@ class PermissionAuthorizationAspectTest {
     var authentication =
         new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
     SecurityContextHolder.getContext().setAuthentication(authentication);
-    when(authorizationService.hasPlatformRole(authentication, PlatformRoleCode.PLATFORM_ADMIN))
-        .thenReturn(false);
     when(authorizationService.hasAnyPermission(
             authentication,
             PermissionCode.INSTITUTION_PERSON_READ_ANY,

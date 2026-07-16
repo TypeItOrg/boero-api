@@ -82,7 +82,7 @@ class PlatformPeopleControllerWebMvcTest {
 
     mockMvc
         .perform(
-            get("/api/v1/platform/people")
+            get("/api/v1/admin/people")
                 .param("search", "ana")
                 .param("institutionId", INSTITUTION_ID.toString())
                 .param("roleCode", SystemRoleCode.TEACHER.name())
@@ -105,7 +105,7 @@ class PlatformPeopleControllerWebMvcTest {
         .thenReturn(false);
 
     mockMvc
-        .perform(get("/api/v1/platform/people").principal(authentication))
+        .perform(get("/api/v1/admin/people").principal(authentication))
         .andExpect(status().isForbidden());
   }
 

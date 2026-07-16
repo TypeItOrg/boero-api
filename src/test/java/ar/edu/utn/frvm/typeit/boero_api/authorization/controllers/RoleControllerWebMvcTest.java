@@ -53,7 +53,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.util.PathMatcher;
 
-@WebMvcTest(RoleController.class)
+@WebMvcTest({RoleController.class, AdminRoleController.class})
 @Import({
   RoleAuthorizationAspect.class,
   PermissionAuthorizationAspect.class,
@@ -248,7 +248,7 @@ class RoleControllerWebMvcTest {
     mockMvc
         .perform(
             post(
-                    "/api/v1/platform/institutions/{institutionId}/authority/{personId}",
+                    "/api/v1/admin/institutions/{institutionId}/authority/{personId}",
                     INSTITUTION_ID,
                     PERSON_ID)
                 .principal(authentication))
@@ -267,7 +267,7 @@ class RoleControllerWebMvcTest {
     mockMvc
         .perform(
             post(
-                    "/api/v1/platform/institutions/{institutionId}/authority/{personId}",
+                    "/api/v1/admin/institutions/{institutionId}/authority/{personId}",
                     INSTITUTION_ID,
                     PERSON_ID)
                 .principal(authentication))
@@ -287,7 +287,7 @@ class RoleControllerWebMvcTest {
     mockMvc
         .perform(
             get(
-                    "/api/v1/institutions/{institutionId}/people/{personId}/roles",
+                    "/api/v1/admin/institutions/{institutionId}/people/{personId}/roles",
                     INSTITUTION_ID,
                     PERSON_ID)
                 .principal(authentication))
@@ -309,7 +309,7 @@ class RoleControllerWebMvcTest {
     mockMvc
         .perform(
             post(
-                    "/api/v1/institutions/{institutionId}/people/{personId}/roles",
+                    "/api/v1/admin/institutions/{institutionId}/people/{personId}/roles",
                     INSTITUTION_ID,
                     PERSON_ID)
                 .principal(authentication)
@@ -330,7 +330,7 @@ class RoleControllerWebMvcTest {
     mockMvc
         .perform(
             delete(
-                    "/api/v1/institutions/{institutionId}/people/{personId}/roles/{roleCode}",
+                    "/api/v1/admin/institutions/{institutionId}/people/{personId}/roles/{roleCode}",
                     INSTITUTION_ID,
                     PERSON_ID,
                     SystemRoleCode.TEACHER)
@@ -341,7 +341,7 @@ class RoleControllerWebMvcTest {
   }
 
   @Test
-  @DisplayName("Should allow platform admin to list system roles via god mode")
+  @DisplayName("Should allow platform admin to list system roles through admin endpoint")
   void listSystemRoles_returnsCatalogForPlatformAdmin() throws Exception {
     var authentication =
         new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
@@ -356,7 +356,7 @@ class RoleControllerWebMvcTest {
                     .build()));
 
     mockMvc
-        .perform(get("/api/v1/roles/system").principal(authentication))
+        .perform(get("/api/v1/admin/roles/system").principal(authentication))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.roles[0].code").value("TEACHER"));
   }

@@ -25,6 +25,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.LastInstitution
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.PersonNotFoundInInstitutionException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.security.InstitutionAccessAspect;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.security.PermissionAuthorizationAspect;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.security.RoleAuthorizationAspect;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InitialRoleAssignmentGuard;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
@@ -64,8 +65,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.util.PathMatcher;
 
-@WebMvcTest(PeopleController.class)
+@WebMvcTest({PeopleController.class, AdminPeopleController.class})
 @Import({
+  RoleAuthorizationAspect.class,
   PermissionAuthorizationAspect.class,
   InstitutionAccessAspect.class,
   InstitutionalCallerGuard.class,
@@ -120,7 +122,7 @@ class PeopleControllerWebMvcTest {
 
     mockMvc
         .perform(
-            get("/api/v1/institutions/{institutionId}/people", INSTITUTION_ID)
+            get("/api/v1/admin/institutions/{institutionId}/people", INSTITUTION_ID)
                 .param("search", "ana")
                 .principal(authentication))
         .andExpect(status().isOk())
@@ -187,7 +189,10 @@ class PeopleControllerWebMvcTest {
 
     mockMvc
         .perform(
-            get("/api/v1/institutions/{institutionId}/people/{personId}", INSTITUTION_ID, PERSON_ID)
+            get(
+                    "/api/v1/admin/institutions/{institutionId}/people/{personId}",
+                    INSTITUTION_ID,
+                    PERSON_ID)
                 .principal(authentication))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.personId").value(PERSON_ID.toString()));
@@ -220,7 +225,7 @@ class PeopleControllerWebMvcTest {
 
     mockMvc
         .perform(
-            post("/api/v1/institutions/{institutionId}/people", INSTITUTION_ID)
+            post("/api/v1/admin/institutions/{institutionId}/people", INSTITUTION_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
                 .content(createBody()))
@@ -258,7 +263,7 @@ class PeopleControllerWebMvcTest {
 
     mockMvc
         .perform(
-            post("/api/v1/institutions/{institutionId}/people", INSTITUTION_ID)
+            post("/api/v1/admin/institutions/{institutionId}/people", INSTITUTION_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
                 .content(createBody(invalidBirthDate)))
@@ -281,7 +286,7 @@ class PeopleControllerWebMvcTest {
 
     mockMvc
         .perform(
-            post("/api/v1/institutions/{institutionId}/people", INSTITUTION_ID)
+            post("/api/v1/admin/institutions/{institutionId}/people", INSTITUTION_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
                 .content(createBody()))
@@ -300,7 +305,7 @@ class PeopleControllerWebMvcTest {
 
     mockMvc
         .perform(
-            post("/api/v1/institutions/{institutionId}/people", INSTITUTION_ID)
+            post("/api/v1/admin/institutions/{institutionId}/people", INSTITUTION_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
                 .content(createBody()))
@@ -319,7 +324,10 @@ class PeopleControllerWebMvcTest {
 
     mockMvc
         .perform(
-            put("/api/v1/institutions/{institutionId}/people/{personId}", INSTITUTION_ID, PERSON_ID)
+            put(
+                    "/api/v1/admin/institutions/{institutionId}/people/{personId}",
+                    INSTITUTION_ID,
+                    PERSON_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
                 .content("{\"firstName\":\"Ana María\"}"))
@@ -338,7 +346,10 @@ class PeopleControllerWebMvcTest {
 
     mockMvc
         .perform(
-            put("/api/v1/institutions/{institutionId}/people/{personId}", INSTITUTION_ID, PERSON_ID)
+            put(
+                    "/api/v1/admin/institutions/{institutionId}/people/{personId}",
+                    INSTITUTION_ID,
+                    PERSON_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
                 .content("{}"))
@@ -357,7 +368,10 @@ class PeopleControllerWebMvcTest {
 
     mockMvc
         .perform(
-            put("/api/v1/institutions/{institutionId}/people/{personId}", INSTITUTION_ID, PERSON_ID)
+            put(
+                    "/api/v1/admin/institutions/{institutionId}/people/{personId}",
+                    INSTITUTION_ID,
+                    PERSON_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
                 .content("{\"firstName\":\"Ana\"}"))
@@ -375,7 +389,7 @@ class PeopleControllerWebMvcTest {
     mockMvc
         .perform(
             delete(
-                    "/api/v1/institutions/{institutionId}/people/{personId}",
+                    "/api/v1/admin/institutions/{institutionId}/people/{personId}",
                     INSTITUTION_ID,
                     PERSON_ID)
                 .principal(authentication))
@@ -398,7 +412,7 @@ class PeopleControllerWebMvcTest {
     mockMvc
         .perform(
             delete(
-                    "/api/v1/institutions/{institutionId}/people/{personId}",
+                    "/api/v1/admin/institutions/{institutionId}/people/{personId}",
                     INSTITUTION_ID,
                     PERSON_ID)
                 .principal(authentication))
@@ -416,7 +430,7 @@ class PeopleControllerWebMvcTest {
     mockMvc
         .perform(
             delete(
-                    "/api/v1/institutions/{institutionId}/people/{personId}",
+                    "/api/v1/admin/institutions/{institutionId}/people/{personId}",
                     INSTITUTION_ID,
                     PERSON_ID)
                 .principal(authentication))
@@ -425,7 +439,7 @@ class PeopleControllerWebMvcTest {
     mockMvc
         .perform(
             delete(
-                    "/api/v1/institutions/{institutionId}/people/{personId}",
+                    "/api/v1/admin/institutions/{institutionId}/people/{personId}",
                     INSTITUTION_ID,
                     PERSON_ID)
                 .principal(authentication))
@@ -446,7 +460,7 @@ class PeopleControllerWebMvcTest {
     mockMvc
         .perform(
             delete(
-                    "/api/v1/institutions/{institutionId}/people/{personId}",
+                    "/api/v1/admin/institutions/{institutionId}/people/{personId}",
                     INSTITUTION_ID,
                     PERSON_ID)
                 .principal(authentication))

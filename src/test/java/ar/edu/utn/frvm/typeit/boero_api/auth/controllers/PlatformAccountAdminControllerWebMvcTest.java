@@ -74,7 +74,7 @@ class PlatformAccountAdminControllerWebMvcTest {
   @Test
   @DisplayName("Should forbid unauthenticated platform account listing")
   void list_returnsForbiddenWithoutAuthentication() throws Exception {
-    mockMvc.perform(get("/api/v1/platform/accounts")).andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/admin/accounts")).andExpect(status().isForbidden());
   }
 
   @Test
@@ -93,7 +93,7 @@ class PlatformAccountAdminControllerWebMvcTest {
                 .build());
 
     mockMvc
-        .perform(get("/api/v1/platform/accounts").principal(authentication))
+        .perform(get("/api/v1/admin/accounts").principal(authentication))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items[0].platformAccountId").value(TARGET_ACCOUNT_ID.toString()))
         .andExpect(jsonPath("$.items[0].roleCode").value("PLATFORM_ADMIN"));
@@ -108,7 +108,7 @@ class PlatformAccountAdminControllerWebMvcTest {
 
     mockMvc
         .perform(
-            post("/api/v1/platform/accounts")
+            post("/api/v1/admin/accounts")
                 .principal(authentication)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
@@ -135,7 +135,7 @@ class PlatformAccountAdminControllerWebMvcTest {
 
     mockMvc
         .perform(
-            put("/api/v1/platform/accounts/{id}", TARGET_ACCOUNT_ID)
+            put("/api/v1/admin/accounts/{id}", TARGET_ACCOUNT_ID)
                 .principal(authentication)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
@@ -162,7 +162,7 @@ class PlatformAccountAdminControllerWebMvcTest {
 
     mockMvc
         .perform(
-            patch("/api/v1/platform/accounts/{id}/status", TARGET_ACCOUNT_ID)
+            patch("/api/v1/admin/accounts/{id}/status", TARGET_ACCOUNT_ID)
                 .principal(authentication)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"enabled\":false}"))

@@ -8,8 +8,8 @@ public final class PublicRoutes {
     "/api/v1/auth/register",
     "/api/v1/auth/login",
     "/api/v1/auth/refresh",
-    "/api/v1/auth/platform/login",
-    "/api/v1/auth/platform/refresh"
+    "/api/v1/admin/auth/login",
+    "/api/v1/admin/auth/refresh"
   };
 
   private static final String[] INFRASTRUCTURE_ROUTES = {"/actuator/health/**"};

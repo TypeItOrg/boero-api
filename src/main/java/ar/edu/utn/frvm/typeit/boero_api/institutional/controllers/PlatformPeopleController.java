@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Validated
 @RestController
-@RequestMapping("/platform/people")
+@RequestMapping("/admin/people")
 @RequiredArgsConstructor
 public class PlatformPeopleController {
 

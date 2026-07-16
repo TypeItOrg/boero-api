@@ -4,11 +4,14 @@ import static ar.edu.utn.frvm.typeit.boero_api.security.config.PublicRoutes.GET_
 import static ar.edu.utn.frvm.typeit.boero_api.security.config.PublicRoutes.PUBLIC_ROUTES;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticationFilter;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -26,6 +29,7 @@ public class SecurityConfig {
 
   private final AuthenticationEntryPoint authenticationEntryPoint;
   private final AccessDeniedHandler accessDeniedHandler;
+  private final AuthorizationService authorizationService;
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
   @Bean
@@ -65,6 +69,12 @@ public class SecurityConfig {
                 .permitAll()
                 .requestMatchers(HttpMethod.GET, GET_ONLY_ROUTES)
                 .permitAll()
+                .requestMatchers("/api/*/admin/**")
+                .access(
+                    (authentication, context) ->
+                        new AuthorizationDecision(
+                            authorizationService.hasPlatformRole(
+                                authentication.get(), PlatformRoleCode.PLATFORM_ADMIN)))
                 .anyRequest()
                 .authenticated());
 

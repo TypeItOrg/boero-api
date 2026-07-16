@@ -64,7 +64,7 @@ class PlatformDashboardControllerWebMvcTest {
   @Test
   @DisplayName("Should forbid unauthenticated dashboard access")
   void get_returnsForbiddenWithoutAuthentication() throws Exception {
-    mockMvc.perform(get("/api/v1/platform/dashboard")).andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/admin/dashboard")).andExpect(status().isForbidden());
   }
 
   @Test
@@ -77,7 +77,7 @@ class PlatformDashboardControllerWebMvcTest {
         .thenReturn(false);
 
     mockMvc
-        .perform(get("/api/v1/platform/dashboard").principal(authentication))
+        .perform(get("/api/v1/admin/dashboard").principal(authentication))
         .andExpect(status().isForbidden());
   }
 
@@ -91,7 +91,7 @@ class PlatformDashboardControllerWebMvcTest {
     when(getPlatformDashboardUseCase.execute()).thenReturn(dashboardResponse());
 
     mockMvc
-        .perform(get("/api/v1/platform/dashboard").principal(authentication))
+        .perform(get("/api/v1/admin/dashboard").principal(authentication))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.summary.institutions").value(12))
         .andExpect(jsonPath("$.summary.usersWithAccess").value(31))

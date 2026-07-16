@@ -46,9 +46,7 @@ class PlatformAuthControllerValidationWebMvcTest {
   void shouldRejectPlatformLoginWhenEmailAndPasswordAreMissing() throws Exception {
     mockMvc
         .perform(
-            post("/api/v1/auth/platform/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{}"))
+            post("/api/v1/admin/auth/login").contentType(MediaType.APPLICATION_JSON).content("{}"))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.status").value(400))
         .andExpect(jsonPath("$.message").value("Se encontraron errores de validación."))
@@ -63,7 +61,7 @@ class PlatformAuthControllerValidationWebMvcTest {
   void shouldRejectPlatformLoginWhenEmailFormatIsInvalid() throws Exception {
     mockMvc
         .perform(
-            post("/api/v1/auth/platform/login")
+            post("/api/v1/admin/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """

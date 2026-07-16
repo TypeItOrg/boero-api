@@ -151,7 +151,9 @@ class InstitutionControllerWebMvcTest {
   void create_returnsForbiddenWithoutAuthentication() throws Exception {
     mockMvc
         .perform(
-            post("/api/v1/institutions").contentType(APPLICATION_JSON).content(createPayload()))
+            post("/api/v1/admin/institutions")
+                .contentType(APPLICATION_JSON)
+                .content(createPayload()))
         .andExpect(status().isForbidden());
   }
 
@@ -165,7 +167,7 @@ class InstitutionControllerWebMvcTest {
 
     mockMvc
         .perform(
-            post("/api/v1/institutions")
+            post("/api/v1/admin/institutions")
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
                 .content(createPayload()))
@@ -183,7 +185,7 @@ class InstitutionControllerWebMvcTest {
 
     mockMvc
         .perform(
-            post("/api/v1/institutions")
+            post("/api/v1/admin/institutions")
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
                 .content(createPayload()))
@@ -201,7 +203,7 @@ class InstitutionControllerWebMvcTest {
 
     mockMvc
         .perform(
-            put("/api/v1/institutions/{id}", INSTITUTION_ID)
+            put("/api/v1/admin/institutions/{id}", INSTITUTION_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
                 .content(updatePayload()))
@@ -219,7 +221,7 @@ class InstitutionControllerWebMvcTest {
 
     mockMvc
         .perform(
-            put("/api/v1/institutions/{id}", INSTITUTION_ID)
+            put("/api/v1/admin/institutions/{id}", INSTITUTION_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
                 .content(updatePayload()))
@@ -238,7 +240,7 @@ class InstitutionControllerWebMvcTest {
 
     mockMvc
         .perform(
-            post("/api/v1/institutions")
+            post("/api/v1/admin/institutions")
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
                 .content(createPayload()))
@@ -255,7 +257,7 @@ class InstitutionControllerWebMvcTest {
 
     mockMvc
         .perform(
-            post("/api/v1/institutions")
+            post("/api/v1/admin/institutions")
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
                 .content(invalidCityIdPayload()))
@@ -273,7 +275,7 @@ class InstitutionControllerWebMvcTest {
 
     mockMvc
         .perform(
-            put("/api/v1/institutions/{id}", INSTITUTION_ID)
+            put("/api/v1/admin/institutions/{id}", INSTITUTION_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
                 .content(updatePayload()))
@@ -290,7 +292,7 @@ class InstitutionControllerWebMvcTest {
 
     mockMvc
         .perform(
-            put("/api/v1/institutions/{id}", INSTITUTION_ID)
+            put("/api/v1/admin/institutions/{id}", INSTITUTION_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
                 .content(invalidCityIdPayload()))
@@ -300,7 +302,7 @@ class InstitutionControllerWebMvcTest {
   @Test
   @DisplayName("Should forbid unauthenticated admin institution listing")
   void adminList_returnsForbiddenWithoutAuthentication() throws Exception {
-    mockMvc.perform(get("/api/v1/platform/institutions")).andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/admin/institutions")).andExpect(status().isForbidden());
   }
 
   @Test
@@ -312,7 +314,7 @@ class InstitutionControllerWebMvcTest {
     stubPlatformAdminAccess(false);
 
     mockMvc
-        .perform(get("/api/v1/platform/institutions").principal(authentication))
+        .perform(get("/api/v1/admin/institutions").principal(authentication))
         .andExpect(status().isForbidden());
   }
 
@@ -349,7 +351,7 @@ class InstitutionControllerWebMvcTest {
                 .build());
 
     mockMvc
-        .perform(get("/api/v1/platform/institutions").principal(authentication))
+        .perform(get("/api/v1/admin/institutions").principal(authentication))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items[0].id").value(INSTITUTION_ID.toString()))
         .andExpect(jsonPath("$.items[0].userCount").value(7))
@@ -375,7 +377,7 @@ class InstitutionControllerWebMvcTest {
 
     mockMvc
         .perform(
-            get("/api/v1/platform/institutions")
+            get("/api/v1/admin/institutions")
                 .principal(authentication)
                 .param("search", "boero")
                 .param("active", "true")

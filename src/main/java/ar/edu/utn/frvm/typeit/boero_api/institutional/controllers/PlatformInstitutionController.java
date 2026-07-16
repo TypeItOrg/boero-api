@@ -6,10 +6,15 @@ import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionAdminDetailResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionAdminListItemResponse;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionDetailResponse;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.requests.CreateInstitutionRequest;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.requests.UpdateInstitutionRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.requests.UpdateInstitutionStatusRequest;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.CreateInstitutionUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.GetInstitutionAdminUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ListInstitutionsAdminUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdateInstitutionStatusUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdateInstitutionUseCase;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 import java.util.UUID;
@@ -22,6 +27,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -30,16 +37,18 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Validated
 @RestController
-@RequestMapping("/platform/institutions")
+@RequestMapping("/admin/institutions")
 @RequiredArgsConstructor
+@RequiresPlatformRole(PlatformRoleCode.PLATFORM_ADMIN)
 public class PlatformInstitutionController {
 
   private final ListInstitutionsAdminUseCase listInstitutionsAdminUseCase;
   private final GetInstitutionAdminUseCase getInstitutionAdminUseCase;
+  private final CreateInstitutionUseCase createInstitutionUseCase;
+  private final UpdateInstitutionUseCase updateInstitutionUseCase;
   private final UpdateInstitutionStatusUseCase updateInstitutionStatusUseCase;
 
   @GetMapping(version = Version.V1)
-  @RequiresPlatformRole(PlatformRoleCode.PLATFORM_ADMIN)
   public PaginatedResponse<InstitutionAdminListItemResponse> list(
       @RequestParam(required = false) @Size(max = 100) final String search,
       @RequestParam(required = false) final Boolean active,
@@ -48,14 +57,25 @@ public class PlatformInstitutionController {
   }
 
   @GetMapping(value = "/{id}", version = Version.V1)
-  @RequiresPlatformRole(PlatformRoleCode.PLATFORM_ADMIN)
   public InstitutionAdminDetailResponse get(@PathVariable final UUID id) {
     return getInstitutionAdminUseCase.execute(id);
   }
 
+  @PostMapping(version = Version.V1)
+  @ResponseStatus(HttpStatus.CREATED)
+  public InstitutionDetailResponse create(
+      @Valid @RequestBody final CreateInstitutionRequest request) {
+    return createInstitutionUseCase.execute(request);
+  }
+
+  @PutMapping(value = "/{id}", version = Version.V1)
+  public InstitutionDetailResponse update(
+      @PathVariable final UUID id, @Valid @RequestBody final UpdateInstitutionRequest request) {
+    return updateInstitutionUseCase.execute(id, request);
+  }
+
   @PatchMapping(value = "/{id}/status", version = Version.V1)
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  @RequiresPlatformRole(PlatformRoleCode.PLATFORM_ADMIN)
   public void updateStatus(
       @PathVariable final UUID id,
       @Valid @RequestBody final UpdateInstitutionStatusRequest request) {

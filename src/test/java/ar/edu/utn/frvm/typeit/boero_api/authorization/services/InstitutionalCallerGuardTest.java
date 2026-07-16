@@ -4,20 +4,13 @@ import static ar.edu.utn.frvm.typeit.boero_api.support.AuthTestData.institutiona
 import static ar.edu.utn.frvm.typeit.boero_api.support.AuthTestData.platformPrincipal;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.when;
 
-import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 
-@ExtendWith(MockitoExtension.class)
 class InstitutionalCallerGuardTest {
 
   private static final UUID USER_ID = UUID.fromString("66666666-6666-6666-6666-666666666666");
@@ -28,23 +21,18 @@ class InstitutionalCallerGuardTest {
   private static final UUID PLATFORM_ACCOUNT_ID =
       UUID.fromString("44444444-4444-4444-4444-444444444444");
 
-  @Mock private AuthorizationService authorizationService;
-
-  @InjectMocks private InstitutionalCallerGuard institutionalCallerGuard;
+  private final InstitutionalCallerGuard institutionalCallerGuard = new InstitutionalCallerGuard();
 
   @Test
-  @DisplayName("Should allow platform admin to pass institution guard")
-  void ensureCallerBelongsToInstitution_allowsPlatformAdmin() {
+  @DisplayName("Should reject platform admin on institution guard")
+  void ensureCallerBelongsToInstitution_rejectsPlatformAdmin() {
     var authentication =
         new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
-    when(authorizationService.hasPlatformRole(authentication, PlatformRoleCode.PLATFORM_ADMIN))
-        .thenReturn(true);
-
-    assertThatCode(
+    assertThatThrownBy(
             () ->
                 institutionalCallerGuard.ensureCallerBelongsToInstitution(
                     authentication, INSTITUTION_ID))
-        .doesNotThrowAnyException();
+        .isInstanceOf(AccessDeniedException.class);
   }
 
   @Test
@@ -52,9 +40,6 @@ class InstitutionalCallerGuardTest {
   void ensureCallerBelongsToInstitution_rejectsNonAdminPlatformAccount() {
     var authentication =
         new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
-    when(authorizationService.hasPlatformRole(authentication, PlatformRoleCode.PLATFORM_ADMIN))
-        .thenReturn(false);
-
     assertThatThrownBy(
             () ->
                 institutionalCallerGuard.ensureCallerBelongsToInstitution(
@@ -89,15 +74,12 @@ class InstitutionalCallerGuardTest {
   }
 
   @Test
-  @DisplayName("Should allow platform admin to pass institutional principal guard")
-  void ensureInstitutionalPrincipal_allowsPlatformAdmin() {
+  @DisplayName("Should reject platform admin on institutional principal guard")
+  void ensureInstitutionalPrincipal_rejectsPlatformAdmin() {
     var authentication =
         new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
-    when(authorizationService.hasPlatformRole(authentication, PlatformRoleCode.PLATFORM_ADMIN))
-        .thenReturn(true);
-
-    assertThatCode(() -> institutionalCallerGuard.ensureInstitutionalPrincipal(authentication))
-        .doesNotThrowAnyException();
+    assertThatThrownBy(() -> institutionalCallerGuard.ensureInstitutionalPrincipal(authentication))
+        .isInstanceOf(AccessDeniedException.class);
   }
 
   @Test
@@ -105,9 +87,6 @@ class InstitutionalCallerGuardTest {
   void ensureInstitutionalPrincipal_rejectsNonAdminPlatformAccount() {
     var authentication =
         new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
-    when(authorizationService.hasPlatformRole(authentication, PlatformRoleCode.PLATFORM_ADMIN))
-        .thenReturn(false);
-
     assertThatThrownBy(() -> institutionalCallerGuard.ensureInstitutionalPrincipal(authentication))
         .isInstanceOf(AccessDeniedException.class);
   }
