@@ -35,8 +35,8 @@ git commit -m "type(scope): description"
 <commit-message>
 	<type>feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert</type>
 	<scope>()</scope>
-	<description>A short, imperative summary of the change</description>
-	<footer>(optional: e.g. BREAKING CHANGE: details, or issue references)</footer>
+	<description>A short, imperative summary of the change in all lowercase</description>
+	<footer>(optional: e.g. breaking change: details, or issue references)</footer>
 </commit-message>
 ```
 
@@ -44,12 +44,12 @@ git commit -m "type(scope): description"
 
 ```xml
 <examples>
-	<example>feat(parser): add ability to parse arrays</example>
-	<example>fix(ui): correct button alignment</example>
-	<example>docs: update README with usage instructions</example>
-	<example>refactor: improve performance of data processing</example>
-	<example>chore: update dependencies</example>
-	<example>feat!: send email on registration (BREAKING CHANGE: email service required)</example>
+	<example>feat(parser): add support for array parsing</example>
+	<example>fix(ui): adjust main button alignment</example>
+	<example>docs(auth): document admin namespace and security boundary</example>
+	<example>refactor(db): optimize user queries for performance</example>
+	<example>chore(dev): add staging and log targets to makefile</example>
+	<example>feat(auth): isolate platform admin actions to admin namespace</example>
 </examples>
 ```
 
@@ -58,8 +58,8 @@ git commit -m "type(scope): description"
 ```xml
 <validation>
 	<type>Must be one of the allowed types. See <reference>https://www.conventionalcommits.org/en/v1.0.0/#specification</reference></type>
-	<scope>Optional, but recommended for clarity.</scope>
-	<description>Required. Use the imperative mood (e.g., "add", not "added").</description>
+	<scope>Optional, but recommended for clarity. Must be in lowercase.</scope>
+	<description>Required. Use the imperative mood, all lowercase, and balanced specificity. Do not be overly specific (e.g., listing filenames, classes, or parameter details) but avoid being too generic (e.g., "update docs", "fix bug", "update file").</description>
 	<footer>Use for breaking changes or issue references.</footer>
 </validation>
 ```
@@ -69,6 +69,6 @@ git commit -m "type(scope): description"
 ```xml
 <final-step>
 	<cmd>git commit -m "type(scope): description"</cmd>
-	<note>Replace with the constructed message for each logical group. Do not use commit body.</note>
+	<note>Replace with the constructed message for each logical group. Do not use commit body. Make sure type, scope, and description are all lowercase.</note>
 </final-step>
 ```
