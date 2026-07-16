@@ -54,5 +54,5 @@ Los formateadores `InstitutionalUsername` y `PlatformUsername` definen este form
 | Entidad | `User` | `PlatformAccount` |
 | Sesión | `UserSession` | `PlatformSession` |
 | Refresh token | `RefreshToken` | `PlatformRefreshToken` |
-| Login | `POST /api/v1/auth/login` | `POST /api/v1/auth/platform/login` |
+| Login | `POST /api/v1/auth/login` | `POST /api/v1/admin/auth/login` |
 | Rol | `SystemRoleCode` (institucional) | `PlatformRoleCode` (global) |

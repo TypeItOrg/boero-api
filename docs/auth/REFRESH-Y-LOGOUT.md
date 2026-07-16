@@ -86,5 +86,5 @@ Ambos flujos son idénticos en lógica, pero usan entidades distintas:
 | Refresh token | `RefreshToken` | `PlatformRefreshToken` |
 | Use case | `RefreshTokenUseCase` | `PlatformRefreshTokenUseCase` |
 | Logout | `LogoutUseCase` | `PlatformLogoutUseCase` |
-| Endpoint refresh | `POST /api/v1/auth/refresh` | `POST /api/v1/auth/platform/refresh` |
-| Endpoint logout | `POST /api/v1/auth/logout` | `POST /api/v1/auth/platform/logout` |
+| Endpoint refresh | `POST /api/v1/auth/refresh` | `POST /api/v1/admin/auth/refresh` |
+| Endpoint logout | `POST /api/v1/auth/logout` | `POST /api/v1/admin/auth/logout` |

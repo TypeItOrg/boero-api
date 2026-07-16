@@ -18,7 +18,7 @@ El flujo (`LoginUseCase`, `src/main/java/.../auth/services/LoginUseCase.java`):
 
 ## Login plataforma
 
-Endpoint: `POST /api/v1/auth/platform/login`
+Endpoint: `POST /api/v1/admin/auth/login`
 
 Mismo flujo (`PlatformLoginUseCase`, `src/main/java/.../auth/services/PlatformLoginUseCase.java`) pero:
 

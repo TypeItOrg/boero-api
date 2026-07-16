@@ -41,7 +41,7 @@ En PostgreSQL, el seed adquiere un advisory lock transaccional antes de sincroni
 
 ## Bootstrap de authority institucional
 
-`BootstrapInstitutionalAuthorityUseCase` (endpoint `POST /api/v1/platform/institutions/{id}/authority/{personId}`) es la única forma de crear el primer `INSTITUTIONAL_AUTHORITY` de una institución. Solo `PLATFORM_ADMIN` puede ejecutarlo.
+`BootstrapInstitutionalAuthorityUseCase` (endpoint `POST /api/v1/admin/institutions/{id}/authority/{personId}`) es la única forma de crear el primer `INSTITUTIONAL_AUTHORITY` de una institución. Solo `PLATFORM_ADMIN` puede ejecutarlo.
 
 La primera authority no se puede crear con el endpoint regular de asignación de roles porque ese endpoint requiere permisos institucionales que todavía no existen.
 
@@ -67,13 +67,13 @@ Cuando se asigna o revoca un rol, la sesión del usuario **no se revoca**. Esto 
 
 ## Edición de cuentas de plataforma
 
-Solo `PLATFORM_ADMIN` puede editar una cuenta mediante `PUT /api/v1/platform/accounts/{id}`. El nombre, apellido y correo son obligatorios; la contraseña es opcional y, si se omite, se conserva la actual.
+Solo `PLATFORM_ADMIN` puede editar una cuenta mediante `PUT /api/v1/admin/accounts/{id}`. El nombre, apellido y correo son obligatorios; la contraseña es opcional y, si se omite, se conserva la actual.
 
 Cambiar únicamente el nombre o apellido mantiene las sesiones activas. Cambiar el correo o la contraseña revoca todos los refresh tokens y sesiones de la cuenta, y desaloja sus entradas del caché de actividad. Si un administrador modifica sus propias credenciales, debe volver a iniciar sesión con los nuevos datos.
 
 ## Desactivación de una institución
 
-Solo `PLATFORM_ADMIN` puede cambiar el estado mediante `PATCH /api/v1/platform/institutions/{id}/status`.
+Solo `PLATFORM_ADMIN` puede cambiar el estado mediante `PATCH /api/v1/admin/institutions/{id}/status`.
 
 Al desactivar una institución:
 

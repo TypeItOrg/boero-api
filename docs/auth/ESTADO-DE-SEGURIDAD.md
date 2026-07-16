@@ -57,7 +57,7 @@ Esta regla se aplica en autenticación, refresh y validación de sesión. No deb
 
 - Los permisos no se confían al contenido del JWT.
 - Un cambio de rol debe invalidar las entradas correspondientes de caché.
-- `PLATFORM_ADMIN` puede administrar instituciones globalmente, pero una cuenta plataforma sin ese rol no obtiene acceso institucional implícito.
+- `PLATFORM_ADMIN` administra recursos globales mediante `/api/v1/admin/**`; las cuentas plataforma no usan las rutas institucionales como acceso implícito.
 - Crear una persona con rol privilegiado requiere permiso de asignación o administración de plataforma.
 - Nunca debe aceptarse un `institutionId` del body o path sin contrastarlo con el principal o con una guarda equivalente.
 

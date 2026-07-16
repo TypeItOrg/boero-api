@@ -55,9 +55,15 @@ Ambos leen el `Authentication` del `SecurityContext`, llaman a `AuthorizationSer
 
 ## Guarda de llamada institucional
 
-`@RequiresInstitutionAccess`, interceptada por `InstitutionAccessAspect`, protege controllers cuyo recurso está identificado por `institutionId`. Para un principal institucional exige que el ID del JWT coincida con el ID de la ruta. Una cuenta plataforma solamente atraviesa esta guarda si tiene `PLATFORM_ADMIN`.
+`@RequiresInstitutionAccess`, interceptada por `InstitutionAccessAspect`, protege controllers cuyo recurso está identificado por `institutionId`. Exige un principal institucional y que el ID del JWT coincida con el ID de la ruta. Las cuentas plataforma no atraviesan esta guarda.
 
 `InstitutionalCallerGuard` aplica la misma separación en operaciones de servicio o autorización que necesitan una comprobación explícita. Estas dos capas evitan que un usuario de la institución A lea o modifique recursos de la institución B cambiando un path variable.
+
+## Frontera administrativa
+
+Todas las operaciones de administración global viven bajo `/api/v1/admin/**`. Salvo `POST /admin/auth/login` y `POST /admin/auth/refresh`, Spring Security exige dinámicamente el rol `PLATFORM_ADMIN` para todo el namespace.
+
+Los controllers administrativos conservan además `@RequiresPlatformRole(PLATFORM_ADMIN)` como defensa en profundidad. La gestión administrativa de personas y roles usa rutas propias bajo `/admin/institutions/{institutionId}/**`; no reutiliza las rutas institucionales ni sus permisos.
 
 ## Caché e invalidación
 
