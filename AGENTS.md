@@ -10,9 +10,9 @@ Uses Lombok, JPA, PostgreSQL, Redis, Spring Security, JWT access/refresh tokens,
 - **Spring Boot:** 4.0.6.
 - **Formatter:** Spotless with `googleJavaFormat()`. Source of truth for Java formatting.
 - **Docker:** multi-stage `Dockerfile` with `prod` and `dev` targets.
-- **Compose:** one file per environment: `compose.yaml` for dev, `compose.staging.yaml`, `compose.prod.yaml`.
+- **Compose:** `compose.yaml` is only for local development. Shared staging and production infrastructure lives in `boero-infra`.
 - **Makefile:** shortcuts for common tasks.
-- **Environment:** copy `.env.dev.example` to `.env.dev`, `.env.staging.example` to `.env.staging`, `.env.prod.example` to `.env.prod`. Never commit real env files.
+- **Environment:** copy `.env.dev.example` to `.env.dev`. Never commit real env files.
 
 ### Common commands
 
