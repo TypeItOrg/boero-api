@@ -1,72 +1,25 @@
-# boero-api
+<div align="center">
 
-Backend de TypeIt para gestión institucional. Está construido con Java 21, Spring Boot 4, Spring Security, JPA/Hibernate, Flyway, PostgreSQL y Redis.
+<br />
+<img src="assets/logo.svg" alt="Boero" width="80" height="80" />
 
-## Estado actual
+# Boero
 
-El proyecto está en desarrollo activo. Actualmente cuenta con:
+**Backend seguro y multiinstitucional para la plataforma de gestión académica y administrativa Boero.**
 
-- Autenticación institucional mediante documento, institución y contraseña.
-- Autenticación global para cuentas de plataforma.
-- Access tokens JWT y refresh tokens con rotación por familia.
-- Sesiones revocables y blacklist de access tokens en Redis.
-- Roles y permisos dinámicos con aislamiento por institución.
-- Administración de instituciones y personas.
-- Protecciones de concurrencia para refresh tokens y autoridades institucionales.
-- Pruebas unitarias, MVC, JPA, integración y PostgreSQL con Testcontainers.
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.6-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-7-FF4438?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
+[![Spring Security](https://img.shields.io/badge/Spring_Security-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white)](https://spring.io/projects/spring-security)
 
-Que un módulo no aparezca en esta lista no implica necesariamente un defecto: el producto todavía está incorporando funcionalidades.
+[![Gradle](https://img.shields.io/badge/Gradle-9.4-02303A?style=flat-square&logo=gradle&logoColor=white)](https://gradle.org/)
+[![Flyway](https://img.shields.io/badge/Flyway-Migrations-CC0200?style=flat-square&logo=flyway&logoColor=white)](https://documentation.red-gate.com/flyway)
+[![Testcontainers](https://img.shields.io/badge/Testcontainers-1.20-2496ED?style=flat-square&logo=docker&logoColor=white)](https://testcontainers.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
+[![GitHub Actions](https://img.shields.io/badge/CI/CD-GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)](https://github.com/features/actions)
+[![GHCR](https://img.shields.io/badge/Registry-GHCR-181717?style=flat-square&logo=github&logoColor=white)](https://ghcr.io)
 
-## Documentación
+_Centraliza las reglas de negocio, protege el acceso y mantiene aislada la información de cada institución._
 
-El punto de entrada para autenticación, autorización y seguridad es [`docs/auth/INDICE.md`](docs/auth/INDICE.md).
-
-| Documento | Uso recomendado |
-|---|---|
-| [`AGENTS.md`](AGENTS.md) | Convenciones técnicas y reglas para contribuir al proyecto |
-| [`docs/auth/INDICE.md`](docs/auth/INDICE.md) | Recorrido completo por autenticación y autorización |
-| [`docs/auth/ESTADO-DE-SEGURIDAD.md`](docs/auth/ESTADO-DE-SEGURIDAD.md) | Garantías implementadas, aislamiento, concurrencia, cachés y checklist para nuevas funcionalidades |
-| [`docs/AUTH-INSTITUTIONAL-FOUNDATION.md`](docs/AUTH-INSTITUTIONAL-FOUNDATION.md) | Contexto histórico y técnico de la base institucional |
-| [`docs/DOCKER-Y-ENTORNOS.md`](docs/DOCKER-Y-ENTORNOS.md) | Entornos Docker y operación local |
-
-Para sincronizar decisiones dentro del equipo, conviene tratar `ESTADO-DE-SEGURIDAD.md` como contrato técnico vivo: toda funcionalidad que cambie una garantía debería actualizar el documento en el mismo cambio.
-
-## Desarrollo local
-
-Requisitos principales:
-
-- Java 21.
-- Docker con Compose.
-- El wrapper Gradle incluido en el repositorio.
-
-Preparación:
-
-```bash
-cp .env.dev.example .env.dev
-make dev
-```
-
-Comandos frecuentes:
-
-```bash
-./gradlew bootRun
-./gradlew test
-./gradlew spotlessApply
-./gradlew spotlessCheck
-```
-
-## Base de datos
-
-PostgreSQL es la base objetivo. Flyway aplica las migraciones versionadas y Hibernate usa `spring.jpa.hibernate.ddl-auto=validate` para comprobar que el esquema coincide con las entidades.
-
-Las migraciones comunes viven en `src/main/resources/db/migration` y siguen la convención UTC `yyyyMMddHHmmss__description.sql`, sin prefijo `V`. Los datos de referencia exclusivos de desarrollo viven en `src/main/resources/db/dev`.
-
-Crear una migración vacía con timestamp UTC:
-
-```bash
-make migration add_description_to_users_table
-```
-
-Todo cambio persistente requiere actualizar el `@Entity` y agregar una migración nueva. Las migraciones que ya fueron aplicadas no se modifican ni se renombran.
-
-Las garantías dependientes de PostgreSQL —por ejemplo locks pesimistas o advisory locks— deben verificarse mediante Testcontainers y no solamente con H2.
+</div>
