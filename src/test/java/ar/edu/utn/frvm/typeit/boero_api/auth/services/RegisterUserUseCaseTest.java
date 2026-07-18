@@ -25,6 +25,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepositor
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -66,7 +67,8 @@ class RegisterUserUseCaseTest {
   void execute_registersUserSuccessfully() {
     UUID institutionId = UUID.randomUUID();
     RegisterRequest request =
-        new RegisterRequest("Ana", "Garcia", "12345678", "password123", institutionId);
+        new RegisterRequest(
+            "Ana", "Garcia", LocalDate.of(2010, 1, 1), "12345678", "password123", institutionId);
 
     stubSuccessfulRegistration(institutionId, "password123", "encoded-hash");
     when(userRepository.save(any(User.class)))
@@ -89,6 +91,10 @@ class RegisterUserUseCaseTest {
     assertThat(response.userId()).isNotNull();
     assertThat(response.documentNumber()).isEqualTo("12345678");
     assertThat(response.institutionId()).isEqualTo(institutionId);
+
+    var personCaptor = ArgumentCaptor.forClass(Person.class);
+    verify(personRepository).save(personCaptor.capture());
+    assertThat(personCaptor.getValue().getBirthDate()).isEqualTo(LocalDate.of(2010, 1, 1));
   }
 
   @Test
@@ -96,7 +102,8 @@ class RegisterUserUseCaseTest {
   void execute_assignsApplicantRole() {
     UUID institutionId = UUID.randomUUID();
     RegisterRequest request =
-        new RegisterRequest("Ana", "Garcia", "12345678", "password123", institutionId);
+        new RegisterRequest(
+            "Ana", "Garcia", LocalDate.of(2010, 1, 1), "12345678", "password123", institutionId);
 
     stubSuccessfulRegistration(institutionId, "password123", "encoded-hash");
     when(personRepository.save(any(Person.class)))
@@ -126,7 +133,8 @@ class RegisterUserUseCaseTest {
   void execute_encodesPasswordBeforeSaving() {
     UUID institutionId = UUID.randomUUID();
     RegisterRequest request =
-        new RegisterRequest("Ana", "Garcia", "12345678", "plaintext", institutionId);
+        new RegisterRequest(
+            "Ana", "Garcia", LocalDate.of(2010, 1, 1), "12345678", "plaintext", institutionId);
 
     stubSuccessfulRegistration(institutionId, "plaintext", "bcrypt-hash");
     when(personRepository.save(any(Person.class)))
@@ -158,7 +166,8 @@ class RegisterUserUseCaseTest {
   void execute_throwsWhenInstitutionNotFound() {
     UUID institutionId = UUID.randomUUID();
     RegisterRequest request =
-        new RegisterRequest("Ana", "Garcia", "12345678", "password123", institutionId);
+        new RegisterRequest(
+            "Ana", "Garcia", LocalDate.of(2010, 1, 1), "12345678", "password123", institutionId);
 
     when(institutionRepository.findById(institutionId)).thenReturn(Optional.empty());
 
@@ -175,7 +184,8 @@ class RegisterUserUseCaseTest {
   void execute_throwsWhenInstitutionIsInactive() {
     final UUID institutionId = UUID.randomUUID();
     final RegisterRequest request =
-        new RegisterRequest("Ana", "Garcia", "12345678", "password123", institutionId);
+        new RegisterRequest(
+            "Ana", "Garcia", LocalDate.of(2010, 1, 1), "12345678", "password123", institutionId);
     final Institution institution = institutionWith(institutionId);
     institution.setActive(false);
     when(institutionRepository.findById(institutionId)).thenReturn(Optional.of(institution));
@@ -193,7 +203,8 @@ class RegisterUserUseCaseTest {
   void execute_throwsWhenPersonAlreadyExistsInInstitution() {
     UUID institutionId = UUID.randomUUID();
     RegisterRequest request =
-        new RegisterRequest("Ana", "Garcia", "12345678", "password123", institutionId);
+        new RegisterRequest(
+            "Ana", "Garcia", LocalDate.of(2010, 1, 1), "12345678", "password123", institutionId);
     Institution institution = institutionWith(institutionId);
 
     when(institutionRepository.findById(institutionId)).thenReturn(Optional.of(institution));
@@ -214,7 +225,8 @@ class RegisterUserUseCaseTest {
   void execute_throwsWhenPersonValidationFails() {
     UUID institutionId = UUID.randomUUID();
     RegisterRequest request =
-        new RegisterRequest("Ana", "Garcia", "12345678", "password123", institutionId);
+        new RegisterRequest(
+            "Ana", "Garcia", LocalDate.of(2010, 1, 1), "12345678", "password123", institutionId);
     Institution institution = institutionWith(institutionId);
     ConstraintViolation<Person> violation =
         (ConstraintViolation<Person>) org.mockito.Mockito.mock(ConstraintViolation.class);

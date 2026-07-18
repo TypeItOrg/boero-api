@@ -1,16 +1,19 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests;
 
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.DOCUMENT_PATTERN;
+import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.MINIMUM_AGE;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_MAX;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_MIN;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_PATTERN;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.PASSWORD_MAX;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.PASSWORD_MIN;
 
+import ar.edu.utn.frvm.typeit.boero_api.common.validation.MinimumAge;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDate;
 import java.util.UUID;
 
 public record RegisterRequest(
@@ -32,6 +35,8 @@ public record RegisterRequest(
             regexp = NAME_PATTERN,
             message = "El apellido solo puede contener letras y espacios.")
         String lastName,
+    @NotNull(message = "La fecha de nacimiento es requerida.") @MinimumAge(MINIMUM_AGE)
+        LocalDate birthDate,
     @NotNull(message = "El número de documento es requerido.")
         @Pattern(
             regexp = DOCUMENT_PATTERN,

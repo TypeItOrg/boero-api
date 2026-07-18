@@ -516,6 +516,7 @@ class PeopleControllerWebMvcTest {
         + "\"firstName\":\"Ana\","
         + "\"lastName\":\"García\","
         + "\"documentNumber\":\"12345678\","
+        + "\"birthDate\":\"2010-01-01\","
         + "\"password\":\"admin-pass-123\""
         + "}";
   }

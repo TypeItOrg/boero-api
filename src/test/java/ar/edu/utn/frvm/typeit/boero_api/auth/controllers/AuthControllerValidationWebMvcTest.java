@@ -99,6 +99,32 @@ class AuthControllerValidationWebMvcTest {
   }
 
   @Test
+  @DisplayName("Should reject register when birth date is missing")
+  void shouldRejectRegisterWhenBirthDateIsMissing() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "name": "Ana",
+                      "lastName": "Garcia",
+                      "documentNumber": "12345678",
+                      "password": "password123",
+                      "institutionId": "22222222-2222-2222-2222-222222222222"
+                    }
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.status").value(400))
+        .andExpect(jsonPath("$.message").value("Se encontraron errores de validación."))
+        .andExpect(
+            jsonPath("$.fieldErrors.birthDate").value("La fecha de nacimiento es requerida."));
+
+    verifyNoInteractions(registerUserUseCase);
+  }
+
+  @Test
   @DisplayName("Should reject register when password is too short")
   void shouldRejectRegisterWhenPasswordIsTooShort() throws Exception {
     mockMvc

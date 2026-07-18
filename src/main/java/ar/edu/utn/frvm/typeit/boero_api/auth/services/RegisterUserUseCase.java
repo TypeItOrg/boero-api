@@ -55,6 +55,7 @@ public class RegisterUserUseCase {
             .institution(institution)
             .firstName(request.name())
             .lastName(request.lastName())
+            .birthDate(request.birthDate())
             .documentNumber(request.documentNumber())
             .build();
     assertPersonValid(person);

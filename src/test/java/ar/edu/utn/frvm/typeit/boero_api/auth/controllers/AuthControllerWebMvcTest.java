@@ -95,6 +95,7 @@ class AuthControllerWebMvcTest {
                     {
                       "name": "Ana",
                       "lastName": "Garcia",
+                      "birthDate": "2010-01-01",
                       "documentNumber": "12345678",
                       "password": "password123",
                       "institutionId": "22222222-2222-2222-2222-222222222222"

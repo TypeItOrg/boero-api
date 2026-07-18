@@ -12,6 +12,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.common.validation.MinimumAge;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
@@ -42,7 +43,8 @@ public record CreatePersonRequest(
         String documentNumber,
     @Email(message = "El email debe tener un formato válido.") String email,
     String phoneNumber,
-    @MinimumAge(MINIMUM_AGE) LocalDate birthDate,
+    @NotNull(message = "La fecha de nacimiento es requerida.") @MinimumAge(MINIMUM_AGE)
+        LocalDate birthDate,
     @NotBlank(message = "La contraseña es requerida.")
         @Size.List({
           @Size(min = PASSWORD_MIN, message = "La contraseña debe tener al menos 8 caracteres."),
