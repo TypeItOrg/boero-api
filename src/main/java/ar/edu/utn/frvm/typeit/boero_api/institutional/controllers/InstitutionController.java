@@ -6,16 +6,20 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionDetail
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionListItemResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.GetInstitutionUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ListInstitutionsUseCase;
+import jakarta.validation.constraints.Size;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Validated
 @RestController
 @RequestMapping("/institutions")
 @RequiredArgsConstructor
@@ -26,8 +30,10 @@ public class InstitutionController {
 
   @GetMapping(version = Version.V1)
   public PaginatedResponse<InstitutionListItemResponse> list(
+      @RequestParam(required = false) @Size(max = 100) final String search,
+      @RequestParam(required = false) final Boolean active,
       @PageableDefault(sort = "name", direction = Sort.Direction.ASC) Pageable pageable) {
-    return listInstitutionsUseCase.execute(pageable);
+    return listInstitutionsUseCase.execute(search, active, pageable);
   }
 
   @GetMapping(value = "/{id}", version = Version.V1)

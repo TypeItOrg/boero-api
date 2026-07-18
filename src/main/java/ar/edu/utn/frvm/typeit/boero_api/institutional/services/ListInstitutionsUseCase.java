@@ -13,8 +13,19 @@ public class ListInstitutionsUseCase {
 
   private final InstitutionRepository institutionRepository;
 
-  public PaginatedResponse<InstitutionListItemResponse> execute(Pageable pageable) {
+  public PaginatedResponse<InstitutionListItemResponse> execute(
+      final String search, final Boolean active, final Pageable pageable) {
+    final String normalizedSearch = normalizeSearch(search);
     return PaginatedResponse.from(
-        institutionRepository.findAllWithLocation(pageable).map(InstitutionListItemResponse::from));
+        institutionRepository
+            .findWithLocationByFilters(normalizedSearch, active, pageable)
+            .map(InstitutionListItemResponse::from));
+  }
+
+  private static String normalizeSearch(final String search) {
+    if (search == null || search.isBlank()) {
+      return null;
+    }
+    return search.trim();
   }
 }

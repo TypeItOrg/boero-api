@@ -28,12 +28,12 @@ class ListInstitutionsUseCaseTest {
 
   @Test
   @DisplayName("Should list active and inactive institutions with location and status")
-  void execute_returnsInstitutionsWithLocationAndStatus() {
+  void execute_returnsFilteredInstitutionsWithLocationAndStatus() {
     Institution institution = activeInstitution();
-    when(institutionRepository.findAllWithLocation(PageRequest.of(0, 20)))
+    when(institutionRepository.findWithLocationByFilters("boero", true, PageRequest.of(0, 20)))
         .thenReturn(new PageImpl<>(List.of(institution)));
 
-    var response = listInstitutionsUseCase.execute(PageRequest.of(0, 20));
+    var response = listInstitutionsUseCase.execute(" boero ", true, PageRequest.of(0, 20));
 
     assertThat(response.items()).hasSize(1);
     assertThat(response.items().getFirst())

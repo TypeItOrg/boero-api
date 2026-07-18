@@ -89,7 +89,7 @@ class InstitutionControllerWebMvcTest {
   @Test
   @DisplayName("Should list institutions without authentication")
   void list_returnsPublicInstitutions() throws Exception {
-    when(listInstitutionsUseCase.execute(any()))
+    when(listInstitutionsUseCase.execute(isNull(), isNull(), any()))
         .thenReturn(
             PaginatedResponse.<InstitutionListItemResponse>builder()
                 .items(
@@ -125,6 +125,27 @@ class InstitutionControllerWebMvcTest {
         .andExpect(jsonPath("$.items[0].active").value(true))
         .andExpect(jsonPath("$.items[0].email").doesNotExist())
         .andExpect(jsonPath("$.items[0].phoneNumber").doesNotExist());
+  }
+
+  @Test
+  @DisplayName("Should pass public institution filters to use case")
+  void list_passesPublicFiltersToUseCase() throws Exception {
+    when(listInstitutionsUseCase.execute(eq("boero"), eq(true), any()))
+        .thenReturn(
+            PaginatedResponse.<InstitutionListItemResponse>builder()
+                .items(List.of())
+                .page(0)
+                .size(20)
+                .totalItems(0)
+                .totalPages(0)
+                .build());
+
+    mockMvc
+        .perform(
+            get("/api/v1/institutions").queryParam("search", "boero").queryParam("active", "true"))
+        .andExpect(status().isOk());
+
+    verify(listInstitutionsUseCase).execute(eq("boero"), eq(true), any());
   }
 
   @Test
