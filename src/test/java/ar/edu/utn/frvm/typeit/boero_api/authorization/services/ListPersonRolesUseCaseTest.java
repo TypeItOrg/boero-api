@@ -45,7 +45,7 @@ class ListPersonRolesUseCaseTest {
 
     verify(institutionPersonResolver).requirePersonInInstitution(institutionId, personId);
     assertThat(response).hasSize(1);
-    assertThat(response.getFirst().roleCode()).isEqualTo(SystemRoleCode.APPLICANT);
+    assertThat(response.getFirst().technicalCode()).isEqualTo(SystemRoleCode.APPLICANT);
     assertThat(response.getFirst().displayName()).isEqualTo("Postulante");
   }
 

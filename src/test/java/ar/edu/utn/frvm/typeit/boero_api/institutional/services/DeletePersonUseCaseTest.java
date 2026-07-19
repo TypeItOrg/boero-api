@@ -8,10 +8,7 @@ import static org.mockito.Mockito.when;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.LastInstitutionalAuthorityDeletionException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.PersonNotFoundInInstitutionException;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionPersonResolver;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
@@ -34,7 +31,6 @@ class DeletePersonUseCaseTest {
   @Mock private InstitutionPersonResolver institutionPersonResolver;
   @Mock private PersonRepository personRepository;
   @Mock private UserRepository userRepository;
-  @Mock private PersonRoleAssignmentRepository personRoleAssignmentRepository;
   @Mock private SessionRevocationService sessionRevocationService;
   @Mock private InstitutionRepository institutionRepository;
 
@@ -68,9 +64,6 @@ class DeletePersonUseCaseTest {
   void execute_softDeletesAndRevokesSessions() {
     when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
         .thenReturn(person);
-    when(personRoleAssignmentRepository.existsByPerson_IdAndRole_CodeAndInstitution_Id(
-            personId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name(), institutionId))
-        .thenReturn(false);
     when(userRepository.findByPerson_IdAndInstitution_Id(personId, institutionId))
         .thenReturn(Optional.of(user));
 
@@ -89,9 +82,6 @@ class DeletePersonUseCaseTest {
     person.setDeleted(true);
     when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
         .thenReturn(person);
-    when(personRoleAssignmentRepository.existsByPerson_IdAndRole_CodeAndInstitution_Id(
-            personId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name(), institutionId))
-        .thenReturn(false);
 
     deletePersonUseCase.execute(institutionId, personId);
 
@@ -102,34 +92,10 @@ class DeletePersonUseCaseTest {
   }
 
   @Test
-  @DisplayName("Should throw LastInstitutionalAuthorityDeletionException when last authority")
-  void execute_throwsOnLastAuthority() {
+  @DisplayName("Should allow deleting the last institutional administrator")
+  void execute_allowsDeletingLastInstitutionalAdministrator() {
     when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
         .thenReturn(person);
-    when(personRoleAssignmentRepository.existsByPerson_IdAndRole_CodeAndInstitution_Id(
-            personId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name(), institutionId))
-        .thenReturn(true);
-    when(personRoleAssignmentRepository.countActivePeopleByInstitutionIdAndRoleCode(
-            institutionId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name()))
-        .thenReturn(1L);
-
-    assertThatThrownBy(() -> deletePersonUseCase.execute(institutionId, personId))
-        .isInstanceOf(LastInstitutionalAuthorityDeletionException.class);
-
-    verify(personRepository, never()).save(person);
-  }
-
-  @Test
-  @DisplayName("Should allow deletion when authority count is greater than 1")
-  void execute_allowsWhenMultipleAuthorities() {
-    when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
-        .thenReturn(person);
-    when(personRoleAssignmentRepository.existsByPerson_IdAndRole_CodeAndInstitution_Id(
-            personId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name(), institutionId))
-        .thenReturn(true);
-    when(personRoleAssignmentRepository.countActivePeopleByInstitutionIdAndRoleCode(
-            institutionId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name()))
-        .thenReturn(2L);
     when(userRepository.findByPerson_IdAndInstitution_Id(personId, institutionId))
         .thenReturn(Optional.of(user));
 

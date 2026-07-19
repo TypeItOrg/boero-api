@@ -10,6 +10,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AssignPersonSystemRoleUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionRoleProvisioner;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.PermissionRoleSeed;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
@@ -29,6 +30,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @Import({
   JpaAuditingTestConfig.class,
   PermissionRoleSeed.class,
+  InstitutionRoleProvisioner.class,
   AssignPersonSystemRoleUseCase.class,
   SessionRevocationService.class
 })
@@ -44,16 +46,16 @@ class PersonRoleAssignmentRepositoryTest {
 
   private Institution institution;
   private Person authority;
-  private Person teacher;
+  private Person student;
 
   @BeforeEach
   void setUp() {
-    permissionRoleSeed.run(null);
     institution = createInstitution(entityManager, "boero");
+    permissionRoleSeed.run(null);
     authority = persist(entityManager, person(institution, "11111111"));
-    teacher = persist(entityManager, person(institution, "22222222"));
+    student = persist(entityManager, person(institution, "22222222"));
     assignPersonSystemRoleUseCase.execute(authority, SystemRoleCode.INSTITUTIONAL_AUTHORITY, false);
-    assignPersonSystemRoleUseCase.execute(teacher, SystemRoleCode.TEACHER, false);
+    assignPersonSystemRoleUseCase.execute(student, SystemRoleCode.STUDENT, false);
     entityManager.flush();
     entityManager.clear();
   }
@@ -63,11 +65,11 @@ class PersonRoleAssignmentRepositoryTest {
   void findByPersonIdAndInstitutionId_loadsRole() {
     List<PersonRoleAssignment> assignments =
         personRoleAssignmentRepository.findByPerson_IdAndInstitution_Id(
-            teacher.getId(), institution.getId());
+            student.getId(), institution.getId());
 
     assertThat(assignments).hasSize(1);
-    assertThat(assignments.getFirst().getRole().getCode()).isEqualTo(SystemRoleCode.TEACHER.name());
-    assertThat(assignments.getFirst().getRole().getName()).isEqualTo("Docente");
+    assertThat(assignments.getFirst().getRole().getCode()).isEqualTo(SystemRoleCode.STUDENT.name());
+    assertThat(assignments.getFirst().getRole().getName()).isEqualTo("Estudiante");
   }
 
   @Test
@@ -88,31 +90,5 @@ class PersonRoleAssignmentRepositoryTest {
 
     assertThat(roles).hasSize(SystemRoleCode.values().length);
     assertThat(roles).extracting(Role::getCode).contains(SystemRoleCode.TEACHER.name());
-  }
-
-  @Test
-  @DisplayName("Should count only active people with institutional authority role")
-  void countActivePeopleByInstitutionIdAndRoleCode_countsOnlyNotDeletedPeople() {
-    Person deletedAuthority = persist(entityManager, person(institution, "33333333"));
-    deletedAuthority.setDeleted(true);
-    entityManager.persist(deletedAuthority);
-    Role authorityRole =
-        roleRepository
-            .findByScopeAndCodeAndInstitutionIsNull(
-                RoleScope.INSTITUTION, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name())
-            .orElseThrow();
-    entityManager.persist(
-        PersonRoleAssignment.builder()
-            .person(deletedAuthority)
-            .institution(institution)
-            .role(authorityRole)
-            .build());
-    entityManager.flush();
-
-    long count =
-        personRoleAssignmentRepository.countActivePeopleByInstitutionIdAndRoleCode(
-            institution.getId(), SystemRoleCode.INSTITUTIONAL_AUTHORITY.name());
-
-    assertThat(count).isEqualTo(1);
   }
 }

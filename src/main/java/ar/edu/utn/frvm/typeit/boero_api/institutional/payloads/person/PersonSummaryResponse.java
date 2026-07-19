@@ -11,16 +11,22 @@ public record PersonSummaryResponse(
     String documentNumber,
     String email,
     String phoneNumber,
+    boolean enabled,
     List<PersonRoleSummaryResponse> roles) {
 
   public record PersonRoleSummaryResponse(String roleCode, String displayName) {}
 
   public static PersonSummaryResponse from(final Person person) {
-    return from(person, List.of());
+    return from(person, List.of(), true);
   }
 
   public static PersonSummaryResponse from(
       final Person person, final List<PersonRoleSummaryResponse> roles) {
+    return from(person, roles, true);
+  }
+
+  public static PersonSummaryResponse from(
+      final Person person, final List<PersonRoleSummaryResponse> roles, final boolean enabled) {
     return new PersonSummaryResponse(
         person.getId(),
         person.getFirstName(),
@@ -28,6 +34,7 @@ public record PersonSummaryResponse(
         person.getDocumentNumber(),
         person.getEmail(),
         person.getPhoneNumber(),
+        enabled,
         roles);
   }
 }

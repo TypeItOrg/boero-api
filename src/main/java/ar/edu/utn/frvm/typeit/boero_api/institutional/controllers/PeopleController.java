@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.controllers;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresInstitutionAccess;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPermission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
@@ -10,10 +11,12 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.CreatePers
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.PersonResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.PersonSummaryResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.UpdatePersonByAdminRequest;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.UpdateUserStatusRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.CreatePersonUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.DeletePersonUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.GetPersonByIdUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ListPeopleUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdateInstitutionalUserStatusUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdatePersonByAdminUseCase;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
@@ -27,6 +30,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -49,6 +53,7 @@ public class PeopleController {
   private final UpdatePersonByAdminUseCase updatePersonByAdminUseCase;
   private final DeletePersonUseCase deletePersonUseCase;
   private final InitialRoleAssignmentGuard initialRoleAssignmentGuard;
+  private final UpdateInstitutionalUserStatusUseCase updateInstitutionalUserStatusUseCase;
 
   @GetMapping(version = Version.V1)
   @RequiresPermission(PermissionCode.INSTITUTION_PERSON_READ_ANY)
@@ -99,5 +104,18 @@ public class PeopleController {
       @PathVariable final UUID personId,
       final Authentication authentication) {
     deletePersonUseCase.execute(institutionId, personId);
+  }
+
+  @PatchMapping(value = "/{personId}/status", version = Version.V1)
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @RequiresPermission(PermissionCode.INSTITUTION_USER_STATUS_UPDATE)
+  public void updateStatus(
+      @PathVariable final UUID institutionId,
+      @PathVariable final UUID personId,
+      @RequestBody final UpdateUserStatusRequest request,
+      final Authentication authentication) {
+    final JwtAuthenticatedUser actor = (JwtAuthenticatedUser) authentication.getPrincipal();
+    updateInstitutionalUserStatusUseCase.execute(
+        institutionId, actor.personId(), personId, request.enabled());
   }
 }

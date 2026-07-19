@@ -9,12 +9,19 @@ import lombok.Builder;
 
 @Builder
 public record PersonRoleResponse(
-    SystemRoleCode roleCode, String displayName, OffsetDateTime assignedAt) {
+    java.util.UUID roleId,
+    SystemRoleCode technicalCode,
+    String displayName,
+    OffsetDateTime assignedAt) {
 
   public static PersonRoleResponse from(PersonRoleAssignment assignment) {
-    SystemRoleCode roleCode = SystemRoleCode.valueOf(assignment.getRole().getCode());
+    SystemRoleCode technicalCode =
+        assignment.getRole().isSystem()
+            ? SystemRoleCode.valueOf(assignment.getRole().getCode())
+            : null;
     return PersonRoleResponse.builder()
-        .roleCode(roleCode)
+        .roleId(assignment.getRole().getId())
+        .technicalCode(technicalCode)
         .displayName(assignment.getRole().getName())
         .assignedAt(toUtcOffset(assignment.getCreatedAt()))
         .build();

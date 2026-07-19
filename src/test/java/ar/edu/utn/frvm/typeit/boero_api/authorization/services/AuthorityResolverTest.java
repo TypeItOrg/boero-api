@@ -25,6 +25,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @Import({
   JpaAuditingTestConfig.class,
   PermissionRoleSeed.class,
+  InstitutionRoleProvisioner.class,
   AssignPersonSystemRoleUseCase.class,
   AssignPlatformRoleUseCase.class,
   AuthorityResolver.class,
@@ -36,6 +37,7 @@ class AuthorityResolverTest {
 
   @Autowired private EntityManager entityManager;
   @Autowired private PermissionRoleSeed permissionRoleSeed;
+  @Autowired private InstitutionRoleProvisioner institutionRoleProvisioner;
   @Autowired private AssignPersonSystemRoleUseCase assignPersonSystemRoleUseCase;
   @Autowired private AssignPlatformRoleUseCase assignPlatformRoleUseCase;
   @Autowired private AuthorityResolver authorityResolver;
@@ -49,6 +51,7 @@ class AuthorityResolverTest {
   @DisplayName("Should resolve APPLICANT permissions for a person with that role")
   void resolveForPerson_returnsApplicantPermissions() {
     Institution institution = createInstitution(entityManager, "boero-resolver");
+    institutionRoleProvisioner.provision(institution);
     Person person = persist(entityManager, person(institution, "12345678"));
     entityManager.flush();
 

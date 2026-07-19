@@ -12,6 +12,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssig
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RolePermissionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RoleRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import jakarta.persistence.EntityManager;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -48,6 +49,8 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.INSTITUTION_PERSON_UPDATE_OWN),
           SystemRoleCode.INSTITUTIONAL_AUTHORITY,
           EnumSet.of(
+              PermissionCode.INSTITUTION_PERSON_READ_OWN,
+              PermissionCode.INSTITUTION_PERSON_UPDATE_OWN,
               PermissionCode.INSTITUTION_ROLE_ASSIGN,
               PermissionCode.INSTITUTION_ROLE_REVOKE,
               PermissionCode.INSTITUTION_PERSON_READ_ANY,
@@ -60,6 +63,8 @@ public class PermissionRoleSeed implements ApplicationRunner {
   private final RolePermissionRepository rolePermissionRepository;
   private final PersonRoleAssignmentRepository personRoleAssignmentRepository;
   private final AssignPersonSystemRoleUseCase assignPersonSystemRoleUseCase;
+  private final InstitutionRepository institutionRepository;
+  private final InstitutionRoleProvisioner institutionRoleProvisioner;
   private final Environment environment;
   private final CacheManager cacheManager;
   private final EntityManager entityManager;
@@ -71,10 +76,56 @@ public class PermissionRoleSeed implements ApplicationRunner {
     final Map<PermissionCode, Permission> permissions = syncPermissions();
     syncInstitutionalRoles(permissions);
     syncPlatformRoles(permissions);
+    provisionInstitutionRoles();
+    migrateGlobalInstitutionalAssignments();
     if (shouldBackfillApplicants()) {
       backfillApplicantRoleForPersonsWithoutRoles();
     }
     clearAuthorityCaches();
+  }
+
+  private void provisionInstitutionRoles() {
+    institutionRepository.findAll().forEach(institutionRoleProvisioner::provision);
+  }
+
+  private void migrateGlobalInstitutionalAssignments() {
+    for (var assignment : personRoleAssignmentRepository.findAll()) {
+      Role currentRole = assignment.getRole();
+      if (currentRole.getScope() != RoleScope.INSTITUTION || currentRole.getInstitution() != null) {
+        continue;
+      }
+
+      var institution = assignment.getInstitution();
+      boolean technical =
+          currentRole.getCode().equals(SystemRoleCode.APPLICANT.name())
+              || currentRole.getCode().equals(SystemRoleCode.STUDENT.name())
+              || currentRole.getCode().equals(SystemRoleCode.INSTITUTIONAL_AUTHORITY.name());
+      String localCode = technical ? currentRole.getCode() : "LEGACY_" + currentRole.getCode();
+      Role localRole =
+          roleRepository
+              .findByScopeAndCodeAndInstitution_Id(
+                  RoleScope.INSTITUTION, localCode, institution.getId())
+              .orElseGet(
+                  () ->
+                      roleRepository.save(
+                          Role.builder()
+                              .scope(RoleScope.INSTITUTION)
+                              .code(localCode)
+                              .name(currentRole.getName())
+                              .system(technical)
+                              .institution(institution)
+                              .build()));
+      for (RolePermission rolePermission :
+          rolePermissionRepository.findByRole_Id(currentRole.getId())) {
+        if (!rolePermissionRepository.existsByRoleIdAndPermissionId(
+            localRole.getId(), rolePermission.getPermission().getId())) {
+          rolePermissionRepository.save(
+              RolePermission.of(localRole, rolePermission.getPermission()));
+        }
+      }
+      assignment.setRole(localRole);
+      personRoleAssignmentRepository.save(assignment);
+    }
   }
 
   private void acquireSeedLock() {

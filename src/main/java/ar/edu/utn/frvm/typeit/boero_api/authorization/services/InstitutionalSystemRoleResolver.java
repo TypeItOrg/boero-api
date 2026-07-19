@@ -14,10 +14,12 @@ public class InstitutionalSystemRoleResolver {
 
   private final RoleRepository roleRepository;
 
-  public Role requireInstitutionalSystemRole(SystemRoleCode roleCode) {
+  public Role requireInstitutionalSystemRole(
+      java.util.UUID institutionId, SystemRoleCode roleCode) {
     Role role =
         roleRepository
-            .findByScopeAndCodeAndInstitutionIsNull(RoleScope.INSTITUTION, roleCode.name())
+            .findByScopeAndCodeAndInstitution_Id(
+                RoleScope.INSTITUTION, roleCode.name(), institutionId)
             .orElseThrow(RoleNotAssignableException::new);
 
     if (role.getScope() != RoleScope.INSTITUTION || !role.isSystem()) {

@@ -29,6 +29,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.security.RoleAuthorization
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AssignPersonRoleUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.BootstrapInstitutionalAuthorityUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionRoleManagementService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ListPersonRolesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ListSystemRolesUseCase;
@@ -71,6 +72,7 @@ class RoleControllerWebMvcTest {
   private static final UUID OTHER_INSTITUTION_ID =
       UUID.fromString("33333333-3333-3333-3333-333333333333");
   private static final UUID PERSON_ID = UUID.fromString("55555555-5555-5555-5555-555555555555");
+  private static final UUID ROLE_ID = UUID.fromString("77777777-7777-7777-7777-777777777777");
   private static final UUID USER_ID = UUID.fromString("66666666-6666-6666-6666-666666666666");
   private static final UUID PLATFORM_ACCOUNT_ID =
       UUID.fromString("44444444-4444-4444-4444-444444444444");
@@ -88,6 +90,7 @@ class RoleControllerWebMvcTest {
   @MockitoBean private AssignPersonRoleUseCase assignPersonRoleUseCase;
   @MockitoBean private RevokePersonRoleUseCase revokePersonRoleUseCase;
   @MockitoBean private ListSystemRolesUseCase listSystemRolesUseCase;
+  @MockitoBean private InstitutionRoleManagementService institutionRoleManagementService;
 
   @MockitoBean
   private BootstrapInstitutionalAuthorityUseCase bootstrapInstitutionalAuthorityUseCase;
@@ -127,7 +130,7 @@ class RoleControllerWebMvcTest {
                     PERSON_ID)
                 .principal(authentication))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].roleCode").value("TEACHER"))
+        .andExpect(jsonPath("$[0].technicalCode").value("TEACHER"))
         .andExpect(jsonPath("$[0].assignedAt").value("2026-01-15T10:00:00Z"));
   }
 
@@ -167,7 +170,7 @@ class RoleControllerWebMvcTest {
                     PERSON_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
-                .content("{\"role\":\"TEACHER\"}"))
+                .content("{\"roleId\":\"" + ROLE_ID + "\"}"))
         .andExpect(status().isForbidden());
   }
 
@@ -179,7 +182,7 @@ class RoleControllerWebMvcTest {
     stubPermission(PermissionCode.INSTITUTION_ROLE_ASSIGN, true);
     stubAnyRolePermission(true);
     when(assignPersonRoleUseCase.execute(
-            eq(INSTITUTION_ID), eq(PERSON_ID), any(AssignRoleRequest.class)))
+            eq(INSTITUTION_ID), eq(PERSON_ID), any(AssignRoleRequest.class), eq(false)))
         .thenReturn(personRoleResponse(SystemRoleCode.TEACHER));
 
     mockMvc
@@ -190,9 +193,9 @@ class RoleControllerWebMvcTest {
                     PERSON_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
-                .content("{\"role\":\"TEACHER\"}"))
+                .content("{\"roleId\":\"" + ROLE_ID + "\"}"))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.roleCode").value("TEACHER"));
+        .andExpect(jsonPath("$.technicalCode").value("TEACHER"));
   }
 
   @Test
@@ -205,14 +208,14 @@ class RoleControllerWebMvcTest {
     mockMvc
         .perform(
             delete(
-                    "/api/v1/institutions/{institutionId}/people/{personId}/roles/{roleCode}",
+                    "/api/v1/institutions/{institutionId}/people/{personId}/roles/{roleId}",
                     INSTITUTION_ID,
                     PERSON_ID,
-                    SystemRoleCode.TEACHER)
+                    ROLE_ID)
                 .principal(authentication))
         .andExpect(status().isNoContent());
 
-    verify(revokePersonRoleUseCase).execute(INSTITUTION_ID, PERSON_ID, SystemRoleCode.TEACHER);
+    verify(revokePersonRoleUseCase).execute(INSTITUTION_ID, PERSON_ID, ROLE_ID, false);
   }
 
   @Test
@@ -253,7 +256,7 @@ class RoleControllerWebMvcTest {
                     PERSON_ID)
                 .principal(authentication))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.roleCode").value("INSTITUTIONAL_AUTHORITY"));
+        .andExpect(jsonPath("$.technicalCode").value("INSTITUTIONAL_AUTHORITY"));
   }
 
   @Test
@@ -292,7 +295,7 @@ class RoleControllerWebMvcTest {
                     PERSON_ID)
                 .principal(authentication))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].roleCode").value("TEACHER"));
+        .andExpect(jsonPath("$[0].technicalCode").value("TEACHER"));
   }
 
   @Test
@@ -303,7 +306,7 @@ class RoleControllerWebMvcTest {
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPlatformAdminAccess(true);
     when(assignPersonRoleUseCase.execute(
-            eq(INSTITUTION_ID), eq(PERSON_ID), any(AssignRoleRequest.class)))
+            eq(INSTITUTION_ID), eq(PERSON_ID), any(AssignRoleRequest.class), eq(true)))
         .thenReturn(personRoleResponse(SystemRoleCode.TEACHER));
 
     mockMvc
@@ -314,9 +317,9 @@ class RoleControllerWebMvcTest {
                     PERSON_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
-                .content("{\"role\":\"TEACHER\"}"))
+                .content("{\"roleId\":\"" + ROLE_ID + "\"}"))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.roleCode").value("TEACHER"));
+        .andExpect(jsonPath("$.technicalCode").value("TEACHER"));
   }
 
   @Test
@@ -330,14 +333,14 @@ class RoleControllerWebMvcTest {
     mockMvc
         .perform(
             delete(
-                    "/api/v1/admin/institutions/{institutionId}/people/{personId}/roles/{roleCode}",
+                    "/api/v1/admin/institutions/{institutionId}/people/{personId}/roles/{roleId}",
                     INSTITUTION_ID,
                     PERSON_ID,
-                    SystemRoleCode.TEACHER)
+                    ROLE_ID)
                 .principal(authentication))
         .andExpect(status().isNoContent());
 
-    verify(revokePersonRoleUseCase).execute(INSTITUTION_ID, PERSON_ID, SystemRoleCode.TEACHER);
+    verify(revokePersonRoleUseCase).execute(INSTITUTION_ID, PERSON_ID, ROLE_ID, true);
   }
 
   @Test
@@ -377,7 +380,8 @@ class RoleControllerWebMvcTest {
 
   private static PersonRoleResponse personRoleResponse(SystemRoleCode roleCode) {
     return PersonRoleResponse.builder()
-        .roleCode(roleCode)
+        .roleId(ROLE_ID)
+        .technicalCode(roleCode)
         .displayName(roleCode.getDisplayName())
         .assignedAt(OffsetDateTime.parse("2026-01-15T10:00:00Z"))
         .build();

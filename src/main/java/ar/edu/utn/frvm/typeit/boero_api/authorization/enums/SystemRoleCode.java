@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum SystemRoleCode {
-  INSTITUTIONAL_AUTHORITY("Autoridad Institucional"),
+  INSTITUTIONAL_AUTHORITY("Administrador Institucional"),
   ADMINISTRATIVE("Administrativo"),
   TEACHER("Docente"),
   GUARDIAN("Tutor"),

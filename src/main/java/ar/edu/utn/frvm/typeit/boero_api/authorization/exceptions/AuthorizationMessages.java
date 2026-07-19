@@ -6,10 +6,6 @@ public final class AuthorizationMessages {
       "La persona especificada no pertenece a la institución indicada.";
   public static final String ROLE_NOT_ASSIGNABLE =
       "El rol especificado no puede asignarse a una persona institucional.";
-  public static final String LAST_INSTITUTIONAL_AUTHORITY_REVOCATION =
-      "No se puede revocar la última autoridad institucional de la institución.";
-  public static final String LAST_INSTITUTIONAL_AUTHORITY_DELETION =
-      "No se puede eliminar a la última autoridad institucional de la institución. Asigne otra autoridad antes.";
   public static final String LAST_PERSON_ROLE_REVOCATION =
       "No se puede revocar el único rol del usuario. Asigne otro rol antes.";
 

@@ -1,9 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.LastInstitutionalAuthorityDeletionException;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionPersonResolver;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
@@ -22,7 +19,6 @@ public class DeletePersonUseCase {
   private final InstitutionPersonResolver institutionPersonResolver;
   private final PersonRepository personRepository;
   private final UserRepository userRepository;
-  private final PersonRoleAssignmentRepository personRoleAssignmentRepository;
   private final SessionRevocationService sessionRevocationService;
   private final InstitutionRepository institutionRepository;
 
@@ -32,8 +28,6 @@ public class DeletePersonUseCase {
         .findByIdForUpdate(institutionId)
         .orElseThrow(InstitutionNotFoundException::new);
     Person person = institutionPersonResolver.requirePersonInInstitution(institutionId, personId);
-    preventDeletingLastInstitutionalAuthority(institutionId, personId);
-
     if (person.isDeleted()) {
       return;
     }
@@ -49,23 +43,5 @@ public class DeletePersonUseCase {
             });
 
     sessionRevocationService.revokeInstitutionalSessionsForPerson(personId, institutionId);
-  }
-
-  private void preventDeletingLastInstitutionalAuthority(
-      final UUID institutionId, final UUID personId) {
-    boolean personHasAuthority =
-        personRoleAssignmentRepository.existsByPerson_IdAndRole_CodeAndInstitution_Id(
-            personId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name(), institutionId);
-    if (!personHasAuthority) {
-      return;
-    }
-
-    long authorityCount =
-        personRoleAssignmentRepository.countActivePeopleByInstitutionIdAndRoleCode(
-            institutionId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name());
-
-    if (authorityCount <= 1) {
-      throw new LastInstitutionalAuthorityDeletionException();
-    }
   }
 }

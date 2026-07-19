@@ -5,6 +5,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
@@ -26,6 +27,7 @@ class ListPeopleUseCaseTest {
 
   @Mock private PersonRepository personRepository;
   @Mock private PersonRoleAssignmentRepository personRoleAssignmentRepository;
+  @Mock private UserRepository userRepository;
 
   @InjectMocks private ListPeopleUseCase listPeopleUseCase;
 
@@ -39,6 +41,8 @@ class ListPeopleUseCaseTest {
         .thenReturn(new PageImpl<>(List.of(person), pageable, 1));
     when(personRoleAssignmentRepository.findByPerson_IdInAndInstitution_Id(
             List.of(person.getId()), institutionId))
+        .thenReturn(List.of());
+    when(userRepository.findByPerson_IdInAndInstitution_Id(List.of(person.getId()), institutionId))
         .thenReturn(List.of());
 
     var response = listPeopleUseCase.execute(institutionId, null, pageable);
@@ -59,6 +63,8 @@ class ListPeopleUseCaseTest {
         .thenReturn(new PageImpl<>(List.of(person), pageable, 1));
     when(personRoleAssignmentRepository.findByPerson_IdInAndInstitution_Id(
             List.of(person.getId()), institutionId))
+        .thenReturn(List.of());
+    when(userRepository.findByPerson_IdInAndInstitution_Id(List.of(person.getId()), institutionId))
         .thenReturn(List.of());
 
     var response = listPeopleUseCase.execute(institutionId, "ana", pageable);

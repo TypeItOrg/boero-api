@@ -24,7 +24,7 @@ public class BootstrapInstitutionalAuthorityUseCase {
     Person person = institutionPersonResolver.requirePersonInInstitution(institutionId, personId);
     Role role =
         institutionalSystemRoleResolver.requireInstitutionalSystemRole(
-            SystemRoleCode.INSTITUTIONAL_AUTHORITY);
+            institutionId, SystemRoleCode.INSTITUTIONAL_AUTHORITY);
 
     assignPersonSystemRoleUseCase.execute(person, SystemRoleCode.INSTITUTIONAL_AUTHORITY);
 

@@ -2,7 +2,6 @@ package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -10,10 +9,10 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignm
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.LastInstitutionalAuthorityRevocationException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.LastPersonRoleRevocationException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.PersonNotFoundInInstitutionException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RoleRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
@@ -32,9 +31,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class RevokePersonRoleUseCaseTest {
 
   @Mock private InstitutionPersonResolver institutionPersonResolver;
-  @Mock private InstitutionalSystemRoleResolver institutionalSystemRoleResolver;
+  @Mock private RoleRepository roleRepository;
   @Mock private PersonRoleAssignmentRepository personRoleAssignmentRepository;
-  @Mock private RevokePersonSystemRoleUseCase revokePersonSystemRoleUseCase;
   @Mock private InstitutionRepository institutionRepository;
 
   @InjectMocks private RevokePersonRoleUseCase revokePersonRoleUseCase;
@@ -58,12 +56,11 @@ class RevokePersonRoleUseCaseTest {
 
     when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
         .thenReturn(person);
-    when(institutionalSystemRoleResolver.requireInstitutionalSystemRole(SystemRoleCode.TEACHER))
-        .thenReturn(role);
+    when(roleRepository.findByIdAndScopeAndInstitution_Id(
+            role.getId(), RoleScope.INSTITUTION, institutionId))
+        .thenReturn(Optional.of(role));
 
-    revokePersonRoleUseCase.execute(institutionId, personId, SystemRoleCode.TEACHER);
-
-    verify(revokePersonSystemRoleUseCase).execute(person, SystemRoleCode.TEACHER);
+    revokePersonRoleUseCase.execute(institutionId, personId, role.getId(), false);
   }
 
   @Test
@@ -82,21 +79,20 @@ class RevokePersonRoleUseCaseTest {
 
     when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
         .thenReturn(person);
-    when(institutionalSystemRoleResolver.requireInstitutionalSystemRole(SystemRoleCode.TEACHER))
-        .thenReturn(role);
+    when(roleRepository.findByIdAndScopeAndInstitution_Id(
+            role.getId(), RoleScope.INSTITUTION, institutionId))
+        .thenReturn(Optional.of(role));
     when(personRoleAssignmentRepository.findByPerson_IdAndInstitution_Id(personId, institutionId))
         .thenReturn(List.of(assignment));
 
     assertThatThrownBy(
-            () -> revokePersonRoleUseCase.execute(institutionId, personId, SystemRoleCode.TEACHER))
+            () -> revokePersonRoleUseCase.execute(institutionId, personId, role.getId(), false))
         .isInstanceOf(LastPersonRoleRevocationException.class);
-
-    verify(revokePersonSystemRoleUseCase, never()).execute(person, SystemRoleCode.TEACHER);
   }
 
   @Test
-  @DisplayName("Should throw when revoking last institutional authority")
-  void execute_throwsWhenRevokingLastInstitutionalAuthority() {
+  @DisplayName("Should allow revoking the last institutional authority")
+  void execute_revokesLastInstitutionalAuthority() {
     UUID institutionId = UUID.randomUUID();
     UUID personId = UUID.randomUUID();
     Person person = personWith(institutionId, personId);
@@ -104,55 +100,31 @@ class RevokePersonRoleUseCaseTest {
 
     when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
         .thenReturn(person);
-    when(institutionalSystemRoleResolver.requireInstitutionalSystemRole(
-            SystemRoleCode.INSTITUTIONAL_AUTHORITY))
-        .thenReturn(role);
-    when(personRoleAssignmentRepository.existsByPerson_IdAndRole_IdAndInstitution_Id(
+    when(roleRepository.findByIdAndScopeAndInstitution_Id(
+            role.getId(), RoleScope.INSTITUTION, institutionId))
+        .thenReturn(Optional.of(role));
+    Role otherRole = roleWith(SystemRoleCode.TEACHER);
+    PersonRoleAssignment authorityAssignment =
+        PersonRoleAssignment.builder()
+            .person(person)
+            .role(role)
+            .institution(person.getInstitution())
+            .build();
+    PersonRoleAssignment otherAssignment =
+        PersonRoleAssignment.builder()
+            .person(person)
+            .role(otherRole)
+            .institution(person.getInstitution())
+            .build();
+    when(personRoleAssignmentRepository.findByPerson_IdAndInstitution_Id(personId, institutionId))
+        .thenReturn(List.of(authorityAssignment, otherAssignment));
+    when(personRoleAssignmentRepository.findByPerson_IdAndRole_IdAndInstitution_Id(
             personId, role.getId(), institutionId))
-        .thenReturn(true);
-    when(personRoleAssignmentRepository.countActivePeopleByInstitutionIdAndRoleCode(
-            institutionId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name()))
-        .thenReturn(1L);
+        .thenReturn(Optional.of(authorityAssignment));
 
-    assertThatThrownBy(
-            () ->
-                revokePersonRoleUseCase.execute(
-                    institutionId, personId, SystemRoleCode.INSTITUTIONAL_AUTHORITY))
-        .isInstanceOf(LastInstitutionalAuthorityRevocationException.class);
+    revokePersonRoleUseCase.execute(institutionId, personId, role.getId(), true);
 
-    verify(revokePersonSystemRoleUseCase, never())
-        .execute(person, SystemRoleCode.INSTITUTIONAL_AUTHORITY);
-  }
-
-  @Test
-  @DisplayName("Should throw when revoking and other authorities in database are soft-deleted")
-  void execute_throwsWhenOtherAuthoritiesAreSoftDeleted() {
-    UUID institutionId = UUID.randomUUID();
-    UUID personId = UUID.randomUUID();
-    Person person = personWith(institutionId, personId);
-    Role role = roleWith(SystemRoleCode.INSTITUTIONAL_AUTHORITY);
-
-    when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
-        .thenReturn(person);
-    when(institutionalSystemRoleResolver.requireInstitutionalSystemRole(
-            SystemRoleCode.INSTITUTIONAL_AUTHORITY))
-        .thenReturn(role);
-    when(personRoleAssignmentRepository.existsByPerson_IdAndRole_IdAndInstitution_Id(
-            personId, role.getId(), institutionId))
-        .thenReturn(true);
-    // There are 2 authority assignments, but only 1 belongs to an active (non-deleted) person
-    when(personRoleAssignmentRepository.countActivePeopleByInstitutionIdAndRoleCode(
-            institutionId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name()))
-        .thenReturn(1L);
-
-    assertThatThrownBy(
-            () ->
-                revokePersonRoleUseCase.execute(
-                    institutionId, personId, SystemRoleCode.INSTITUTIONAL_AUTHORITY))
-        .isInstanceOf(LastInstitutionalAuthorityRevocationException.class);
-
-    verify(revokePersonSystemRoleUseCase, never())
-        .execute(person, SystemRoleCode.INSTITUTIONAL_AUTHORITY);
+    verify(personRoleAssignmentRepository).delete(authorityAssignment);
   }
 
   @Test
@@ -165,7 +137,8 @@ class RevokePersonRoleUseCaseTest {
         .thenThrow(PersonNotFoundInInstitutionException.class);
 
     assertThatThrownBy(
-            () -> revokePersonRoleUseCase.execute(institutionId, personId, SystemRoleCode.TEACHER))
+            () ->
+                revokePersonRoleUseCase.execute(institutionId, personId, UUID.randomUUID(), false))
         .isInstanceOf(PersonNotFoundInInstitutionException.class);
   }
 

@@ -26,7 +26,8 @@ public class RevokePersonSystemRoleUseCase {
     Institution institution = person.getInstitution();
     Role role =
         roleRepository
-            .findByScopeAndCodeAndInstitutionIsNull(RoleScope.INSTITUTION, roleCode.name())
+            .findByScopeAndCodeAndInstitution_Id(
+                RoleScope.INSTITUTION, roleCode.name(), institution.getId())
             .orElseThrow(
                 () -> new IllegalStateException("System role not seeded: " + roleCode.name()));
 

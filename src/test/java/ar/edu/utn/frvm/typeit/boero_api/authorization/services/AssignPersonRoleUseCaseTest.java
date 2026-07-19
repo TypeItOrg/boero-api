@@ -12,6 +12,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.PersonNotFoundInInstitutionException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.RoleNotAssignableException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RoleRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.AssignRoleRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
@@ -28,7 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AssignPersonRoleUseCaseTest {
 
   @Mock private InstitutionPersonResolver institutionPersonResolver;
-  @Mock private InstitutionalSystemRoleResolver institutionalSystemRoleResolver;
+  @Mock private RoleRepository roleRepository;
   @Mock private PersonRoleAssignmentRepository personRoleAssignmentRepository;
   @Mock private AssignPersonSystemRoleUseCase assignPersonSystemRoleUseCase;
 
@@ -45,18 +46,19 @@ class AssignPersonRoleUseCaseTest {
 
     when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
         .thenReturn(person);
-    when(institutionalSystemRoleResolver.requireInstitutionalSystemRole(SystemRoleCode.TEACHER))
-        .thenReturn(role);
+    when(roleRepository.findByIdAndScopeAndInstitution_Id(
+            role.getId(), RoleScope.INSTITUTION, institutionId))
+        .thenReturn(Optional.of(role));
     when(personRoleAssignmentRepository.findByPerson_IdAndRole_IdAndInstitution_Id(
             personId, role.getId(), institutionId))
         .thenReturn(Optional.of(assignment));
 
     var response =
         assignPersonRoleUseCase.execute(
-            institutionId, personId, new AssignRoleRequest(SystemRoleCode.TEACHER));
+            institutionId, personId, new AssignRoleRequest(role.getId()), false);
 
-    verify(assignPersonSystemRoleUseCase).execute(person, SystemRoleCode.TEACHER);
-    assertThat(response.roleCode()).isEqualTo(SystemRoleCode.TEACHER);
+    verify(assignPersonSystemRoleUseCase).execute(person, role, true);
+    assertThat(response.technicalCode()).isEqualTo(SystemRoleCode.TEACHER);
     assertThat(response.displayName()).isEqualTo("Docente");
   }
 
@@ -72,7 +74,7 @@ class AssignPersonRoleUseCaseTest {
     assertThatThrownBy(
             () ->
                 assignPersonRoleUseCase.execute(
-                    institutionId, personId, new AssignRoleRequest(SystemRoleCode.TEACHER)))
+                    institutionId, personId, new AssignRoleRequest(UUID.randomUUID()), false))
         .isInstanceOf(PersonNotFoundInInstitutionException.class);
   }
 
@@ -85,13 +87,15 @@ class AssignPersonRoleUseCaseTest {
 
     when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
         .thenReturn(person);
-    when(institutionalSystemRoleResolver.requireInstitutionalSystemRole(SystemRoleCode.TEACHER))
-        .thenThrow(RoleNotAssignableException.class);
+    UUID roleId = UUID.randomUUID();
+    when(roleRepository.findByIdAndScopeAndInstitution_Id(
+            roleId, RoleScope.INSTITUTION, institutionId))
+        .thenReturn(Optional.empty());
 
     assertThatThrownBy(
             () ->
                 assignPersonRoleUseCase.execute(
-                    institutionId, personId, new AssignRoleRequest(SystemRoleCode.TEACHER)))
+                    institutionId, personId, new AssignRoleRequest(roleId), false))
         .isInstanceOf(RoleNotAssignableException.class);
   }
 

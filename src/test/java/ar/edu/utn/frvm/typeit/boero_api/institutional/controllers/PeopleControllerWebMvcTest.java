@@ -21,7 +21,6 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.services.JwtService;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.TokenBlacklistService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.LastInstitutionalAuthorityDeletionException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.PersonNotFoundInInstitutionException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.security.InstitutionAccessAspect;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.security.PermissionAuthorizationAspect;
@@ -42,6 +41,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.services.CreatePersonUseCa
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.DeletePersonUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.GetPersonByIdUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ListPeopleUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdateInstitutionalUserStatusUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdatePersonByAdminUseCase;
 import jakarta.validation.ConstraintViolationException;
 import java.time.LocalDate;
@@ -102,6 +102,7 @@ class PeopleControllerWebMvcTest {
   @MockitoBean private CreatePersonUseCase createPersonUseCase;
   @MockitoBean private UpdatePersonByAdminUseCase updatePersonByAdminUseCase;
   @MockitoBean private DeletePersonUseCase deletePersonUseCase;
+  @MockitoBean private UpdateInstitutionalUserStatusUseCase updateInstitutionalUserStatusUseCase;
 
   @AfterEach
   void clearSecurityContext() {
@@ -399,27 +400,6 @@ class PeopleControllerWebMvcTest {
   }
 
   @Test
-  @DisplayName("Should return 409 when deleting last authority")
-  void deletePerson_returns409ForLastAuthority() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
-    SecurityContextHolder.getContext().setAuthentication(authentication);
-    stubPlatformAdminAccess(true);
-    org.mockito.Mockito.doThrow(new LastInstitutionalAuthorityDeletionException())
-        .when(deletePersonUseCase)
-        .execute(INSTITUTION_ID, PERSON_ID);
-
-    mockMvc
-        .perform(
-            delete(
-                    "/api/v1/admin/institutions/{institutionId}/people/{personId}",
-                    INSTITUTION_ID,
-                    PERSON_ID)
-                .principal(authentication))
-        .andExpect(status().isConflict());
-  }
-
-  @Test
   @DisplayName("Should return 204 on idempotent delete (already deleted)")
   void deletePerson_isIdempotent() throws Exception {
     var authentication =
@@ -495,7 +475,7 @@ class PeopleControllerWebMvcTest {
 
   private static PersonSummaryResponse personSummary() {
     return new PersonSummaryResponse(
-        PERSON_ID, "Ana", "García", "12345678", "ana@example.com", null, List.of());
+        PERSON_ID, "Ana", "García", "12345678", "ana@example.com", null, true, List.of());
   }
 
   private static PersonResponse personResponse() {

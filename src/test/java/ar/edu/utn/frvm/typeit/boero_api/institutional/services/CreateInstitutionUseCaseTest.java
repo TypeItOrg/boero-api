@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionRoleProvisioner;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.City;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Country;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
@@ -33,6 +34,7 @@ class CreateInstitutionUseCaseTest {
 
   @Mock private CityRepository cityRepository;
   @Mock private InstitutionRepository institutionRepository;
+  @Mock private InstitutionRoleProvisioner institutionRoleProvisioner;
 
   @InjectMocks private CreateInstitutionUseCase createInstitutionUseCase;
 
@@ -93,6 +95,7 @@ class CreateInstitutionUseCaseTest {
 
     ArgumentCaptor<Institution> captor = ArgumentCaptor.forClass(Institution.class);
     verify(institutionRepository).save(captor.capture());
+    verify(institutionRoleProvisioner).provision(any(Institution.class));
     assertThat(captor.getValue().isActive()).isTrue();
     assertThat(response.slug()).isEqualTo("boero-villa-maria");
     assertThat(response.city().name()).isEqualTo("Villa Maria");

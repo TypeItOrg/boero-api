@@ -43,7 +43,7 @@ class BootstrapInstitutionalAuthorityUseCaseTest {
     when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
         .thenReturn(person);
     when(institutionalSystemRoleResolver.requireInstitutionalSystemRole(
-            SystemRoleCode.INSTITUTIONAL_AUTHORITY))
+            institutionId, SystemRoleCode.INSTITUTIONAL_AUTHORITY))
         .thenReturn(role);
     when(personRoleAssignmentRepository.findByPerson_IdAndRole_IdAndInstitution_Id(
             personId, role.getId(), institutionId))
@@ -52,7 +52,7 @@ class BootstrapInstitutionalAuthorityUseCaseTest {
     var response = bootstrapInstitutionalAuthorityUseCase.execute(institutionId, personId);
 
     verify(assignPersonSystemRoleUseCase).execute(person, SystemRoleCode.INSTITUTIONAL_AUTHORITY);
-    assertThat(response.roleCode()).isEqualTo(SystemRoleCode.INSTITUTIONAL_AUTHORITY);
+    assertThat(response.technicalCode()).isEqualTo(SystemRoleCode.INSTITUTIONAL_AUTHORITY);
   }
 
   private static Person personWith(UUID institutionId, UUID personId) {

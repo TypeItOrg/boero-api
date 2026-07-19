@@ -1,7 +1,5 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -9,7 +7,6 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignm
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.LastInstitutionalAuthorityRevocationException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RoleRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
@@ -51,8 +48,8 @@ class AssignPersonSystemRoleUseCaseTest {
   @DisplayName("Should assign role when current roles are compatible")
   void execute_assignsCompatibleRole() {
     Role teacher = roleWith(SystemRoleCode.TEACHER);
-    when(roleRepository.findByScopeAndCodeAndInstitutionIsNull(
-            RoleScope.INSTITUTION, SystemRoleCode.TEACHER.name()))
+    when(roleRepository.findByScopeAndCodeAndInstitution_Id(
+            RoleScope.INSTITUTION, SystemRoleCode.TEACHER.name(), institutionId))
         .thenReturn(Optional.of(teacher));
     when(personRoleAssignmentRepository.findByPerson_IdAndInstitution_Id(
             person.getId(), institutionId))
@@ -69,8 +66,8 @@ class AssignPersonSystemRoleUseCaseTest {
     Role applicant = roleWith(SystemRoleCode.APPLICANT);
     Role administrative = roleWith(SystemRoleCode.ADMINISTRATIVE);
     PersonRoleAssignment administrativeAssignment = assignmentWith(administrative);
-    when(roleRepository.findByScopeAndCodeAndInstitutionIsNull(
-            RoleScope.INSTITUTION, SystemRoleCode.APPLICANT.name()))
+    when(roleRepository.findByScopeAndCodeAndInstitution_Id(
+            RoleScope.INSTITUTION, SystemRoleCode.APPLICANT.name(), institutionId))
         .thenReturn(Optional.of(applicant));
     when(personRoleAssignmentRepository.findByPerson_IdAndInstitution_Id(
             person.getId(), institutionId))
@@ -83,27 +80,21 @@ class AssignPersonSystemRoleUseCaseTest {
   }
 
   @Test
-  @DisplayName("Should reject replacing the last institutional authority with applicant")
-  void execute_rejectsReplacingLastAuthorityWithApplicant() {
+  @DisplayName("Should allow replacing the last institutional authority with applicant")
+  void execute_replacesLastAuthorityWithApplicant() {
     Role applicant = roleWith(SystemRoleCode.APPLICANT);
     Role authority = roleWith(SystemRoleCode.INSTITUTIONAL_AUTHORITY);
     PersonRoleAssignment authorityAssignment = assignmentWith(authority);
-    when(roleRepository.findByScopeAndCodeAndInstitutionIsNull(
-            RoleScope.INSTITUTION, SystemRoleCode.APPLICANT.name()))
+    when(roleRepository.findByScopeAndCodeAndInstitution_Id(
+            RoleScope.INSTITUTION, SystemRoleCode.APPLICANT.name(), institutionId))
         .thenReturn(Optional.of(applicant));
     when(personRoleAssignmentRepository.findByPerson_IdAndInstitution_Id(
             person.getId(), institutionId))
         .thenReturn(List.of(authorityAssignment));
-    when(personRoleAssignmentRepository.countActivePeopleByInstitutionIdAndRoleCode(
-            institutionId, SystemRoleCode.INSTITUTIONAL_AUTHORITY.name()))
-        .thenReturn(1L);
+    assignPersonSystemRoleUseCase.execute(person, SystemRoleCode.APPLICANT);
 
-    assertThatThrownBy(
-            () -> assignPersonSystemRoleUseCase.execute(person, SystemRoleCode.APPLICANT))
-        .isInstanceOf(LastInstitutionalAuthorityRevocationException.class);
-
-    verify(personRoleAssignmentRepository, never()).delete(authorityAssignment);
-    verify(personRoleAssignmentRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    verify(personRoleAssignmentRepository).delete(authorityAssignment);
+    verify(personRoleAssignmentRepository).save(org.mockito.ArgumentMatchers.any());
   }
 
   @Test
@@ -112,8 +103,8 @@ class AssignPersonSystemRoleUseCaseTest {
     Role applicant = roleWith(SystemRoleCode.APPLICANT);
     Role administrative = roleWith(SystemRoleCode.ADMINISTRATIVE);
     PersonRoleAssignment applicantAssignment = assignmentWith(applicant);
-    when(roleRepository.findByScopeAndCodeAndInstitutionIsNull(
-            RoleScope.INSTITUTION, SystemRoleCode.ADMINISTRATIVE.name()))
+    when(roleRepository.findByScopeAndCodeAndInstitution_Id(
+            RoleScope.INSTITUTION, SystemRoleCode.ADMINISTRATIVE.name(), institutionId))
         .thenReturn(Optional.of(administrative));
     when(personRoleAssignmentRepository.findByPerson_IdAndInstitution_Id(
             person.getId(), institutionId))
@@ -132,6 +123,7 @@ class AssignPersonSystemRoleUseCaseTest {
         .name(roleCode.getDisplayName())
         .scope(RoleScope.INSTITUTION)
         .system(true)
+        .institution(institution)
         .build();
   }
 

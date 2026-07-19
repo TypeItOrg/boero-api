@@ -2,12 +2,13 @@ package ar.edu.utn.frvm.typeit.boero_api.authorization.controllers;
 
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPlatformRole;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.AssignRoleRequest;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.InstitutionRoleResponse;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.PersonRoleResponse;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.SystemRoleListResponse;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AssignPersonRoleUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.BootstrapInstitutionalAuthorityUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionRoleManagementService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ListPersonRolesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ListSystemRolesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.RevokePersonRoleUseCase;
@@ -35,6 +36,13 @@ public class AdminRoleController {
   private final RevokePersonRoleUseCase revokePersonRoleUseCase;
   private final ListSystemRolesUseCase listSystemRolesUseCase;
   private final BootstrapInstitutionalAuthorityUseCase bootstrapInstitutionalAuthorityUseCase;
+  private final InstitutionRoleManagementService institutionRoleManagementService;
+
+  @GetMapping(value = "/admin/institutions/{institutionId}/roles", version = Version.V1)
+  public List<InstitutionRoleResponse> listInstitutionRoles(
+      @PathVariable final UUID institutionId) {
+    return institutionRoleManagementService.list(institutionId, true);
+  }
 
   @GetMapping(
       value = "/admin/institutions/{institutionId}/people/{personId}/roles",
@@ -52,18 +60,18 @@ public class AdminRoleController {
       @PathVariable final UUID institutionId,
       @PathVariable final UUID personId,
       @Valid @RequestBody final AssignRoleRequest request) {
-    return assignPersonRoleUseCase.execute(institutionId, personId, request);
+    return assignPersonRoleUseCase.execute(institutionId, personId, request, true);
   }
 
   @DeleteMapping(
-      value = "/admin/institutions/{institutionId}/people/{personId}/roles/{roleCode}",
+      value = "/admin/institutions/{institutionId}/people/{personId}/roles/{roleId}",
       version = Version.V1)
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void revokePersonRole(
       @PathVariable final UUID institutionId,
       @PathVariable final UUID personId,
-      @PathVariable final SystemRoleCode roleCode) {
-    revokePersonRoleUseCase.execute(institutionId, personId, roleCode);
+      @PathVariable final UUID roleId) {
+    revokePersonRoleUseCase.execute(institutionId, personId, roleId, true);
   }
 
   @GetMapping(value = "/admin/roles/system", version = Version.V1)

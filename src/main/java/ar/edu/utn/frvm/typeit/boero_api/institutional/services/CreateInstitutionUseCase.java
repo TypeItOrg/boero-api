@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionRoleProvisioner;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.CityNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.SlugAlreadyExistsException;
@@ -18,6 +19,7 @@ public class CreateInstitutionUseCase {
 
   private final CityRepository cityRepository;
   private final InstitutionRepository institutionRepository;
+  private final InstitutionRoleProvisioner institutionRoleProvisioner;
 
   @Transactional
   public InstitutionDetailResponse execute(CreateInstitutionRequest request) {
@@ -45,6 +47,7 @@ public class CreateInstitutionUseCase {
     try {
       saved = institutionRepository.save(institution);
       institutionRepository.flush();
+      institutionRoleProvisioner.provision(saved);
     } catch (DataIntegrityViolationException exception) {
       throw new SlugAlreadyExistsException();
     }

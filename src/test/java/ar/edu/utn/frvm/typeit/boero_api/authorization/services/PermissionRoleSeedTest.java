@@ -23,6 +23,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @Import({
   JpaAuditingTestConfig.class,
   PermissionRoleSeed.class,
+  InstitutionRoleProvisioner.class,
   AssignPersonSystemRoleUseCase.class,
   SessionRevocationService.class
 })

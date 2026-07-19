@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
+import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
@@ -22,6 +24,7 @@ public class ListPeopleUseCase {
 
   private final PersonRepository personRepository;
   private final PersonRoleAssignmentRepository personRoleAssignmentRepository;
+  private final UserRepository userRepository;
 
   @Transactional(readOnly = true)
   public PaginatedResponse<PersonSummaryResponse> execute(
@@ -41,6 +44,9 @@ public class ListPeopleUseCase {
     final List<UUID> personIds = peoplePage.getContent().stream().map(Person::getId).toList();
     final List<PersonRoleAssignment> roleAssignments =
         personRoleAssignmentRepository.findByPerson_IdInAndInstitution_Id(personIds, institutionId);
+    final Map<UUID, Boolean> accessByPerson =
+        userRepository.findByPerson_IdInAndInstitution_Id(personIds, institutionId).stream()
+            .collect(Collectors.toMap(user -> user.getPerson().getId(), User::isEnabled));
 
     final Map<UUID, List<PersonSummaryResponse.PersonRoleSummaryResponse>> rolesByPerson =
         roleAssignments.stream()
@@ -57,6 +63,8 @@ public class ListPeopleUseCase {
         peoplePage.map(
             person ->
                 PersonSummaryResponse.from(
-                    person, rolesByPerson.getOrDefault(person.getId(), List.of()))));
+                    person,
+                    rolesByPerson.getOrDefault(person.getId(), List.of()),
+                    accessByPerson.getOrDefault(person.getId(), false))));
   }
 }

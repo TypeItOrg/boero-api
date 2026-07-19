@@ -4,7 +4,6 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresAnyPermission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresInstitutionAccess;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPermission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.AssignRoleRequest;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.PersonRoleResponse;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.SystemRoleListResponse;
@@ -62,11 +61,11 @@ public class RoleController {
       @PathVariable UUID personId,
       @Valid @RequestBody AssignRoleRequest request,
       Authentication authentication) {
-    return assignPersonRoleUseCase.execute(institutionId, personId, request);
+    return assignPersonRoleUseCase.execute(institutionId, personId, request, false);
   }
 
   @DeleteMapping(
-      value = "/institutions/{institutionId}/people/{personId}/roles/{roleCode}",
+      value = "/institutions/{institutionId}/people/{personId}/roles/{roleId}",
       version = Version.V1)
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @RequiresInstitutionAccess
@@ -74,9 +73,9 @@ public class RoleController {
   public void revokePersonRole(
       @PathVariable UUID institutionId,
       @PathVariable UUID personId,
-      @PathVariable SystemRoleCode roleCode,
+      @PathVariable UUID roleId,
       Authentication authentication) {
-    revokePersonRoleUseCase.execute(institutionId, personId, roleCode);
+    revokePersonRoleUseCase.execute(institutionId, personId, roleId, false);
   }
 
   @GetMapping(value = "/roles/system", version = Version.V1)
