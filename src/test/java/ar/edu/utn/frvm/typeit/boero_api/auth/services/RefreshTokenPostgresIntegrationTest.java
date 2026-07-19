@@ -13,6 +13,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.TokenRefreshException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.RefreshTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RefreshTokenRequest;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorityResolver;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData;
 import ar.edu.utn.frvm.typeit.boero_api.support.IntegrationTest;
@@ -63,6 +64,8 @@ class RefreshTokenPostgresIntegrationTest {
   @MockitoBean private JwtService jwtService;
   @MockitoBean private JwtProperties jwtProperties;
   @MockitoBean private CacheManager cacheManager;
+  @MockitoBean private AuthorityResolver authorityResolver;
+  @MockitoBean private RefreshReplayCache replayCache;
 
   @DynamicPropertySource
   static void postgresProperties(final DynamicPropertyRegistry registry) {

@@ -18,6 +18,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.LoginRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.AuthResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.security.InstitutionalUsername;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorityResolver;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import jakarta.servlet.http.HttpServletRequest;
@@ -44,6 +45,7 @@ class LoginUseCaseTest {
   @Mock private RefreshTokenRepository refreshTokenRepository;
   @Mock private JwtService jwtService;
   @Mock private HttpServletRequest httpRequest;
+  @Mock private AuthorityResolver authorityResolver;
 
   private LoginUseCase loginUseCase;
   private JwtProperties jwtProperties;
@@ -57,7 +59,8 @@ class LoginUseCaseTest {
             userSessionRepository,
             refreshTokenRepository,
             jwtService,
-            jwtProperties);
+            jwtProperties,
+            authorityResolver);
   }
 
   @Test

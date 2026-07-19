@@ -3,15 +3,20 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 import static ar.edu.utn.frvm.typeit.boero_api.support.AuthTestData.institutionalPrincipal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidCredentialsException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.UserResponse;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorityResolver;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,12 +30,13 @@ import org.springframework.security.authentication.DisabledException;
 class GetCurrentUserUseCaseTest {
 
   @Mock private UserRepository userRepository;
+  @Mock private AuthorityResolver authorityResolver;
 
   private GetCurrentUserUseCase getCurrentUserUseCase;
 
   @BeforeEach
   void setUp() {
-    getCurrentUserUseCase = new GetCurrentUserUseCase(userRepository);
+    getCurrentUserUseCase = new GetCurrentUserUseCase(userRepository, authorityResolver);
   }
 
   @Test
@@ -42,6 +48,8 @@ class GetCurrentUserUseCaseTest {
     User user = userWith(userId, institutionId, "12345678", "Ana", "Garcia", true);
 
     when(userRepository.findWithPersonAndInstitutionById(userId)).thenReturn(Optional.of(user));
+    when(authorityResolver.resolveForPerson(any(UUID.class), eq(institutionId)))
+        .thenReturn(Set.of(PermissionCode.INSTITUTION_PERSON_READ_OWN));
 
     UserResponse response = getCurrentUserUseCase.execute(principal);
 
@@ -50,6 +58,8 @@ class GetCurrentUserUseCaseTest {
     assertThat(response.user().name()).isEqualTo("Ana");
     assertThat(response.user().lastName()).isEqualTo("Garcia");
     assertThat(response.user().institutionId()).isEqualTo(institutionId);
+    assertThat(response.user().permissions())
+        .containsExactly(PermissionCode.INSTITUTION_PERSON_READ_OWN.getCode());
   }
 
   @Test

@@ -32,7 +32,7 @@ public class PlatformRefreshTokenUseCase {
   private final JwtService jwtService;
   private final JwtProperties jwtProperties;
   private final CacheManager cacheManager;
-  private final PlatformRefreshReplayCache replayCache;
+  private final RefreshReplayCache replayCache;
 
   @Transactional(noRollbackFor = TokenRefreshException.class)
   public PlatformAuthResponse execute(final RefreshTokenRequest request) {
@@ -43,7 +43,7 @@ public class PlatformRefreshTokenUseCase {
             .orElseThrow(TokenRefreshException::invalid);
 
     if (current.isRevoked()) {
-      final Optional<PlatformRefreshReplay> replay = replayCache.get(hash);
+      final Optional<RefreshReplay> replay = replayCache.getPlatform(hash);
       if (replay.isPresent()) {
         findActiveSession(current);
         final PlatformAccount account = findEnabledAccount(current);
@@ -83,7 +83,7 @@ public class PlatformRefreshTokenUseCase {
                 .sessionId(session.getId())
                 .build());
     final PlatformAuthResponse response = PlatformAuthResponse.of(account, accessToken, rawRefresh);
-    replayCache.put(hash, new PlatformRefreshReplay(accessToken, rawRefresh));
+    replayCache.putPlatform(hash, new RefreshReplay(accessToken, rawRefresh));
     return response;
   }
 

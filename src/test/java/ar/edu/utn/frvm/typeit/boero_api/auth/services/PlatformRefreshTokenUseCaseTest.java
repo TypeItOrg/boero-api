@@ -37,7 +37,7 @@ class PlatformRefreshTokenUseCaseTest {
   @Mock private PlatformAccountRepository accountRepository;
   @Mock private JwtService jwtService;
   @Mock private CacheManager cacheManager;
-  @Mock private PlatformRefreshReplayCache replayCache;
+  @Mock private RefreshReplayCache replayCache;
 
   private PlatformRefreshTokenUseCase useCase;
 
@@ -125,10 +125,10 @@ class PlatformRefreshTokenUseCaseTest {
             .password("encoded")
             .enabled(true)
             .build();
-    final PlatformRefreshReplay replay =
-        new PlatformRefreshReplay("replayed-access-token", "replayed-refresh-token");
+    final RefreshReplay replay =
+        new RefreshReplay("replayed-access-token", "replayed-refresh-token");
     when(refreshTokenRepository.findByTokenHash(hash)).thenReturn(Optional.of(token));
-    when(replayCache.get(hash)).thenReturn(Optional.of(replay));
+    when(replayCache.getPlatform(hash)).thenReturn(Optional.of(replay));
     when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
     when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
 
@@ -170,7 +170,7 @@ class PlatformRefreshTokenUseCaseTest {
     assertThat(response.tokens().accessToken()).isEqualTo("access-token");
     assertThat(response.tokens().refreshToken()).isNotBlank();
     verify(replayCache)
-        .put(hash, new PlatformRefreshReplay("access-token", response.tokens().refreshToken()));
+        .putPlatform(hash, new RefreshReplay("access-token", response.tokens().refreshToken()));
   }
 
   private static PlatformRefreshToken token(

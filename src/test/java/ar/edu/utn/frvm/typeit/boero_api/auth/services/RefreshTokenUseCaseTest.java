@@ -21,6 +21,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RefreshTokenRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.AuthResponse;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorityResolver;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import java.time.LocalDateTime;
@@ -45,6 +46,8 @@ class RefreshTokenUseCaseTest {
   @Mock private UserRepository userRepository;
   @Mock private JwtService jwtService;
   @Mock private CacheManager cacheManager;
+  @Mock private AuthorityResolver authorityResolver;
+  @Mock private RefreshReplayCache replayCache;
 
   private RefreshTokenUseCase refreshTokenUseCase;
   private JwtProperties jwtProperties;
@@ -59,7 +62,9 @@ class RefreshTokenUseCaseTest {
             userRepository,
             jwtService,
             jwtProperties,
-            cacheManager);
+            cacheManager,
+            authorityResolver,
+            replayCache);
   }
 
   @Test
@@ -95,6 +100,35 @@ class RefreshTokenUseCaseTest {
     assertThat(saved.isRevoked()).isFalse();
     assertThat(saved.getTokenHash())
         .isEqualTo(JwtService.hashToken(response.tokens().refreshToken()));
+    verify(replayCache)
+        .putInstitutional(
+            tokenHash, new RefreshReplay("new-access-token", response.tokens().refreshToken()));
+  }
+
+  @Test
+  @DisplayName("Should replay rotated tokens for concurrent institutional refreshes")
+  void execute_replaysConcurrentRefresh() {
+    String rawToken = "concurrent-institutional-token";
+    String tokenHash = JwtService.hashToken(rawToken);
+    UUID sessionId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+    RefreshToken current = activeToken(tokenHash, "family-1", sessionId);
+    current.setRevoked(true);
+    UserSession session = activeSession(sessionId, userId, false);
+    User user = userWith(userId);
+    RefreshReplay replay = new RefreshReplay("replayed-access-token", "replayed-refresh-token");
+
+    when(refreshTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(current));
+    when(replayCache.getInstitutional(tokenHash)).thenReturn(Optional.of(replay));
+    when(userSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+    when(userRepository.findWithPersonAndInstitutionById(userId)).thenReturn(Optional.of(user));
+
+    AuthResponse response = refreshTokenUseCase.execute(new RefreshTokenRequest(rawToken));
+
+    assertThat(response.tokens().accessToken()).isEqualTo(replay.accessToken());
+    assertThat(response.tokens().refreshToken()).isEqualTo(replay.refreshToken());
+    verify(refreshTokenRepository, never()).revokeByFamilyId("family-1");
+    verify(refreshTokenRepository, never()).save(any());
   }
 
   @Test

@@ -15,9 +15,11 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class PlatformRefreshReplayCache {
+public class RefreshReplayCache {
 
-  private static final String KEY_PREFIX = "auth:platform-refresh-replay:";
+  private static final String KEY_PREFIX = "auth:refresh-replay:";
+  private static final String PLATFORM_SCOPE = "platform";
+  private static final String INSTITUTIONAL_SCOPE = "institutional";
   private static final int GCM_TAG_LENGTH_BITS = 128;
   private static final int NONCE_LENGTH_BYTES = 12;
 
@@ -25,8 +27,24 @@ public class PlatformRefreshReplayCache {
   private final RefreshReplayProperties properties;
   private final SecureRandom secureRandom = new SecureRandom();
 
-  public Optional<PlatformRefreshReplay> get(final String tokenHash) {
-    final String cacheKey = cacheKey(tokenHash);
+  public Optional<RefreshReplay> getPlatform(final String tokenHash) {
+    return get(PLATFORM_SCOPE, tokenHash);
+  }
+
+  public void putPlatform(final String tokenHash, final RefreshReplay replay) {
+    put(PLATFORM_SCOPE, tokenHash, replay);
+  }
+
+  public Optional<RefreshReplay> getInstitutional(final String tokenHash) {
+    return get(INSTITUTIONAL_SCOPE, tokenHash);
+  }
+
+  public void putInstitutional(final String tokenHash, final RefreshReplay replay) {
+    put(INSTITUTIONAL_SCOPE, tokenHash, replay);
+  }
+
+  private Optional<RefreshReplay> get(final String scope, final String tokenHash) {
+    final String cacheKey = cacheKey(scope, tokenHash);
     final String encryptedValue = redisTemplate.opsForValue().get(cacheKey);
 
     if (encryptedValue == null) {
@@ -36,17 +54,16 @@ public class PlatformRefreshReplayCache {
     try {
       return Optional.of(decrypt(cacheKey, encryptedValue));
     } catch (GeneralSecurityException | IllegalArgumentException exception) {
-      throw new IllegalStateException(
-          "Platform refresh replay cache contains an invalid value", exception);
+      throw new IllegalStateException("Refresh replay cache contains an invalid value", exception);
     }
   }
 
-  public void put(final String tokenHash, final PlatformRefreshReplay replay) {
-    final String cacheKey = cacheKey(tokenHash);
+  private void put(final String scope, final String tokenHash, final RefreshReplay replay) {
+    final String cacheKey = cacheKey(scope, tokenHash);
     redisTemplate.opsForValue().set(cacheKey, encrypt(cacheKey, replay), properties.ttl());
   }
 
-  private PlatformRefreshReplay decrypt(final String cacheKey, final String encryptedValue)
+  private RefreshReplay decrypt(final String cacheKey, final String encryptedValue)
       throws GeneralSecurityException {
     final byte[] encrypted = Base64.getDecoder().decode(encryptedValue);
     if (encrypted.length <= NONCE_LENGTH_BYTES) {
@@ -72,10 +89,10 @@ public class PlatformRefreshReplayCache {
       throw new IllegalArgumentException("Encrypted replay value has an invalid format");
     }
 
-    return new PlatformRefreshReplay(tokens[0], tokens[1]);
+    return new RefreshReplay(tokens[0], tokens[1]);
   }
 
-  private String encrypt(final String cacheKey, final PlatformRefreshReplay replay) {
+  private String encrypt(final String cacheKey, final RefreshReplay replay) {
     final byte[] nonce = new byte[NONCE_LENGTH_BYTES];
     secureRandom.nextBytes(nonce);
 
@@ -95,11 +112,11 @@ public class PlatformRefreshReplayCache {
       buffer.put(nonce).put(ciphertext);
       return Base64.getEncoder().encodeToString(buffer.array());
     } catch (GeneralSecurityException exception) {
-      throw new IllegalStateException("Unable to encrypt platform refresh replay", exception);
+      throw new IllegalStateException("Unable to encrypt refresh replay", exception);
     }
   }
 
-  private static String cacheKey(final String tokenHash) {
-    return KEY_PREFIX + tokenHash;
+  private static String cacheKey(final String scope, final String tokenHash) {
+    return KEY_PREFIX + scope + ":" + tokenHash;
   }
 }

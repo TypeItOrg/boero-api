@@ -17,37 +17,55 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
 @ExtendWith(MockitoExtension.class)
-class PlatformRefreshReplayCacheTest {
+class RefreshReplayCacheTest {
 
   private static final String ENCRYPTION_KEY = "MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=";
 
   @Mock private StringRedisTemplate redisTemplate;
   @Mock private ValueOperations<String, String> valueOperations;
 
-  private PlatformRefreshReplayCache replayCache;
+  private RefreshReplayCache replayCache;
 
   @BeforeEach
   void setUp() {
     when(redisTemplate.opsForValue()).thenReturn(valueOperations);
     replayCache =
-        new PlatformRefreshReplayCache(
+        new RefreshReplayCache(
             redisTemplate, new RefreshReplayProperties(ENCRYPTION_KEY, Duration.ofSeconds(5)));
   }
 
   @Test
   void putAndGetRoundTripTheEncryptedReplay() {
     final String tokenHash = "previous-token-hash";
-    final PlatformRefreshReplay replay = new PlatformRefreshReplay("access-token", "refresh-token");
+    final RefreshReplay replay = new RefreshReplay("access-token", "refresh-token");
     final ArgumentCaptor<String> valueCaptor = ArgumentCaptor.forClass(String.class);
 
-    replayCache.put(tokenHash, replay);
+    replayCache.putPlatform(tokenHash, replay);
 
     verify(valueOperations).set(any(), valueCaptor.capture(), any(Duration.class));
     when(valueOperations.get(any())).thenReturn(valueCaptor.getValue());
 
-    assertThat(replayCache.get(tokenHash)).contains(replay);
+    assertThat(replayCache.getPlatform(tokenHash)).contains(replay);
     assertThat(valueCaptor.getValue())
         .doesNotContain("access-token")
         .doesNotContain("refresh-token");
+  }
+
+  @Test
+  void putAndGetRoundTripTheInstitutionalReplay() {
+    final String tokenHash = "previous-institutional-token-hash";
+    final RefreshReplay replay =
+        new RefreshReplay("institutional-access-token", "institutional-refresh-token");
+    final ArgumentCaptor<String> valueCaptor = ArgumentCaptor.forClass(String.class);
+
+    replayCache.putInstitutional(tokenHash, replay);
+
+    verify(valueOperations).set(any(), valueCaptor.capture(), any(Duration.class));
+    when(valueOperations.get(any())).thenReturn(valueCaptor.getValue());
+
+    assertThat(replayCache.getInstitutional(tokenHash)).contains(replay);
+    assertThat(valueCaptor.getValue())
+        .doesNotContain("institutional-access-token")
+        .doesNotContain("institutional-refresh-token");
   }
 }

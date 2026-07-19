@@ -10,6 +10,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.LoginRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.AuthResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.security.InstitutionalUsername;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorityResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -30,6 +31,7 @@ public class LoginUseCase {
   private final RefreshTokenRepository refreshTokenRepository;
   private final JwtService jwtService;
   private final JwtProperties jwtProperties;
+  private final AuthorityResolver authorityResolver;
 
   @Transactional
   public AuthResponse execute(LoginRequest request, HttpServletRequest httpRequest) {
@@ -78,6 +80,11 @@ public class LoginUseCase {
                 .documentNumber(user.getDocumentNumber())
                 .sessionId(session.getId())
                 .build());
-    return AuthResponse.of(user, user.getPerson().getId(), accessToken, rawRefresh);
+    return AuthResponse.of(
+        user,
+        user.getPerson().getId(),
+        authorityResolver.resolveForPerson(user.getPerson().getId(), user.getInstitutionId()),
+        accessToken,
+        rawRefresh);
   }
 }
