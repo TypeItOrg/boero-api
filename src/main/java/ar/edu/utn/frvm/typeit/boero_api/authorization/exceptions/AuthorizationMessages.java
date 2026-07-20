@@ -12,6 +12,8 @@ public final class AuthorizationMessages {
       "No se puede eliminar a la última autoridad institucional de la institución. Asigne otra autoridad antes.";
   public static final String LAST_PERSON_ROLE_REVOCATION =
       "No se puede revocar el único rol del usuario. Asigne otro rol antes.";
+  public static final String LAST_INSTITUTIONAL_AUTHORITY_DEACTIVATION =
+      "No se puede desactivar el acceso de la última autoridad institucional de la institución. Asigne otra autoridad antes.";
 
   private AuthorizationMessages() {}
 }

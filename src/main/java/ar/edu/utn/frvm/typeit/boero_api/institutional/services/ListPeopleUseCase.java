@@ -29,9 +29,9 @@ public class ListPeopleUseCase {
 
     final Page<Person> peoplePage;
     if (search != null && !search.isBlank()) {
-      peoplePage = personRepository.search(institutionId, search.trim(), pageable);
+      peoplePage = personRepository.searchActive(institutionId, search.trim(), pageable);
     } else {
-      peoplePage = personRepository.findByInstitution_IdAndDeletedFalse(institutionId, pageable);
+      peoplePage = personRepository.findActiveByInstitutionId(institutionId, pageable);
     }
 
     if (peoplePage.isEmpty()) {

@@ -27,13 +27,27 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
       SELECT p FROM Person p
       WHERE p.institution.id = :institutionId
         AND p.deleted = false
+        AND NOT EXISTS (
+          SELECT u FROM User u WHERE u.person.id = p.id AND u.enabled = false
+        )
+      """)
+  Page<Person> findActiveByInstitutionId(UUID institutionId, Pageable pageable);
+
+  @Query(
+      """
+      SELECT p FROM Person p
+      WHERE p.institution.id = :institutionId
+        AND p.deleted = false
+        AND NOT EXISTS (
+          SELECT u FROM User u WHERE u.person.id = p.id AND u.enabled = false
+        )
         AND (
               UNACCENT_LOWER(CONCAT(p.firstName, ' ', p.lastName))
           LIKE UNACCENT_LOWER(CONCAT('%', :search, '%'))
           OR p.documentNumber LIKE CONCAT('%', :search, '%')
         )
       """)
-  Page<Person> search(
+  Page<Person> searchActive(
       @Param("institutionId") UUID institutionId,
       @Param("search") String search,
       Pageable pageable);
@@ -43,6 +57,9 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
       """
       SELECT person FROM Person person
       WHERE person.deleted = false
+        AND NOT EXISTS (
+          SELECT u FROM User u WHERE u.person.id = person.id AND u.enabled = false
+        )
         AND (:institutionId IS NULL OR person.institution.id = :institutionId)
         AND (
           :roleCode IS NULL

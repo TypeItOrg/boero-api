@@ -35,7 +35,7 @@ class ListPeopleUseCaseTest {
     UUID institutionId = UUID.randomUUID();
     Pageable pageable = PageRequest.of(0, 20);
     Person person = personWith(institutionId, "11111111", "Ana", "García");
-    when(personRepository.findByInstitution_IdAndDeletedFalse(institutionId, pageable))
+    when(personRepository.findActiveByInstitutionId(institutionId, pageable))
         .thenReturn(new PageImpl<>(List.of(person), pageable, 1));
     when(personRoleAssignmentRepository.findByPerson_IdInAndInstitution_Id(
             List.of(person.getId()), institutionId))
@@ -55,7 +55,7 @@ class ListPeopleUseCaseTest {
     UUID institutionId = UUID.randomUUID();
     Pageable pageable = PageRequest.of(0, 20);
     Person person = personWith(institutionId, "11111111", "Ana", "García");
-    when(personRepository.search(institutionId, "ana", pageable))
+    when(personRepository.searchActive(institutionId, "ana", pageable))
         .thenReturn(new PageImpl<>(List.of(person), pageable, 1));
     when(personRoleAssignmentRepository.findByPerson_IdInAndInstitution_Id(
             List.of(person.getId()), institutionId))
@@ -72,12 +72,12 @@ class ListPeopleUseCaseTest {
   void execute_trimsSearchBeforeDelegating() {
     UUID institutionId = UUID.randomUUID();
     Pageable pageable = PageRequest.of(0, 20);
-    when(personRepository.search(institutionId, "matias", pageable))
+    when(personRepository.searchActive(institutionId, "matias", pageable))
         .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
     listPeopleUseCase.execute(institutionId, "  matias  ", pageable);
 
-    verify(personRepository).search(institutionId, "matias", pageable);
+    verify(personRepository).searchActive(institutionId, "matias", pageable);
   }
 
   @Test
@@ -85,12 +85,12 @@ class ListPeopleUseCaseTest {
   void execute_treatsWhitespaceOnlyAsNoSearch() {
     UUID institutionId = UUID.randomUUID();
     Pageable pageable = PageRequest.of(0, 20);
-    when(personRepository.findByInstitution_IdAndDeletedFalse(institutionId, pageable))
+    when(personRepository.findActiveByInstitutionId(institutionId, pageable))
         .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
     listPeopleUseCase.execute(institutionId, "   ", pageable);
 
-    verify(personRepository, never()).search(institutionId, "   ", pageable);
+    verify(personRepository, never()).searchActive(institutionId, "   ", pageable);
   }
 
   @Test
@@ -98,7 +98,7 @@ class ListPeopleUseCaseTest {
   void execute_returnsEmptyWhenNoMatch() {
     UUID institutionId = UUID.randomUUID();
     Pageable pageable = PageRequest.of(0, 20);
-    when(personRepository.search(institutionId, "nope", pageable))
+    when(personRepository.searchActive(institutionId, "nope", pageable))
         .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
     var response = listPeopleUseCase.execute(institutionId, "nope", pageable);

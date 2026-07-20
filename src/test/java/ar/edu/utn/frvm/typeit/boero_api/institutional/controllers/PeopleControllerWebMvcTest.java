@@ -39,9 +39,11 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.PersonAlreadyEx
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.PersonResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.PersonSummaryResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.CreatePersonUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.DeactivatePersonAccessUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.DeletePersonUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.GetPersonByIdUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ListPeopleUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ReactivatePersonAccessUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdatePersonByAdminUseCase;
 import jakarta.validation.ConstraintViolationException;
 import java.time.LocalDate;
@@ -102,6 +104,8 @@ class PeopleControllerWebMvcTest {
   @MockitoBean private CreatePersonUseCase createPersonUseCase;
   @MockitoBean private UpdatePersonByAdminUseCase updatePersonByAdminUseCase;
   @MockitoBean private DeletePersonUseCase deletePersonUseCase;
+  @MockitoBean private DeactivatePersonAccessUseCase deactivatePersonAccessUseCase;
+  @MockitoBean private ReactivatePersonAccessUseCase reactivatePersonAccessUseCase;
 
   @AfterEach
   void clearSecurityContext() {

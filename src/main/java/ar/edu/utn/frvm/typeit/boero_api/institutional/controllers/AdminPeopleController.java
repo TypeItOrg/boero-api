@@ -7,11 +7,14 @@ import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.CreatePersonRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.PersonResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.PersonSummaryResponse;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.UpdatePersonAccessRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.UpdatePersonByAdminRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.CreatePersonUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.DeactivatePersonAccessUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.DeletePersonUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.GetPersonByIdUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ListPeopleUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ReactivatePersonAccessUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdatePersonByAdminUseCase;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
@@ -24,6 +27,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -45,6 +49,8 @@ public class AdminPeopleController {
   private final CreatePersonUseCase createPersonUseCase;
   private final UpdatePersonByAdminUseCase updatePersonByAdminUseCase;
   private final DeletePersonUseCase deletePersonUseCase;
+  private final DeactivatePersonAccessUseCase deactivatePersonAccessUseCase;
+  private final ReactivatePersonAccessUseCase reactivatePersonAccessUseCase;
 
   @GetMapping(version = Version.V1)
   public PaginatedResponse<PersonSummaryResponse> list(
@@ -81,5 +87,18 @@ public class AdminPeopleController {
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void delete(@PathVariable final UUID institutionId, @PathVariable final UUID personId) {
     deletePersonUseCase.execute(institutionId, personId);
+  }
+
+  @PatchMapping(value = "/{personId}/access", version = Version.V1)
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void updateAccess(
+      @PathVariable final UUID institutionId,
+      @PathVariable final UUID personId,
+      @Valid @RequestBody final UpdatePersonAccessRequest request) {
+    if (Boolean.TRUE.equals(request.enabled())) {
+      reactivatePersonAccessUseCase.execute(institutionId, personId);
+    } else {
+      deactivatePersonAccessUseCase.execute(institutionId, personId);
+    }
   }
 }

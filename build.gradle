@@ -51,6 +51,7 @@ dependencies {
 }
 
 spotless {
+    ratchetFrom 'origin/develop'
     java {
         googleJavaFormat()
         target 'src/**/*.java'
