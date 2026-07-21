@@ -3,6 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -68,6 +69,7 @@ class AuthPayloadJsonTest {
     var json = userResponseJson.write(response);
 
     assertThat(json).extractingJsonPathStringValue("$.user.userId").isEqualTo(USER_ID.toString());
+    assertThat(json).extractingJsonPathStringValue("$.user.roles[0]").isEqualTo("Preceptor");
     assertThat(json).doesNotHaveJsonPath("$.userId");
   }
 
@@ -107,6 +109,7 @@ class AuthPayloadJsonTest {
         .lastName("Garcia")
         .documentNumber("12345678")
         .institutionId(INSTITUTION_ID)
+        .roles(List.of("Preceptor"))
         .permissions(Set.of("institution:person:read-any"))
         .build();
   }

@@ -2,7 +2,6 @@ package ar.edu.utn.frvm.typeit.boero_api.institutional.controllers;
 
 import static ar.edu.utn.frvm.typeit.boero_api.support.AuthTestData.institutionalPrincipal;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -14,9 +13,9 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUse
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.JwtService;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.TokenBlacklistService;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.security.PermissionAuthorizationAspect;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.GlobalExceptionHandler;
 import ar.edu.utn.frvm.typeit.boero_api.config.WebConfig;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.AddressResponse;
@@ -60,27 +59,15 @@ class PersonControllerWebMvcTest {
   @MockitoBean private IsSessionActiveUseCase isSessionActiveUseCase;
   @MockitoBean private IsPlatformSessionActiveUseCase isPlatformSessionActiveUseCase;
   @MockitoBean private AuthorizationService authorizationService;
+  @MockitoBean private InstitutionalCallerGuard institutionalCallerGuard;
   @MockitoBean private GetPersonUseCase getPersonUseCase;
   @MockitoBean private UpdatePersonUseCase updatePersonUseCase;
 
   @Test
-  @DisplayName("Should forbid reading own person data without permission")
-  void me_returnsForbiddenWithoutPermission() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
-    stubPermission(PermissionCode.INSTITUTION_PERSON_READ_OWN, false);
-
-    mockMvc
-        .perform(get("/api/v1/person/me").principal(authentication))
-        .andExpect(status().isForbidden());
-  }
-
-  @Test
-  @DisplayName("Should return person profile with permission")
+  @DisplayName("Should return person profile for an authenticated user")
   void me_returnsPersonProfile() throws Exception {
     var authentication =
         new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
-    stubPermission(PermissionCode.INSTITUTION_PERSON_READ_OWN, true);
     when(getPersonUseCase.execute(any()))
         .thenReturn(
             PersonResponse.builder()
@@ -102,27 +89,10 @@ class PersonControllerWebMvcTest {
   }
 
   @Test
-  @DisplayName("Should forbid updating own person data without permission")
-  void updateMe_returnsForbiddenWithoutPermission() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
-    stubPermission(PermissionCode.INSTITUTION_PERSON_UPDATE_OWN, false);
-
-    mockMvc
-        .perform(
-            put("/api/v1/person/me")
-                .principal(authentication)
-                .contentType(APPLICATION_JSON)
-                .content("{\"firstName\":\"Carlos\"}"))
-        .andExpect(status().isForbidden());
-  }
-
-  @Test
-  @DisplayName("Should update person profile with permission")
+  @DisplayName("Should update person profile for an authenticated user")
   void updateMe_returnsUpdatedProfile() throws Exception {
     var authentication =
         new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
-    stubPermission(PermissionCode.INSTITUTION_PERSON_UPDATE_OWN, true);
     when(updatePersonUseCase.execute(any(), any(UpdatePersonRequest.class)))
         .thenReturn(
             PersonResponse.builder()
@@ -177,7 +147,6 @@ class PersonControllerWebMvcTest {
   void updateMe_returnsBadRequestForInvalidEmail() throws Exception {
     var authentication =
         new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
-    stubPermission(PermissionCode.INSTITUTION_PERSON_UPDATE_OWN, true);
 
     mockMvc
         .perform(
@@ -186,9 +155,5 @@ class PersonControllerWebMvcTest {
                 .contentType(APPLICATION_JSON)
                 .content("{\"email\":\"invalid-email\"}"))
         .andExpect(status().isBadRequest());
-  }
-
-  private void stubPermission(PermissionCode permission, boolean allowed) {
-    when(authorizationService.hasPermission(any(), eq(permission))).thenReturn(allowed);
   }
 }

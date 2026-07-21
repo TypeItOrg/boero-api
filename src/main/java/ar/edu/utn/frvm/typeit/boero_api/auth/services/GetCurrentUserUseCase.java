@@ -5,6 +5,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidCredentialsExcept
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.UserResponse;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorityResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.DisabledException;
@@ -16,6 +17,7 @@ public class GetCurrentUserUseCase {
 
   private final UserRepository userRepository;
   private final AuthorityResolver authorityResolver;
+  private final PersonRoleAssignmentRepository personRoleAssignmentRepository;
 
   public UserResponse execute(JwtAuthenticatedUser principal) {
     var user =
@@ -25,9 +27,19 @@ public class GetCurrentUserUseCase {
     if (!user.isEnabled()) {
       throw new DisabledException(AuthMessages.USER_DISABLED);
     }
+
+    var roles =
+        personRoleAssignmentRepository
+            .findByPerson_IdAndInstitution_Id(principal.personId(), principal.institutionId())
+            .stream()
+            .map(assignment -> assignment.getRole().getName())
+            .sorted(String.CASE_INSENSITIVE_ORDER)
+            .toList();
+
     return UserResponse.from(
         user,
         principal.personId(),
-        authorityResolver.resolveForPerson(principal.personId(), principal.institutionId()));
+        authorityResolver.resolveForPerson(principal.personId(), principal.institutionId()),
+        roles);
   }
 }

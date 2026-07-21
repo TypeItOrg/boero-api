@@ -28,14 +28,15 @@ public class ListPeopleUseCase {
 
   @Transactional(readOnly = true)
   public PaginatedResponse<PersonSummaryResponse> execute(
-      final UUID institutionId, final String search, final Pageable pageable) {
+      final UUID institutionId, final String search, final UUID roleId, final Pageable pageable) {
 
-    final Page<Person> peoplePage;
-    if (search != null && !search.isBlank()) {
-      peoplePage = personRepository.search(institutionId, search.trim(), pageable);
-    } else {
-      peoplePage = personRepository.findByInstitution_IdAndDeletedFalse(institutionId, pageable);
-    }
+    final String normalizedSearch = search == null || search.isBlank() ? null : search.trim();
+    final boolean hasFilter = normalizedSearch != null || roleId != null;
+
+    final Page<Person> peoplePage =
+        hasFilter
+            ? personRepository.search(institutionId, normalizedSearch, roleId, pageable)
+            : personRepository.findByInstitution_IdAndDeletedFalse(institutionId, pageable);
 
     if (peoplePage.isEmpty()) {
       return PaginatedResponse.from(peoplePage.map(PersonSummaryResponse::from));

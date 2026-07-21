@@ -28,14 +28,27 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
       WHERE p.institution.id = :institutionId
         AND p.deleted = false
         AND (
-              UNACCENT_LOWER(CONCAT(p.firstName, ' ', p.lastName))
-          LIKE UNACCENT_LOWER(CONCAT('%', :search, '%'))
-          OR p.documentNumber LIKE CONCAT('%', :search, '%')
+          :roleId IS NULL
+          OR EXISTS (
+            SELECT assignment.id FROM PersonRoleAssignment assignment
+            WHERE assignment.person = p
+              AND assignment.institution.id = :institutionId
+              AND assignment.role.id = :roleId
+          )
+        )
+        AND (
+          :search IS NULL
+          OR (
+            UNACCENT_LOWER(CONCAT(p.firstName, ' ', p.lastName))
+                LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
+            OR p.documentNumber LIKE CONCAT('%', CAST(:search AS string), '%')
+          )
         )
       """)
   Page<Person> search(
       @Param("institutionId") UUID institutionId,
       @Param("search") String search,
+      @Param("roleId") UUID roleId,
       Pageable pageable);
 
   @EntityGraph(attributePaths = "institution")

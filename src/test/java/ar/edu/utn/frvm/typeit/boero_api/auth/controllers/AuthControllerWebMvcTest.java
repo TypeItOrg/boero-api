@@ -167,6 +167,7 @@ class AuthControllerWebMvcTest {
                         .lastName("Garcia")
                         .documentNumber("12345678")
                         .institutionId(INSTITUTION_ID)
+                        .roles(List.of("Preceptor"))
                         .build())
                 .build());
 
@@ -174,7 +175,8 @@ class AuthControllerWebMvcTest {
         .perform(get("/api/v1/auth/me").principal(authentication(principal)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.user.userId").value(USER_ID.toString()))
-        .andExpect(jsonPath("$.user.personId").value(PERSON_ID.toString()));
+        .andExpect(jsonPath("$.user.personId").value(PERSON_ID.toString()))
+        .andExpect(jsonPath("$.user.roles[0]").value("Preceptor"));
   }
 
   @Test

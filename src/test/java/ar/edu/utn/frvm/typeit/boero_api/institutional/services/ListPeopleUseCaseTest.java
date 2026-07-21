@@ -45,7 +45,7 @@ class ListPeopleUseCaseTest {
     when(userRepository.findByPerson_IdInAndInstitution_Id(List.of(person.getId()), institutionId))
         .thenReturn(List.of());
 
-    var response = listPeopleUseCase.execute(institutionId, null, pageable);
+    var response = listPeopleUseCase.execute(institutionId, null, null, pageable);
 
     assertThat(response.items()).hasSize(1);
     assertThat(response.items().getFirst().firstName()).isEqualTo("Ana");
@@ -59,7 +59,7 @@ class ListPeopleUseCaseTest {
     UUID institutionId = UUID.randomUUID();
     Pageable pageable = PageRequest.of(0, 20);
     Person person = personWith(institutionId, "11111111", "Ana", "García");
-    when(personRepository.search(institutionId, "ana", pageable))
+    when(personRepository.search(institutionId, "ana", null, pageable))
         .thenReturn(new PageImpl<>(List.of(person), pageable, 1));
     when(personRoleAssignmentRepository.findByPerson_IdInAndInstitution_Id(
             List.of(person.getId()), institutionId))
@@ -67,7 +67,28 @@ class ListPeopleUseCaseTest {
     when(userRepository.findByPerson_IdInAndInstitution_Id(List.of(person.getId()), institutionId))
         .thenReturn(List.of());
 
-    var response = listPeopleUseCase.execute(institutionId, "ana", pageable);
+    var response = listPeopleUseCase.execute(institutionId, "ana", null, pageable);
+
+    assertThat(response.items()).hasSize(1);
+    assertThat(response.items().getFirst().firstName()).isEqualTo("Ana");
+  }
+
+  @Test
+  @DisplayName("Should delegate to search when role ID is provided")
+  void execute_delegatesToSearchWhenRoleIdProvided() {
+    UUID institutionId = UUID.randomUUID();
+    UUID roleId = UUID.randomUUID();
+    Pageable pageable = PageRequest.of(0, 20);
+    Person person = personWith(institutionId, "11111111", "Ana", "García");
+    when(personRepository.search(institutionId, null, roleId, pageable))
+        .thenReturn(new PageImpl<>(List.of(person), pageable, 1));
+    when(personRoleAssignmentRepository.findByPerson_IdInAndInstitution_Id(
+            List.of(person.getId()), institutionId))
+        .thenReturn(List.of());
+    when(userRepository.findByPerson_IdInAndInstitution_Id(List.of(person.getId()), institutionId))
+        .thenReturn(List.of());
+
+    var response = listPeopleUseCase.execute(institutionId, null, roleId, pageable);
 
     assertThat(response.items()).hasSize(1);
     assertThat(response.items().getFirst().firstName()).isEqualTo("Ana");
@@ -78,12 +99,12 @@ class ListPeopleUseCaseTest {
   void execute_trimsSearchBeforeDelegating() {
     UUID institutionId = UUID.randomUUID();
     Pageable pageable = PageRequest.of(0, 20);
-    when(personRepository.search(institutionId, "matias", pageable))
+    when(personRepository.search(institutionId, "matias", null, pageable))
         .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
-    listPeopleUseCase.execute(institutionId, "  matias  ", pageable);
+    listPeopleUseCase.execute(institutionId, "  matias  ", null, pageable);
 
-    verify(personRepository).search(institutionId, "matias", pageable);
+    verify(personRepository).search(institutionId, "matias", null, pageable);
   }
 
   @Test
@@ -94,9 +115,9 @@ class ListPeopleUseCaseTest {
     when(personRepository.findByInstitution_IdAndDeletedFalse(institutionId, pageable))
         .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
-    listPeopleUseCase.execute(institutionId, "   ", pageable);
+    listPeopleUseCase.execute(institutionId, "   ", null, pageable);
 
-    verify(personRepository, never()).search(institutionId, "   ", pageable);
+    verify(personRepository, never()).search(institutionId, "   ", null, pageable);
   }
 
   @Test
@@ -104,10 +125,10 @@ class ListPeopleUseCaseTest {
   void execute_returnsEmptyWhenNoMatch() {
     UUID institutionId = UUID.randomUUID();
     Pageable pageable = PageRequest.of(0, 20);
-    when(personRepository.search(institutionId, "nope", pageable))
+    when(personRepository.search(institutionId, "nope", null, pageable))
         .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
-    var response = listPeopleUseCase.execute(institutionId, "nope", pageable);
+    var response = listPeopleUseCase.execute(institutionId, "nope", null, pageable);
 
     assertThat(response.items()).isEmpty();
     assertThat(response.totalItems()).isZero();

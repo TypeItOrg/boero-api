@@ -11,10 +11,14 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidCredentialsException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.UserResponse;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorityResolver;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -31,12 +35,15 @@ class GetCurrentUserUseCaseTest {
 
   @Mock private UserRepository userRepository;
   @Mock private AuthorityResolver authorityResolver;
+  @Mock private PersonRoleAssignmentRepository personRoleAssignmentRepository;
 
   private GetCurrentUserUseCase getCurrentUserUseCase;
 
   @BeforeEach
   void setUp() {
-    getCurrentUserUseCase = new GetCurrentUserUseCase(userRepository, authorityResolver);
+    getCurrentUserUseCase =
+        new GetCurrentUserUseCase(
+            userRepository, authorityResolver, personRoleAssignmentRepository);
   }
 
   @Test
@@ -49,7 +56,14 @@ class GetCurrentUserUseCaseTest {
 
     when(userRepository.findWithPersonAndInstitutionById(userId)).thenReturn(Optional.of(user));
     when(authorityResolver.resolveForPerson(any(UUID.class), eq(institutionId)))
-        .thenReturn(Set.of(PermissionCode.INSTITUTION_PERSON_READ_OWN));
+        .thenReturn(Set.of(PermissionCode.INSTITUTION_PERSON_READ_ANY));
+    when(personRoleAssignmentRepository.findByPerson_IdAndInstitution_Id(
+            principal.personId(), institutionId))
+        .thenReturn(
+            List.of(
+                PersonRoleAssignment.builder()
+                    .role(Role.builder().name("Preceptor").build())
+                    .build()));
 
     UserResponse response = getCurrentUserUseCase.execute(principal);
 
@@ -59,7 +73,8 @@ class GetCurrentUserUseCaseTest {
     assertThat(response.user().lastName()).isEqualTo("Garcia");
     assertThat(response.user().institutionId()).isEqualTo(institutionId);
     assertThat(response.user().permissions())
-        .containsExactly(PermissionCode.INSTITUTION_PERSON_READ_OWN.getCode());
+        .containsExactly(PermissionCode.INSTITUTION_PERSON_READ_ANY.getCode());
+    assertThat(response.user().roles()).containsExactly("Preceptor");
   }
 
   @Test

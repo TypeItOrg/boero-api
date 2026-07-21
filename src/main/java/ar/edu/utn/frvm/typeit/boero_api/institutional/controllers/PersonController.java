@@ -1,8 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.controllers;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPermission;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.PersonResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.UpdatePersonRequest;
@@ -24,18 +23,19 @@ public class PersonController {
 
   private final GetPersonUseCase getPersonUseCase;
   private final UpdatePersonUseCase updatePersonUseCase;
+  private final InstitutionalCallerGuard institutionalCallerGuard;
 
   @GetMapping(value = "/me", version = Version.V1)
-  @RequiresPermission(PermissionCode.INSTITUTION_PERSON_READ_OWN)
   public PersonResponse me(Authentication authentication) {
+    institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
     JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
     return getPersonUseCase.execute(principal);
   }
 
   @PutMapping(value = "/me", version = Version.V1)
-  @RequiresPermission(PermissionCode.INSTITUTION_PERSON_UPDATE_OWN)
   public PersonResponse updateMe(
       Authentication authentication, @Valid @RequestBody UpdatePersonRequest request) {
+    institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
     JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
     return updatePersonUseCase.execute(principal, request);
   }

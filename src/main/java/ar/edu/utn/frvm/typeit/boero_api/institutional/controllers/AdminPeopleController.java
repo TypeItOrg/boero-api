@@ -50,9 +50,10 @@ public class AdminPeopleController {
   public PaginatedResponse<PersonSummaryResponse> list(
       @PathVariable final UUID institutionId,
       @RequestParam(required = false) @Size(max = 100) final String search,
+      @RequestParam(required = false) final UUID roleId,
       @PageableDefault(size = 20, sort = "lastName", direction = Sort.Direction.ASC)
           final Pageable pageable) {
-    return listPeopleUseCase.execute(institutionId, search, pageable);
+    return listPeopleUseCase.execute(institutionId, search, roleId, pageable);
   }
 
   @GetMapping(value = "/{personId}", version = Version.V1)

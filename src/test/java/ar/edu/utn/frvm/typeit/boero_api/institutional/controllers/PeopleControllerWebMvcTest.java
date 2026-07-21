@@ -116,7 +116,7 @@ class PeopleControllerWebMvcTest {
         new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPlatformAdminAccess(true);
-    when(listPeopleUseCase.execute(eq(INSTITUTION_ID), eq("ana"), any(Pageable.class)))
+    when(listPeopleUseCase.execute(eq(INSTITUTION_ID), eq("ana"), eq(null), any(Pageable.class)))
         .thenReturn(
             PaginatedResponse.from(
                 new PageImpl<>(List.of(personSummary()), Pageable.ofSize(20), 1)));
@@ -137,7 +137,7 @@ class PeopleControllerWebMvcTest {
         new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPermission(PermissionCode.INSTITUTION_PERSON_READ_ANY, true);
-    when(listPeopleUseCase.execute(eq(INSTITUTION_ID), eq(null), any(Pageable.class)))
+    when(listPeopleUseCase.execute(eq(INSTITUTION_ID), eq(null), eq(null), any(Pageable.class)))
         .thenReturn(PaginatedResponse.from(new PageImpl<>(List.of(), Pageable.ofSize(20), 0)));
 
     mockMvc
@@ -145,6 +145,30 @@ class PeopleControllerWebMvcTest {
             get("/api/v1/institutions/{institutionId}/people", INSTITUTION_ID)
                 .principal(authentication))
         .andExpect(status().isOk());
+  }
+
+  @Test
+  @DisplayName("Should list people filtered by role id")
+  void listPeople_filtersByRoleId() throws Exception {
+    var authentication =
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+    stubPermission(PermissionCode.INSTITUTION_PERSON_READ_ANY, true);
+
+    UUID filterRoleId = UUID.randomUUID();
+    when(listPeopleUseCase.execute(
+            eq(INSTITUTION_ID), eq(null), eq(filterRoleId), any(Pageable.class)))
+        .thenReturn(
+            PaginatedResponse.from(
+                new PageImpl<>(List.of(personSummary()), Pageable.ofSize(20), 1)));
+
+    mockMvc
+        .perform(
+            get("/api/v1/institutions/{institutionId}/people", INSTITUTION_ID)
+                .param("roleId", filterRoleId.toString())
+                .principal(authentication))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].documentNumber").value("12345678"));
   }
 
   @Test
@@ -161,7 +185,7 @@ class PeopleControllerWebMvcTest {
                 .principal(authentication))
         .andExpect(status().isForbidden());
 
-    verify(listPeopleUseCase, never()).execute(any(), any(), any(Pageable.class));
+    verify(listPeopleUseCase, never()).execute(any(), any(), any(), any(Pageable.class));
   }
 
   @Test
