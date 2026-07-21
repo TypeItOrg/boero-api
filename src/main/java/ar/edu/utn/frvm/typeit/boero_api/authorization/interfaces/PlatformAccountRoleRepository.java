@@ -9,6 +9,12 @@ import org.springframework.data.repository.query.Param;
 
 public interface PlatformAccountRoleRepository extends JpaRepository<PlatformAccountRole, UUID> {
 
+  interface AuthorityRow {
+    String getRoleCode();
+
+    String getPermissionCode();
+  }
+
   List<PlatformAccountRole> findByPlatformAccount_Id(UUID platformAccountId);
 
   boolean existsByPlatformAccount_IdAndRole_Id(UUID platformAccountId, UUID roleId);
@@ -20,6 +26,17 @@ public interface PlatformAccountRoleRepository extends JpaRepository<PlatformAcc
       WHERE par.platformAccount.id = :platformAccountId
       """)
   List<UUID> findRoleIdsByPlatformAccountId(@Param("platformAccountId") UUID platformAccountId);
+
+  @Query(
+      """
+      SELECT par.role.code AS roleCode, permission.code AS permissionCode
+      FROM PlatformAccountRole par
+      LEFT JOIN RolePermission rp ON rp.role.id = par.role.id
+      LEFT JOIN rp.permission permission
+      WHERE par.platformAccount.id = :platformAccountId
+      """)
+  List<AuthorityRow> findAuthoritiesByPlatformAccountId(
+      @Param("platformAccountId") UUID platformAccountId);
 
   @Query(
       """

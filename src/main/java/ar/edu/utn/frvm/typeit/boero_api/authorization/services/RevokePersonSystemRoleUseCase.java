@@ -17,10 +17,8 @@ public class RevokePersonSystemRoleUseCase {
 
   private final RoleRepository roleRepository;
   private final PersonRoleAssignmentRepository personRoleAssignmentRepository;
+  private final AuthorizationCacheInvalidator authorizationCacheInvalidator;
 
-  @org.springframework.cache.annotation.CacheEvict(
-      value = "personPermissions",
-      key = "#person.id + '-' + #person.institution.id")
   @Transactional
   public void execute(Person person, SystemRoleCode roleCode) {
     Institution institution = person.getInstitution();
@@ -35,5 +33,6 @@ public class RevokePersonSystemRoleUseCase {
         .findByPerson_IdAndRole_IdAndInstitution_Id(
             person.getId(), role.getId(), institution.getId())
         .ifPresent(assignment -> personRoleAssignmentRepository.delete(assignment));
+    authorizationCacheInvalidator.evictPerson(person.getId(), institution.getId());
   }
 }

@@ -23,18 +23,13 @@ public class AssignPersonSystemRoleUseCase {
   private final PersonRoleAssignmentRepository personRoleAssignmentRepository;
   private final SessionRevocationService sessionRevocationService;
   private final InstitutionRepository institutionRepository;
+  private final AuthorizationCacheInvalidator authorizationCacheInvalidator;
 
-  @org.springframework.cache.annotation.CacheEvict(
-      value = "personPermissions",
-      key = "#person.id + '-' + #person.institution.id")
   @Transactional
   public void execute(Person person, SystemRoleCode roleCode) {
     execute(person, roleCode, false);
   }
 
-  @org.springframework.cache.annotation.CacheEvict(
-      value = "personPermissions",
-      key = "#person.id + '-' + #person.institution.id")
   @Transactional
   public void execute(Person person, SystemRoleCode roleCode, boolean revokeSessions) {
     Institution institution = person.getInstitution();
@@ -49,15 +44,14 @@ public class AssignPersonSystemRoleUseCase {
                 () -> new IllegalStateException("System role not seeded: " + roleCode.name()));
 
     assign(person, role, roleCode, revokeSessions);
+    authorizationCacheInvalidator.evictPerson(person.getId(), institution.getId());
   }
 
-  @org.springframework.cache.annotation.CacheEvict(
-      value = "personPermissions",
-      key = "#person.id + '-' + #person.institution.id")
   @Transactional
   public void execute(Person person, Role role, boolean revokeSessions) {
     SystemRoleCode technicalCode = role.isSystem() ? SystemRoleCode.valueOf(role.getCode()) : null;
     assign(person, role, technicalCode, revokeSessions);
+    authorizationCacheInvalidator.evictPerson(person.getId(), person.getInstitution().getId());
   }
 
   private void assign(

@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,7 +49,7 @@ public class InstitutionRoleManagementService {
   private final RolePermissionRepository rolePermissionRepository;
   private final PersonRoleAssignmentRepository assignmentRepository;
   private final InstitutionRepository institutionRepository;
-  private final CacheManager cacheManager;
+  private final AuthorizationCacheInvalidator authorizationCacheInvalidator;
 
   @Transactional(readOnly = true)
   public List<InstitutionRoleResponse> list(UUID institutionId, boolean includeAuthority) {
@@ -134,7 +133,7 @@ public class InstitutionRoleManagementService {
     ensureActorRetainsRoleManagementPermissions(
         role, institutionId, actorPersonId, request.permissions());
     replacePermissions(role, request.permissions(), actorPermissions, true);
-    evictAffectedPermissionCaches(role, institutionId);
+    authorizationCacheInvalidator.evictPeopleForRole(role.getId(), institutionId);
     return toResponse(role);
   }
 
@@ -151,7 +150,7 @@ public class InstitutionRoleManagementService {
     ensureUniqueName(institutionId, name, roleId);
     role.setName(name);
     replacePermissions(role, request.permissions(), PLATFORM_ADMIN_PERMISSIONS, true);
-    evictAffectedPermissionCaches(role, institutionId);
+    authorizationCacheInvalidator.evictPeopleForRole(role.getId(), institutionId);
     return toResponse(role);
   }
 
@@ -316,13 +315,5 @@ public class InstitutionRoleManagementService {
 
   private boolean isAuthority(Role role) {
     return role.isSystem() && role.getCode().equals(SystemRoleCode.INSTITUTIONAL_AUTHORITY.name());
-  }
-
-  private void evictAffectedPermissionCaches(Role role, UUID institutionId) {
-    var cache = cacheManager.getCache("personPermissions");
-    if (cache == null) return;
-    assignmentRepository
-        .findByRole_Id(role.getId())
-        .forEach(assignment -> cache.evict(assignment.getPerson().getId() + "-" + institutionId));
   }
 }

@@ -10,6 +10,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AssignPersonSystemRoleUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationCacheInvalidator;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionRoleProvisioner;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.PermissionRoleSeed;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.SessionRevocationService;
@@ -32,6 +33,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
   PermissionRoleSeed.class,
   InstitutionRoleProvisioner.class,
   AssignPersonSystemRoleUseCase.class,
+  AuthorizationCacheInvalidator.class,
   SessionRevocationService.class
 })
 class PersonRoleAssignmentRepositoryTest {

@@ -11,11 +11,9 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidCredentialsException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.UserResponse;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorityResolver;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalAuthoritySnapshot;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import java.util.List;
@@ -35,15 +33,12 @@ class GetCurrentUserUseCaseTest {
 
   @Mock private UserRepository userRepository;
   @Mock private AuthorityResolver authorityResolver;
-  @Mock private PersonRoleAssignmentRepository personRoleAssignmentRepository;
 
   private GetCurrentUserUseCase getCurrentUserUseCase;
 
   @BeforeEach
   void setUp() {
-    getCurrentUserUseCase =
-        new GetCurrentUserUseCase(
-            userRepository, authorityResolver, personRoleAssignmentRepository);
+    getCurrentUserUseCase = new GetCurrentUserUseCase(userRepository, authorityResolver);
   }
 
   @Test
@@ -55,15 +50,10 @@ class GetCurrentUserUseCaseTest {
     User user = userWith(userId, institutionId, "12345678", "Ana", "Garcia", true);
 
     when(userRepository.findWithPersonAndInstitutionById(userId)).thenReturn(Optional.of(user));
-    when(authorityResolver.resolveForPerson(any(UUID.class), eq(institutionId)))
-        .thenReturn(Set.of(PermissionCode.INSTITUTION_PERSON_READ_ANY));
-    when(personRoleAssignmentRepository.findByPerson_IdAndInstitution_Id(
-            principal.personId(), institutionId))
+    when(authorityResolver.resolvePersonAuthorities(any(UUID.class), eq(institutionId)))
         .thenReturn(
-            List.of(
-                PersonRoleAssignment.builder()
-                    .role(Role.builder().name("Preceptor").build())
-                    .build()));
+            new InstitutionalAuthoritySnapshot(
+                Set.of(PermissionCode.INSTITUTION_PERSON_READ_ANY), List.of("Preceptor")));
 
     UserResponse response = getCurrentUserUseCase.execute(principal);
 

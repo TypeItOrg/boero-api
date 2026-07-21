@@ -12,6 +12,12 @@ import org.springframework.data.repository.query.Param;
 
 public interface PersonRoleAssignmentRepository extends JpaRepository<PersonRoleAssignment, UUID> {
 
+  interface AuthorityRow {
+    String getRoleName();
+
+    String getPermissionCode();
+  }
+
   interface RoleAssignmentCount {
     UUID getRoleId();
 
@@ -51,12 +57,34 @@ public interface PersonRoleAssignmentRepository extends JpaRepository<PersonRole
 
   @Query(
       """
+      SELECT pra.person.id
+      FROM PersonRoleAssignment pra
+      WHERE pra.role.id = :roleId
+      AND pra.institution.id = :institutionId
+      """)
+  List<UUID> findPersonIdsByRoleIdAndInstitutionId(
+      @Param("roleId") UUID roleId, @Param("institutionId") UUID institutionId);
+
+  @Query(
+      """
       SELECT pra.role.id
       FROM PersonRoleAssignment pra
       WHERE pra.person.id = :personId
       AND pra.institution.id = :institutionId
       """)
   List<UUID> findRoleIdsByPersonIdAndInstitutionId(
+      @Param("personId") UUID personId, @Param("institutionId") UUID institutionId);
+
+  @Query(
+      """
+      SELECT pra.role.name AS roleName, permission.code AS permissionCode
+      FROM PersonRoleAssignment pra
+      LEFT JOIN RolePermission rp ON rp.role.id = pra.role.id
+      LEFT JOIN rp.permission permission
+      WHERE pra.person.id = :personId
+      AND pra.institution.id = :institutionId
+      """)
+  List<AuthorityRow> findAuthoritiesByPersonIdAndInstitutionId(
       @Param("personId") UUID personId, @Param("institutionId") UUID institutionId);
 
   @Query(

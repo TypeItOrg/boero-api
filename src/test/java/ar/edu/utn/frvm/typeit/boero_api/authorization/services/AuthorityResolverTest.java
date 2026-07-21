@@ -27,6 +27,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
   InstitutionRoleProvisioner.class,
   AssignPersonSystemRoleUseCase.class,
   AssignPlatformRoleUseCase.class,
+  AuthorizationCacheInvalidator.class,
+  CachedAuthoritySnapshotResolver.class,
   AuthorityResolver.class,
   SessionRevocationService.class
 })
@@ -56,9 +58,11 @@ class AuthorityResolverTest {
 
     assignPersonSystemRoleUseCase.execute(person, SystemRoleCode.APPLICANT);
 
-    var permissions = authorityResolver.resolveForPerson(person.getId(), institution.getId());
+    var authorities =
+        authorityResolver.resolvePersonAuthorities(person.getId(), institution.getId());
 
-    assertThat(permissions).isEmpty();
+    assertThat(authorities.permissions()).isEmpty();
+    assertThat(authorities.roles()).containsExactly(SystemRoleCode.APPLICANT.getDisplayName());
   }
 
   @Test

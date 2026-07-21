@@ -25,6 +25,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
   PermissionRoleSeed.class,
   InstitutionRoleProvisioner.class,
   AssignPersonSystemRoleUseCase.class,
+  AuthorizationCacheInvalidator.class,
   SessionRevocationService.class
 })
 class PermissionRoleSeedTest {

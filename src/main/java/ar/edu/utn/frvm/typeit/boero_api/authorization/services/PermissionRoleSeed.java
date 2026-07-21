@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.authorization.cache.AuthorizationCacheNames;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Permission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.RolePermission;
@@ -39,7 +40,8 @@ public class PermissionRoleSeed implements ApplicationRunner {
 
   private static final long SEED_LOCK_ID = 7_439_201_884L;
   private static final List<String> AUTHORITY_CACHE_NAMES =
-      List.of("personPermissions", "platformAccountPermissions", "platformAccountRoles");
+      List.of(
+          AuthorizationCacheNames.PERSON_AUTHORITIES, AuthorizationCacheNames.PLATFORM_AUTHORITIES);
 
   private static final Map<SystemRoleCode, Set<PermissionCode>> INSTITUTIONAL_ROLE_PERMISSIONS =
       Map.of(

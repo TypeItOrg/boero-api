@@ -16,16 +16,8 @@ public class RevokePlatformRoleUseCase {
 
   private final RoleRepository roleRepository;
   private final PlatformAccountRoleRepository platformAccountRoleRepository;
+  private final AuthorizationCacheInvalidator authorizationCacheInvalidator;
 
-  @org.springframework.cache.annotation.Caching(
-      evict = {
-        @org.springframework.cache.annotation.CacheEvict(
-            value = "platformAccountPermissions",
-            key = "#account.id"),
-        @org.springframework.cache.annotation.CacheEvict(
-            value = "platformAccountRoles",
-            key = "#account.id")
-      })
   @Transactional
   public void execute(PlatformAccount account, PlatformRoleCode roleCode) {
     Role role =
@@ -38,5 +30,6 @@ public class RevokePlatformRoleUseCase {
         .filter(assignment -> assignment.getRole().getId().equals(role.getId()))
         .findFirst()
         .ifPresent(assignment -> platformAccountRoleRepository.delete(assignment));
+    authorizationCacheInvalidator.evictPlatformAccount(account.getId());
   }
 }
