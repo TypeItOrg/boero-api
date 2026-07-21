@@ -76,6 +76,13 @@ Uses Lombok, JPA, PostgreSQL, Redis, Spring Security, JWT access/refresh tokens,
 
 ## Project Conventions
 
+### Database migrations
+
+- Create migrations with `make migration <name>` so the filename uses the current UTC timestamp (`yyyyMMddHHmmss`).
+- Do not invent sequential or artificial timestamps.
+- Once a migration is applied to a persistent environment, never modify or rename it.
+- If a filename must be corrected before production and the affected environment is disposable, recreate that environment instead of using Flyway repair, out-of-order execution, or ignored migration patterns.
+
 ### Package structure
 
 Organize code by domain under `ar.edu.utn.frvm.typeit.boero_api`:
