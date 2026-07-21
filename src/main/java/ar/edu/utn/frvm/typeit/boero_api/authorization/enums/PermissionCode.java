@@ -69,7 +69,17 @@ public enum PermissionCode {
       "institution:grades:enter-final",
       PermissionScope.INSTITUTION,
       PermissionGroup.GRADES,
-      "Cargar calificaciones finales");
+      "Cargar calificaciones finales"),
+  INSTITUTION_READ(
+      "institution:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.INSTITUTION,
+      "Ver detalles de la institución"),
+  INSTITUTION_UPDATE(
+      "institution:update",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.INSTITUTION,
+      "Editar detalles de la institución");
 
   private final String code;
   private final PermissionScope scope;
@@ -91,6 +101,7 @@ public enum PermissionCode {
           Set.of(INSTITUTION_PERSON_READ_ANY, INSTITUTION_ROLE_READ);
       case INSTITUTION_ROLE_CREATE, INSTITUTION_ROLE_UPDATE, INSTITUTION_ROLE_DELETE ->
           Set.of(INSTITUTION_ROLE_READ);
+      case INSTITUTION_UPDATE -> Set.of(INSTITUTION_READ);
       default -> Set.of();
     };
   }

@@ -52,7 +52,9 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.INSTITUTION_PERSON_READ_ANY,
               PermissionCode.INSTITUTION_PERSON_CREATE,
               PermissionCode.INSTITUTION_PERSON_UPDATE_ANY,
-              PermissionCode.INSTITUTION_PERSON_DELETE));
+              PermissionCode.INSTITUTION_PERSON_DELETE,
+              PermissionCode.INSTITUTION_READ,
+              PermissionCode.INSTITUTION_UPDATE));
 
   private final PermissionRepository permissionRepository;
   private final RoleRepository roleRepository;
