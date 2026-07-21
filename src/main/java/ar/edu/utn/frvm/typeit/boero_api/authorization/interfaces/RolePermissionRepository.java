@@ -14,6 +14,8 @@ public interface RolePermissionRepository extends JpaRepository<RolePermission, 
 
   List<RolePermission> findByRole_Id(UUID roleId);
 
+  List<RolePermission> findByRole_IdIn(List<UUID> roleIds);
+
   @Query(
       """
       SELECT rp.permission.code

@@ -12,6 +12,12 @@ import org.springframework.data.repository.query.Param;
 
 public interface PersonRoleAssignmentRepository extends JpaRepository<PersonRoleAssignment, UUID> {
 
+  interface RoleAssignmentCount {
+    UUID getRoleId();
+
+    long getAssignmentCount();
+  }
+
   boolean existsByPerson_IdAndRole_IdAndInstitution_Id(
       UUID personId, UUID roleId, UUID institutionId);
 
@@ -31,6 +37,15 @@ public interface PersonRoleAssignmentRepository extends JpaRepository<PersonRole
   long countByInstitution_IdAndRole_Code(UUID institutionId, String roleCode);
 
   long countByRole_Id(UUID roleId);
+
+  @Query(
+      """
+      SELECT pra.role.id AS roleId, COUNT(pra.id) AS assignmentCount
+      FROM PersonRoleAssignment pra
+      WHERE pra.role.id IN :roleIds
+      GROUP BY pra.role.id
+      """)
+  List<RoleAssignmentCount> countByRoleIds(@Param("roleIds") List<UUID> roleIds);
 
   List<PersonRoleAssignment> findByRole_Id(UUID roleId);
 
