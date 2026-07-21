@@ -34,15 +34,15 @@ class AuthorizationServiceTest {
     var authentication = new UsernamePasswordAuthenticationToken(principal, null);
 
     when(authorityResolver.resolveForPerson(principal.personId(), institutionId))
-        .thenReturn(Set.of(PermissionCode.INSTITUTION_PERSON_READ_OWN));
+        .thenReturn(Set.of(PermissionCode.INSTITUTION_ROLE_ASSIGN));
 
     assertThat(
             authorizationService.hasPermission(
-                authentication, PermissionCode.INSTITUTION_PERSON_READ_OWN))
+                authentication, PermissionCode.INSTITUTION_ROLE_ASSIGN))
         .isTrue();
     assertThat(
             authorizationService.hasPermission(
-                authentication, PermissionCode.INSTITUTION_ROLE_ASSIGN))
+                authentication, PermissionCode.INSTITUTION_ROLE_REVOKE))
         .isFalse();
   }
 

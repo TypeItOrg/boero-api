@@ -13,8 +13,11 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RolePermissionR
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RoleRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.InstitutionRoleRequest;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.InstitutionRoleResponse;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.PlatformRoleResponse;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -36,6 +39,12 @@ public class InstitutionRoleManagementService {
           PermissionCode.INSTITUTION_ROLE_READ.getCode(),
           PermissionCode.INSTITUTION_ROLE_UPDATE.getCode());
 
+  private static final Set<PermissionCode> PLATFORM_ADMIN_PERMISSIONS =
+      Arrays.stream(PermissionCode.values())
+          .filter(permission -> permission.getScope() == PermissionScope.INSTITUTION)
+          .filter(PermissionCode::isConfigurable)
+          .collect(Collectors.toUnmodifiableSet());
+
   private final RoleRepository roleRepository;
   private final PermissionRepository permissionRepository;
   private final RolePermissionRepository rolePermissionRepository;
@@ -51,6 +60,17 @@ public class InstitutionRoleManagementService {
         .filter(role -> includeAuthority || !isAuthority(role))
         .map(this::toResponse)
         .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public PlatformRoleResponse getAsPlatformAdmin(UUID roleId) {
+    Role role =
+        roleRepository
+            .findByIdAndScope(roleId, RoleScope.INSTITUTION)
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Rol no encontrado."));
+    return PlatformRoleResponse.from(
+        role, assignmentRepository.countByRole_Id(roleId), permissionsFor(role), Set.of());
   }
 
   @Transactional(readOnly = true)
@@ -90,6 +110,13 @@ public class InstitutionRoleManagementService {
   }
 
   @Transactional
+  public InstitutionRoleResponse createAsPlatformAdmin(
+      UUID institutionId, InstitutionRoleRequest request) {
+    ensureActiveInstitution(institutionId);
+    return create(institutionId, request, PLATFORM_ADMIN_PERMISSIONS);
+  }
+
+  @Transactional
   public InstitutionRoleResponse update(
       UUID institutionId,
       UUID roleId,
@@ -112,6 +139,23 @@ public class InstitutionRoleManagementService {
   }
 
   @Transactional
+  public InstitutionRoleResponse updateAsPlatformAdmin(
+      UUID institutionId, UUID roleId, InstitutionRoleRequest request) {
+    Role role = requireRole(institutionId, roleId);
+    ensureActiveInstitution(role);
+    if (isAuthority(role)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "El rol de autoridad institucional no se puede modificar.");
+    }
+    String name = normalizedName(request.name());
+    ensureUniqueName(institutionId, name, roleId);
+    role.setName(name);
+    replacePermissions(role, request.permissions(), PLATFORM_ADMIN_PERMISSIONS, true);
+    evictAffectedPermissionCaches(role, institutionId);
+    return toResponse(role);
+  }
+
+  @Transactional
   public void delete(UUID institutionId, UUID roleId) {
     Role role = requireRole(institutionId, roleId);
     if (role.isSystem()) {
@@ -126,18 +170,26 @@ public class InstitutionRoleManagementService {
     roleRepository.delete(role);
   }
 
+  @Transactional
+  public void deleteAsPlatformAdmin(UUID institutionId, UUID roleId) {
+    Role role = requireRole(institutionId, roleId);
+    ensureActiveInstitution(role);
+    delete(institutionId, roleId);
+  }
+
   private void replacePermissions(
       Role role,
       Set<String> requestedCodes,
       Set<PermissionCode> actorPermissions,
       boolean preserveUnmanageable) {
+    Set<String> expandedRequestedCodes = expandPermissionCodes(requestedCodes);
     Set<String> grantableCodes =
         actorPermissions.stream()
             .filter(permission -> permission.getScope() == PermissionScope.INSTITUTION)
             .filter(PermissionCode::isConfigurable)
             .map(PermissionCode::getCode)
             .collect(Collectors.toSet());
-    if (!grantableCodes.containsAll(requestedCodes)) {
+    if (!grantableCodes.containsAll(expandedRequestedCodes)) {
       throw new ResponseStatusException(
           HttpStatus.FORBIDDEN, "No podés delegar permisos que no poseés.");
     }
@@ -153,7 +205,7 @@ public class InstitutionRoleManagementService {
                 .filter(code -> !grantableCodes.contains(code))
                 .collect(Collectors.toSet())
             : new HashSet<>();
-    desiredCodes.addAll(requestedCodes);
+    desiredCodes.addAll(expandedRequestedCodes);
 
     existing.stream()
         .filter(rolePermission -> !desiredCodes.contains(rolePermission.getPermission().getCode()))
@@ -164,6 +216,14 @@ public class InstitutionRoleManagementService {
         rolePermissionRepository.save(RolePermission.of(role, permission));
       }
     }
+  }
+
+  private Set<String> expandPermissionCodes(Set<String> permissionCodes) {
+    Set<PermissionCode> requestedPermissions =
+        permissionCodes.stream().map(PermissionCode::fromCode).collect(Collectors.toSet());
+    return PermissionCode.withRequiredPermissions(requestedPermissions).stream()
+        .map(PermissionCode::getCode)
+        .collect(Collectors.toUnmodifiableSet());
   }
 
   private void ensureActorRetainsRoleManagementPermissions(
@@ -219,6 +279,22 @@ public class InstitutionRoleManagementService {
     return roleRepository
         .findByIdAndScopeAndInstitution_Id(roleId, RoleScope.INSTITUTION, institutionId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Rol no encontrado."));
+  }
+
+  private void ensureActiveInstitution(UUID institutionId) {
+    Institution institution =
+        institutionRepository
+            .findById(institutionId)
+            .orElseThrow(InstitutionNotFoundException::new);
+    if (!institution.isActive()) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "La institución está inactiva.");
+    }
+  }
+
+  private void ensureActiveInstitution(Role role) {
+    if (!role.getInstitution().isActive()) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "La institución está inactiva.");
+    }
   }
 
   private void ensureUniqueName(UUID institutionId, String name, UUID excludedId) {

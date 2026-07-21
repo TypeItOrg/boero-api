@@ -1,21 +1,13 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.enums;
 
+import java.util.EnumSet;
+import java.util.Set;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
 public enum PermissionCode {
-  INSTITUTION_PERSON_READ_OWN(
-      "institution:person:read-own",
-      PermissionScope.INSTITUTION,
-      PermissionGroup.PEOPLE,
-      "Ver mi perfil"),
-  INSTITUTION_PERSON_UPDATE_OWN(
-      "institution:person:update-own",
-      PermissionScope.INSTITUTION,
-      PermissionGroup.PEOPLE,
-      "Editar mi perfil"),
   INSTITUTION_PERSON_READ_ANY(
       "institution:person:read-any",
       PermissionScope.INSTITUTION,
@@ -45,32 +37,29 @@ public enum PermissionCode {
       "institution:roles:assign",
       PermissionScope.INSTITUTION,
       PermissionGroup.ROLES,
-      "Asignar roles institucionales"),
+      "Asignar roles"),
   INSTITUTION_ROLE_REVOKE(
       "institution:roles:revoke",
       PermissionScope.INSTITUTION,
       PermissionGroup.ROLES,
-      "Revocar roles institucionales"),
+      "Revocar roles"),
   INSTITUTION_ROLE_READ(
-      "institution:roles:read",
-      PermissionScope.INSTITUTION,
-      PermissionGroup.ROLES,
-      "Consultar roles institucionales"),
+      "institution:roles:read", PermissionScope.INSTITUTION, PermissionGroup.ROLES, "Ver roles"),
   INSTITUTION_ROLE_CREATE(
       "institution:roles:create",
       PermissionScope.INSTITUTION,
       PermissionGroup.ROLES,
-      "Crear roles institucionales"),
+      "Crear roles"),
   INSTITUTION_ROLE_UPDATE(
       "institution:roles:update",
       PermissionScope.INSTITUTION,
       PermissionGroup.ROLES,
-      "Actualizar roles institucionales"),
+      "Actualizar roles"),
   INSTITUTION_ROLE_DELETE(
       "institution:roles:delete",
       PermissionScope.INSTITUTION,
       PermissionGroup.ROLES,
-      "Eliminar roles institucionales"),
+      "Eliminar roles"),
   INSTITUTION_GRADES_ENTER(
       "institution:grades:enter",
       PermissionScope.INSTITUTION,
@@ -89,6 +78,35 @@ public enum PermissionCode {
 
   public boolean isConfigurable() {
     return group != PermissionGroup.GRADES;
+  }
+
+  public Set<PermissionCode> requiredPermissions() {
+    return switch (this) {
+      case INSTITUTION_PERSON_CREATE,
+          INSTITUTION_PERSON_UPDATE_ANY,
+          INSTITUTION_PERSON_DELETE,
+          INSTITUTION_USER_STATUS_UPDATE ->
+          Set.of(INSTITUTION_PERSON_READ_ANY);
+      case INSTITUTION_ROLE_ASSIGN, INSTITUTION_ROLE_REVOKE ->
+          Set.of(INSTITUTION_PERSON_READ_ANY, INSTITUTION_ROLE_READ);
+      case INSTITUTION_ROLE_CREATE, INSTITUTION_ROLE_UPDATE, INSTITUTION_ROLE_DELETE ->
+          Set.of(INSTITUTION_ROLE_READ);
+      default -> Set.of();
+    };
+  }
+
+  public static Set<PermissionCode> withRequiredPermissions(Set<PermissionCode> permissions) {
+    EnumSet<PermissionCode> expanded =
+        permissions.isEmpty() ? EnumSet.noneOf(PermissionCode.class) : EnumSet.copyOf(permissions);
+    boolean changed;
+    do {
+      changed =
+          expanded.addAll(
+              expanded.stream()
+                  .flatMap(permission -> permission.requiredPermissions().stream())
+                  .toList());
+    } while (changed);
+    return Set.copyOf(expanded);
   }
 
   public static PermissionCode fromCode(String code) {

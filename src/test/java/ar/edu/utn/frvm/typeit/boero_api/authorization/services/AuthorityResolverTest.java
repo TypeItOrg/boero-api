@@ -6,7 +6,6 @@ import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.per
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
@@ -59,10 +58,7 @@ class AuthorityResolverTest {
 
     var permissions = authorityResolver.resolveForPerson(person.getId(), institution.getId());
 
-    assertThat(permissions)
-        .containsExactlyInAnyOrder(
-            PermissionCode.INSTITUTION_PERSON_READ_OWN,
-            PermissionCode.INSTITUTION_PERSON_UPDATE_OWN);
+    assertThat(permissions).isEmpty();
   }
 
   @Test

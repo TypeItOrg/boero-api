@@ -43,14 +43,8 @@ public class PermissionRoleSeed implements ApplicationRunner {
 
   private static final Map<SystemRoleCode, Set<PermissionCode>> INSTITUTIONAL_ROLE_PERMISSIONS =
       Map.of(
-          SystemRoleCode.APPLICANT,
-          EnumSet.of(
-              PermissionCode.INSTITUTION_PERSON_READ_OWN,
-              PermissionCode.INSTITUTION_PERSON_UPDATE_OWN),
           SystemRoleCode.INSTITUTIONAL_AUTHORITY,
           EnumSet.of(
-              PermissionCode.INSTITUTION_PERSON_READ_OWN,
-              PermissionCode.INSTITUTION_PERSON_UPDATE_OWN,
               PermissionCode.INSTITUTION_ROLE_ASSIGN,
               PermissionCode.INSTITUTION_ROLE_REVOKE,
               PermissionCode.INSTITUTION_PERSON_READ_ANY,
@@ -199,6 +193,7 @@ public class PermissionRoleSeed implements ApplicationRunner {
 
   private void syncRolePermissions(
       Role role, Set<PermissionCode> permissionCodes, Map<PermissionCode, Permission> permissions) {
+    permissionCodes = PermissionCode.withRequiredPermissions(permissionCodes);
     Set<UUID> desiredPermissionIds =
         permissionCodes.stream()
             .map(code -> permissions.get(code).getId())

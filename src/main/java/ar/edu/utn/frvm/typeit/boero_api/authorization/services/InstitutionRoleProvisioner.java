@@ -24,13 +24,9 @@ public class InstitutionRoleProvisioner {
   private static final Map<SystemRoleCode, Set<PermissionCode>> DEFAULT_PERMISSIONS =
       Map.of(
           SystemRoleCode.APPLICANT,
-          EnumSet.of(
-              PermissionCode.INSTITUTION_PERSON_READ_OWN,
-              PermissionCode.INSTITUTION_PERSON_UPDATE_OWN),
+          Set.of(),
           SystemRoleCode.STUDENT,
-          EnumSet.of(
-              PermissionCode.INSTITUTION_PERSON_READ_OWN,
-              PermissionCode.INSTITUTION_PERSON_UPDATE_OWN),
+          Set.of(),
           SystemRoleCode.INSTITUTIONAL_AUTHORITY,
           EnumSet.allOf(PermissionCode.class));
 
@@ -70,6 +66,7 @@ public class InstitutionRoleProvisioner {
   }
 
   private void assignDefaults(Role role, Set<PermissionCode> codes) {
+    codes = PermissionCode.withRequiredPermissions(codes);
     for (PermissionCode code : codes) {
       Permission permission =
           permissionRepository

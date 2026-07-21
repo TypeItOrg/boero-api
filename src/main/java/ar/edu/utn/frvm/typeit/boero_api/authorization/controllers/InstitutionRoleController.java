@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.controllers;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresAnyPermission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresInstitutionAccess;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPermission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
@@ -36,7 +37,10 @@ public class InstitutionRoleController {
 
   @GetMapping(value = "/institutions/{institutionId}/roles", version = Version.V1)
   @RequiresInstitutionAccess
-  @RequiresPermission(PermissionCode.INSTITUTION_ROLE_READ)
+  @RequiresAnyPermission({
+    PermissionCode.INSTITUTION_ROLE_READ,
+    PermissionCode.INSTITUTION_PERSON_READ_ANY
+  })
   public List<InstitutionRoleResponse> list(
       @PathVariable UUID institutionId, Authentication authentication) {
     return roleService.list(institutionId, true);
