@@ -30,6 +30,7 @@ class AssignPersonSystemRoleUseCaseTest {
   @Mock private PersonRoleAssignmentRepository personRoleAssignmentRepository;
   @Mock private SessionRevocationService sessionRevocationService;
   @Mock private InstitutionRepository institutionRepository;
+  @Mock private AuthorizationCacheInvalidator authorizationCacheInvalidator;
 
   @InjectMocks private AssignPersonSystemRoleUseCase assignPersonSystemRoleUseCase;
 

@@ -34,6 +34,7 @@ class RevokePersonRoleUseCaseTest {
   @Mock private RoleRepository roleRepository;
   @Mock private PersonRoleAssignmentRepository personRoleAssignmentRepository;
   @Mock private InstitutionRepository institutionRepository;
+  @Mock private AuthorizationCacheInvalidator authorizationCacheInvalidator;
 
   @InjectMocks private RevokePersonRoleUseCase revokePersonRoleUseCase;
 
