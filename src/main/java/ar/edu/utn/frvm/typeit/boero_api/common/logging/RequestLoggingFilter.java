@@ -36,12 +36,20 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     response.setHeader(REQUEST_ID_HEADER, requestId);
 
     final long startTime = System.currentTimeMillis();
+    Throwable chainException = null;
 
     try {
       filterChain.doFilter(request, response);
+    } catch (final ServletException | IOException | RuntimeException ex) {
+      chainException = ex;
+      throw ex;
     } finally {
       final long durationMs = System.currentTimeMillis() - startTime;
-      logRequestSummary(request, response.getStatus(), durationMs);
+      int status = response.getStatus();
+      if (chainException != null && status < 500) {
+        status = 500;
+      }
+      logRequestSummary(request, status, durationMs);
       MDC.remove(MDC_REQUEST_ID_KEY);
     }
   }
@@ -58,7 +66,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     final String path = request.getRequestURI();
     final String method = request.getMethod();
 
-    if (isHealthCheckPath(path)) {
+    if (isHealthCheckPath(path) && status < 400) {
       if (log.isDebugEnabled()) {
         log.debug(
             "[HTTP] Request completed, method: {}, path: {}, status: {}, durationMs: {}",

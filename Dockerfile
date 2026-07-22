@@ -38,12 +38,13 @@ RUN apt-get update \
         --gecos "" \
         --home "/nonexistent" \
         --shell "/usr/sbin/nologin" \
-        --no-create-home \
         --uid "${UID}" \
-        appuser
+        appuser \
+    && install -d -o appuser -g appuser /app/logs
 
 WORKDIR /app
 USER appuser
+
 
 COPY --chown=appuser:appuser --from=extract /workspace/build/extracted/dependencies/ ./
 COPY --chown=appuser:appuser --from=extract /workspace/build/extracted/spring-boot-loader/ ./

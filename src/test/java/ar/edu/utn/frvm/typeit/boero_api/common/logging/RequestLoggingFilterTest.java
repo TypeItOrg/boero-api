@@ -145,4 +145,23 @@ class RequestLoggingFilterTest {
     assertThat(responseHeader).isNotNull();
     assertThat(MDC.get(RequestLoggingFilter.MDC_REQUEST_ID_KEY)).isNull();
   }
+
+  @Test
+  @DisplayName("Logs failed health check path when status is error")
+  void shouldLogFailedHealthCheckPath() throws ServletException, IOException {
+    // Given
+    final MockHttpServletRequest request =
+        new MockHttpServletRequest("GET", "/actuator/health/readiness");
+    final MockHttpServletResponse response = new MockHttpServletResponse();
+    response.setStatus(503);
+    final MockFilterChain filterChain = new MockFilterChain();
+
+    // When
+    filter.doFilter(request, response, filterChain);
+
+    // Then
+    final String responseHeader = response.getHeader(RequestLoggingFilter.REQUEST_ID_HEADER);
+    assertThat(responseHeader).isNotNull();
+    assertThat(MDC.get(RequestLoggingFilter.MDC_REQUEST_ID_KEY)).isNull();
+  }
 }

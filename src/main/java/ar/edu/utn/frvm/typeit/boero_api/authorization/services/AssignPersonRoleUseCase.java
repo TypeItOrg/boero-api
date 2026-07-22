@@ -41,15 +41,19 @@ public class AssignPersonRoleUseCase {
     }
 
     assignPersonSystemRoleUseCase.execute(person, role, true);
+
+    PersonRoleResponse response =
+        personRoleAssignmentRepository
+            .findByPerson_IdAndRole_IdAndInstitution_Id(person.getId(), role.getId(), institutionId)
+            .map(PersonRoleResponse::from)
+            .orElseThrow();
+
     log.info(
         "[Role] Assigned successfully, personId: {}, roleId: {}, institutionId: {}",
         personId,
         role.getId(),
         institutionId);
 
-    return personRoleAssignmentRepository
-        .findByPerson_IdAndRole_IdAndInstitution_Id(person.getId(), role.getId(), institutionId)
-        .map(PersonRoleResponse::from)
-        .orElseThrow();
+    return response;
   }
 }

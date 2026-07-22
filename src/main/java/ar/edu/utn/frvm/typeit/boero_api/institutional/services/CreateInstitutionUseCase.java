@@ -50,15 +50,17 @@ public class CreateInstitutionUseCase {
       saved = institutionRepository.save(institution);
       institutionRepository.flush();
       institutionRoleProvisioner.provision(saved);
-      log.info("[Institution] Created successfully, institutionId: {}", saved.getId());
     } catch (DataIntegrityViolationException exception) {
-
       throw new SlugAlreadyExistsException();
     }
 
-    return institutionRepository
-        .findWithLocationById(saved.getId())
-        .map(InstitutionDetailResponse::from)
-        .orElseThrow();
+    InstitutionDetailResponse response =
+        institutionRepository
+            .findWithLocationById(saved.getId())
+            .map(InstitutionDetailResponse::from)
+            .orElseThrow();
+
+    log.info("[Institution] Created successfully, institutionId: {}", saved.getId());
+    return response;
   }
 }
