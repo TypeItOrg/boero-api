@@ -155,9 +155,26 @@ Each domain package contains sub-packages such as:
 ## Logging
 
 - Use `@Slf4j` from Lombok.
-- Log at appropriate levels: `DEBUG`, `INFO`, `WARN`, `ERROR`.
-- Include contextual information (e.g. request IDs, user IDs) without logging sensitive data.
-- Use placeholders (`{}`) instead of string concatenation.
-- Use a lightweight structured format: `[Context] Action: message, key1: {}, key2: {}`.
-    - Example: `log.info("[Auth] login succeeded for userId: {}", userId);`
-    - Example: `log.error("[Auth] login failed: errorMessage: {}, userId: {}", errorMessage, userId);`
+- Use a lightweight structured format: `[Context] Action/message, key1: {}, key2: {}`.
+- Placeholders (`{}`) MUST be used instead of String concatenation.
+- All HTTP requests automatically include `requestId` in MDC via `RequestLoggingFilter` and return `X-Request-Id` response header.
+
+### Log Levels
+- **`ERROR`**: Unexpected server errors or unhandled exceptions that require investigation. Must include stack trace and be handled centrally in `GlobalExceptionHandler`.
+- **`WARN`**: Abnormal but handled conditions (e.g. system fallbacks, rate limiting, external service unavailability). Do NOT use `WARN` for normal business validation rejections.
+- **`INFO`**: Significant normal business operations (e.g. successful login, user creation, session revocation, institution update).
+- **`DEBUG`**: Detailed technical diagnostics (e.g. cache operations, permission resolution details). Disabled for application packages in production.
+
+### Sensitive Data Policy
+- **NEVER** log passwords, JWTs, refresh tokens, authorization headers, cookies, or secrets.
+- Avoid logging raw personal data (document numbers, emails, phone numbers). Prefer internal IDs (`userId`, `personId`, `institutionId`, `sessionId`, `roleId`).
+
+### Exception Policy
+- An unexpected error must generate **a single `ERROR` log with stack trace** at `GlobalExceptionHandler`. Internal layers should propagate exceptions rather than logging redundant stack traces.
+- Expected HTTP/business errors (`400`, `401`, `403`, `404`, `409`) must NOT generate `ERROR` stack traces.
+
+### Examples
+- **Correct (`INFO`):** `log.info("[Auth] Login succeeded, userId: {}, institutionId: {}", userId, institutionId);`
+- **Correct (`DEBUG`):** `log.debug("[Authorization] Authority snapshot resolved, userId: {}", userId);`
+- **Incorrect:** `log.info("User login request: " + request);` *(Exposes passwords/DTOs and uses concatenation)*
+
