@@ -69,12 +69,10 @@ RUN apt-get update \
 COPY --chmod=0755 gradlew gradlew
 COPY gradle gradle
 COPY build.gradle settings.gradle ./
+COPY src src
 COPY docker/dev-entrypoint.sh /usr/local/bin/dev-entrypoint.sh
 
 RUN chmod +x /usr/local/bin/dev-entrypoint.sh
-
-RUN --mount=type=cache,target=/root/.gradle \
-    ./gradlew --no-daemon help
 
 EXPOSE 8080
 

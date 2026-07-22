@@ -2,7 +2,7 @@ COMPOSE := docker compose
 .DEFAULT_GOAL := dev
 
 MIGRATION_NAME := $(word 2,$(MAKECMDGOALS))
-KNOWN_TARGETS := dev down logs clean ps test format format-check migration
+KNOWN_TARGETS := dev build down logs clean reset-data ps test format format-check migration
 
 ifeq ($(firstword $(MAKECMDGOALS)),migration)
 ifneq ($(MIGRATION_NAME),)
@@ -15,10 +15,13 @@ $(MIGRATION_NAME):
 endif
 endif
 
-.PHONY: dev down logs clean ps test format format-check migration
+.PHONY: dev build down logs clean reset-data ps test format format-check migration
 
 dev:
-	$(COMPOSE) up --build dev
+	$(COMPOSE) watch
+
+build:
+	$(COMPOSE) build
 
 down:
 	$(COMPOSE) down --remove-orphans
@@ -27,6 +30,9 @@ logs:
 	$(COMPOSE) logs -f dev
 
 clean:
+	./gradlew clean
+
+reset-data:
 	$(COMPOSE) down --volumes --remove-orphans
 
 ps:

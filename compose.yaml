@@ -31,14 +31,41 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - .:/workspace
       - gradle-cache:/root/.gradle
+    logging:
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /workspace/src
+        - action: rebuild
+          path: ./build.gradle
+        - action: rebuild
+          path: ./settings.gradle
+        - action: rebuild
+          path: ./gradle
+        - action: rebuild
+          path: ./gradlew
+        - action: rebuild
+          path: ./Dockerfile
+        - action: rebuild
+          path: ./docker
 
   redis:
     container_name: boero-api-redis-dev
     image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
     ports:
       - "6379:6379"
+    logging:
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -60,6 +87,11 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql
       - ./docker/postgres-entrypoint.sh:/usr/local/bin/postgres-entrypoint.sh:ro
+    logging:
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
