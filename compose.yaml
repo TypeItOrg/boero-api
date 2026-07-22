@@ -42,6 +42,7 @@ services:
         - action: sync
           path: ./src
           target: /workspace/src
+          initial_sync: true
         - action: rebuild
           path: ./build.gradle
         - action: rebuild
