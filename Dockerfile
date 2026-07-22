@@ -37,6 +37,7 @@ RUN apt-get update \
         --disabled-password \
         --gecos "" \
         --home "/nonexistent" \
+        --no-create-home \
         --shell "/usr/sbin/nologin" \
         --uid "${UID}" \
         appuser \
