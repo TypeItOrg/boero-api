@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,6 +22,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PlatformLoginUseCase {
@@ -76,6 +78,8 @@ public class PlatformLoginUseCase {
                 .email(account.getEmail())
                 .sessionId(session.getId())
                 .build());
+    log.info("[Auth] Platform login succeeded, platformAccountId: {}", account.getId());
+
     return PlatformAuthResponse.of(account, accessToken, rawRefresh);
   }
 }

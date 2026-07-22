@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,6 +23,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LoginUseCase {
@@ -80,6 +82,11 @@ public class LoginUseCase {
                 .documentNumber(user.getDocumentNumber())
                 .sessionId(session.getId())
                 .build());
+    log.info(
+        "[Auth] Login succeeded, userId: {}, institutionId: {}",
+        user.getId(),
+        user.getInstitutionId());
+
     return AuthResponse.of(
         user,
         user.getPerson().getId(),

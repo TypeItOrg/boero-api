@@ -6,7 +6,8 @@ public final class ErrorMessages {
 
   public static final String VALIDATION_ERROR_MESSAGE = "Se encontraron errores de validación.";
 
-  public static final String UNHANDLED_EXCEPTION_MESSAGE = "Ocurrió un error inesperado: {}";
+  public static final String UNHANDLED_EXCEPTION_MESSAGE =
+      "[Exception] Ocurrió un error inesperado: {}";
 
   private ErrorMessages() {}
 }

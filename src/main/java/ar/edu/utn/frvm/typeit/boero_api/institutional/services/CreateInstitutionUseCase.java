@@ -9,10 +9,12 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepo
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionDetailResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.requests.CreateInstitutionRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CreateInstitutionUseCase {
@@ -48,7 +50,9 @@ public class CreateInstitutionUseCase {
       saved = institutionRepository.save(institution);
       institutionRepository.flush();
       institutionRoleProvisioner.provision(saved);
+      log.info("[Institution] Created successfully, institutionId: {}", saved.getId());
     } catch (DataIntegrityViolationException exception) {
+
       throw new SlugAlreadyExistsException();
     }
 
