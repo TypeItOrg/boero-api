@@ -56,8 +56,8 @@ Uses Lombok, JPA, PostgreSQL, Redis, Spring Security, JWT access/refresh tokens,
 
 - Use `@RequiredArgsConstructor` for dependency injection via constructor.
 - Use `@Slf4j` for logging.
-- Use `@Builder` for complex object creation. Do not use a setter prefix.
-- Avoid `@Data`; prefer `@Getter` and `@Setter` for granular control.
+- Use `@Builder` for complex object creation when construction does not bypass entity invariants. Do not use a setter prefix.
+- Avoid `@Data`; prefer `@Getter` and add `@Setter` only where unrestricted mutation is intentional.
 
 ## Spring Annotations
 
@@ -113,7 +113,19 @@ Each domain package contains sub-packages such as:
 ### Entities
 
 - JPA entities remain classes.
-- Use `@Getter`, `@Setter` and `@Builder`.
+- Entities should contain behavior that naturally belongs to their state instead of serving only as data containers.
+- Prefer intention-revealing methods such as `activate()`, `deactivate()`, `rename(...)`, `revoke(...)` or `changeAddress(...)` over public setters.
+- An entity may inspect its existing relationships to derive its own state or validate a change. For example, a user may consider its person and institution when deciding whether authentication is allowed.
+- An entity may call side-effect-free methods on a related entity when that behavior is required for its own decision.
+- Do not let an entity arbitrarily mutate a related entity. A user may inspect whether its institution is active, but must not activate or deactivate the institution.
+- Keep repository access, persistence coordination, transactions, cache operations, notifications and other I/O in use cases or infrastructure services.
+- Keep workflows that coordinate multiple independent entities in a use case. Move only state changes, calculations and invariants that clearly belong to one entity into that entity.
+- Validate relationship consistency inside the entity when it is intrinsic to that relationship, such as matching institution ownership or compatible role and permission scopes.
+- Prefer named factory methods when entity creation has invariants. Builders remain acceptable for DTOs, tests, bootstrap data and entities whose construction has no relevant rules.
+- Avoid class-level `@Setter` on entities with behavior. Expose only the mutation required by JPA and intention-revealing methods.
+- Do not add artificial behavior to reference entities such as geographic catalogs when no business rule exists.
+- Do not introduce formal DDD patterns solely to make entities richer. The goal is cohesive behavior, not aggregates, domain services or domain events.
+- Add focused unit tests for entity behavior, invalid transitions and relationship invariants.
 
 ### API versioning
 
@@ -135,8 +147,8 @@ Each domain package contains sub-packages such as:
 
 ## Exception Handling
 
-- Custom domain exceptions extend `ResponseStatusException` when they map directly to an HTTP status.
-- Use a global `@RestControllerAdvice` handler for consistent error responses.
+- Custom application exceptions must not depend on Spring Web. Extend `ApplicationException` and select an `ErrorCategory`.
+- Keep HTTP translation in `ApplicationExceptionHttpMapper` and `GlobalExceptionHandler`.
 - Return the `ExceptionPayload` record with status, message and optional field errors.
 - Centralize error messages in dedicated `*Messages` classes (e.g. `AuthMessages`, `ErrorMessages`).
 
@@ -177,4 +189,3 @@ Each domain package contains sub-packages such as:
 - **Correct (`INFO`):** `log.info("[Auth] Login succeeded, userId: {}, institutionId: {}", userId, institutionId);`
 - **Correct (`DEBUG`):** `log.debug("[Authorization] Authority snapshot resolved, userId: {}", userId);`
 - **Incorrect:** `log.info("User login request: " + request);` *(Exposes passwords/DTOs and uses concatenation)*
-
