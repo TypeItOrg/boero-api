@@ -47,8 +47,14 @@ class CreatePlatformAccountUseCaseTest {
         .thenAnswer(
             invocation -> {
               final PlatformAccount account = invocation.getArgument(0);
-              account.setId(UUID.randomUUID());
-              return account;
+              return PlatformAccount.builder()
+                  .id(UUID.randomUUID())
+                  .name(account.getName())
+                  .lastName(account.getLastName())
+                  .email(account.getEmail())
+                  .password(account.getPassword())
+                  .enabled(account.isEnabled())
+                  .build();
             });
 
     final var response = useCase.execute(request);

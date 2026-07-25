@@ -7,7 +7,6 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.PlatformAccountSelfDisab
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformAccountRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PlatformAccountRoleRepository;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.services.SessionRevocationService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,7 +31,7 @@ public class UpdatePlatformAccountStatusUseCase {
       validateDisable(account, currentAccountId);
     }
 
-    account.setEnabled(enabled);
+    account.updateAccess(enabled);
     platformAccountRepository.save(account);
 
     if (!enabled) {

@@ -4,7 +4,8 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.config.JwtProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.RefreshToken;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.UserSession;
-import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.TokenRefreshException;
+import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidRefreshTokenException;
+import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.RefreshTokenReuseException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.RefreshTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
@@ -12,12 +13,11 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RefreshTokenReque
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.AuthResponse;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorityResolver;
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,56 +25,60 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RefreshTokenUseCase {
 
-  private static final String ACTIVE_SESSIONS_CACHE = "activeSessions";
-
   private final RefreshTokenRepository refreshTokenRepository;
   private final UserSessionRepository userSessionRepository;
   private final UserRepository userRepository;
   private final JwtService jwtService;
   private final JwtProperties jwtProperties;
-  private final CacheManager cacheManager;
   private final AuthorityResolver authorityResolver;
   private final RefreshReplayCache replayCache;
+  private final RefreshTokenGenerator refreshTokenGenerator;
+  private final SessionRevocationService sessionRevocationService;
 
-  @Transactional(noRollbackFor = TokenRefreshException.class)
+  @Transactional(noRollbackFor = RefreshTokenReuseException.class)
   public AuthResponse execute(final RefreshTokenRequest request) {
     final String hash = JwtService.hashToken(request.refreshToken());
     final RefreshToken current =
-        refreshTokenRepository.findByTokenHash(hash).orElseThrow(TokenRefreshException::invalid);
+        refreshTokenRepository.findByTokenHash(hash).orElseThrow(InvalidRefreshTokenException::new);
 
-    if (current.isRevoked()) {
-      final Optional<RefreshReplay> replay = replayCache.getInstitutional(hash);
-      if (replay.isPresent()) {
+    final Optional<RefreshReplay> replay = replayCache.get(AuthRealm.INSTITUTIONAL, hash);
+    final RefreshRotationDecision decision =
+        RefreshRotationPolicy.decide(
+            current.isRevoked(), current.isExpiredAt(LocalDateTime.now()), replay);
+    return switch (decision) {
+      case RefreshRotationDecision.Replay(var tokens) -> {
         final UserSession session = findActiveSession(current);
         final User user = findEnabledUser(session);
-        return createResponse(
-            user, session, replay.get().accessToken(), replay.get().refreshToken());
+        yield createResponse(user, session, tokens.accessToken(), tokens.refreshToken());
       }
-      handleReuse(current);
-    }
+      case RefreshRotationDecision.Invalid() -> throw new InvalidRefreshTokenException();
+      case RefreshRotationDecision.Reuse() -> {
+        revokeReusedFamily(current);
+        throw new RefreshTokenReuseException();
+      }
+      case RefreshRotationDecision.Rotate() -> rotate(current, hash);
+    };
+  }
 
-    if (current.getExpiresAt().isBefore(LocalDateTime.now())) {
-      throw TokenRefreshException.invalid();
-    }
-
+  private AuthResponse rotate(final RefreshToken current, final String currentTokenHash) {
     final UserSession session = findActiveSession(current);
     final User user = findEnabledUser(session);
 
-    current.setRevoked(true);
+    current.revoke();
     refreshTokenRepository.save(current);
 
-    String rawRefresh = UUID.randomUUID().toString();
-    RefreshToken next =
+    final GeneratedRefreshToken generatedRefreshToken = refreshTokenGenerator.generate();
+    final RefreshToken next =
         RefreshToken.builder()
             .sessionId(session.getId())
-            .tokenHash(JwtService.hashToken(rawRefresh))
+            .tokenHash(generatedRefreshToken.tokenHash())
             .familyId(current.getFamilyId())
             .expiresAt(
                 LocalDateTime.now().plus(jwtProperties.refreshExpiration(session.isRememberMe())))
             .build();
     refreshTokenRepository.save(next);
 
-    String accessToken =
+    final String accessToken =
         jwtService.generateAccessToken(
             InstitutionalAccessTokenInput.builder()
                 .userId(user.getId())
@@ -83,8 +87,12 @@ public class RefreshTokenUseCase {
                 .documentNumber(user.getDocumentNumber())
                 .sessionId(session.getId())
                 .build());
-    final AuthResponse response = createResponse(user, session, accessToken, rawRefresh);
-    replayCache.putInstitutional(hash, new RefreshReplay(accessToken, rawRefresh));
+    final AuthResponse response =
+        createResponse(user, session, accessToken, generatedRefreshToken.rawToken());
+    replayCache.put(
+        AuthRealm.INSTITUTIONAL,
+        currentTokenHash,
+        new RefreshReplay(accessToken, generatedRefreshToken.rawToken()));
     return response;
   }
 
@@ -92,10 +100,10 @@ public class RefreshTokenUseCase {
     final UserSession session =
         userSessionRepository
             .findById(current.getSessionId())
-            .orElseThrow(TokenRefreshException::invalid);
+            .orElseThrow(InvalidRefreshTokenException::new);
 
     if (!session.isActive()) {
-      throw TokenRefreshException.invalid();
+      throw new InvalidRefreshTokenException();
     }
 
     return session;
@@ -105,10 +113,10 @@ public class RefreshTokenUseCase {
     final User user =
         userRepository
             .findWithPersonAndInstitutionById(session.getUserId())
-            .orElseThrow(TokenRefreshException::invalid);
+            .orElseThrow(InvalidRefreshTokenException::new);
 
     if (!user.isEnabled()) {
-      throw TokenRefreshException.invalid();
+      throw new InvalidRefreshTokenException();
     }
 
     return user;
@@ -127,21 +135,12 @@ public class RefreshTokenUseCase {
         refreshToken);
   }
 
-  private void handleReuse(RefreshToken current) {
-    var inFamily = refreshTokenRepository.findByFamilyId(current.getFamilyId());
-    Set<UUID> sessionIds = new HashSet<>();
-    for (RefreshToken t : inFamily) {
-      sessionIds.add(t.getSessionId());
-    }
+  private void revokeReusedFamily(final RefreshToken current) {
+    final Set<UUID> sessionIds =
+        refreshTokenRepository.findByFamilyId(current.getFamilyId()).stream()
+            .map(RefreshToken::getSessionId)
+            .collect(Collectors.toSet());
     refreshTokenRepository.revokeByFamilyId(current.getFamilyId());
-    LocalDateTime now = LocalDateTime.now();
-    if (!sessionIds.isEmpty()) {
-      userSessionRepository.deactivateByIds(sessionIds, now);
-      final var cache = cacheManager.getCache(ACTIVE_SESSIONS_CACHE);
-      if (cache != null) {
-        sessionIds.forEach(cache::evict);
-      }
-    }
-    throw TokenRefreshException.reuse();
+    sessionRevocationService.revokeInstitutionalSessionsByIds(sessionIds);
   }
 }

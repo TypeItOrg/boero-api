@@ -73,7 +73,7 @@ class UserRepositoryTest {
     createUser(entityManager, boero, "11111111");
     createUser(entityManager, boero, "22222222");
     User disabled = createUser(entityManager, boero, "33333333");
-    disabled.setEnabled(false);
+    disabled.updateAccess(false);
     entityManager.merge(disabled);
     entityManager.flush();
     entityManager.clear();
@@ -92,12 +92,12 @@ class UserRepositoryTest {
   void countUsersWithAccess_excludesUnavailableAccounts() {
     Institution active = createInstitution(entityManager, "boero-active");
     Institution inactive = createInstitution(entityManager, "boero-inactive");
-    inactive.setActive(false);
+    inactive.updateStatus(false);
     createUser(entityManager, active, "11111111");
     User disabled = createUser(entityManager, active, "22222222");
-    disabled.setEnabled(false);
+    disabled.updateAccess(false);
     User deletedPerson = createUser(entityManager, active, "33333333");
-    deletedPerson.getPerson().setDeleted(true);
+    deletedPerson.getPerson().delete();
     createUser(entityManager, inactive, "44444444");
     entityManager.flush();
 

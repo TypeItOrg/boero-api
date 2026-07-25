@@ -13,7 +13,6 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.PlatformAccountSelfDisab
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformAccountRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PlatformAccountRoleRepository;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.services.SessionRevocationService;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;

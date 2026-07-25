@@ -2,11 +2,11 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.exceptions;
 
 import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.PLATFORM_ACCOUNT_SELF_DISABLE;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
+import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ApplicationException;
+import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorCategory;
 
-public class PlatformAccountSelfDisableException extends ResponseStatusException {
+public class PlatformAccountSelfDisableException extends ApplicationException {
   public PlatformAccountSelfDisableException() {
-    super(HttpStatus.CONFLICT, PLATFORM_ACCOUNT_SELF_DISABLE);
+    super(ErrorCategory.CONFLICT, PLATFORM_ACCOUNT_SELF_DISABLE);
   }
 }

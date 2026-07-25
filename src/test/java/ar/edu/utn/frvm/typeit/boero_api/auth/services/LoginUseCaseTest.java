@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,15 +33,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
 @ExtendWith(MockitoExtension.class)
 class LoginUseCaseTest {
 
-  @Mock private AuthenticationManager authenticationManager;
+  @Mock private CredentialsAuthenticator credentialsAuthenticator;
   @Mock private UserSessionRepository userSessionRepository;
   @Mock private RefreshTokenRepository refreshTokenRepository;
   @Mock private JwtService jwtService;
@@ -55,12 +54,13 @@ class LoginUseCaseTest {
     jwtProperties = jwtProperties();
     loginUseCase =
         new LoginUseCase(
-            authenticationManager,
+            credentialsAuthenticator,
             userSessionRepository,
             refreshTokenRepository,
             jwtService,
             jwtProperties,
-            authorityResolver);
+            authorityResolver,
+            new RefreshTokenGenerator());
   }
 
   @Test
@@ -73,12 +73,10 @@ class LoginUseCaseTest {
 
     loginUseCase.execute(request, httpRequest);
 
-    var captor = ArgumentCaptor.forClass(UsernamePasswordAuthenticationToken.class);
-    verify(authenticationManager).authenticate(captor.capture());
-    UsernamePasswordAuthenticationToken submitted = captor.getValue();
-    assertThat(submitted.getPrincipal())
+    var principalCaptor = ArgumentCaptor.forClass(String.class);
+    verify(credentialsAuthenticator).authenticate(principalCaptor.capture(), eq("secret"));
+    assertThat(principalCaptor.getValue())
         .isEqualTo(InstitutionalUsername.format(institutionId, "12345678"));
-    assertThat(submitted.getCredentials()).isEqualTo("secret");
   }
 
   @Test
@@ -89,7 +87,7 @@ class LoginUseCaseTest {
     User user = userWith(institutionId, "12345678");
     when(httpRequest.getHeader("User-Agent")).thenReturn("Mozilla/5.0");
     when(httpRequest.getRemoteAddr()).thenReturn("192.0.2.1");
-    stubAuthManager(user);
+    stubCredentialsAuthenticator(user);
     stubSessionSave();
 
     loginUseCase.execute(request, httpRequest);
@@ -112,7 +110,7 @@ class LoginUseCaseTest {
     User user = userWith(institutionId, "12345678");
     when(httpRequest.getHeader("User-Agent")).thenReturn("JUnit");
     when(httpRequest.getRemoteAddr()).thenReturn("10.0.0.1");
-    stubAuthManager(user);
+    stubCredentialsAuthenticator(user);
     stubSessionSave();
 
     loginUseCase.execute(request, httpRequest);
@@ -190,7 +188,8 @@ class LoginUseCaseTest {
   void execute_propagatesBadCredentials() {
     UUID institutionId = UUID.randomUUID();
     LoginRequest request = loginRequest(institutionId, false);
-    when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("bad"));
+    when(credentialsAuthenticator.authenticate(any(), any()))
+        .thenThrow(new InvalidCredentialsException());
 
     assertThatThrownBy(() -> loginUseCase.execute(request, httpRequest))
         .isInstanceOf(InvalidCredentialsException.class);
@@ -201,7 +200,8 @@ class LoginUseCaseTest {
   void execute_propagatesDisabled() {
     UUID institutionId = UUID.randomUUID();
     LoginRequest request = loginRequest(institutionId, false);
-    when(authenticationManager.authenticate(any())).thenThrow(new DisabledException("off"));
+    when(credentialsAuthenticator.authenticate(any(), any()))
+        .thenThrow(new DisabledException("off"));
 
     assertThatThrownBy(() -> loginUseCase.execute(request, httpRequest))
         .isInstanceOf(DisabledException.class);
@@ -223,17 +223,16 @@ class LoginUseCaseTest {
   private void stubSuccessfulAuth(User user) {
     when(httpRequest.getHeader("User-Agent")).thenReturn("JUnit");
     when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
-    stubAuthManager(user);
+    stubCredentialsAuthenticator(user);
     stubSessionSave();
   }
 
-  private void stubAuthManager(User user) {
-    when(authenticationManager.authenticate(any()))
+  private void stubCredentialsAuthenticator(User user) {
+    when(credentialsAuthenticator.authenticate(any(), any()))
         .thenAnswer(
             invocation -> {
-              UsernamePasswordAuthenticationToken token = invocation.getArgument(0);
               return UsernamePasswordAuthenticationToken.authenticated(
-                  user, token.getCredentials(), user.getAuthorities());
+                  user, invocation.getArgument(1), user.getAuthorities());
             });
   }
 
@@ -241,9 +240,14 @@ class LoginUseCaseTest {
     when(userSessionRepository.save(any(UserSession.class)))
         .thenAnswer(
             invocation -> {
-              UserSession session = invocation.getArgument(0);
-              session.setId(UUID.randomUUID());
-              return session;
+              final UserSession session = invocation.getArgument(0);
+              return UserSession.builder()
+                  .id(UUID.randomUUID())
+                  .userId(session.getUserId())
+                  .ipAddress(session.getIpAddress())
+                  .userAgent(session.getUserAgent())
+                  .rememberMe(session.isRememberMe())
+                  .build();
             });
   }
 }

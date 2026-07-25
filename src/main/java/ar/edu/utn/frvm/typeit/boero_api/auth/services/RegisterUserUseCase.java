@@ -60,7 +60,7 @@ public class RegisterUserUseCase {
             .build();
     assertPersonValid(person);
     try {
-      personRepository.save(person);
+      person = personRepository.save(person);
       personRepository.flush();
     } catch (DataIntegrityViolationException exception) {
       throw new UserAlreadyExistsException();
@@ -72,7 +72,7 @@ public class RegisterUserUseCase {
             .person(person)
             .password(passwordEncoder.encode(request.password()))
             .build();
-    userRepository.save(user);
+    user = userRepository.save(user);
     assignPersonSystemRoleUseCase.execute(person, SystemRoleCode.APPLICANT, false);
     return UserRegisteredResponse.builder()
         .userId(user.getId())

@@ -18,8 +18,6 @@ import org.springframework.stereotype.Service;
 public class RefreshReplayCache {
 
   private static final String KEY_PREFIX = "auth:refresh-replay:";
-  private static final String PLATFORM_SCOPE = "platform";
-  private static final String INSTITUTIONAL_SCOPE = "institutional";
   private static final int GCM_TAG_LENGTH_BITS = 128;
   private static final int NONCE_LENGTH_BYTES = 12;
 
@@ -27,20 +25,12 @@ public class RefreshReplayCache {
   private final RefreshReplayProperties properties;
   private final SecureRandom secureRandom = new SecureRandom();
 
-  public Optional<RefreshReplay> getPlatform(final String tokenHash) {
-    return get(PLATFORM_SCOPE, tokenHash);
+  public Optional<RefreshReplay> get(final AuthRealm realm, final String tokenHash) {
+    return get(realm.replayScope(), tokenHash);
   }
 
-  public void putPlatform(final String tokenHash, final RefreshReplay replay) {
-    put(PLATFORM_SCOPE, tokenHash, replay);
-  }
-
-  public Optional<RefreshReplay> getInstitutional(final String tokenHash) {
-    return get(INSTITUTIONAL_SCOPE, tokenHash);
-  }
-
-  public void putInstitutional(final String tokenHash, final RefreshReplay replay) {
-    put(INSTITUTIONAL_SCOPE, tokenHash, replay);
+  public void put(final AuthRealm realm, final String tokenHash, final RefreshReplay replay) {
+    put(realm.replayScope(), tokenHash, replay);
   }
 
   private Optional<RefreshReplay> get(final String scope, final String tokenHash) {

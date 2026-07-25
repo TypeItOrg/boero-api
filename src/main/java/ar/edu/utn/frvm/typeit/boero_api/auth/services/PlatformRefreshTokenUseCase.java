@@ -4,19 +4,19 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.config.JwtProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformRefreshToken;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformSession;
-import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.TokenRefreshException;
+import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidRefreshTokenException;
+import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.RefreshTokenReuseException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformAccountRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformRefreshTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformSessionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RefreshTokenRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PlatformAuthResponse;
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,66 +24,75 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PlatformRefreshTokenUseCase {
 
-  private static final String ACTIVE_SESSIONS_CACHE = "activePlatformSessions";
-
   private final PlatformRefreshTokenRepository platformRefreshTokenRepository;
   private final PlatformSessionRepository platformSessionRepository;
   private final PlatformAccountRepository platformAccountRepository;
   private final JwtService jwtService;
   private final JwtProperties jwtProperties;
-  private final CacheManager cacheManager;
   private final RefreshReplayCache replayCache;
+  private final RefreshTokenGenerator refreshTokenGenerator;
+  private final SessionRevocationService sessionRevocationService;
 
-  @Transactional(noRollbackFor = TokenRefreshException.class)
+  @Transactional(noRollbackFor = RefreshTokenReuseException.class)
   public PlatformAuthResponse execute(final RefreshTokenRequest request) {
     final String hash = JwtService.hashToken(request.refreshToken());
     final PlatformRefreshToken current =
         platformRefreshTokenRepository
             .findByTokenHash(hash)
-            .orElseThrow(TokenRefreshException::invalid);
+            .orElseThrow(InvalidRefreshTokenException::new);
 
-    if (current.isRevoked()) {
-      final Optional<RefreshReplay> replay = replayCache.getPlatform(hash);
-      if (replay.isPresent()) {
+    final Optional<RefreshReplay> replay = replayCache.get(AuthRealm.PLATFORM, hash);
+    final RefreshRotationDecision decision =
+        RefreshRotationPolicy.decide(
+            current.isRevoked(), current.isExpiredAt(LocalDateTime.now()), replay);
+    return switch (decision) {
+      case RefreshRotationDecision.Replay(var tokens) -> {
         findActiveSession(current);
         final PlatformAccount account = findEnabledAccount(current);
-        return PlatformAuthResponse.of(
-            account, replay.get().accessToken(), replay.get().refreshToken());
+        yield PlatformAuthResponse.of(account, tokens.accessToken(), tokens.refreshToken());
       }
-      handleReuse(current);
-    }
+      case RefreshRotationDecision.Invalid() -> throw new InvalidRefreshTokenException();
+      case RefreshRotationDecision.Reuse() -> {
+        revokeReusedFamily(current);
+        throw new RefreshTokenReuseException();
+      }
+      case RefreshRotationDecision.Rotate() -> rotate(current, hash);
+    };
+  }
 
-    if (current.getExpiresAt().isBefore(LocalDateTime.now())) {
-      throw TokenRefreshException.invalid();
-    }
-
+  private PlatformAuthResponse rotate(
+      final PlatformRefreshToken current, final String currentTokenHash) {
     final PlatformSession session = findActiveSession(current);
     final PlatformAccount account = findEnabledAccount(current);
 
-    current.setRevoked(true);
+    current.revoke();
     platformRefreshTokenRepository.save(current);
 
-    String rawRefresh = UUID.randomUUID().toString();
-    PlatformRefreshToken next =
+    final GeneratedRefreshToken generatedRefreshToken = refreshTokenGenerator.generate();
+    final PlatformRefreshToken next =
         PlatformRefreshToken.builder()
             .platformSessionId(session.getId())
             .platformAccountId(account.getId())
-            .tokenHash(JwtService.hashToken(rawRefresh))
+            .tokenHash(generatedRefreshToken.tokenHash())
             .familyId(current.getFamilyId())
             .expiresAt(
                 LocalDateTime.now().plus(jwtProperties.refreshExpiration(session.isRememberMe())))
             .build();
     platformRefreshTokenRepository.save(next);
 
-    String accessToken =
+    final String accessToken =
         jwtService.generatePlatformAccessToken(
             PlatformAccessTokenInput.builder()
                 .platformAccountId(account.getId())
                 .email(account.getEmail())
                 .sessionId(session.getId())
                 .build());
-    final PlatformAuthResponse response = PlatformAuthResponse.of(account, accessToken, rawRefresh);
-    replayCache.putPlatform(hash, new RefreshReplay(accessToken, rawRefresh));
+    final PlatformAuthResponse response =
+        PlatformAuthResponse.of(account, accessToken, generatedRefreshToken.rawToken());
+    replayCache.put(
+        AuthRealm.PLATFORM,
+        currentTokenHash,
+        new RefreshReplay(accessToken, generatedRefreshToken.rawToken()));
     return response;
   }
 
@@ -91,10 +100,14 @@ public class PlatformRefreshTokenUseCase {
     final PlatformSession session =
         platformSessionRepository
             .findById(current.getPlatformSessionId())
-            .orElseThrow(TokenRefreshException::invalid);
+            .orElseThrow(InvalidRefreshTokenException::new);
 
     if (!session.isActive()) {
-      throw TokenRefreshException.invalid();
+      throw new InvalidRefreshTokenException();
+    }
+
+    if (!session.getPlatformAccountId().equals(current.getPlatformAccountId())) {
+      throw new InvalidRefreshTokenException();
     }
 
     return session;
@@ -104,30 +117,21 @@ public class PlatformRefreshTokenUseCase {
     final PlatformAccount account =
         platformAccountRepository
             .findById(current.getPlatformAccountId())
-            .orElseThrow(TokenRefreshException::invalid);
+            .orElseThrow(InvalidRefreshTokenException::new);
 
     if (!account.isEnabled()) {
-      throw TokenRefreshException.invalid();
+      throw new InvalidRefreshTokenException();
     }
 
     return account;
   }
 
-  private void handleReuse(PlatformRefreshToken current) {
-    var inFamily = platformRefreshTokenRepository.findByFamilyId(current.getFamilyId());
-    Set<UUID> sessionIds = new HashSet<>();
-    for (PlatformRefreshToken token : inFamily) {
-      sessionIds.add(token.getPlatformSessionId());
-    }
+  private void revokeReusedFamily(final PlatformRefreshToken current) {
+    final Set<UUID> sessionIds =
+        platformRefreshTokenRepository.findByFamilyId(current.getFamilyId()).stream()
+            .map(PlatformRefreshToken::getPlatformSessionId)
+            .collect(Collectors.toSet());
     platformRefreshTokenRepository.revokeByFamilyId(current.getFamilyId());
-    LocalDateTime now = LocalDateTime.now();
-    if (!sessionIds.isEmpty()) {
-      platformSessionRepository.deactivateByIds(sessionIds, now);
-      final var cache = cacheManager.getCache(ACTIVE_SESSIONS_CACHE);
-      if (cache != null) {
-        sessionIds.forEach(cache::evict);
-      }
-    }
-    throw TokenRefreshException.reuse();
+    sessionRevocationService.revokePlatformSessionsByIds(sessionIds);
   }
 }

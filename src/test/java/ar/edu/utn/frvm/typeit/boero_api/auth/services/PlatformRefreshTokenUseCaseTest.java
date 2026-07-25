@@ -12,7 +12,8 @@ import static org.mockito.Mockito.when;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformRefreshToken;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformSession;
-import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.TokenRefreshException;
+import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidRefreshTokenException;
+import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.RefreshTokenReuseException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformAccountRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformRefreshTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformSessionRepository;
@@ -27,7 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cache.CacheManager;
 
 @ExtendWith(MockitoExtension.class)
 class PlatformRefreshTokenUseCaseTest {
@@ -36,8 +36,9 @@ class PlatformRefreshTokenUseCaseTest {
   @Mock private PlatformSessionRepository sessionRepository;
   @Mock private PlatformAccountRepository accountRepository;
   @Mock private JwtService jwtService;
-  @Mock private CacheManager cacheManager;
   @Mock private RefreshReplayCache replayCache;
+  private final RefreshTokenGenerator refreshTokenGenerator = new RefreshTokenGenerator();
+  @Mock private SessionRevocationService sessionRevocationService;
 
   private PlatformRefreshTokenUseCase useCase;
 
@@ -50,8 +51,9 @@ class PlatformRefreshTokenUseCaseTest {
             accountRepository,
             jwtService,
             jwtProperties(),
-            cacheManager,
-            replayCache);
+            replayCache,
+            refreshTokenGenerator,
+            sessionRevocationService);
   }
 
   @Test
@@ -61,17 +63,16 @@ class PlatformRefreshTokenUseCaseTest {
     final String hash = JwtService.hashToken(rawToken);
     final UUID sessionId = UUID.randomUUID();
     final PlatformRefreshToken token = token(hash, "family-1", sessionId, UUID.randomUUID());
-    token.setRevoked(true);
+    token.revoke();
     when(refreshTokenRepository.findByTokenHash(hash)).thenReturn(Optional.of(token));
     when(refreshTokenRepository.findByFamilyId("family-1")).thenReturn(List.of(token));
 
     assertThatThrownBy(() -> useCase.execute(new RefreshTokenRequest(rawToken)))
-        .isInstanceOf(TokenRefreshException.class);
+        .isInstanceOf(RefreshTokenReuseException.class);
 
     verify(refreshTokenRepository).revokeByFamilyId("family-1");
-    verify(sessionRepository)
-        .deactivateByIds(
-            argThat(ids -> ids.size() == 1 && ids.contains(sessionId)), any(LocalDateTime.class));
+    verify(sessionRevocationService)
+        .revokePlatformSessionsByIds(argThat(ids -> ids.size() == 1 && ids.contains(sessionId)));
   }
 
   @Test
@@ -83,8 +84,7 @@ class PlatformRefreshTokenUseCaseTest {
     final UUID accountId = UUID.randomUUID();
     final PlatformRefreshToken token = token(hash, "family-1", sessionId, accountId);
     final PlatformSession session =
-        PlatformSession.builder().platformAccountId(accountId).active(true).build();
-    session.setId(sessionId);
+        PlatformSession.builder().id(sessionId).platformAccountId(accountId).active(true).build();
     final PlatformAccount account =
         PlatformAccount.builder()
             .id(accountId)
@@ -99,7 +99,7 @@ class PlatformRefreshTokenUseCaseTest {
     when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
 
     assertThatThrownBy(() -> useCase.execute(new RefreshTokenRequest(rawToken)))
-        .isInstanceOf(TokenRefreshException.class);
+        .isInstanceOf(InvalidRefreshTokenException.class);
 
     verify(refreshTokenRepository, never()).save(any());
   }
@@ -112,10 +112,9 @@ class PlatformRefreshTokenUseCaseTest {
     final UUID sessionId = UUID.randomUUID();
     final UUID accountId = UUID.randomUUID();
     final PlatformRefreshToken token = token(hash, "family-1", sessionId, accountId);
-    token.setRevoked(true);
+    token.revoke();
     final PlatformSession session =
-        PlatformSession.builder().platformAccountId(accountId).active(true).build();
-    session.setId(sessionId);
+        PlatformSession.builder().id(sessionId).platformAccountId(accountId).active(true).build();
     final PlatformAccount account =
         PlatformAccount.builder()
             .id(accountId)
@@ -128,7 +127,7 @@ class PlatformRefreshTokenUseCaseTest {
     final RefreshReplay replay =
         new RefreshReplay("replayed-access-token", "replayed-refresh-token");
     when(refreshTokenRepository.findByTokenHash(hash)).thenReturn(Optional.of(token));
-    when(replayCache.getPlatform(hash)).thenReturn(Optional.of(replay));
+    when(replayCache.get(AuthRealm.PLATFORM, hash)).thenReturn(Optional.of(replay));
     when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
     when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
 
@@ -149,8 +148,7 @@ class PlatformRefreshTokenUseCaseTest {
     final UUID accountId = UUID.randomUUID();
     final PlatformRefreshToken token = token(hash, "family-1", sessionId, accountId);
     final PlatformSession session =
-        PlatformSession.builder().platformAccountId(accountId).active(true).build();
-    session.setId(sessionId);
+        PlatformSession.builder().id(sessionId).platformAccountId(accountId).active(true).build();
     final PlatformAccount account =
         PlatformAccount.builder()
             .id(accountId)
@@ -170,7 +168,10 @@ class PlatformRefreshTokenUseCaseTest {
     assertThat(response.tokens().accessToken()).isEqualTo("access-token");
     assertThat(response.tokens().refreshToken()).isNotBlank();
     verify(replayCache)
-        .putPlatform(hash, new RefreshReplay("access-token", response.tokens().refreshToken()));
+        .put(
+            AuthRealm.PLATFORM,
+            hash,
+            new RefreshReplay("access-token", response.tokens().refreshToken()));
   }
 
   private static PlatformRefreshToken token(

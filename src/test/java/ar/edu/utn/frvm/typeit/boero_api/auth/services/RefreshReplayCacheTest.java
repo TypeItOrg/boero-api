@@ -40,12 +40,12 @@ class RefreshReplayCacheTest {
     final RefreshReplay replay = new RefreshReplay("access-token", "refresh-token");
     final ArgumentCaptor<String> valueCaptor = ArgumentCaptor.forClass(String.class);
 
-    replayCache.putPlatform(tokenHash, replay);
+    replayCache.put(AuthRealm.PLATFORM, tokenHash, replay);
 
     verify(valueOperations).set(any(), valueCaptor.capture(), any(Duration.class));
     when(valueOperations.get(any())).thenReturn(valueCaptor.getValue());
 
-    assertThat(replayCache.getPlatform(tokenHash)).contains(replay);
+    assertThat(replayCache.get(AuthRealm.PLATFORM, tokenHash)).contains(replay);
     assertThat(valueCaptor.getValue())
         .doesNotContain("access-token")
         .doesNotContain("refresh-token");
@@ -58,12 +58,12 @@ class RefreshReplayCacheTest {
         new RefreshReplay("institutional-access-token", "institutional-refresh-token");
     final ArgumentCaptor<String> valueCaptor = ArgumentCaptor.forClass(String.class);
 
-    replayCache.putInstitutional(tokenHash, replay);
+    replayCache.put(AuthRealm.INSTITUTIONAL, tokenHash, replay);
 
     verify(valueOperations).set(any(), valueCaptor.capture(), any(Duration.class));
     when(valueOperations.get(any())).thenReturn(valueCaptor.getValue());
 
-    assertThat(replayCache.getInstitutional(tokenHash)).contains(replay);
+    assertThat(replayCache.get(AuthRealm.INSTITUTIONAL, tokenHash)).contains(replay);
     assertThat(valueCaptor.getValue())
         .doesNotContain("institutional-access-token")
         .doesNotContain("institutional-refresh-token");

@@ -2,11 +2,11 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.exceptions;
 
 import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.PLATFORM_ACCOUNT_NOT_FOUND;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
+import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ApplicationException;
+import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorCategory;
 
-public class PlatformAccountNotFoundException extends ResponseStatusException {
+public class PlatformAccountNotFoundException extends ApplicationException {
   public PlatformAccountNotFoundException() {
-    super(HttpStatus.NOT_FOUND, PLATFORM_ACCOUNT_NOT_FOUND);
+    super(ErrorCategory.NOT_FOUND, PLATFORM_ACCOUNT_NOT_FOUND);
   }
 }

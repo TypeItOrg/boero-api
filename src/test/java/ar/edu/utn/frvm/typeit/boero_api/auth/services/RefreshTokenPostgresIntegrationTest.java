@@ -9,7 +9,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.config.JwtProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.RefreshToken;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.UserSession;
-import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.TokenRefreshException;
+import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.RefreshTokenReuseException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.RefreshTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RefreshTokenRequest;
@@ -45,7 +45,12 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 @DataJpaTest
-@Import({RefreshTokenUseCase.class, JpaAuditingTestConfig.class})
+@Import({
+  RefreshTokenUseCase.class,
+  SessionRevocationService.class,
+  RefreshTokenGenerator.class,
+  JpaAuditingTestConfig.class
+})
 @Testcontainers(disabledWithoutDocker = true)
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @IntegrationTest
@@ -82,7 +87,7 @@ class RefreshTokenPostgresIntegrationTest {
     final Fixture fixture = createFixture(true);
 
     assertThatThrownBy(() -> useCase.execute(new RefreshTokenRequest(fixture.rawRefreshToken())))
-        .isInstanceOf(TokenRefreshException.class);
+        .isInstanceOf(RefreshTokenReuseException.class);
 
     inTransaction(
         () -> {
@@ -111,7 +116,7 @@ class RefreshTokenPostgresIntegrationTest {
           try {
             useCase.execute(new RefreshTokenRequest(fixture.rawRefreshToken()));
             return true;
-          } catch (TokenRefreshException exception) {
+          } catch (RefreshTokenReuseException exception) {
             return false;
           }
         };

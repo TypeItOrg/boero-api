@@ -6,7 +6,6 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.PlatformAccountNotFoundE
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformAccountRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.UpdatePlatformAccountRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PlatformAccountAdminResponse;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.services.SessionRevocationService;
 import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -37,11 +36,9 @@ public class UpdatePlatformAccountUseCase {
     final boolean emailChanged = !account.getEmail().equals(email);
     final boolean passwordChanged = request.password() != null && !request.password().isEmpty();
 
-    account.setName(request.name().trim());
-    account.setLastName(request.lastName().trim());
-    account.setEmail(email);
+    account.updateProfile(request.name().trim(), request.lastName().trim(), email);
     if (passwordChanged) {
-      account.setPassword(passwordEncoder.encode(request.password()));
+      account.changePassword(passwordEncoder.encode(request.password()));
     }
 
     saveAccount(account);

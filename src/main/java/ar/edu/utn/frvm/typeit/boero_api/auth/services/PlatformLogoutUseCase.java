@@ -1,7 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedPlatformAccount;
-import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.AccessTokenParseResult;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformRefreshTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformSessionRepository;
 import java.time.LocalDateTime;
@@ -13,33 +12,23 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PlatformLogoutUseCase {
 
-  private final TokenBlacklistService tokenBlacklistService;
+  private final AccessTokenRevocationService accessTokenRevocationService;
   private final PlatformRefreshTokenRepository platformRefreshTokenRepository;
   private final PlatformSessionRepository platformSessionRepository;
-  private final JwtService jwtService;
 
   @org.springframework.cache.annotation.CacheEvict(
       value = "activePlatformSessions",
       key = "#principal.sessionId")
   @Transactional
   public void execute(JwtAuthenticatedPlatformAccount principal, String accessToken) {
-    switch (jwtService.parseAccessToken(accessToken)) {
-      case AccessTokenParseResult.Ok(var claims) -> {
-        String tokenId = jwtService.extractTokenId(claims);
-        tokenBlacklistService.blacklist(
-            tokenId, TokenBlacklistTtl.remaining(claims.getExpiration().toInstant()));
-      }
-      case AccessTokenParseResult.Expired() -> {}
-      case AccessTokenParseResult.Invalid() -> {}
-    }
+    accessTokenRevocationService.revoke(accessToken);
 
     platformRefreshTokenRepository.revokeByPlatformSessionId(principal.sessionId());
     platformSessionRepository
         .findById(principal.sessionId())
         .ifPresent(
             session -> {
-              session.setActive(false);
-              session.setEndedAt(LocalDateTime.now());
+              session.end(LocalDateTime.now());
               platformSessionRepository.save(session);
             });
   }

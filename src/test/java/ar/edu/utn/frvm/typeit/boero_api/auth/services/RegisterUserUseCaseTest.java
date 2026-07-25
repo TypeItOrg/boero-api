@@ -71,20 +71,6 @@ class RegisterUserUseCaseTest {
             "Ana", "Garcia", LocalDate.of(2010, 1, 1), "12345678", "password123", institutionId);
 
     stubSuccessfulRegistration(institutionId, "password123", "encoded-hash");
-    when(userRepository.save(any(User.class)))
-        .thenAnswer(
-            inv -> {
-              User u = inv.getArgument(0);
-              u.setId(UUID.randomUUID());
-              return u;
-            });
-    when(personRepository.save(any(Person.class)))
-        .thenAnswer(
-            inv -> {
-              Person p = inv.getArgument(0);
-              p.setId(UUID.randomUUID());
-              return p;
-            });
 
     UserRegisteredResponse response = registerUserUseCase.execute(request);
 
@@ -106,20 +92,6 @@ class RegisterUserUseCaseTest {
             "Ana", "Garcia", LocalDate.of(2010, 1, 1), "12345678", "password123", institutionId);
 
     stubSuccessfulRegistration(institutionId, "password123", "encoded-hash");
-    when(personRepository.save(any(Person.class)))
-        .thenAnswer(
-            inv -> {
-              Person p = inv.getArgument(0);
-              p.setId(UUID.randomUUID());
-              return p;
-            });
-    when(userRepository.save(any(User.class)))
-        .thenAnswer(
-            inv -> {
-              User u = inv.getArgument(0);
-              u.setId(UUID.randomUUID());
-              return u;
-            });
 
     registerUserUseCase.execute(request);
 
@@ -137,20 +109,6 @@ class RegisterUserUseCaseTest {
             "Ana", "Garcia", LocalDate.of(2010, 1, 1), "12345678", "plaintext", institutionId);
 
     stubSuccessfulRegistration(institutionId, "plaintext", "bcrypt-hash");
-    when(personRepository.save(any(Person.class)))
-        .thenAnswer(
-            inv -> {
-              Person p = inv.getArgument(0);
-              p.setId(UUID.randomUUID());
-              return p;
-            });
-    when(userRepository.save(any(User.class)))
-        .thenAnswer(
-            inv -> {
-              User u = inv.getArgument(0);
-              u.setId(UUID.randomUUID());
-              return u;
-            });
 
     registerUserUseCase.execute(request);
 
@@ -187,7 +145,7 @@ class RegisterUserUseCaseTest {
         new RegisterRequest(
             "Ana", "Garcia", LocalDate.of(2010, 1, 1), "12345678", "password123", institutionId);
     final Institution institution = institutionWith(institutionId);
-    institution.setActive(false);
+    institution.updateStatus(false);
     when(institutionRepository.findById(institutionId)).thenReturn(Optional.of(institution));
 
     assertThatThrownBy(() -> registerUserUseCase.execute(request))
@@ -252,6 +210,31 @@ class RegisterUserUseCaseTest {
         .thenReturn(false);
     when(validator.validate(any(Person.class))).thenReturn(Set.of());
     when(passwordEncoder.encode(password)).thenReturn(encodedPassword);
+    when(personRepository.save(any(Person.class)))
+        .thenAnswer(invocation -> persistedPerson(invocation.getArgument(0)));
+    when(userRepository.save(any(User.class)))
+        .thenAnswer(invocation -> persistedUser(invocation.getArgument(0)));
+  }
+
+  private static Person persistedPerson(final Person person) {
+    return Person.builder()
+        .id(UUID.randomUUID())
+        .institution(person.getInstitution())
+        .documentNumber(person.getDocumentNumber())
+        .firstName(person.getFirstName())
+        .lastName(person.getLastName())
+        .birthDate(person.getBirthDate())
+        .build();
+  }
+
+  private static User persistedUser(final User user) {
+    return User.builder()
+        .id(UUID.randomUUID())
+        .institution(user.getInstitution())
+        .person(user.getPerson())
+        .password(user.getPassword())
+        .enabled(user.isAccessEnabled())
+        .build();
   }
 
   private static Institution institutionWith(UUID id) {

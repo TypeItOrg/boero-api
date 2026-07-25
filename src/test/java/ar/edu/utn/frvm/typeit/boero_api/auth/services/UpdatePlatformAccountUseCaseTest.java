@@ -12,7 +12,6 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.PlatformAccountEmailAlre
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.PlatformAccountNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformAccountRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.UpdatePlatformAccountRequest;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.services.SessionRevocationService;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;

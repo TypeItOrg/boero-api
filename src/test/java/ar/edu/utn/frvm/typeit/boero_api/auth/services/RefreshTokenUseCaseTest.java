@@ -15,7 +15,8 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.config.JwtProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.RefreshToken;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.UserSession;
-import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.TokenRefreshException;
+import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidRefreshTokenException;
+import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.RefreshTokenReuseException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.RefreshTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
@@ -36,7 +37,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cache.CacheManager;
 
 @ExtendWith(MockitoExtension.class)
 class RefreshTokenUseCaseTest {
@@ -45,9 +45,10 @@ class RefreshTokenUseCaseTest {
   @Mock private UserSessionRepository userSessionRepository;
   @Mock private UserRepository userRepository;
   @Mock private JwtService jwtService;
-  @Mock private CacheManager cacheManager;
   @Mock private AuthorityResolver authorityResolver;
   @Mock private RefreshReplayCache replayCache;
+  private final RefreshTokenGenerator refreshTokenGenerator = new RefreshTokenGenerator();
+  @Mock private SessionRevocationService sessionRevocationService;
 
   private RefreshTokenUseCase refreshTokenUseCase;
   private JwtProperties jwtProperties;
@@ -62,9 +63,10 @@ class RefreshTokenUseCaseTest {
             userRepository,
             jwtService,
             jwtProperties,
-            cacheManager,
             authorityResolver,
-            replayCache);
+            replayCache,
+            refreshTokenGenerator,
+            sessionRevocationService);
   }
 
   @Test
@@ -101,8 +103,10 @@ class RefreshTokenUseCaseTest {
     assertThat(saved.getTokenHash())
         .isEqualTo(JwtService.hashToken(response.tokens().refreshToken()));
     verify(replayCache)
-        .putInstitutional(
-            tokenHash, new RefreshReplay("new-access-token", response.tokens().refreshToken()));
+        .put(
+            AuthRealm.INSTITUTIONAL,
+            tokenHash,
+            new RefreshReplay("new-access-token", response.tokens().refreshToken()));
   }
 
   @Test
@@ -113,13 +117,13 @@ class RefreshTokenUseCaseTest {
     UUID sessionId = UUID.randomUUID();
     UUID userId = UUID.randomUUID();
     RefreshToken current = activeToken(tokenHash, "family-1", sessionId);
-    current.setRevoked(true);
+    current.revoke();
     UserSession session = activeSession(sessionId, userId, false);
     User user = userWith(userId);
     RefreshReplay replay = new RefreshReplay("replayed-access-token", "replayed-refresh-token");
 
     when(refreshTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(current));
-    when(replayCache.getInstitutional(tokenHash)).thenReturn(Optional.of(replay));
+    when(replayCache.get(AuthRealm.INSTITUTIONAL, tokenHash)).thenReturn(Optional.of(replay));
     when(userSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
     when(userRepository.findWithPersonAndInstitutionById(userId)).thenReturn(Optional.of(user));
 
@@ -139,7 +143,7 @@ class RefreshTokenUseCaseTest {
         .thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> refreshTokenUseCase.execute(new RefreshTokenRequest(rawToken)))
-        .isInstanceOf(TokenRefreshException.class);
+        .isInstanceOf(InvalidRefreshTokenException.class);
   }
 
   @Test
@@ -150,7 +154,7 @@ class RefreshTokenUseCaseTest {
     UUID sessionId = UUID.randomUUID();
 
     RefreshToken revokedToken = activeToken(tokenHash, "family-1", sessionId);
-    revokedToken.setRevoked(true);
+    revokedToken.revoke();
 
     RefreshToken sibling = activeToken(JwtService.hashToken("sibling"), "family-1", sessionId);
 
@@ -159,13 +163,13 @@ class RefreshTokenUseCaseTest {
         .thenReturn(List.of(revokedToken, sibling));
 
     assertThatThrownBy(() -> refreshTokenUseCase.execute(new RefreshTokenRequest(rawToken)))
-        .isInstanceOf(TokenRefreshException.class)
+        .isInstanceOf(RefreshTokenReuseException.class)
         .hasMessageContaining("reutilización");
 
     verify(refreshTokenRepository).revokeByFamilyId("family-1");
-    verify(userSessionRepository)
-        .deactivateByIds(
-            argThat(ids -> ids.size() == 1 && ids.contains(sessionId)), any(LocalDateTime.class));
+    verify(sessionRevocationService)
+        .revokeInstitutionalSessionsByIds(
+            argThat(ids -> ids.size() == 1 && ids.contains(sessionId)));
   }
 
   @Test
@@ -186,7 +190,7 @@ class RefreshTokenUseCaseTest {
     when(refreshTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(expired));
 
     assertThatThrownBy(() -> refreshTokenUseCase.execute(new RefreshTokenRequest(rawToken)))
-        .isInstanceOf(TokenRefreshException.class);
+        .isInstanceOf(InvalidRefreshTokenException.class);
 
     verify(userSessionRepository, never()).findById(any());
   }
@@ -201,13 +205,13 @@ class RefreshTokenUseCaseTest {
 
     RefreshToken token = activeToken(tokenHash, "family-1", sessionId);
     UserSession inactiveSession = activeSession(sessionId, userId, false);
-    inactiveSession.setActive(false);
+    inactiveSession.end(LocalDateTime.now());
 
     when(refreshTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(token));
     when(userSessionRepository.findById(sessionId)).thenReturn(Optional.of(inactiveSession));
 
     assertThatThrownBy(() -> refreshTokenUseCase.execute(new RefreshTokenRequest(rawToken)))
-        .isInstanceOf(TokenRefreshException.class);
+        .isInstanceOf(InvalidRefreshTokenException.class);
 
     verify(userRepository, never()).findWithPersonAndInstitutionById(any());
   }
@@ -228,7 +232,7 @@ class RefreshTokenUseCaseTest {
     when(userRepository.findWithPersonAndInstitutionById(userId)).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> refreshTokenUseCase.execute(new RefreshTokenRequest(rawToken)))
-        .isInstanceOf(TokenRefreshException.class);
+        .isInstanceOf(InvalidRefreshTokenException.class);
   }
 
   @Test
@@ -241,13 +245,13 @@ class RefreshTokenUseCaseTest {
     final RefreshToken token = activeToken(tokenHash, "family-1", sessionId);
     final UserSession session = activeSession(sessionId, userId, false);
     final User user = userWith(userId);
-    user.getInstitution().setActive(false);
+    user.getInstitution().updateStatus(false);
     when(refreshTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(token));
     when(userSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
     when(userRepository.findWithPersonAndInstitutionById(userId)).thenReturn(Optional.of(user));
 
     assertThatThrownBy(() -> refreshTokenUseCase.execute(new RefreshTokenRequest(rawToken)))
-        .isInstanceOf(TokenRefreshException.class);
+        .isInstanceOf(InvalidRefreshTokenException.class);
 
     verify(refreshTokenRepository, never()).save(any());
   }
@@ -296,15 +300,13 @@ class RefreshTokenUseCaseTest {
   }
 
   private static UserSession activeSession(UUID id, UUID userId, boolean rememberMe) {
-    UserSession session =
-        UserSession.builder()
-            .userId(userId)
-            .ipAddress("192.0.2.1")
-            .userAgent("JUnit")
-            .rememberMe(rememberMe)
-            .build();
-    session.setId(id);
-    return session;
+    return UserSession.builder()
+        .id(id)
+        .userId(userId)
+        .ipAddress("192.0.2.1")
+        .userAgent("JUnit")
+        .rememberMe(rememberMe)
+        .build();
   }
 
   private static User userWith(UUID userId) {
