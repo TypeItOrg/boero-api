@@ -5,7 +5,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignm
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.InstitutionalAuthorityRoleImmutableException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.LastPersonRoleRevocationException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.RoleAssignmentNotAllowedException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.RoleNotAssignableException;
@@ -48,7 +48,8 @@ public class ReplacePersonRolesUseCase {
     List<PersonRoleAssignment> current =
         assignmentRepository.findByPerson_IdAndInstitution_Id(personId, institutionId);
 
-    Map<UUID, Role> desiredRoles = loadRoles(institutionId, request.roleIds(), allowAuthority);
+    Map<UUID, Role> desiredRoles = loadRoles(institutionId, request.roleIds());
+    ensureInstitutionalAuthorityIsUnchanged(current, desiredRoles, allowAuthority);
     removeApplicantWhenAnotherRoleIsSelected(desiredRoles);
     if (desiredRoles.isEmpty()) {
       throw new LastPersonRoleRevocationException();
@@ -85,29 +86,45 @@ public class ReplacePersonRolesUseCase {
         .toList();
   }
 
-  private Map<UUID, Role> loadRoles(UUID institutionId, Set<UUID> roleIds, boolean allowAuthority) {
+  private Map<UUID, Role> loadRoles(UUID institutionId, Set<UUID> roleIds) {
     Map<UUID, Role> roles = new HashMap<>();
     for (UUID roleId : roleIds) {
       Role role =
           roleRepository
               .findByIdAndScopeAndInstitution_Id(roleId, RoleScope.INSTITUTION, institutionId)
               .orElseThrow(RoleNotAssignableException::new);
-      boolean authority =
-          role.isSystem() && role.getCode().equals(SystemRoleCode.INSTITUTIONAL_AUTHORITY.name());
-      if (authority && !allowAuthority) {
-        throw new RoleNotAssignableException();
-      }
       roles.put(role.getId(), role);
     }
     return roles;
   }
 
+  private void ensureInstitutionalAuthorityIsUnchanged(
+      List<PersonRoleAssignment> current, Map<UUID, Role> desiredRoles, boolean allowAuthority) {
+    if (allowAuthority) return;
+
+    Set<UUID> currentAuthorityIds =
+        current.stream()
+            .map(PersonRoleAssignment::getRole)
+            .filter(Role::isInstitutionalAuthority)
+            .map(Role::getId)
+            .collect(Collectors.toSet());
+    Set<UUID> desiredAuthorityIds =
+        desiredRoles.values().stream()
+            .filter(Role::isInstitutionalAuthority)
+            .map(Role::getId)
+            .collect(Collectors.toSet());
+
+    if (!currentAuthorityIds.equals(desiredAuthorityIds)
+        || (!currentAuthorityIds.isEmpty()
+            && desiredRoles.values().stream().anyMatch(Role::isApplicant))) {
+      throw new InstitutionalAuthorityRoleImmutableException();
+    }
+  }
+
   private void removeApplicantWhenAnotherRoleIsSelected(Map<UUID, Role> roles) {
-    boolean hasNonApplicant =
-        roles.values().stream()
-            .anyMatch(role -> !role.getCode().equals(SystemRoleCode.APPLICANT.name()));
+    boolean hasNonApplicant = roles.values().stream().anyMatch(role -> !role.isApplicant());
     if (hasNonApplicant) {
-      roles.values().removeIf(role -> role.getCode().equals(SystemRoleCode.APPLICANT.name()));
+      roles.values().removeIf(Role::isApplicant);
     }
   }
 

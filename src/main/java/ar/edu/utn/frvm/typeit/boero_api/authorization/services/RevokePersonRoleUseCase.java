@@ -3,7 +3,6 @@ package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.LastPersonRoleRevocationException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.RoleNotAssignableException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
@@ -32,8 +31,7 @@ public class RevokePersonRoleUseCase {
         roleRepository
             .findByIdAndScopeAndInstitution_Id(roleId, RoleScope.INSTITUTION, institutionId)
             .orElseThrow(RoleNotAssignableException::new);
-    boolean authority =
-        role.isSystem() && role.getCode().equals(SystemRoleCode.INSTITUTIONAL_AUTHORITY.name());
+    boolean authority = role.isInstitutionalAuthority();
     if (authority && !allowAuthority) {
       throw new RoleNotAssignableException();
     }

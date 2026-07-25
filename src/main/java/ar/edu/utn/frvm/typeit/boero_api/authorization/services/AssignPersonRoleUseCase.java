@@ -2,7 +2,6 @@ package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.RoleNotAssignableException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RoleRepository;
@@ -35,9 +34,7 @@ public class AssignPersonRoleUseCase {
             .findByIdAndScopeAndInstitution_Id(
                 request.roleId(), RoleScope.INSTITUTION, institutionId)
             .orElseThrow(RoleNotAssignableException::new);
-    if (!allowAuthority
-        && role.isSystem()
-        && role.getCode().equals(SystemRoleCode.INSTITUTIONAL_AUTHORITY.name())) {
+    if (!allowAuthority && role.isInstitutionalAuthority()) {
       throw new RoleNotAssignableException();
     }
 

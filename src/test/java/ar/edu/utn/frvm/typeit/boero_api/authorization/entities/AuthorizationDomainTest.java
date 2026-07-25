@@ -53,4 +53,17 @@ class AuthorizationDomainTest {
 
     assertThat(role.isInstitutionalAuthority()).isTrue();
   }
+
+  @Test
+  @DisplayName("Should identify the applicant role")
+  void roleIdentifiesApplicant() {
+    final Role role =
+        Role.builder()
+            .scope(RoleScope.INSTITUTION)
+            .code(SystemRoleCode.APPLICANT.name())
+            .system(true)
+            .build();
+
+    assertThat(role.isApplicant()).isTrue();
+  }
 }

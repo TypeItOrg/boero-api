@@ -76,4 +76,8 @@ public class Role extends Auditable {
   public boolean isInstitutionalAuthority() {
     return system && SystemRoleCode.INSTITUTIONAL_AUTHORITY.name().equals(code);
   }
+
+  public boolean isApplicant() {
+    return system && SystemRoleCode.APPLICANT.name().equals(code);
+  }
 }
