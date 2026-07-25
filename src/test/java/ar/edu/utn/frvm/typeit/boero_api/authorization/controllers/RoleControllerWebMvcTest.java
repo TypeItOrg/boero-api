@@ -33,6 +33,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionRoleMa
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ListPersonRolesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ListSystemRolesUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ReplacePersonRolesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.RevokePersonRoleUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.GlobalExceptionHandler;
 import ar.edu.utn.frvm.typeit.boero_api.config.WebConfig;
@@ -89,6 +90,7 @@ class RoleControllerWebMvcTest {
   @MockitoBean private ListPersonRolesUseCase listPersonRolesUseCase;
   @MockitoBean private AssignPersonRoleUseCase assignPersonRoleUseCase;
   @MockitoBean private RevokePersonRoleUseCase revokePersonRoleUseCase;
+  @MockitoBean private ReplacePersonRolesUseCase replacePersonRolesUseCase;
   @MockitoBean private ListSystemRolesUseCase listSystemRolesUseCase;
   @MockitoBean private InstitutionRoleManagementService institutionRoleManagementService;
 

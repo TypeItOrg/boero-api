@@ -1,7 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -15,11 +14,9 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssig
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RoleRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
-import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,19 +30,9 @@ class RevokePersonRoleUseCaseTest {
   @Mock private InstitutionPersonResolver institutionPersonResolver;
   @Mock private RoleRepository roleRepository;
   @Mock private PersonRoleAssignmentRepository personRoleAssignmentRepository;
-  @Mock private InstitutionRepository institutionRepository;
   @Mock private AuthorizationCacheInvalidator authorizationCacheInvalidator;
 
   @InjectMocks private RevokePersonRoleUseCase revokePersonRoleUseCase;
-
-  @BeforeEach
-  void setUp() {
-    when(institutionRepository.findByIdForUpdate(any(UUID.class)))
-        .thenAnswer(
-            invocation ->
-                Optional.of(
-                    Institution.builder().id(invocation.getArgument(0)).name("Boero").build()));
-  }
 
   @Test
   @DisplayName("Should revoke role from person")
@@ -55,7 +42,7 @@ class RevokePersonRoleUseCaseTest {
     Person person = personWith(institutionId, personId);
     Role role = roleWith(SystemRoleCode.TEACHER);
 
-    when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
+    when(institutionPersonResolver.requirePersonInInstitutionForUpdate(institutionId, personId))
         .thenReturn(person);
     when(roleRepository.findByIdAndScopeAndInstitution_Id(
             role.getId(), RoleScope.INSTITUTION, institutionId))
@@ -78,7 +65,7 @@ class RevokePersonRoleUseCaseTest {
             .institution(person.getInstitution())
             .build();
 
-    when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
+    when(institutionPersonResolver.requirePersonInInstitutionForUpdate(institutionId, personId))
         .thenReturn(person);
     when(roleRepository.findByIdAndScopeAndInstitution_Id(
             role.getId(), RoleScope.INSTITUTION, institutionId))
@@ -99,7 +86,7 @@ class RevokePersonRoleUseCaseTest {
     Person person = personWith(institutionId, personId);
     Role role = roleWith(SystemRoleCode.INSTITUTIONAL_AUTHORITY);
 
-    when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
+    when(institutionPersonResolver.requirePersonInInstitutionForUpdate(institutionId, personId))
         .thenReturn(person);
     when(roleRepository.findByIdAndScopeAndInstitution_Id(
             role.getId(), RoleScope.INSTITUTION, institutionId))
@@ -134,7 +121,7 @@ class RevokePersonRoleUseCaseTest {
     UUID institutionId = UUID.randomUUID();
     UUID personId = UUID.randomUUID();
 
-    when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
+    when(institutionPersonResolver.requirePersonInInstitutionForUpdate(institutionId, personId))
         .thenThrow(PersonNotFoundInInstitutionException.class);
 
     assertThatThrownBy(

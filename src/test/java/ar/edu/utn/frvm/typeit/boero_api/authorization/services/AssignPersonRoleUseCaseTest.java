@@ -44,7 +44,7 @@ class AssignPersonRoleUseCaseTest {
     Role role = roleWith(SystemRoleCode.TEACHER);
     PersonRoleAssignment assignment = assignmentWith(person, role, institutionId);
 
-    when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
+    when(institutionPersonResolver.requirePersonInInstitutionForUpdate(institutionId, personId))
         .thenReturn(person);
     when(roleRepository.findByIdAndScopeAndInstitution_Id(
             role.getId(), RoleScope.INSTITUTION, institutionId))
@@ -68,7 +68,7 @@ class AssignPersonRoleUseCaseTest {
     UUID institutionId = UUID.randomUUID();
     UUID personId = UUID.randomUUID();
 
-    when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
+    when(institutionPersonResolver.requirePersonInInstitutionForUpdate(institutionId, personId))
         .thenThrow(PersonNotFoundInInstitutionException.class);
 
     assertThatThrownBy(
@@ -85,7 +85,7 @@ class AssignPersonRoleUseCaseTest {
     UUID personId = UUID.randomUUID();
     Person person = personWith(institutionId, personId);
 
-    when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
+    when(institutionPersonResolver.requirePersonInInstitutionForUpdate(institutionId, personId))
         .thenReturn(person);
     UUID roleId = UUID.randomUUID();
     when(roleRepository.findByIdAndScopeAndInstitution_Id(

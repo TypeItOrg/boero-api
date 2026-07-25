@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PlatformAccountRole;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
@@ -38,8 +39,7 @@ public class AssignPlatformRoleUseCase {
       return;
     }
 
-    platformAccountRoleRepository.save(
-        PlatformAccountRole.builder().platformAccount(account).role(role).build());
+    platformAccountRoleRepository.save(PlatformAccountRole.assign(account, role));
 
     if (revokeSessions) {
       sessionRevocationService.revokePlatformAccountSessions(account.getId());

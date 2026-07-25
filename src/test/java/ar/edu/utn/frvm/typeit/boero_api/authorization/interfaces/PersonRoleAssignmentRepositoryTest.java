@@ -5,6 +5,7 @@ import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.per
 import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.person;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
@@ -13,7 +14,6 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AssignPersonSyste
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationCacheInvalidator;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionRoleProvisioner;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.PermissionRoleSeed;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.support.JpaAuditingTestConfig;

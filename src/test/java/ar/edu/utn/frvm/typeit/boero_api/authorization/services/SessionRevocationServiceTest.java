@@ -10,6 +10,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformSessionRepositor
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.RefreshTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -46,8 +47,12 @@ class SessionRevocationServiceTest {
     UUID userId = UUID.randomUUID();
     UUID sessionId = UUID.randomUUID();
     UserSession session =
-        UserSession.builder().userId(userId).ipAddress("127.0.0.1").userAgent("JUnit").build();
-    session.setId(sessionId);
+        UserSession.builder()
+            .id(sessionId)
+            .userId(userId)
+            .ipAddress("127.0.0.1")
+            .userAgent("JUnit")
+            .build();
 
     whenUserFound(personId, institutionId, userId);
     when(userSessionRepository.findByUserIdAndActive(userId, true)).thenReturn(List.of(session));
@@ -82,14 +87,12 @@ class SessionRevocationServiceTest {
   }
 
   private static UserSession session(final UUID sessionId) {
-    final UserSession session =
-        UserSession.builder()
-            .userId(UUID.randomUUID())
-            .ipAddress("127.0.0.1")
-            .userAgent("JUnit")
-            .build();
-    session.setId(sessionId);
-    return session;
+    return UserSession.builder()
+        .id(sessionId)
+        .userId(UUID.randomUUID())
+        .ipAddress("127.0.0.1")
+        .userAgent("JUnit")
+        .build();
   }
 
   private void whenUserFound(UUID personId, UUID institutionId, UUID userId) {

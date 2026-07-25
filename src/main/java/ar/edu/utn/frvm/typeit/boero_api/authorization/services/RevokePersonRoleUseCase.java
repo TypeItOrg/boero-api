@@ -9,8 +9,6 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.RoleNotAssignab
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RoleRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
-import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
-import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -24,15 +22,12 @@ public class RevokePersonRoleUseCase {
   private final InstitutionPersonResolver institutionPersonResolver;
   private final RoleRepository roleRepository;
   private final PersonRoleAssignmentRepository personRoleAssignmentRepository;
-  private final InstitutionRepository institutionRepository;
   private final AuthorizationCacheInvalidator authorizationCacheInvalidator;
 
   @Transactional
   public void execute(UUID institutionId, UUID personId, UUID roleId, boolean allowAuthority) {
-    institutionRepository
-        .findByIdForUpdate(institutionId)
-        .orElseThrow(InstitutionNotFoundException::new);
-    Person person = institutionPersonResolver.requirePersonInInstitution(institutionId, personId);
+    Person person =
+        institutionPersonResolver.requirePersonInInstitutionForUpdate(institutionId, personId);
     Role role =
         roleRepository
             .findByIdAndScopeAndInstitution_Id(roleId, RoleScope.INSTITUTION, institutionId)

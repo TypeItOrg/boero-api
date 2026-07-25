@@ -132,7 +132,8 @@ class PlatformRoleControllerWebMvcTest {
             post("/api/v1/admin/institutions/{institutionId}/roles", INSTITUTION_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
-                .content("{\"name\":\"Docentes\",\"permissions\":[\"PERSON_READ\"]}"))
+                .content(
+                    "{\"name\":\"Docentes\",\"permissions\":[\"institution:person:read-any\"]}"))
         .andExpect(status().isCreated());
 
     mockMvc

@@ -2,11 +2,11 @@ package ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions;
 
 import static ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.AuthorizationMessages.ROLE_NOT_ASSIGNABLE;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
+import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ApplicationException;
+import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorCategory;
 
-public class RoleNotAssignableException extends ResponseStatusException {
+public class RoleNotAssignableException extends ApplicationException {
   public RoleNotAssignableException() {
-    super(HttpStatus.BAD_REQUEST, ROLE_NOT_ASSIGNABLE);
+    super(ErrorCategory.INVALID_INPUT, ROLE_NOT_ASSIGNABLE);
   }
 }

@@ -18,4 +18,10 @@ public class InstitutionPersonResolver {
         .findByIdAndInstitution_Id(personId, institutionId)
         .orElseThrow(PersonNotFoundInInstitutionException::new);
   }
+
+  public Person requirePersonInInstitutionForUpdate(UUID institutionId, UUID personId) {
+    return personRepository
+        .findByIdAndInstitutionIdForUpdate(personId, institutionId)
+        .orElseThrow(PersonNotFoundInInstitutionException::new);
+  }
 }

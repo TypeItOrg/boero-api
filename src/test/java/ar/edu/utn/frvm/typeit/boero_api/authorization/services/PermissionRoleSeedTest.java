@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;

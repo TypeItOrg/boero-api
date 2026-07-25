@@ -28,7 +28,8 @@ public class AssignPersonRoleUseCase {
   @Transactional
   public PersonRoleResponse execute(
       UUID institutionId, UUID personId, AssignRoleRequest request, boolean allowAuthority) {
-    Person person = institutionPersonResolver.requirePersonInInstitution(institutionId, personId);
+    Person person =
+        institutionPersonResolver.requirePersonInInstitutionForUpdate(institutionId, personId);
     Role role =
         roleRepository
             .findByIdAndScopeAndInstitution_Id(

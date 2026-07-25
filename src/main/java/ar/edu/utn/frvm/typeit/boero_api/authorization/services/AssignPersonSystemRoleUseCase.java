@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
@@ -69,8 +70,7 @@ public class AssignPersonSystemRoleUseCase {
       return;
     }
 
-    personRoleAssignmentRepository.save(
-        PersonRoleAssignment.builder().person(person).role(role).institution(institution).build());
+    personRoleAssignmentRepository.save(PersonRoleAssignment.assign(person, role, institution));
 
     if (revokeSessions) {
       sessionRevocationService.revokeInstitutionalSessionsForPerson(

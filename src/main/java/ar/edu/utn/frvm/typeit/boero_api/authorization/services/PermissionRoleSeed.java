@@ -121,7 +121,7 @@ public class PermissionRoleSeed implements ApplicationRunner {
               RolePermission.of(localRole, rolePermission.getPermission()));
         }
       }
-      assignment.setRole(localRole);
+      assignment.replaceRole(localRole);
       personRoleAssignmentRepository.save(assignment);
     }
   }

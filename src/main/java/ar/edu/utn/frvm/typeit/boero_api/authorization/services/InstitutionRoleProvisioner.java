@@ -56,7 +56,7 @@ public class InstitutionRoleProvisioner {
                           .institution(institution)
                           .build()));
       if (!role.getName().equals(code.getDisplayName())) {
-        role.setName(code.getDisplayName());
+        role.rename(code.getDisplayName());
         roleRepository.save(role);
       }
       if (existingRole.isEmpty() || code == SystemRoleCode.INSTITUTIONAL_AUTHORITY) {

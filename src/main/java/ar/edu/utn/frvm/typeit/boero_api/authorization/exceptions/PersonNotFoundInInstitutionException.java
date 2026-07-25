@@ -2,11 +2,11 @@ package ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions;
 
 import static ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.AuthorizationMessages.PERSON_NOT_FOUND_IN_INSTITUTION;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
+import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ApplicationException;
+import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorCategory;
 
-public class PersonNotFoundInInstitutionException extends ResponseStatusException {
+public class PersonNotFoundInInstitutionException extends ApplicationException {
   public PersonNotFoundInInstitutionException() {
-    super(HttpStatus.NOT_FOUND, PERSON_NOT_FOUND_IN_INSTITUTION);
+    super(ErrorCategory.NOT_FOUND, PERSON_NOT_FOUND_IN_INSTITUTION);
   }
 }

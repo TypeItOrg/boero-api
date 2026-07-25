@@ -6,7 +6,14 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.RolePermission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionScope;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.DuplicateRoleNameException;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.InstitutionInactiveForRoleManagementException;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.InstitutionalAuthorityRoleImmutableException;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.PermissionDelegationNotAllowedException;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.RoleManagementSelfLockoutException;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.RoleNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.RoleWithAssignmentsException;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.SystemRoleNotDeletableException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PermissionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RolePermissionRepository;
@@ -20,14 +27,13 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepo
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -53,11 +59,37 @@ public class InstitutionRoleManagementService {
 
   @Transactional(readOnly = true)
   public List<InstitutionRoleResponse> list(UUID institutionId, boolean includeAuthority) {
-    return roleRepository
-        .findByScopeAndInstitution_IdOrderByNameAsc(RoleScope.INSTITUTION, institutionId)
-        .stream()
-        .filter(role -> includeAuthority || !isAuthority(role))
-        .map(this::toResponse)
+    List<Role> roles =
+        roleRepository
+            .findByScopeAndInstitution_IdOrderByNameAsc(RoleScope.INSTITUTION, institutionId)
+            .stream()
+            .filter(role -> includeAuthority || !isAuthority(role))
+            .toList();
+    if (roles.isEmpty()) return List.of();
+    List<UUID> roleIds = roles.stream().map(Role::getId).toList();
+    Map<UUID, Long> assignmentCounts =
+        assignmentRepository.countByRoleIds(roleIds).stream()
+            .collect(
+                Collectors.toMap(
+                    PersonRoleAssignmentRepository.RoleAssignmentCount::getRoleId,
+                    PersonRoleAssignmentRepository.RoleAssignmentCount::getAssignmentCount));
+    Map<UUID, Set<String>> permissionsByRole =
+        rolePermissionRepository.findByRole_IdIn(roleIds).stream()
+            .collect(
+                Collectors.groupingBy(
+                    rolePermission -> rolePermission.getRole().getId(),
+                    Collectors.mapping(
+                        rolePermission -> rolePermission.getPermission().getCode(),
+                        Collectors.toUnmodifiableSet())));
+
+    return roles.stream()
+        .map(
+            role ->
+                toResponse(
+                    role,
+                    permissionsByRole.getOrDefault(role.getId(), Set.of()),
+                    Set.of(),
+                    assignmentCounts.getOrDefault(role.getId(), 0L)))
         .toList();
   }
 
@@ -66,8 +98,7 @@ public class InstitutionRoleManagementService {
     Role role =
         roleRepository
             .findByIdAndScope(roleId, RoleScope.INSTITUTION)
-            .orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Rol no encontrado."));
+            .orElseThrow(RoleNotFoundException::new);
     return PlatformRoleResponse.from(
         role, assignmentRepository.countByRole_Id(roleId), permissionsFor(role), Set.of());
   }
@@ -77,7 +108,7 @@ public class InstitutionRoleManagementService {
       UUID institutionId, UUID roleId, boolean includeAuthority, UUID actorPersonId) {
     Role role = requireRole(institutionId, roleId);
     if (!includeAuthority && isAuthority(role)) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Rol no encontrado.");
+      throw new RoleNotFoundException();
     }
     Set<String> permissions = permissionsFor(role);
     Set<String> protectedPermissions =
@@ -97,13 +128,8 @@ public class InstitutionRoleManagementService {
             .orElseThrow(InstitutionNotFoundException::new);
     Role role =
         roleRepository.save(
-            Role.builder()
-                .scope(RoleScope.INSTITUTION)
-                .code("CUSTOM_" + UUID.randomUUID().toString().replace("-", ""))
-                .name(name)
-                .system(false)
-                .institution(institution)
-                .build());
+            Role.customInstitutional(
+                "CUSTOM_" + UUID.randomUUID().toString().replace("-", ""), name, institution));
     replacePermissions(role, request.permissions(), actorPermissions, false);
     return toResponse(role);
   }
@@ -124,12 +150,11 @@ public class InstitutionRoleManagementService {
       Set<PermissionCode> actorPermissions) {
     Role role = requireRole(institutionId, roleId);
     if (isAuthority(role)) {
-      throw new ResponseStatusException(
-          HttpStatus.BAD_REQUEST, "El rol de autoridad institucional no se puede modificar.");
+      throw new InstitutionalAuthorityRoleImmutableException();
     }
     String name = normalizedName(request.name());
     ensureUniqueName(institutionId, name, roleId);
-    role.setName(name);
+    role.rename(name);
     ensureActorRetainsRoleManagementPermissions(
         role, institutionId, actorPersonId, request.permissions());
     replacePermissions(role, request.permissions(), actorPermissions, true);
@@ -143,12 +168,11 @@ public class InstitutionRoleManagementService {
     Role role = requireRole(institutionId, roleId);
     ensureActiveInstitution(role);
     if (isAuthority(role)) {
-      throw new ResponseStatusException(
-          HttpStatus.BAD_REQUEST, "El rol de autoridad institucional no se puede modificar.");
+      throw new InstitutionalAuthorityRoleImmutableException();
     }
     String name = normalizedName(request.name());
     ensureUniqueName(institutionId, name, roleId);
-    role.setName(name);
+    role.rename(name);
     replacePermissions(role, request.permissions(), PLATFORM_ADMIN_PERMISSIONS, true);
     authorizationCacheInvalidator.evictPeopleForRole(role.getId(), institutionId);
     return toResponse(role);
@@ -158,12 +182,10 @@ public class InstitutionRoleManagementService {
   public void delete(UUID institutionId, UUID roleId) {
     Role role = requireRole(institutionId, roleId);
     if (role.isSystem()) {
-      throw new ResponseStatusException(
-          HttpStatus.BAD_REQUEST, "Los roles del sistema no se pueden eliminar.");
+      throw new SystemRoleNotDeletableException();
     }
     if (assignmentRepository.countByRole_Id(roleId) > 0) {
-      throw new ResponseStatusException(
-          HttpStatus.CONFLICT, "El rol no se puede eliminar mientras tenga usuarios asignados.");
+      throw new RoleWithAssignmentsException();
     }
     rolePermissionRepository.deleteAll(rolePermissionRepository.findByRole_Id(roleId));
     roleRepository.delete(role);
@@ -189,8 +211,7 @@ public class InstitutionRoleManagementService {
             .map(PermissionCode::getCode)
             .collect(Collectors.toSet());
     if (!grantableCodes.containsAll(expandedRequestedCodes)) {
-      throw new ResponseStatusException(
-          HttpStatus.FORBIDDEN, "No podés delegar permisos que no poseés.");
+      throw new PermissionDelegationNotAllowedException();
     }
 
     List<RolePermission> existing = rolePermissionRepository.findByRole_Id(role.getId());
@@ -229,11 +250,9 @@ public class InstitutionRoleManagementService {
       Role role, UUID institutionId, UUID actorPersonId, Set<String> requestedCodes) {
     Set<String> protectedPermissions =
         requiredRolePermissionsForActor(role, institutionId, actorPersonId);
-    if (requestedCodes.containsAll(protectedPermissions)) return;
+    if (expandPermissionCodes(requestedCodes).containsAll(protectedPermissions)) return;
 
-    throw new ResponseStatusException(
-        HttpStatus.CONFLICT,
-        "No podés quitarte los permisos necesarios para administrar roles institucionales.");
+    throw new RoleManagementSelfLockoutException();
   }
 
   private Set<String> requiredRolePermissionsForActor(
@@ -268,6 +287,11 @@ public class InstitutionRoleManagementService {
         role, assignmentRepository.countByRole_Id(role.getId()), permissions, protectedPermissions);
   }
 
+  private InstitutionRoleResponse toResponse(
+      Role role, Set<String> permissions, Set<String> protectedPermissions, long assignmentCount) {
+    return InstitutionRoleResponse.from(role, assignmentCount, permissions, protectedPermissions);
+  }
+
   private Set<String> permissionsFor(Role role) {
     return rolePermissionRepository.findByRole_Id(role.getId()).stream()
         .map(rolePermission -> rolePermission.getPermission().getCode())
@@ -277,7 +301,7 @@ public class InstitutionRoleManagementService {
   private Role requireRole(UUID institutionId, UUID roleId) {
     return roleRepository
         .findByIdAndScopeAndInstitution_Id(roleId, RoleScope.INSTITUTION, institutionId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Rol no encontrado."));
+        .orElseThrow(RoleNotFoundException::new);
   }
 
   private void ensureActiveInstitution(UUID institutionId) {
@@ -286,13 +310,13 @@ public class InstitutionRoleManagementService {
             .findById(institutionId)
             .orElseThrow(InstitutionNotFoundException::new);
     if (!institution.isActive()) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "La institución está inactiva.");
+      throw new InstitutionInactiveForRoleManagementException();
     }
   }
 
   private void ensureActiveInstitution(Role role) {
     if (!role.getInstitution().isActive()) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "La institución está inactiva.");
+      throw new InstitutionInactiveForRoleManagementException();
     }
   }
 
@@ -304,8 +328,7 @@ public class InstitutionRoleManagementService {
             : roleRepository.existsByScopeAndInstitution_IdAndNameIgnoreCaseAndIdNot(
                 RoleScope.INSTITUTION, institutionId, name, excludedId);
     if (exists) {
-      throw new ResponseStatusException(
-          HttpStatus.CONFLICT, "Ya existe un rol con ese nombre en la institución.");
+      throw new DuplicateRoleNameException();
     }
   }
 
@@ -314,6 +337,6 @@ public class InstitutionRoleManagementService {
   }
 
   private boolean isAuthority(Role role) {
-    return role.isSystem() && role.getCode().equals(SystemRoleCode.INSTITUTIONAL_AUTHORITY.name());
+    return role.isInstitutionalAuthority();
   }
 }

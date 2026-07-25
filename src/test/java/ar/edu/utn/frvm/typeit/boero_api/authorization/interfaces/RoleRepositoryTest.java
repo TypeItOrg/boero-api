@@ -28,9 +28,9 @@ class RoleRepositoryTest {
   @DisplayName("Should filter and sort institutional roles across institutions")
   void findPlatformRoles_filtersAndSortsByInstitution() {
     Institution boero = createInstitution(entityManager, "boero");
-    boero.setName("Boero");
+    boero.rename("Boero");
     Institution alberdi = createInstitution(entityManager, "alberdi");
-    alberdi.setName("Alberdi");
+    alberdi.rename("Alberdi");
     persist(entityManager, role("Docentes", boero, true));
     persist(entityManager, role("Preceptores", alberdi, false));
     persist(entityManager, role("Dirección", boero, false));

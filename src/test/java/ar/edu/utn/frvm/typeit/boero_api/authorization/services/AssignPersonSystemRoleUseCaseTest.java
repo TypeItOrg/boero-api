@@ -3,6 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
