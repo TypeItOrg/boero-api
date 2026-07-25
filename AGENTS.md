@@ -127,6 +127,12 @@ Each domain package contains sub-packages such as:
 - Do not introduce formal DDD patterns solely to make entities richer. The goal is cohesive behavior, not aggregates, domain services or domain events.
 - Add focused unit tests for entity behavior, invalid transitions and relationship invariants.
 
+### Soft delete and reusable identifiers
+
+- When a soft-deleted entity has a reusable natural identifier, enforce uniqueness only for active rows with a database partial unique index.
+- Creation checks and operational lookups for that identifier must use the same active-row predicate as the index.
+- Historical lookups may include deleted rows only through an explicitly historical path, such as a lookup by stable entity ID.
+
 ### API versioning
 
 - Use the `Version` enum (e.g. `Version.V1`) and the `@PostMapping(version = ..., path = "...")` pattern.
