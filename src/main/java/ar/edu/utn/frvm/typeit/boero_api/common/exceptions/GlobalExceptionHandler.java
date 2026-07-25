@@ -23,11 +23,13 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+  private final ApplicationExceptionHttpMapper applicationExceptionHttpMapper =
+      new ApplicationExceptionHttpMapper();
 
   @ExceptionHandler(Exception.class)
   @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -39,27 +41,10 @@ public class GlobalExceptionHandler {
         .build();
   }
 
-  @ExceptionHandler(ResponseStatusException.class)
-  public ResponseEntity<ExceptionPayload> handleResponseStatusException(
-      ResponseStatusException ex) {
-    return ResponseEntity.status(ex.getStatusCode())
-        .body(
-            ExceptionPayload.builder()
-                .status(ex.getStatusCode().value())
-                .message(ex.getReason())
-                .build());
-  }
-
-  @ExceptionHandler(FieldConflictException.class)
-  public ResponseEntity<ExceptionPayload> handleFieldConflictException(
-      final FieldConflictException ex) {
-    return ResponseEntity.status(ex.getStatusCode())
-        .body(
-            ExceptionPayload.builder()
-                .status(ex.getStatusCode().value())
-                .message(ex.getReason())
-                .fieldErrors(ex.getFieldErrors())
-                .build());
+  @ExceptionHandler(ApplicationException.class)
+  public ResponseEntity<ExceptionPayload> handleApplicationException(
+      final ApplicationException exception) {
+    return applicationExceptionHttpMapper.toResponse(exception);
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)

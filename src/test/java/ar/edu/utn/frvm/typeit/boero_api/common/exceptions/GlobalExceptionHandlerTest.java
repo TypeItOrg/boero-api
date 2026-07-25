@@ -3,13 +3,12 @@ package ar.edu.utn.frvm.typeit.boero_api.common.exceptions;
 import static ar.edu.utn.frvm.typeit.boero_api.security.handlers.SecurityErrorMessages.DEFAULT_FORBIDDEN_MESSAGE;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidCredentialsException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.web.server.ResponseStatusException;
 
 class GlobalExceptionHandlerTest {
 
@@ -27,24 +26,23 @@ class GlobalExceptionHandlerTest {
   }
 
   @Test
-  @DisplayName("Should map ResponseStatusException to its status and reason")
-  void shouldMapResponseStatusExceptionToPayload() {
+  @DisplayName("Should map application exceptions to their HTTP payload")
+  void shouldMapApplicationExceptionToPayload() {
     ResponseEntity<ExceptionPayload> response =
-        handler.handleResponseStatusException(
-            new ResponseStatusException(
-                HttpStatus.BAD_REQUEST, "La ciudad especificada no existe."));
+        handler.handleApplicationException(new InvalidCredentialsException());
 
-    assertThat(response.getStatusCode().value()).isEqualTo(400);
+    assertThat(response.getStatusCode().value()).isEqualTo(401);
     assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody().status()).isEqualTo(400);
-    assertThat(response.getBody().message()).isEqualTo("La ciudad especificada no existe.");
+    assertThat(response.getBody().status()).isEqualTo(401);
+    assertThat(response.getBody().message())
+        .isEqualTo("Las credenciales proporcionadas son inválidas.");
   }
 
   @Test
   @DisplayName("Should map field conflicts to their field errors")
   void shouldMapFieldConflictExceptionToPayload() {
     final ResponseEntity<ExceptionPayload> response =
-        handler.handleFieldConflictException(
+        handler.handleApplicationException(
             new FieldConflictException("slug", "Ya existe una institución con ese slug."));
 
     assertThat(response.getStatusCode().value()).isEqualTo(409);
