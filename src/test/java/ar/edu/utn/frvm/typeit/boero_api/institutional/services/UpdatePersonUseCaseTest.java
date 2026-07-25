@@ -178,11 +178,12 @@ class UpdatePersonUseCaseTest {
     Address address =
         Address.builder()
             .id(UUID.randomUUID())
+            .institution(institution)
             .street("San Martín")
             .number("100")
             .city(oldCity)
             .build();
-    person.setAddress(address);
+    person.changeAddress(address);
     when(cityRepository.findById(cityId)).thenReturn(Optional.of(newCity));
     UpdatePersonRequest request =
         new UpdatePersonRequest(
@@ -218,7 +219,7 @@ class UpdatePersonUseCaseTest {
   @Test
   @DisplayName("Should only update provided fields (partial update)")
   void execute_partialUpdate() {
-    person.setPhoneNumber("0353-123456");
+    person.updateContact(person.getEmail(), "0353-123456");
     UpdatePersonRequest request =
         new UpdatePersonRequest(null, "García", null, null, null, null, null, null);
 

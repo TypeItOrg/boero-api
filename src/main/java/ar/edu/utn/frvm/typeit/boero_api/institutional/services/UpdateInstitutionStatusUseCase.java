@@ -1,6 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
-import ar.edu.utn.frvm.typeit.boero_api.authorization.services.SessionRevocationService;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import java.util.UUID;
@@ -20,7 +20,9 @@ public class UpdateInstitutionStatusUseCase {
     final var institution =
         institutionRepository.findById(id).orElseThrow(InstitutionNotFoundException::new);
 
-    institution.setActive(active);
+    if (!institution.updateStatus(active)) {
+      return;
+    }
     institutionRepository.save(institution);
 
     if (!active) {

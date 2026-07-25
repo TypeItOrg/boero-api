@@ -1,18 +1,29 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces;
 
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
+import jakarta.persistence.LockModeType;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface PersonRepository extends JpaRepository<Person, UUID> {
 
   Optional<Person> findByIdAndInstitution_Id(UUID personId, UUID institutionId);
+
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query(
+      """
+      SELECT person FROM Person person
+      WHERE person.id = :personId AND person.institution.id = :institutionId
+      """)
+  Optional<Person> findByIdAndInstitutionIdForUpdate(
+      @Param("personId") UUID personId, @Param("institutionId") UUID institutionId);
 
   Optional<Person> findByDocumentNumberAndInstitution_Id(String documentNumber, UUID institutionId);
 

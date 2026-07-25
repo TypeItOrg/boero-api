@@ -1,8 +1,8 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionPersonResolver;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
@@ -28,17 +28,16 @@ public class DeletePersonUseCase {
         .findByIdForUpdate(institutionId)
         .orElseThrow(InstitutionNotFoundException::new);
     Person person = institutionPersonResolver.requirePersonInInstitution(institutionId, personId);
-    if (person.isDeleted()) {
+    if (!person.delete()) {
       return;
     }
 
-    person.setDeleted(true);
     personRepository.save(person);
     userRepository
         .findByPerson_IdAndInstitution_Id(personId, institutionId)
         .ifPresent(
             user -> {
-              user.setEnabled(false);
+              user.updateAccess(false);
               userRepository.save(user);
             });
 

@@ -62,7 +62,7 @@ class PersonRepositoryTest {
     Institution institution = createInstitution(entityManager, "boero");
     persist(entityManager, person(institution, "12345678"));
     Person deleted = persist(entityManager, person(institution, "87654321"));
-    deleted.setDeleted(true);
+    deleted.delete();
     entityManager.flush();
 
     assertThat(personRepository.countByDeletedFalse()).isEqualTo(1);
@@ -72,13 +72,13 @@ class PersonRepositoryTest {
   @DisplayName("Should filter platform people across institutions")
   void findPlatformPeople_filtersAcrossInstitutions() {
     Institution boero = createInstitution(entityManager, "boero");
-    boero.setName("Boero");
+    boero.rename("Boero");
     Institution alberdi = createInstitution(entityManager, "alberdi");
-    alberdi.setName("Alberdi");
+    alberdi.rename("Alberdi");
     Person ana = persist(entityManager, person(boero, "12345678"));
-    ana.setEmail("ana@boero.edu.ar");
+    ana.updateContact("ana@boero.edu.ar", ana.getPhoneNumber());
     Person deleted = persist(entityManager, person(alberdi, "87654321"));
-    deleted.setDeleted(true);
+    deleted.delete();
     Role teacher =
         persist(
             entityManager,
@@ -110,13 +110,13 @@ class PersonRepositoryTest {
   @DisplayName("Should sort platform people by institution and exclude deleted people")
   void findPlatformPeople_sortsByInstitutionAndExcludesDeletedPeople() {
     Institution boero = createInstitution(entityManager, "boero");
-    boero.setName("Boero");
+    boero.rename("Boero");
     Institution alberdi = createInstitution(entityManager, "alberdi");
-    alberdi.setName("Alberdi");
+    alberdi.rename("Alberdi");
     persist(entityManager, person(boero, "12345678"));
     persist(entityManager, person(alberdi, "23456789"));
     Person deleted = persist(entityManager, person(alberdi, "87654321"));
-    deleted.setDeleted(true);
+    deleted.delete();
     entityManager.flush();
     entityManager.clear();
 

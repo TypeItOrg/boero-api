@@ -12,6 +12,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepo
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.CreatePersonRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.PersonResponse;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -54,9 +55,12 @@ public class CreatePersonUseCase {
             .birthDate(request.birthDate())
             .build();
 
-    PersonMutationSupport.assertValid(person, validator);
+    final var violations = validator.validate(person);
+    if (!violations.isEmpty()) {
+      throw new ConstraintViolationException(violations);
+    }
     try {
-      personRepository.save(person);
+      person = personRepository.save(person);
       personRepository.flush();
     } catch (DataIntegrityViolationException exception) {
       throw new PersonAlreadyExistsException();

@@ -1,6 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
-import ar.edu.utn.frvm.typeit.boero_api.authorization.services.SessionRevocationService;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.CityNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.SlugAlreadyExistsException;
@@ -37,16 +37,12 @@ public class UpdateInstitutionUseCase {
 
     boolean deactivating = institution.isActive() && !request.active();
 
-    institution.setName(request.name());
-    institution.setSlug(request.slug());
-    institution.setCity(city);
-    institution.setStreet(request.street());
-    institution.setNumber(request.number());
-    institution.setNeighborhood(request.neighborhood());
-    institution.setAdditionalInfo(request.additionalInfo());
-    institution.setPhoneNumber(request.phoneNumber());
-    institution.setEmail(request.email());
-    institution.setActive(request.active());
+    institution.rename(request.name());
+    institution.changeSlug(request.slug());
+    institution.updateLocation(
+        city, request.street(), request.number(), request.neighborhood(), request.additionalInfo());
+    institution.updateContact(request.phoneNumber(), request.email());
+    institution.updateStatus(request.active());
 
     try {
       institutionRepository.save(institution);

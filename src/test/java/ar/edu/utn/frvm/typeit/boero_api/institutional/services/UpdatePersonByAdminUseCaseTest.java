@@ -107,7 +107,7 @@ class UpdatePersonByAdminUseCaseTest {
   @Test
   @DisplayName("Should not overwrite fields left null in the request")
   void execute_keepsNullFieldsUnchanged() {
-    person.setPhoneNumber("0353-999999");
+    person.updateContact(person.getEmail(), "0353-999999");
     when(institutionPersonResolver.requirePersonInInstitution(institutionId, personId))
         .thenReturn(person);
     when(personRepository.findWithDetailsByIdAndInstitution_Id(personId, institutionId))

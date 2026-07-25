@@ -37,7 +37,7 @@ class InstitutionRepositoryTest {
   void findAllWithLocation_returnsAllInstitutionsWithLocation() {
     Institution active = createInstitution(entityManager, "boero-active");
     Institution inactive = createInstitution(entityManager, "boero-inactive");
-    inactive.setActive(false);
+    inactive.updateStatus(false);
     entityManager.merge(inactive);
     entityManager.flush();
     entityManager.clear();
@@ -62,15 +62,15 @@ class InstitutionRepositoryTest {
   @DisplayName("Should filter admin institution list by search and active status")
   void findWithLocationByFilters_filtersBySearchAndActive() {
     Institution active = createInstitution(entityManager, "boero-active");
-    active.setName("Conservatorio Superior de Música Felipe Boero");
+    active.rename("Conservatorio Superior de Música Felipe Boero");
     entityManager.merge(active);
 
     Institution inactive = createInstitution(entityManager, "boero-inactive");
-    inactive.setActive(false);
+    inactive.updateStatus(false);
     entityManager.merge(inactive);
 
     Institution other = createInstitution(entityManager, "other-institution");
-    other.setName("Escuela Municipal");
+    other.rename("Escuela Municipal");
     entityManager.merge(other);
     entityManager.flush();
     entityManager.clear();
@@ -95,12 +95,12 @@ class InstitutionRepositoryTest {
   void getPlatformDashboardSummaryCounts_countsAvailableRecords() {
     Institution active = createInstitution(entityManager, "boero-active");
     Institution inactive = createInstitution(entityManager, "boero-inactive");
-    inactive.setActive(false);
+    inactive.updateStatus(false);
     createUser(entityManager, active, "11111111");
     User disabled = createUser(entityManager, active, "22222222");
-    disabled.setEnabled(false);
+    disabled.updateAccess(false);
     User deletedPerson = createUser(entityManager, active, "33333333");
-    deletedPerson.getPerson().setDeleted(true);
+    deletedPerson.getPerson().delete();
     createUser(entityManager, inactive, "44444444");
     entityManager.flush();
 

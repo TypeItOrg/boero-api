@@ -58,7 +58,7 @@ class GetPersonByIdUseCaseTest {
     UUID institutionId = UUID.randomUUID();
     UUID personId = UUID.randomUUID();
     Person person = personWith(institutionId, personId);
-    person.setDeleted(true);
+    person.delete();
     when(personRepository.findWithDetailsByIdAndInstitution_Id(personId, institutionId))
         .thenReturn(Optional.of(person));
 

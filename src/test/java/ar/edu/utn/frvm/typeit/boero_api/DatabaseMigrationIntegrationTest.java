@@ -50,9 +50,10 @@ class DatabaseMigrationIntegrationTest {
   @Test
   @DisplayName("Should migrate an empty PostgreSQL database and validate the JPA model")
   void shouldMigrateSchemaAndDevelopmentData() {
-    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260721120000");
+    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260724020641");
     assertThat(tableCount()).isEqualTo(20);
     assertThat(institutionCount()).isPositive();
+    assertThat(tenantRelationshipConstraintCount()).isEqualTo(7);
   }
 
   private Integer tableCount() {
@@ -68,5 +69,23 @@ class DatabaseMigrationIntegrationTest {
 
   private Integer institutionCount() {
     return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM institutions", Integer.class);
+  }
+
+  private Integer tenantRelationshipConstraintCount() {
+    return jdbcTemplate.queryForObject(
+        """
+        SELECT COUNT(*)
+        FROM pg_constraint
+        WHERE conname IN (
+          'people_address_institution_fk',
+          'users_person_institution_fk',
+          'students_person_institution_fk',
+          'guardian_profiles_person_institution_fk',
+          'student_guardians_student_institution_fk',
+          'student_guardians_guardian_institution_fk',
+          'person_role_assignments_person_institution_fk'
+        )
+        """,
+        Integer.class);
   }
 }

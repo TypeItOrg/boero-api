@@ -1,10 +1,10 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
+import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ApplicationException;
+import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorCategory;
 
-public class CountryNotFoundException extends ResponseStatusException {
+public class CountryNotFoundException extends ApplicationException {
   public CountryNotFoundException() {
-    super(HttpStatus.NOT_FOUND, "El país especificado no existe.");
+    super(ErrorCategory.NOT_FOUND, "El país especificado no existe.");
   }
 }

@@ -29,14 +29,10 @@ public class UpdateInstitutionalInstitutionUseCase {
     final var city =
         cityRepository.findById(request.cityId()).orElseThrow(CityNotFoundException::new);
 
-    institution.setName(request.name());
-    institution.setCity(city);
-    institution.setStreet(request.street());
-    institution.setNumber(request.number());
-    institution.setNeighborhood(request.neighborhood());
-    institution.setAdditionalInfo(request.additionalInfo());
-    institution.setPhoneNumber(request.phoneNumber());
-    institution.setEmail(request.email());
+    institution.rename(request.name());
+    institution.updateLocation(
+        city, request.street(), request.number(), request.neighborhood(), request.additionalInfo());
+    institution.updateContact(request.phoneNumber(), request.email());
 
     institutionRepository.save(institution);
 

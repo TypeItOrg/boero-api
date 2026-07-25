@@ -12,10 +12,8 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.CountryReposito
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.PersonResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.UpdatePersonRequest;
-import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,61 +35,60 @@ public class UpdatePersonUseCase {
             .findByIdAndInstitution_Id(principal.personId(), principal.institutionId())
             .orElseThrow(PersonNotFoundException::new);
 
-    if (request.firstName() != null) {
-      person.setFirstName(request.firstName());
-    }
-
-    if (request.lastName() != null) {
-      person.setLastName(request.lastName());
-    }
-
-    if (request.birthDate() != null) {
-      person.setBirthDate(request.birthDate());
-    }
-
-    if (request.email() != null) {
-      person.setEmail(request.email());
-    }
-
-    if (request.phoneNumber() != null) {
-      person.setPhoneNumber(request.phoneNumber());
-    }
-
+    var birthCity = person.getBirthCity();
     if (request.birthCityId() != null) {
-      var birthCity =
+      birthCity =
           cityRepository.findById(request.birthCityId()).orElseThrow(CityNotFoundException::new);
-      person.setBirthCity(birthCity);
     }
 
+    var nationalityCountry = person.getNationalityCountry();
     if (request.nationalityCountryId() != null) {
-      var country =
+      nationalityCountry =
           countryRepository
               .findById(request.nationalityCountryId())
               .orElseThrow(CountryNotFoundException::new);
-      person.setNationalityCountry(country);
     }
+
+    person.updateIdentity(
+        request.firstName() != null ? request.firstName() : person.getFirstName(),
+        request.lastName() != null ? request.lastName() : person.getLastName(),
+        request.birthDate() != null ? request.birthDate() : person.getBirthDate(),
+        birthCity,
+        nationalityCountry);
+    person.updateContact(
+        request.email() != null ? request.email() : person.getEmail(),
+        request.phoneNumber() != null ? request.phoneNumber() : person.getPhoneNumber());
 
     if (request.address() != null) {
       var addressRequest = request.address();
       Address address = person.getAddress();
-
-      if (address == null) {
-        address = new Address();
-        address.setInstitution(person.getInstitution());
-      }
-
       var city =
           cityRepository.findById(addressRequest.cityId()).orElseThrow(CityNotFoundException::new);
-      address.setCity(city);
-      address.setStreet(addressRequest.street());
-      address.setNumber(addressRequest.number());
-      address.setFloor(addressRequest.floor());
-      address.setApartment(addressRequest.apartment());
-      address.setNeighborhood(addressRequest.neighborhood());
-      address.setAdditionalInfo(addressRequest.additionalInfo());
+
+      if (address == null) {
+        address =
+            Address.create(
+                person.getInstitution(),
+                city,
+                addressRequest.street(),
+                addressRequest.number(),
+                addressRequest.floor(),
+                addressRequest.apartment(),
+                addressRequest.neighborhood(),
+                addressRequest.additionalInfo());
+      } else {
+        address.update(
+            city,
+            addressRequest.street(),
+            addressRequest.number(),
+            addressRequest.floor(),
+            addressRequest.apartment(),
+            addressRequest.neighborhood(),
+            addressRequest.additionalInfo());
+      }
 
       addressRepository.save(address);
-      person.setAddress(address);
+      person.changeAddress(address);
     }
 
     assertPersonValid(person);
@@ -103,8 +100,8 @@ public class UpdatePersonUseCase {
         .orElseThrow(PersonNotFoundException::new);
   }
 
-  private void assertPersonValid(Person person) {
-    Set<ConstraintViolation<Person>> violations = validator.validate(person);
+  private void assertPersonValid(final Person person) {
+    final var violations = validator.validate(person);
     if (!violations.isEmpty()) throw new ConstraintViolationException(violations);
   }
 }

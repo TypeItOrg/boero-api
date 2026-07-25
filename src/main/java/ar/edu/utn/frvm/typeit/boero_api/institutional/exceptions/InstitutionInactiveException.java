@@ -2,11 +2,11 @@ package ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions;
 
 import static ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionMessages.INSTITUTION_INACTIVE;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
+import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ApplicationException;
+import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorCategory;
 
-public class InstitutionInactiveException extends ResponseStatusException {
+public class InstitutionInactiveException extends ApplicationException {
   public InstitutionInactiveException() {
-    super(HttpStatus.NOT_FOUND, INSTITUTION_INACTIVE);
+    super(ErrorCategory.NOT_FOUND, INSTITUTION_INACTIVE);
   }
 }
