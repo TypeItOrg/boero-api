@@ -25,9 +25,25 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
   Optional<Person> findByIdAndInstitutionIdForUpdate(
       @Param("personId") UUID personId, @Param("institutionId") UUID institutionId);
 
-  Optional<Person> findByDocumentNumberAndInstitution_Id(String documentNumber, UUID institutionId);
+  @Query(
+      """
+      SELECT person FROM Person person
+      WHERE person.documentNumber = :documentNumber
+        AND person.institution.id = :institutionId
+        AND person.deleted = false
+      """)
+  Optional<Person> findByDocumentNumberAndInstitution_Id(
+      @Param("documentNumber") String documentNumber, @Param("institutionId") UUID institutionId);
 
-  boolean existsByDocumentNumberAndInstitution_Id(String documentNumber, UUID institutionId);
+  @Query(
+      """
+      SELECT COUNT(person) > 0 FROM Person person
+      WHERE person.documentNumber = :documentNumber
+        AND person.institution.id = :institutionId
+        AND person.deleted = false
+      """)
+  boolean existsByDocumentNumberAndInstitution_Id(
+      @Param("documentNumber") String documentNumber, @Param("institutionId") UUID institutionId);
 
   long countByDeletedFalse();
 

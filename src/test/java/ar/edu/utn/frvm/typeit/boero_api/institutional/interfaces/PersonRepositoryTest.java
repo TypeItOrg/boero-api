@@ -57,6 +57,24 @@ class PersonRepositoryTest {
   }
 
   @Test
+  @DisplayName("Should allow reusing a document after the previous person is deleted")
+  void shouldAllowReusingDocumentAfterSoftDelete() {
+    Institution institution = createInstitution(entityManager, "boero");
+    Person deleted = persist(entityManager, person(institution, "12345678"));
+    entityManager.flush();
+
+    deleted.delete();
+    entityManager.flush();
+
+    Person active = persist(entityManager, person(institution, "12345678"));
+    entityManager.flush();
+
+    assertThat(
+            personRepository.findByDocumentNumberAndInstitution_Id("12345678", institution.getId()))
+        .contains(active);
+  }
+
+  @Test
   @DisplayName("Should count only people that are not deleted")
   void countByDeletedFalse_excludesDeletedPeople() {
     Institution institution = createInstitution(entityManager, "boero");

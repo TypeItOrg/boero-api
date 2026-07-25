@@ -49,6 +49,28 @@ class UserRepositoryTest {
   }
 
   @Test
+  @DisplayName("Should find the active user when a deleted user has the same document")
+  void shouldFindActiveUserWhenDeletedUserHasSameDocument() {
+    Institution institution = createInstitution(entityManager, "boero");
+    User deletedUser = createUser(entityManager, institution, "12345678");
+    entityManager.flush();
+    deletedUser.getPerson().delete();
+    entityManager.flush();
+
+    User activeUser = createUser(entityManager, institution, "12345678");
+    entityManager.flush();
+
+    assertThat(
+            userRepository.findWithPersonAndInstitutionByPersonDocumentNumberAndInstitution_Id(
+                "12345678", institution.getId()))
+        .contains(activeUser);
+    assertThat(
+            userRepository.existsByPersonDocumentNumberAndInstitution_Id(
+                "12345678", institution.getId()))
+        .isTrue();
+  }
+
+  @Test
   @DisplayName("Should check user existence by document number within institution")
   void shouldCheckUserExistenceByDocumentNumberWithinInstitution() {
     Institution institution = createInstitution(entityManager, "boero");

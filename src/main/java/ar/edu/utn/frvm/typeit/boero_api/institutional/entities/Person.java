@@ -40,10 +40,7 @@ import lombok.NoArgsConstructor;
     uniqueConstraints = {
       @UniqueConstraint(
           name = "people_institution_id_id_unique",
-          columnNames = {"institution_id", "person_id"}),
-      @UniqueConstraint(
-          name = "people_document_number_unique",
-          columnNames = {"institution_id", "document_number"})
+          columnNames = {"institution_id", "person_id"})
     },
     check = {
       @CheckConstraint(

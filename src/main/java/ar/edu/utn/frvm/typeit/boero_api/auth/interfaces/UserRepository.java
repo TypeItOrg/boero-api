@@ -11,14 +11,36 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
+  @Query(
+      """
+      SELECT user FROM User user
+      WHERE user.person.documentNumber = :documentNumber
+        AND user.institution.id = :institutionId
+        AND user.person.deleted = false
+      """)
   Optional<User> findByPersonDocumentNumberAndInstitution_Id(
-      String documentNumber, UUID institutionId);
+      @Param("documentNumber") String documentNumber, @Param("institutionId") UUID institutionId);
 
   @EntityGraph(attributePaths = {"person", "institution"})
+  @Query(
+      """
+      SELECT user FROM User user
+      WHERE user.person.documentNumber = :documentNumber
+        AND user.institution.id = :institutionId
+        AND user.person.deleted = false
+      """)
   Optional<User> findWithPersonAndInstitutionByPersonDocumentNumberAndInstitution_Id(
-      String documentNumber, UUID institutionId);
+      @Param("documentNumber") String documentNumber, @Param("institutionId") UUID institutionId);
 
-  boolean existsByPersonDocumentNumberAndInstitution_Id(String documentNumber, UUID institutionId);
+  @Query(
+      """
+      SELECT COUNT(user) > 0 FROM User user
+      WHERE user.person.documentNumber = :documentNumber
+        AND user.institution.id = :institutionId
+        AND user.person.deleted = false
+      """)
+  boolean existsByPersonDocumentNumberAndInstitution_Id(
+      @Param("documentNumber") String documentNumber, @Param("institutionId") UUID institutionId);
 
   Optional<User> findByPerson_IdAndInstitution_Id(UUID personId, UUID institutionId);
 
