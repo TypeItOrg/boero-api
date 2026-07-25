@@ -16,14 +16,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(
     name = "institutions",
     uniqueConstraints = @UniqueConstraint(name = "institutions_slug_unique", columnNames = "slug"))
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
@@ -63,4 +61,39 @@ public class Institution extends Auditable {
   @Column(nullable = false)
   @Builder.Default
   private boolean active = true;
+
+  public void rename(final String name) {
+    this.name = name;
+  }
+
+  public void changeSlug(final String slug) {
+    this.slug = slug;
+  }
+
+  public void updateLocation(
+      final City city,
+      final String street,
+      final String number,
+      final String neighborhood,
+      final String additionalInfo) {
+    this.city = city;
+    this.street = street;
+    this.number = number;
+    this.neighborhood = neighborhood;
+    this.additionalInfo = additionalInfo;
+  }
+
+  public void updateContact(final String phoneNumber, final String email) {
+    this.phoneNumber = phoneNumber;
+    this.email = email;
+  }
+
+  public boolean updateStatus(final boolean active) {
+    if (this.active == active) {
+      return false;
+    }
+
+    this.active = active;
+    return true;
+  }
 }

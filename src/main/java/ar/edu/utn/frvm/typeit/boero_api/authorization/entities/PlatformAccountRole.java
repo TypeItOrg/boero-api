@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.entities;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import jakarta.persistence.Column;
@@ -17,7 +18,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(
@@ -27,7 +27,6 @@ import lombok.Setter;
             name = "platform_account_roles_unique",
             columnNames = {"platform_account_id", "role_id"}))
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
@@ -45,4 +44,12 @@ public class PlatformAccountRole extends Auditable {
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "role_id", nullable = false)
   private Role role;
+
+  public static PlatformAccountRole assign(final PlatformAccount platformAccount, final Role role) {
+    if (role.getScope() != RoleScope.PLATFORM || role.getInstitution() != null) {
+      throw new IllegalArgumentException("El rol asignado debe pertenecer a la plataforma.");
+    }
+
+    return PlatformAccountRole.builder().platformAccount(platformAccount).role(role).build();
+  }
 }

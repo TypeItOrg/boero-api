@@ -16,7 +16,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -29,7 +28,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
       @Index(name = "platform_refresh_tokens_session_idx", columnList = "platform_session_id")
     })
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
@@ -70,4 +68,17 @@ public class PlatformRefreshToken {
   @CreatedDate
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
+
+  public boolean revoke() {
+    if (revoked) {
+      return false;
+    }
+
+    revoked = true;
+    return true;
+  }
+
+  public boolean isExpiredAt(final LocalDateTime dateTime) {
+    return expiresAt.isBefore(dateTime);
+  }
 }

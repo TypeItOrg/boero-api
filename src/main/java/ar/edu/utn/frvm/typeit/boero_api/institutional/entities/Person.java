@@ -33,7 +33,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(
@@ -60,7 +59,6 @@ import lombok.Setter;
     indexes =
         @Index(name = "people_institution_deleted_idx", columnList = "institution_id, deleted"))
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
@@ -125,4 +123,40 @@ public class Person extends Auditable {
   @Column(name = "deleted", nullable = false)
   @Builder.Default
   private boolean deleted = false;
+
+  public void updateIdentity(
+      final String firstName,
+      final String lastName,
+      final LocalDate birthDate,
+      final City birthCity,
+      final Country nationalityCountry) {
+    this.firstName = firstName;
+    this.lastName = lastName;
+    this.birthDate = birthDate;
+    this.birthCity = birthCity;
+    this.nationalityCountry = nationalityCountry;
+  }
+
+  public void updateContact(final String email, final String phoneNumber) {
+    this.email = email;
+    this.phoneNumber = phoneNumber;
+  }
+
+  public void changeAddress(final Address address) {
+    if (address != null && !institution.getId().equals(address.getInstitution().getId())) {
+      throw new IllegalArgumentException(
+          "La persona y el domicilio deben pertenecer a la misma institución.");
+    }
+
+    this.address = address;
+  }
+
+  public boolean delete() {
+    if (deleted) {
+      return false;
+    }
+
+    deleted = true;
+    return true;
+  }
 }

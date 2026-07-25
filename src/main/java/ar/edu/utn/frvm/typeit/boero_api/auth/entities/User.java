@@ -23,7 +23,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -37,7 +36,6 @@ import org.springframework.security.core.userdetails.UserDetails;
             name = "users_institution_person_unique",
             columnNames = {"institution_id", "person_id"}))
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
@@ -92,6 +90,23 @@ public class User extends Auditable implements UserDetails {
   @Override
   public boolean isEnabled() {
     return enabled && institution.isActive() && !person.isDeleted();
+  }
+
+  public boolean isAccessEnabled() {
+    return enabled;
+  }
+
+  public boolean updateAccess(final boolean enabled) {
+    if (this.enabled == enabled) {
+      return false;
+    }
+
+    this.enabled = enabled;
+    return true;
+  }
+
+  public void changePassword(final String password) {
+    this.password = password;
   }
 
   @PrePersist

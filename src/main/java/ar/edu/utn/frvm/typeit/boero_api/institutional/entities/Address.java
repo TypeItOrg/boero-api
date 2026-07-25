@@ -16,7 +16,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(
@@ -26,7 +25,6 @@ import lombok.Setter;
             name = "addresses_institution_id_id_unique",
             columnNames = {"institution_id", "address_id"}))
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
@@ -61,4 +59,42 @@ public class Address extends Auditable {
 
   @Column(name = "additional_info")
   private String additionalInfo;
+
+  public static Address create(
+      final Institution institution,
+      final City city,
+      final String street,
+      final String number,
+      final String floor,
+      final String apartment,
+      final String neighborhood,
+      final String additionalInfo) {
+    return Address.builder()
+        .institution(institution)
+        .city(city)
+        .street(street)
+        .number(number)
+        .floor(floor)
+        .apartment(apartment)
+        .neighborhood(neighborhood)
+        .additionalInfo(additionalInfo)
+        .build();
+  }
+
+  public void update(
+      final City city,
+      final String street,
+      final String number,
+      final String floor,
+      final String apartment,
+      final String neighborhood,
+      final String additionalInfo) {
+    this.city = city;
+    this.street = street;
+    this.number = number;
+    this.floor = floor;
+    this.apartment = apartment;
+    this.neighborhood = neighborhood;
+    this.additionalInfo = additionalInfo;
+  }
 }

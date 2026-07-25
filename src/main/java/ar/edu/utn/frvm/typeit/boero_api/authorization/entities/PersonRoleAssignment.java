@@ -21,7 +21,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(
@@ -39,7 +38,6 @@ import lombok.Setter;
           columnList = "institution_id, role_id")
     })
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
@@ -61,6 +59,19 @@ public class PersonRoleAssignment extends Auditable {
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "institution_id", nullable = false)
   private Institution institution;
+
+  public static PersonRoleAssignment assign(
+      final Person person, final Role role, final Institution institution) {
+    final PersonRoleAssignment assignment =
+        PersonRoleAssignment.builder().person(person).role(role).institution(institution).build();
+    assignment.validateInstitutionConsistency();
+    return assignment;
+  }
+
+  public void replaceRole(final Role role) {
+    this.role = role;
+    validateInstitutionConsistency();
+  }
 
   @PrePersist
   @PreUpdate

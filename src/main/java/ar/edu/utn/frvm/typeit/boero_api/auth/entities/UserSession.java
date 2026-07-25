@@ -16,7 +16,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -26,7 +25,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
     name = "user_sessions",
     indexes = @Index(name = "user_sessions_user_active_idx", columnList = "user_id, active"))
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
@@ -64,4 +62,14 @@ public class UserSession {
   @Column(name = "remember_me", nullable = false)
   @Builder.Default
   private boolean rememberMe = false;
+
+  public boolean end(final LocalDateTime endedAt) {
+    if (!active) {
+      return false;
+    }
+
+    active = false;
+    this.endedAt = endedAt;
+    return true;
+  }
 }
