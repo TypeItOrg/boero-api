@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
 
       - name: Set up Java
         uses: actions/setup-java@v5
@@ -37,6 +39,33 @@ jobs:
           (github.event_name == 'push' && github.ref_name == 'develop') ||
           (github.event_name == 'pull_request' && github.base_ref == 'develop')
         run: ./gradlew --no-daemon spotlessCheck fastTest
+
+      - name: Detect integration-sensitive changes
+        if: >-
+          (github.event_name == 'push' && github.ref_name == 'develop') ||
+          (github.event_name == 'pull_request' && github.base_ref == 'develop')
+        id: persistence-changes
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+            base_ref="origin/${{ github.base_ref }}"
+          else
+            base_ref="${{ github.event.before }}"
+            if ! git cat-file -e "${base_ref}^{commit}" 2>/dev/null; then
+              base_ref="HEAD^"
+            fi
+          fi
+
+          if git diff --name-only "$base_ref" HEAD | grep -Eq '^(src/main/resources/db/migration/|src/main/java/.+/(entities|interfaces|services|search|config|controllers)/|build.gradle$)'; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "required=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run integration tests for persistence changes
+        if: steps.persistence-changes.outputs.required == 'true'
+        run: ./gradlew --no-daemon integrationTest
 
       - name: Verify formatting and full test suite
         if: >-
