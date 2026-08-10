@@ -13,12 +13,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+  private static final String APPLICATION_PACKAGE = "ar.edu.utn.frvm.typeit.boero_api";
   private static final Predicate<Class<?>> VERSIONED_REST_CONTROLLERS =
       HandlerTypePredicate.forAnnotation(RestController.class)
-          .and(
-              controllerType ->
-                  !AnnotatedElementUtils.hasAnnotation(
-                      controllerType, UnversionedRestController.class));
+          .and(WebConfig::isVersionedRestController);
 
   @Override
   public void configurePathMatch(PathMatchConfigurer configurer) {
@@ -27,11 +25,16 @@ public class WebConfig implements WebMvcConfigurer {
 
   @Override
   public void configureApiVersioning(ApiVersionConfigurer configurer) {
-    configurer.usePathSegment(1, WebConfig::IS_VERSIONED_API_PATH);
+    configurer.usePathSegment(1, WebConfig::isVersionedApiPath);
     configurer.setVersionRequired(false);
   }
 
-  private static boolean IS_VERSIONED_API_PATH(RequestPath requestPath) {
+  private static boolean isVersionedRestController(final Class<?> controllerType) {
+    return controllerType.getPackageName().startsWith(APPLICATION_PACKAGE)
+        && !AnnotatedElementUtils.hasAnnotation(controllerType, UnversionedRestController.class);
+  }
+
+  private static boolean isVersionedApiPath(final RequestPath requestPath) {
     return requestPath.pathWithinApplication().value().startsWith("/api/");
   }
 }

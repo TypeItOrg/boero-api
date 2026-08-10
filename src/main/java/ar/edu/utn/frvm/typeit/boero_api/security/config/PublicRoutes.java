@@ -14,6 +14,10 @@ public final class PublicRoutes {
 
   private static final String[] INFRASTRUCTURE_ROUTES = {"/actuator/health/**"};
 
+  private static final String[] API_DOCUMENTATION_READ_ROUTES = {
+    "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**"
+  };
+
   private static final String[] GREETING_ROUTES = {"/api/v1/greeting/**"};
 
   private static final String[] INSTITUTION_READ_ROUTES = {
@@ -32,7 +36,7 @@ public final class PublicRoutes {
           .toArray(String[]::new);
 
   public static final String[] GET_ONLY_ROUTES =
-      Stream.of(INSTITUTION_READ_ROUTES, LOCATION_READ_ROUTES)
+      Stream.of(INSTITUTION_READ_ROUTES, LOCATION_READ_ROUTES, API_DOCUMENTATION_READ_ROUTES)
           .flatMap(Stream::of)
           .toArray(String[]::new);
 }
