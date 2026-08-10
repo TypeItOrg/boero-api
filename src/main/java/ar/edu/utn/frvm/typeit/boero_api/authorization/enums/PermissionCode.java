@@ -79,7 +79,112 @@ public enum PermissionCode {
       "institution:update",
       PermissionScope.INSTITUTION,
       PermissionGroup.INSTITUTION,
-      "Editar detalles de la institución");
+      "Editar detalles de la institución"),
+  ACADEMIC_YEAR_READ(
+      "institution:academic-year:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Ver ciclos lectivos"),
+  ACADEMIC_YEAR_CREATE(
+      "institution:academic-year:create",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Crear ciclos lectivos"),
+  ACADEMIC_YEAR_UPDATE(
+      "institution:academic-year:update",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Editar ciclos lectivos"),
+  ACADEMIC_YEAR_STATUS_UPDATE(
+      "institution:academic-year:update-status",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Cambiar estado de ciclos lectivos"),
+  TRAINING_PATH_READ(
+      "institution:training-path:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Ver trayectos formativos"),
+  TRAINING_PATH_CREATE(
+      "institution:training-path:create",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Crear trayectos formativos"),
+  TRAINING_PATH_UPDATE(
+      "institution:training-path:update",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Editar trayectos formativos"),
+  TRAINING_PATH_STATUS_UPDATE(
+      "institution:training-path:update-status",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Activar o desactivar trayectos formativos"),
+  STUDY_PLAN_READ(
+      "institution:study-plan:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Ver planes de estudio"),
+  STUDY_PLAN_CREATE(
+      "institution:study-plan:create",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Crear planes de estudio"),
+  STUDY_PLAN_UPDATE(
+      "institution:study-plan:update",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Editar planes de estudio"),
+  STUDY_PLAN_STATUS_UPDATE(
+      "institution:study-plan:update-status",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Activar o desactivar planes de estudio"),
+  STUDY_PLAN_CURRICULUM_UPDATE(
+      "institution:study-plan:curriculum-update",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Editar estructura curricular"),
+  ACADEMIC_SPACE_READ(
+      "institution:academic-space:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Ver espacios académicos"),
+  ACADEMIC_SPACE_CREATE(
+      "institution:academic-space:create",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Crear espacios académicos"),
+  ACADEMIC_SPACE_UPDATE(
+      "institution:academic-space:update",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Editar espacios académicos"),
+  ACADEMIC_SPACE_STATUS_UPDATE(
+      "institution:academic-space:update-status",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Activar o desactivar espacios académicos"),
+  INSTRUMENT_READ(
+      "institution:instrument:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Ver instrumentos"),
+  INSTRUMENT_CREATE(
+      "institution:instrument:create",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Crear instrumentos"),
+  INSTRUMENT_UPDATE(
+      "institution:instrument:update",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Editar instrumentos"),
+  INSTRUMENT_STATUS_UPDATE(
+      "institution:instrument:update-status",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Activar o desactivar instrumentos");
 
   private final String code;
   private final PermissionScope scope;
@@ -102,6 +207,19 @@ public enum PermissionCode {
       case INSTITUTION_ROLE_CREATE, INSTITUTION_ROLE_UPDATE, INSTITUTION_ROLE_DELETE ->
           Set.of(INSTITUTION_ROLE_READ);
       case INSTITUTION_UPDATE -> Set.of(INSTITUTION_READ);
+      case ACADEMIC_YEAR_CREATE, ACADEMIC_YEAR_UPDATE, ACADEMIC_YEAR_STATUS_UPDATE ->
+          Set.of(ACADEMIC_YEAR_READ);
+      case TRAINING_PATH_CREATE, TRAINING_PATH_UPDATE, TRAINING_PATH_STATUS_UPDATE ->
+          Set.of(TRAINING_PATH_READ);
+      case STUDY_PLAN_CREATE,
+          STUDY_PLAN_UPDATE,
+          STUDY_PLAN_STATUS_UPDATE,
+          STUDY_PLAN_CURRICULUM_UPDATE ->
+          Set.of(STUDY_PLAN_READ);
+      case ACADEMIC_SPACE_CREATE, ACADEMIC_SPACE_UPDATE, ACADEMIC_SPACE_STATUS_UPDATE ->
+          Set.of(ACADEMIC_SPACE_READ);
+      case INSTRUMENT_CREATE, INSTRUMENT_UPDATE, INSTRUMENT_STATUS_UPDATE ->
+          Set.of(INSTRUMENT_READ);
       default -> Set.of();
     };
   }

@@ -56,7 +56,7 @@ class PermissionRoleSeedTest {
   }
 
   @Test
-  @DisplayName("Should assign new people management permissions to institutional authority")
+  @DisplayName("Should assign people and granular academic permissions to institutional authority")
   void run_assignsNewPeoplePermissionsToAuthority() {
     permissionRoleSeed.run(null);
 
@@ -75,6 +75,27 @@ class PermissionRoleSeedTest {
             PermissionCode.INSTITUTION_PERSON_READ_ANY.getCode(),
             PermissionCode.INSTITUTION_PERSON_CREATE.getCode(),
             PermissionCode.INSTITUTION_PERSON_UPDATE_ANY.getCode(),
-            PermissionCode.INSTITUTION_PERSON_DELETE.getCode());
+            PermissionCode.INSTITUTION_PERSON_DELETE.getCode(),
+            PermissionCode.ACADEMIC_YEAR_CREATE.getCode(),
+            PermissionCode.ACADEMIC_YEAR_UPDATE.getCode(),
+            PermissionCode.ACADEMIC_YEAR_STATUS_UPDATE.getCode(),
+            PermissionCode.ACADEMIC_YEAR_READ.getCode(),
+            PermissionCode.TRAINING_PATH_CREATE.getCode(),
+            PermissionCode.TRAINING_PATH_UPDATE.getCode(),
+            PermissionCode.TRAINING_PATH_STATUS_UPDATE.getCode(),
+            PermissionCode.TRAINING_PATH_READ.getCode(),
+            PermissionCode.STUDY_PLAN_CREATE.getCode(),
+            PermissionCode.STUDY_PLAN_UPDATE.getCode(),
+            PermissionCode.STUDY_PLAN_STATUS_UPDATE.getCode(),
+            PermissionCode.STUDY_PLAN_CURRICULUM_UPDATE.getCode(),
+            PermissionCode.STUDY_PLAN_READ.getCode(),
+            PermissionCode.ACADEMIC_SPACE_CREATE.getCode(),
+            PermissionCode.ACADEMIC_SPACE_UPDATE.getCode(),
+            PermissionCode.ACADEMIC_SPACE_STATUS_UPDATE.getCode(),
+            PermissionCode.ACADEMIC_SPACE_READ.getCode(),
+            PermissionCode.INSTRUMENT_CREATE.getCode(),
+            PermissionCode.INSTRUMENT_UPDATE.getCode(),
+            PermissionCode.INSTRUMENT_STATUS_UPDATE.getCode(),
+            PermissionCode.INSTRUMENT_READ.getCode());
   }
 }

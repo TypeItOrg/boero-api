@@ -32,4 +32,36 @@ class PermissionCodeDependencyTest {
             PermissionCode.INSTITUTION_PERSON_READ_ANY,
             PermissionCode.INSTITUTION_ROLE_READ);
   }
+
+  @Test
+  @DisplayName("Should include the read permission for every granular academic action")
+  void withRequiredPermissions_includesAcademicReadPermissions() {
+    Set<PermissionCode> expanded =
+        PermissionCode.withRequiredPermissions(
+            Set.of(
+                PermissionCode.ACADEMIC_YEAR_CREATE,
+                PermissionCode.ACADEMIC_YEAR_UPDATE,
+                PermissionCode.ACADEMIC_YEAR_STATUS_UPDATE,
+                PermissionCode.TRAINING_PATH_CREATE,
+                PermissionCode.TRAINING_PATH_UPDATE,
+                PermissionCode.TRAINING_PATH_STATUS_UPDATE,
+                PermissionCode.STUDY_PLAN_CREATE,
+                PermissionCode.STUDY_PLAN_UPDATE,
+                PermissionCode.STUDY_PLAN_STATUS_UPDATE,
+                PermissionCode.STUDY_PLAN_CURRICULUM_UPDATE,
+                PermissionCode.ACADEMIC_SPACE_CREATE,
+                PermissionCode.ACADEMIC_SPACE_UPDATE,
+                PermissionCode.ACADEMIC_SPACE_STATUS_UPDATE,
+                PermissionCode.INSTRUMENT_CREATE,
+                PermissionCode.INSTRUMENT_UPDATE,
+                PermissionCode.INSTRUMENT_STATUS_UPDATE));
+
+    assertThat(expanded)
+        .contains(
+            PermissionCode.ACADEMIC_YEAR_READ,
+            PermissionCode.TRAINING_PATH_READ,
+            PermissionCode.STUDY_PLAN_READ,
+            PermissionCode.ACADEMIC_SPACE_READ,
+            PermissionCode.INSTRUMENT_READ);
+  }
 }

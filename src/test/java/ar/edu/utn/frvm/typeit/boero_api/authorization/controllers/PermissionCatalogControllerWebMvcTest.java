@@ -82,7 +82,7 @@ class PermissionCatalogControllerWebMvcTest {
     mockMvc
         .perform(get("/api/v1/admin/permissions").principal(authentication))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(15))
+        .andExpect(jsonPath("$.length()").value(36))
         .andExpect(jsonPath("$[0].scope").value("INSTITUTION"))
         .andExpect(jsonPath("$[?(@.scope == 'PLATFORM')]").isEmpty());
   }
