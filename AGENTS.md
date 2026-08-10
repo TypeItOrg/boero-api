@@ -110,6 +110,12 @@ Each domain package contains sub-packages such as:
 - Use `@Builder` on records when fluent construction improves readability.
 - Keep mapping simple: response records may contain a static factory method `public static X from(Entity entity)`.
 
+### OpenAPI contract
+
+- Springdoc serves read-only Swagger UI at `/swagger-ui.html` in development; Swagger UI and `/v3/api-docs` remain disabled in staging and production.
+- Treat controllers and payload records as the source of truth. Do not maintain a separate handwritten API specification or generate frontend types from OpenAPI.
+- On response records, document all serialized fields as required and mark fields that may be `null` with `@Schema(nullable = true)` so Swagger describes runtime JSON accurately.
+
 ### Entities
 
 - JPA entities remain classes.
@@ -126,6 +132,7 @@ Each domain package contains sub-packages such as:
 - Do not add artificial behavior to reference entities such as geographic catalogs when no business rule exists.
 - Do not introduce formal DDD patterns solely to make entities richer. The goal is cohesive behavior, not aggregates, domain services or domain events.
 - Add focused unit tests for entity behavior, invalid transitions and relationship invariants.
+- When a persistent business invariant is introduced, enforce it in the entity or use case for immediate feedback and in a new Flyway constraint for concurrency safety. Translate named constraint violations into the corresponding application error and add a PostgreSQL integration test.
 
 ### Soft delete and reusable identifiers
 
