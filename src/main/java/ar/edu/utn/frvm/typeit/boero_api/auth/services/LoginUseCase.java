@@ -1,22 +1,15 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
-import ar.edu.utn.frvm.typeit.boero_api.auth.config.JwtProperties;
-import ar.edu.utn.frvm.typeit.boero_api.auth.entities.RefreshToken;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
-import ar.edu.utn.frvm.typeit.boero_api.auth.entities.UserSession;
-import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.RefreshTokenRepository;
-import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.LoginRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.AuthResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.security.InstitutionalUsername;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorityResolver;
 import jakarta.servlet.http.HttpServletRequest;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -24,14 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class LoginUseCase {
 
   private final CredentialsAuthenticator credentialsAuthenticator;
-  private final UserSessionRepository userSessionRepository;
-  private final RefreshTokenRepository refreshTokenRepository;
+  private final LoginSessionPersistenceService loginSessionPersistenceService;
   private final JwtService jwtService;
-  private final JwtProperties jwtProperties;
   private final AuthorityResolver authorityResolver;
-  private final RefreshTokenGenerator refreshTokenGenerator;
 
-  @Transactional
   public AuthResponse execute(final LoginRequest request, final HttpServletRequest httpRequest) {
     final String principal =
         InstitutionalUsername.format(request.institutionId(), request.documentNumber());
@@ -41,27 +30,15 @@ public class LoginUseCase {
 
     final User user = (User) authentication.getPrincipal();
 
+    final var authorities =
+        authorityResolver.resolveForPerson(user.getPerson().getId(), user.getInstitutionId());
     final boolean rememberMe = Boolean.TRUE.equals(request.rememberMe());
-
-    final UserSession session =
-        userSessionRepository.save(
-            UserSession.builder()
-                .userId(user.getId())
-                .ipAddress(AuthRequestMetadata.clientIp(httpRequest))
-                .userAgent(httpRequest.getHeader("User-Agent"))
-                .rememberMe(rememberMe)
-                .build());
-
-    final String familyId = refreshTokenGenerator.newFamilyId();
-    final GeneratedRefreshToken generatedRefreshToken = refreshTokenGenerator.generate();
-    final RefreshToken refreshToken =
-        RefreshToken.builder()
-            .sessionId(session.getId())
-            .tokenHash(generatedRefreshToken.tokenHash())
-            .familyId(familyId)
-            .expiresAt(LocalDateTime.now().plus(jwtProperties.refreshExpiration(rememberMe)))
-            .build();
-    refreshTokenRepository.save(refreshToken);
+    final LoginSessionPersistenceService.Result session =
+        loginSessionPersistenceService.create(
+            user.getId(),
+            AuthRequestMetadata.clientIp(httpRequest),
+            httpRequest.getHeader("User-Agent"),
+            rememberMe);
 
     final String accessToken =
         jwtService.generateAccessToken(
@@ -70,7 +47,7 @@ public class LoginUseCase {
                 .personId(user.getPerson().getId())
                 .institutionId(user.getInstitutionId())
                 .documentNumber(user.getDocumentNumber())
-                .sessionId(session.getId())
+                .sessionId(session.sessionId())
                 .build());
     log.info(
         "[Auth] Login succeeded, userId: {}, institutionId: {}",
@@ -78,10 +55,6 @@ public class LoginUseCase {
         user.getInstitutionId());
 
     return AuthResponse.of(
-        user,
-        user.getPerson().getId(),
-        authorityResolver.resolveForPerson(user.getPerson().getId(), user.getInstitutionId()),
-        accessToken,
-        generatedRefreshToken.rawToken());
+        user, user.getPerson().getId(), authorities, accessToken, session.refreshToken());
   }
 }

@@ -1,21 +1,15 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
-import static ar.edu.utn.frvm.typeit.boero_api.support.AuthTestData.jwtProperties;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import ar.edu.utn.frvm.typeit.boero_api.auth.config.JwtProperties;
-import ar.edu.utn.frvm.typeit.boero_api.auth.entities.RefreshToken;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
-import ar.edu.utn.frvm.typeit.boero_api.auth.entities.UserSession;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidCredentialsException;
-import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.RefreshTokenRepository;
-import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.LoginRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.AuthResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.security.InstitutionalUsername;
@@ -23,8 +17,6 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorityResolver
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import jakarta.servlet.http.HttpServletRequest;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,27 +32,21 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 class LoginUseCaseTest {
 
   @Mock private CredentialsAuthenticator credentialsAuthenticator;
-  @Mock private UserSessionRepository userSessionRepository;
-  @Mock private RefreshTokenRepository refreshTokenRepository;
+  @Mock private LoginSessionPersistenceService loginSessionPersistenceService;
   @Mock private JwtService jwtService;
   @Mock private HttpServletRequest httpRequest;
   @Mock private AuthorityResolver authorityResolver;
 
   private LoginUseCase loginUseCase;
-  private JwtProperties jwtProperties;
 
   @BeforeEach
   void setUp() {
-    jwtProperties = jwtProperties();
     loginUseCase =
         new LoginUseCase(
             credentialsAuthenticator,
-            userSessionRepository,
-            refreshTokenRepository,
+            loginSessionPersistenceService,
             jwtService,
-            jwtProperties,
-            authorityResolver,
-            new RefreshTokenGenerator());
+            authorityResolver);
   }
 
   @Test
@@ -80,26 +66,18 @@ class LoginUseCaseTest {
   }
 
   @Test
-  @DisplayName("Should create a session with correct metadata from the request")
-  void execute_createsSessionWithCorrectMetadata() {
+  @DisplayName("Should delegate session creation with correct metadata")
+  void execute_delegatesSessionCreationWithCorrectMetadata() {
     UUID institutionId = UUID.randomUUID();
     LoginRequest request = loginRequest(institutionId, false);
     User user = userWith(institutionId, "12345678");
     when(httpRequest.getHeader("User-Agent")).thenReturn("Mozilla/5.0");
     when(httpRequest.getRemoteAddr()).thenReturn("192.0.2.1");
     stubCredentialsAuthenticator(user);
-    stubSessionSave();
 
     loginUseCase.execute(request, httpRequest);
 
-    var sessionCaptor = ArgumentCaptor.forClass(UserSession.class);
-    verify(userSessionRepository).save(sessionCaptor.capture());
-    UserSession savedSession = sessionCaptor.getValue();
-    assertThat(savedSession.getUserId()).isEqualTo(user.getId());
-    assertThat(savedSession.getIpAddress()).isEqualTo("192.0.2.1");
-    assertThat(savedSession.getUserAgent()).isEqualTo("Mozilla/5.0");
-    assertThat(savedSession.isRememberMe()).isFalse();
-    assertThat(savedSession.isActive()).isTrue();
+    verify(loginSessionPersistenceService).create(user.getId(), "192.0.2.1", "Mozilla/5.0", false);
   }
 
   @Test
@@ -111,18 +89,15 @@ class LoginUseCaseTest {
     when(httpRequest.getHeader("User-Agent")).thenReturn("JUnit");
     when(httpRequest.getRemoteAddr()).thenReturn("10.0.0.1");
     stubCredentialsAuthenticator(user);
-    stubSessionSave();
 
     loginUseCase.execute(request, httpRequest);
 
-    var sessionCaptor = ArgumentCaptor.forClass(UserSession.class);
-    verify(userSessionRepository).save(sessionCaptor.capture());
-    assertThat(sessionCaptor.getValue().getIpAddress()).isEqualTo("10.0.0.1");
+    verify(loginSessionPersistenceService).create(user.getId(), "10.0.0.1", "JUnit", false);
   }
 
   @Test
-  @DisplayName("Should save a hashed refresh token, not the raw value")
-  void execute_savesRefreshTokenWithHashedValue() {
+  @DisplayName("Should return the refresh token created by the persistence service")
+  void execute_returnsRefreshTokenCreatedByPersistenceService() {
     UUID institutionId = UUID.randomUUID();
     LoginRequest request = loginRequest(institutionId, false);
     User user = userWith(institutionId, "12345678");
@@ -130,21 +105,12 @@ class LoginUseCaseTest {
 
     AuthResponse response = loginUseCase.execute(request, httpRequest);
 
-    var tokenCaptor = ArgumentCaptor.forClass(RefreshToken.class);
-    verify(refreshTokenRepository).save(tokenCaptor.capture());
-    RefreshToken saved = tokenCaptor.getValue();
-
-    String rawRefreshToken = response.tokens().refreshToken();
-    assertThat(saved.getTokenHash()).isNotEqualTo(rawRefreshToken);
-    assertThat(saved.getTokenHash()).isEqualTo(JwtService.hashToken(rawRefreshToken));
-    assertThat(saved.getFamilyId()).isNotBlank();
-    assertThat(saved.getExpiresAt()).isAfter(LocalDateTime.now());
-    assertThat(saved.isRevoked()).isFalse();
+    assertThat(response.tokens().refreshToken()).isEqualTo("generated-refresh-token");
   }
 
   @Test
-  @DisplayName("Should use the extended expiration when rememberMe is true")
-  void execute_usesRememberMeExpirationWhenFlagIsTrue() {
+  @DisplayName("Should pass rememberMe to session persistence")
+  void execute_passesRememberMeToSessionPersistence() {
     UUID institutionId = UUID.randomUUID();
     LoginRequest request = loginRequest(institutionId, true);
     User user = userWith(institutionId, "12345678");
@@ -152,16 +118,7 @@ class LoginUseCaseTest {
 
     loginUseCase.execute(request, httpRequest);
 
-    var sessionCaptor = ArgumentCaptor.forClass(UserSession.class);
-    verify(userSessionRepository).save(sessionCaptor.capture());
-    assertThat(sessionCaptor.getValue().isRememberMe()).isTrue();
-
-    var tokenCaptor = ArgumentCaptor.forClass(RefreshToken.class);
-    verify(refreshTokenRepository).save(tokenCaptor.capture());
-    LocalDateTime expectedExpiry =
-        LocalDateTime.now().plus(jwtProperties.rememberMeTokenExpiration());
-    assertThat(tokenCaptor.getValue().getExpiresAt())
-        .isCloseTo(expectedExpiry, within(5, ChronoUnit.SECONDS));
+    verify(loginSessionPersistenceService).create(eq(user.getId()), any(), any(), eq(true));
   }
 
   @Test
@@ -224,7 +181,6 @@ class LoginUseCaseTest {
     when(httpRequest.getHeader("User-Agent")).thenReturn("JUnit");
     when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
     stubCredentialsAuthenticator(user);
-    stubSessionSave();
   }
 
   private void stubCredentialsAuthenticator(User user) {
@@ -234,20 +190,9 @@ class LoginUseCaseTest {
               return UsernamePasswordAuthenticationToken.authenticated(
                   user, invocation.getArgument(1), user.getAuthorities());
             });
-  }
-
-  private void stubSessionSave() {
-    when(userSessionRepository.save(any(UserSession.class)))
-        .thenAnswer(
-            invocation -> {
-              final UserSession session = invocation.getArgument(0);
-              return UserSession.builder()
-                  .id(UUID.randomUUID())
-                  .userId(session.getUserId())
-                  .ipAddress(session.getIpAddress())
-                  .userAgent(session.getUserAgent())
-                  .rememberMe(session.isRememberMe())
-                  .build();
-            });
+    when(loginSessionPersistenceService.create(any(), any(), any(), anyBoolean()))
+        .thenReturn(
+            new LoginSessionPersistenceService.Result(
+                UUID.randomUUID(), "generated-refresh-token"));
   }
 }
