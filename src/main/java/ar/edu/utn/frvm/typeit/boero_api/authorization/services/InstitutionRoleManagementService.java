@@ -21,6 +21,8 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RoleRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.InstitutionRoleRequest;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.InstitutionRoleResponse;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.PlatformRoleResponse;
+import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
+import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
@@ -32,6 +34,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,32 +68,21 @@ public class InstitutionRoleManagementService {
             .stream()
             .filter(role -> includeAuthority || !isAuthority(role))
             .toList();
-    if (roles.isEmpty()) return List.of();
-    List<UUID> roleIds = roles.stream().map(Role::getId).toList();
-    Map<UUID, Long> assignmentCounts =
-        assignmentRepository.countByRoleIds(roleIds).stream()
-            .collect(
-                Collectors.toMap(
-                    PersonRoleAssignmentRepository.RoleAssignmentCount::getRoleId,
-                    PersonRoleAssignmentRepository.RoleAssignmentCount::getAssignmentCount));
-    Map<UUID, Set<String>> permissionsByRole =
-        rolePermissionRepository.findByRole_IdIn(roleIds).stream()
-            .collect(
-                Collectors.groupingBy(
-                    rolePermission -> rolePermission.getRole().getId(),
-                    Collectors.mapping(
-                        rolePermission -> rolePermission.getPermission().getCode(),
-                        Collectors.toUnmodifiableSet())));
+    return toResponses(roles);
+  }
 
-    return roles.stream()
-        .map(
-            role ->
-                toResponse(
-                    role,
-                    permissionsByRole.getOrDefault(role.getId(), Set.of()),
-                    Set.of(),
-                    assignmentCounts.getOrDefault(role.getId(), 0L)))
-        .toList();
+  @Transactional(readOnly = true)
+  public PaginatedResponse<InstitutionRoleResponse> list(
+      UUID institutionId, String search, Pageable pageable) {
+    final var page =
+        roleRepository.findInstitutionRoles(
+            RoleScope.INSTITUTION,
+            institutionId,
+            SearchNormalization.normalizeSearch(search),
+            pageable);
+    final List<InstitutionRoleResponse> items = toResponses(page.getContent());
+    return new PaginatedResponse<>(
+        items, page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages());
   }
 
   @Transactional(readOnly = true)
@@ -279,6 +271,35 @@ public class InstitutionRoleManagementService {
 
   private InstitutionRoleResponse toResponse(Role role) {
     return toResponse(role, permissionsFor(role), Set.of());
+  }
+
+  private List<InstitutionRoleResponse> toResponses(final List<Role> roles) {
+    if (roles.isEmpty()) return List.of();
+
+    final List<UUID> roleIds = roles.stream().map(Role::getId).toList();
+    final Map<UUID, Long> assignmentCounts =
+        assignmentRepository.countByRoleIds(roleIds).stream()
+            .collect(
+                Collectors.toMap(
+                    PersonRoleAssignmentRepository.RoleAssignmentCount::getRoleId,
+                    PersonRoleAssignmentRepository.RoleAssignmentCount::getAssignmentCount));
+    final Map<UUID, Set<String>> permissionsByRole =
+        rolePermissionRepository.findByRole_IdIn(roleIds).stream()
+            .collect(
+                Collectors.groupingBy(
+                    rolePermission -> rolePermission.getRole().getId(),
+                    Collectors.mapping(
+                        rolePermission -> rolePermission.getPermission().getCode(),
+                        Collectors.toUnmodifiableSet())));
+    return roles.stream()
+        .map(
+            role ->
+                toResponse(
+                    role,
+                    permissionsByRole.getOrDefault(role.getId(), Set.of()),
+                    Set.of(),
+                    assignmentCounts.getOrDefault(role.getId(), 0L)))
+        .toList();
   }
 
   private InstitutionRoleResponse toResponse(

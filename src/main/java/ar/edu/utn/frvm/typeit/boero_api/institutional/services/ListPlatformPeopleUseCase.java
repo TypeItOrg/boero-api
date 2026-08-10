@@ -3,6 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
+import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
@@ -36,7 +37,7 @@ public class ListPlatformPeopleUseCase {
       final UUID institutionId,
       final SystemRoleCode roleCode,
       final Pageable pageable) {
-    final String normalizedSearch = normalizeSearch(search);
+    final String normalizedSearch = SearchNormalization.normalizeSearch(search);
     final Pageable repositoryPageable = mapInstitutionSort(pageable);
     final Page<Person> peoplePage =
         personRepository.findPlatformPeople(
@@ -62,10 +63,6 @@ public class ListPlatformPeopleUseCase {
             person ->
                 PlatformPersonSummaryResponse.from(
                     person, rolesByPerson.getOrDefault(person.getId(), List.of()))));
-  }
-
-  private String normalizeSearch(final String search) {
-    return search == null || search.isBlank() ? null : search.trim();
   }
 
   private Pageable mapInstitutionSort(final Pageable pageable) {

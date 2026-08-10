@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformAccountRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PlatformAccountAdminResponse;
+import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -17,20 +18,12 @@ public class ListPlatformAccountsUseCase {
   @Transactional(readOnly = true)
   public PaginatedResponse<PlatformAccountAdminResponse> execute(
       final String search, final Boolean enabled, final Pageable pageable) {
-    final String normalizedSearch = normalizeSearch(search);
+    final String normalizedSearch = SearchNormalization.normalizeSearch(search);
     final var page =
         platformAccountRepository
             .findByFilters(normalizedSearch, enabled, pageable)
             .map(PlatformAccountAdminResponse::from);
 
     return PaginatedResponse.from(page);
-  }
-
-  private static String normalizeSearch(final String search) {
-    if (search == null || search.isBlank()) {
-      return null;
-    }
-
-    return search.trim();
   }
 }

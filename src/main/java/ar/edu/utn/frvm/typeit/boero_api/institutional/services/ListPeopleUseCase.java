@@ -4,6 +4,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
+import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
@@ -30,7 +31,7 @@ public class ListPeopleUseCase {
   public PaginatedResponse<PersonSummaryResponse> execute(
       final UUID institutionId, final String search, final UUID roleId, final Pageable pageable) {
 
-    final String normalizedSearch = search == null || search.isBlank() ? null : search.trim();
+    final String normalizedSearch = SearchNormalization.normalizeSearch(search);
     final boolean hasFilter = normalizedSearch != null || roleId != null;
 
     final Page<Person> peoplePage =

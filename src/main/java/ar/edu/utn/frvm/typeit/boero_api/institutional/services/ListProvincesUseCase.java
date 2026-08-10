@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.CountryNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.CountryRepository;
@@ -19,9 +20,12 @@ public class ListProvincesUseCase {
   private final CountryRepository countryRepository;
 
   public PaginatedResponse<ProvinceListItemResponse> execute(String search, Pageable pageable) {
-    if (search != null && !search.isBlank()) {
+    final String normalizedSearch = SearchNormalization.normalizeSearch(search);
+    if (normalizedSearch != null) {
       return PaginatedResponse.from(
-          provinceRepository.searchByName(search, pageable).map(ProvinceListItemResponse::from));
+          provinceRepository
+              .searchByName(normalizedSearch, pageable)
+              .map(ProvinceListItemResponse::from));
     }
     return PaginatedResponse.from(
         provinceRepository.findAll(pageable).map(ProvinceListItemResponse::from));
@@ -34,10 +38,11 @@ public class ListProvincesUseCase {
       throw new CountryNotFoundException();
     }
 
-    if (search != null && !search.isBlank()) {
+    final String normalizedSearch = SearchNormalization.normalizeSearch(search);
+    if (normalizedSearch != null) {
       return PaginatedResponse.from(
           provinceRepository
-              .searchByCountryIdAndName(countryId, search, pageable)
+              .searchByCountryIdAndName(countryId, normalizedSearch, pageable)
               .map(ProvinceListItemResponse::from));
     }
 

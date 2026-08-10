@@ -6,6 +6,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssig
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RolePermissionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RoleRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.PlatformRoleListItemResponse;
+import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,7 @@ public class ListPlatformRolesUseCase {
             RoleScope.INSTITUTION,
             institutionId,
             system,
-            normalizeSearch(search),
+            SearchNormalization.normalizeSearch(search),
             mapSort(pageable));
 
     if (rolesPage.isEmpty()) {
@@ -82,9 +83,5 @@ public class ListPlatformRolesUseCase {
                             : order.getProperty()))
             .toList();
     return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(mappedOrders));
-  }
-
-  private String normalizeSearch(final String search) {
-    return search == null || search.isBlank() ? null : search.trim();
   }
 }

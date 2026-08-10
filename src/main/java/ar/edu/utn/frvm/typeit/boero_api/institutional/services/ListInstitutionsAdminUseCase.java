@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.InstitutionUserCount;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
+import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
@@ -26,7 +27,7 @@ public class ListInstitutionsAdminUseCase {
   @Transactional(readOnly = true)
   public PaginatedResponse<InstitutionAdminListItemResponse> execute(
       final String search, final Boolean active, final Pageable pageable) {
-    final String normalizedSearch = normalizeSearch(search);
+    final String normalizedSearch = SearchNormalization.normalizeSearch(search);
     var page = institutionRepository.findWithLocationByFilters(normalizedSearch, active, pageable);
     var items = page.getContent();
 
@@ -54,14 +55,6 @@ public class ListInstitutionsAdminUseCase {
 
   private static Collection<UUID> toIds(List<Institution> institutions) {
     return institutions.stream().map(Institution::getId).toList();
-  }
-
-  private static String normalizeSearch(final String search) {
-    if (search == null || search.isBlank()) {
-      return null;
-    }
-
-    return search.trim();
   }
 
   private static Map<UUID, Long> toMap(List<InstitutionUserCount> rows) {

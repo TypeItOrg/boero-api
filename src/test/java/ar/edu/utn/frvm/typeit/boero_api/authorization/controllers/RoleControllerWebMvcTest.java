@@ -21,6 +21,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.AssignRoleRequest;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.InstitutionRoleResponse;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.PersonRoleResponse;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.SystemRoleResponse;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.security.InstitutionAccessAspect;
@@ -36,9 +37,11 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ListSystemRolesUs
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ReplacePersonRolesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.RevokePersonRoleUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.GlobalExceptionHandler;
+import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.config.WebConfig;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -48,6 +51,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -55,7 +59,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.util.PathMatcher;
 
-@WebMvcTest({RoleController.class, AdminRoleController.class})
+@WebMvcTest({RoleController.class, AdminRoleController.class, InstitutionRoleController.class})
 @Import({
   RoleAuthorizationAspect.class,
   PermissionAuthorizationAspect.class,
@@ -96,6 +100,37 @@ class RoleControllerWebMvcTest {
 
   @MockitoBean
   private BootstrapInstitutionalAuthorityUseCase bootstrapInstitutionalAuthorityUseCase;
+
+  @Test
+  @DisplayName("Should list paginated institutional roles for an authorized caller")
+  void listInstitutionRoles_returnsPaginatedRolesForAuthorizedCaller() throws Exception {
+    var authentication =
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+    stubAnyRolePermission(true);
+    when(institutionRoleManagementService.list(eq(INSTITUTION_ID), eq("doc"), any(Pageable.class)))
+        .thenReturn(
+            PaginatedResponse.<InstitutionRoleResponse>builder()
+                .items(List.of(institutionRoleResponse()))
+                .page(1)
+                .size(20)
+                .totalItems(21)
+                .totalPages(2)
+                .build());
+
+    mockMvc
+        .perform(
+            get("/api/v1/institutions/{institutionId}/roles", INSTITUTION_ID)
+                .param("search", "doc")
+                .param("page", "1")
+                .param("size", "20")
+                .principal(authentication))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].id").value(ROLE_ID.toString()))
+        .andExpect(jsonPath("$.page").value(1))
+        .andExpect(jsonPath("$.size").value(20))
+        .andExpect(jsonPath("$.totalItems").value(21))
+        .andExpect(jsonPath("$.totalPages").value(2));
+  }
 
   @Test
   @DisplayName("Should forbid unauthenticated access to person roles")
@@ -386,6 +421,15 @@ class RoleControllerWebMvcTest {
         .technicalCode(roleCode)
         .displayName(roleCode.getDisplayName())
         .assignedAt(OffsetDateTime.parse("2026-01-15T10:00:00Z"))
+        .build();
+  }
+
+  private static InstitutionRoleResponse institutionRoleResponse() {
+    return InstitutionRoleResponse.builder()
+        .id(ROLE_ID)
+        .name("Docentes")
+        .permissions(Set.of("PERSON_READ"))
+        .protectedPermissions(Set.of())
         .build();
   }
 }

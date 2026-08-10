@@ -27,6 +27,24 @@ public interface RoleRepository extends JpaRepository<Role, UUID> {
 
   List<Role> findByScopeAndInstitution_IdOrderByNameAsc(RoleScope scope, UUID institutionId);
 
+  @Query(
+      """
+      SELECT role
+      FROM Role role
+      WHERE role.scope = :scope
+        AND role.institution.id = :institutionId
+        AND (
+          :search IS NULL
+          OR UNACCENT_LOWER(role.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
+          OR UNACCENT_LOWER(role.code) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
+        )
+      """)
+  Page<Role> findInstitutionRoles(
+      @Param("scope") RoleScope scope,
+      @Param("institutionId") UUID institutionId,
+      @Param("search") String search,
+      Pageable pageable);
+
   @EntityGraph(attributePaths = "institution")
   @Query(
       """

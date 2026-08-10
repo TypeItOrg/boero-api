@@ -11,24 +11,32 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.InstitutionRoleRe
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.InstitutionRoleResponse;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionRoleManagementService;
+import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@Validated
 @RequiredArgsConstructor
 public class InstitutionRoleController {
 
@@ -41,9 +49,12 @@ public class InstitutionRoleController {
     PermissionCode.INSTITUTION_ROLE_READ,
     PermissionCode.INSTITUTION_PERSON_READ_ANY
   })
-  public List<InstitutionRoleResponse> list(
-      @PathVariable UUID institutionId, Authentication authentication) {
-    return roleService.list(institutionId, true);
+  public PaginatedResponse<InstitutionRoleResponse> list(
+      @PathVariable UUID institutionId,
+      @RequestParam(required = false) @Size(max = 100) String search,
+      @PageableDefault(sort = "name", direction = Sort.Direction.ASC) Pageable pageable,
+      Authentication authentication) {
+    return roleService.list(institutionId, search, pageable);
   }
 
   @GetMapping(value = "/institutions/{institutionId}/roles/{roleId}", version = Version.V1)

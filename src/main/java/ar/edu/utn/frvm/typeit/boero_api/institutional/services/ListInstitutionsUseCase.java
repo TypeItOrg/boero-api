@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionListItemResponse;
@@ -15,17 +16,10 @@ public class ListInstitutionsUseCase {
 
   public PaginatedResponse<InstitutionListItemResponse> execute(
       final String search, final Boolean active, final Pageable pageable) {
-    final String normalizedSearch = normalizeSearch(search);
+    final String normalizedSearch = SearchNormalization.normalizeSearch(search);
     return PaginatedResponse.from(
         institutionRepository
             .findWithLocationByFilters(normalizedSearch, active, pageable)
             .map(InstitutionListItemResponse::from));
-  }
-
-  private static String normalizeSearch(final String search) {
-    if (search == null || search.isBlank()) {
-      return null;
-    }
-    return search.trim();
   }
 }

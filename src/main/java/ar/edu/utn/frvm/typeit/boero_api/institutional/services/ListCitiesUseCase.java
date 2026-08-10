@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.ProvinceNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.CityRepository;
@@ -19,9 +20,12 @@ public class ListCitiesUseCase {
   private final ProvinceRepository provinceRepository;
 
   public PaginatedResponse<CityListItemResponse> execute(String search, Pageable pageable) {
-    if (search != null && !search.isBlank()) {
+    final String normalizedSearch = SearchNormalization.normalizeSearch(search);
+    if (normalizedSearch != null) {
       return PaginatedResponse.from(
-          cityRepository.searchByNameOrProvince(search, pageable).map(CityListItemResponse::from));
+          cityRepository
+              .searchByNameOrProvince(normalizedSearch, pageable)
+              .map(CityListItemResponse::from));
     }
 
     return PaginatedResponse.from(cityRepository.findAll(pageable).map(CityListItemResponse::from));
@@ -32,10 +36,11 @@ public class ListCitiesUseCase {
       UUID provinceId, String search, Pageable pageable) {
     if (!provinceRepository.existsById(provinceId)) throw new ProvinceNotFoundException();
 
-    if (search != null && !search.isBlank()) {
+    final String normalizedSearch = SearchNormalization.normalizeSearch(search);
+    if (normalizedSearch != null) {
       return PaginatedResponse.from(
           cityRepository
-              .searchByProvinceAndName(provinceId, search, pageable)
+              .searchByProvinceAndName(provinceId, normalizedSearch, pageable)
               .map(CityListItemResponse::from));
     }
 
