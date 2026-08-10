@@ -1,0 +1,88 @@
+package ar.edu.utn.frvm.typeit.boero_api.academic.services;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
+import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicConflictException;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.UpdateAcademicYearRequest;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
+import java.time.LocalDate;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class UpdateAcademicYearUseCaseTest {
+
+  @Mock private AcademicYearRepository academicYearRepository;
+
+  @Test
+  @DisplayName("Should apply the selected status while updating an academic year")
+  void updatesStatusFromEditRequest() {
+    final UUID institutionId = UUID.randomUUID();
+    final UUID academicYearId = UUID.randomUUID();
+    final var institution = Institution.builder().id(institutionId).build();
+    final var academicYear =
+        AcademicYear.create(
+            institution, 2026, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 12, 15));
+    given(academicYearRepository.findByIdAndInstitution_Id(academicYearId, institutionId))
+        .willReturn(Optional.of(academicYear));
+    given(
+            academicYearRepository.existsByInstitution_IdAndStatus(
+                institutionId, AcademicYearStatus.ACTIVE))
+        .willReturn(false);
+
+    final var response =
+        new UpdateAcademicYearUseCase(academicYearRepository)
+            .execute(
+                institutionId,
+                academicYearId,
+                new UpdateAcademicYearRequest(
+                    2026,
+                    LocalDate.of(2026, 3, 1),
+                    LocalDate.of(2026, 12, 15),
+                    AcademicYearStatus.ACTIVE));
+
+    assertThat(response.status()).isEqualTo(AcademicYearStatus.ACTIVE);
+    verify(academicYearRepository).flush();
+  }
+
+  @Test
+  @DisplayName("Should reject activating an academic year when another one is already active")
+  void rejectsSecondActiveAcademicYear() {
+    final UUID institutionId = UUID.randomUUID();
+    final UUID academicYearId = UUID.randomUUID();
+    final var institution = Institution.builder().id(institutionId).build();
+    final var academicYear =
+        AcademicYear.create(
+            institution, 2026, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 12, 15));
+    given(academicYearRepository.findByIdAndInstitution_Id(academicYearId, institutionId))
+        .willReturn(Optional.of(academicYear));
+    given(
+            academicYearRepository.existsByInstitution_IdAndStatus(
+                institutionId, AcademicYearStatus.ACTIVE))
+        .willReturn(true);
+
+    assertThatThrownBy(
+            () ->
+                new UpdateAcademicYearUseCase(academicYearRepository)
+                    .execute(
+                        institutionId,
+                        academicYearId,
+                        new UpdateAcademicYearRequest(
+                            2026,
+                            LocalDate.of(2026, 3, 1),
+                            LocalDate.of(2026, 12, 15),
+                            AcademicYearStatus.ACTIVE)))
+        .isInstanceOf(AcademicConflictException.class);
+  }
+}

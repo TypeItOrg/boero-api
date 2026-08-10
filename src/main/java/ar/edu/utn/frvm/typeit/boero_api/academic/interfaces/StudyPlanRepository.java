@@ -1,0 +1,50 @@
+package ar.edu.utn.frvm.typeit.boero_api.academic.interfaces;
+
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
+import jakarta.persistence.LockModeType;
+import java.util.Optional;
+import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+public interface StudyPlanRepository
+    extends JpaRepository<StudyPlan, UUID>, JpaSpecificationExecutor<StudyPlan> {
+  @EntityGraph(attributePaths = "trainingPath")
+  Page<StudyPlan> findAll(Specification<StudyPlan> specification, Pageable pageable);
+
+  @EntityGraph(attributePaths = "trainingPath")
+  Page<StudyPlan> findByTrainingPath_IdAndInstitution_Id(
+      UUID trainingPathId, UUID institutionId, Pageable pageable);
+
+  @EntityGraph(attributePaths = "trainingPath")
+  Optional<StudyPlan> findByIdAndInstitution_Id(UUID id, UUID institutionId);
+
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query(
+      "SELECT plan FROM StudyPlan plan WHERE plan.id = :id AND plan.institution.id = :institutionId")
+  Optional<StudyPlan> findByIdAndInstitution_IdForUpdate(
+      @Param("id") UUID id, @Param("institutionId") UUID institutionId);
+
+  @Query(
+      value =
+          "SELECT EXISTS (SELECT 1 FROM study_plans WHERE training_path_id = :trainingPathId AND lower(translate(name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN')) = lower(translate(:name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN'))) ",
+      nativeQuery = true)
+  boolean existsByNormalizedName(
+      @Param("trainingPathId") UUID trainingPathId, @Param("name") String name);
+
+  @Query(
+      value =
+          "SELECT EXISTS (SELECT 1 FROM study_plans WHERE training_path_id = :trainingPathId AND study_plan_id <> :id AND lower(translate(name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN')) = lower(translate(:name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN'))) ",
+      nativeQuery = true)
+  boolean existsByNormalizedNameAndIdNot(
+      @Param("trainingPathId") UUID trainingPathId,
+      @Param("name") String name,
+      @Param("id") UUID id);
+}

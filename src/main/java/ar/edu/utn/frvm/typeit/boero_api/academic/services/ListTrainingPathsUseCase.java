@@ -1,0 +1,29 @@
+package ar.edu.utn.frvm.typeit.boero_api.academic.services;
+
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.TrainingPathResponse;
+import ar.edu.utn.frvm.typeit.boero_api.academic.validation.AcademicNameNormalizer;
+import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class ListTrainingPathsUseCase {
+  private final TrainingPathRepository trainingPathRepository;
+
+  @Transactional(readOnly = true)
+  public PaginatedResponse<TrainingPathResponse> execute(
+      final UUID institutionId,
+      final String search,
+      final Boolean active,
+      final Pageable pageable) {
+    return PaginatedResponse.from(
+        trainingPathRepository
+            .findByFilters(institutionId, AcademicNameNormalizer.search(search), active, pageable)
+            .map(TrainingPathResponse::from));
+  }
+}
