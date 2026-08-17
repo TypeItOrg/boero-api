@@ -133,6 +133,8 @@ Each domain package contains sub-packages such as:
 - Do not introduce formal DDD patterns solely to make entities richer. The goal is cohesive behavior, not aggregates, domain services or domain events.
 - Add focused unit tests for entity behavior, invalid transitions and relationship invariants.
 - When a persistent business invariant is introduced, enforce it in the entity or use case for immediate feedback and in a new Flyway constraint for concurrency safety. Translate named constraint violations into the corresponding application error and add a PostgreSQL integration test.
+- Destructive workflows that depend on lifecycle state must lock the tenant-scoped root in their use case, validate the state inside the transaction, delete dependents in explicit foreign-key order, and delete the root last. Keep authorization boundaries in their respective admin and institutional controllers.
+- For destructive workflows, retain a unit test for use-case coordination and add a PostgreSQL Testcontainers test whenever foreign keys, derived deletes, locks, or transaction semantics are involved. Verify both full cleanup and preservation when the lifecycle rejects deletion.
 
 ### Soft delete and reusable identifiers
 
