@@ -12,12 +12,10 @@ public final class SearchNormalization {
 
   private SearchNormalization() {}
 
-  public static final String FROM = "áéíóúÁÉÍÓÚüÜñÑ";
-  public static final String TO = "aeiouAEIOUuUnN";
-
   public static final String UNACCENT_LOWER_FUNCTION = "unaccent_lower";
   public static final String UNACCENT_LOWER_PATTERN =
-      "lower(translate(?1, '" + FROM + "', '" + TO + "'))";
+      "lower(translate(?1, 'áéíóúÁÉÍÓÚüÜñÑ', 'aeiouAEIOUuUnN'))";
+  public static final String POSTGRES_UNACCENT_LOWER_PATTERN = "boero_normalize_text(?1)";
 
   public static Expression<String> unaccentLower(
       final CriteriaBuilder builder, final Expression<String> expression) {

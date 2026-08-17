@@ -3,10 +3,14 @@ package ar.edu.utn.frvm.typeit.boero_api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.search.SearchEntityType;
 import ar.edu.utn.frvm.typeit.boero_api.search.SearchService;
+import ar.edu.utn.frvm.typeit.boero_api.search.SearchSummaryResponse;
 import ar.edu.utn.frvm.typeit.boero_api.support.IntegrationTest;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.DisplayName;
@@ -57,11 +61,84 @@ class DatabaseMigrationIntegrationTest {
   @Test
   @DisplayName("Should migrate an empty PostgreSQL database and validate the JPA model")
   void shouldMigrateSchemaAndDevelopmentData() {
-    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260809031336");
-    assertThat(tableCount()).isEqualTo(28);
+    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260816235425");
+    assertThat(tableCount()).isEqualTo(29);
     assertThat(institutionCount()).isPositive();
     assertThat(tenantRelationshipConstraintCount()).isEqualTo(7);
     assertThat(activePersonDocumentIndexCount()).isEqualTo(1);
+    assertThat(pgTrgmExtensionCount()).isEqualTo(1);
+    assertThat(searchTrigramIndexCount()).isEqualTo(16);
+  }
+
+  @Test
+  @DisplayName("Should make accent-insensitive contains searches indexable")
+  void shouldMakeContainsSearchesIndexable() {
+    jdbcTemplate.execute("SET enable_seqscan = off");
+    try {
+      final List<String> plan =
+          jdbcTemplate.queryForList(
+              """
+              EXPLAIN (COSTS OFF)
+              SELECT institution_id
+              FROM institutions
+              WHERE boero_normalize_text(name) LIKE '%boero%'
+              """,
+              String.class);
+
+      assertThat(plan).anyMatch(line -> line.contains("institutions_name_search_trgm_idx"));
+    } finally {
+      jdbcTemplate.execute("RESET enable_seqscan");
+    }
+  }
+
+  @Test
+  @DisplayName("Should apply academic soft-delete state and partial uniqueness")
+  void shouldApplyAcademicSoftDeleteStateAndPartialUniqueness() {
+    final UUID institutionId = firstInstitutionId();
+    final UUID deletedPathId = UUID.randomUUID();
+    final UUID currentPathId = UUID.randomUUID();
+    final String name = "Trayecto reutilizable " + deletedPathId;
+    try {
+      jdbcTemplate.update(
+          """
+          INSERT INTO training_paths (
+            training_path_id, institution_id, name, active, created_at, updated_at
+          ) VALUES (?, ?, ?, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          """,
+          deletedPathId,
+          institutionId,
+          name);
+      jdbcTemplate.update(
+          "UPDATE training_paths SET deleted_at = CURRENT_TIMESTAMP WHERE training_path_id = ?",
+          deletedPathId);
+      jdbcTemplate.update(
+          """
+          INSERT INTO training_paths (
+            training_path_id, institution_id, name, active, created_at, updated_at
+          ) VALUES (?, ?, ?, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          """,
+          currentPathId,
+          institutionId,
+          name);
+
+      assertThatThrownBy(
+              () ->
+                  jdbcTemplate.update(
+                      "UPDATE training_paths SET deleted_at = NULL WHERE training_path_id = ?",
+                      deletedPathId))
+          .isInstanceOf(DataIntegrityViolationException.class);
+      assertThatThrownBy(
+              () ->
+                  jdbcTemplate.update(
+                      "UPDATE training_paths SET deleted_at = CURRENT_TIMESTAMP WHERE training_path_id = ?",
+                      currentPathId))
+          .isInstanceOf(DataIntegrityViolationException.class);
+    } finally {
+      jdbcTemplate.update(
+          "DELETE FROM training_paths WHERE training_path_id IN (?, ?)",
+          deletedPathId,
+          currentPathId);
+    }
   }
 
   @Test
@@ -77,6 +154,169 @@ class DatabaseMigrationIntegrationTest {
                 assertThat(group.items())
                     .singleElement()
                     .satisfies(item -> assertThat(item.title()).contains("Música Felipe Boero")));
+  }
+
+  @Test
+  @DisplayName("Should exclude deleted academic resources from contextual search")
+  void shouldExcludeDeletedAcademicResourcesFromContextualSearch() {
+    final UUID institutionId = firstInstitutionId();
+    final String searchTerm = "zzsoftdelete" + System.nanoTime();
+    final int academicYear = 2891;
+    final UUID deletedYearId = UUID.randomUUID();
+    final UUID currentYearId = UUID.randomUUID();
+    final UUID deletedPathId = UUID.randomUUID();
+    final UUID currentPathId = UUID.randomUUID();
+    final UUID orphanedPathId = UUID.randomUUID();
+    final UUID deletedPlanId = UUID.randomUUID();
+    final UUID currentPlanId = UUID.randomUUID();
+    final UUID orphanedPlanId = UUID.randomUUID();
+    final UUID deletedSpaceId = UUID.randomUUID();
+    final UUID currentSpaceId = UUID.randomUUID();
+    final UUID deletedInstrumentId = UUID.randomUUID();
+    final UUID currentInstrumentId = UUID.randomUUID();
+    try {
+      insertAcademicYearWithStatus(deletedYearId, institutionId, academicYear, "PLANNED");
+      jdbcTemplate.update(
+          "UPDATE academic_years SET deleted_at = CURRENT_TIMESTAMP WHERE academic_year_id = ?",
+          deletedYearId);
+      insertAcademicYearWithStatus(currentYearId, institutionId, academicYear, "PLANNED");
+
+      insertTrainingPath(deletedPathId, institutionId, searchTerm);
+      jdbcTemplate.update(
+          "UPDATE training_paths SET active = false, deleted_at = CURRENT_TIMESTAMP WHERE training_path_id = ?",
+          deletedPathId);
+      insertTrainingPath(currentPathId, institutionId, searchTerm);
+
+      insertStudyPlan(deletedPlanId, institutionId, currentPathId, searchTerm);
+      jdbcTemplate.update(
+          "UPDATE study_plans SET deleted_at = CURRENT_TIMESTAMP WHERE study_plan_id = ?",
+          deletedPlanId);
+      insertStudyPlan(currentPlanId, institutionId, currentPathId, searchTerm);
+
+      insertTrainingPath(orphanedPathId, institutionId, searchTerm + " parent");
+      insertStudyPlan(orphanedPlanId, institutionId, orphanedPathId, searchTerm + " inherited");
+      jdbcTemplate.update(
+          "UPDATE training_paths SET active = false, deleted_at = CURRENT_TIMESTAMP WHERE training_path_id = ?",
+          orphanedPathId);
+
+      insertAcademicSpace(deletedSpaceId, institutionId, searchTerm);
+      jdbcTemplate.update(
+          "UPDATE academic_spaces SET active = false, deleted_at = CURRENT_TIMESTAMP WHERE academic_space_id = ?",
+          deletedSpaceId);
+      insertAcademicSpace(currentSpaceId, institutionId, searchTerm);
+
+      insertInstrument(deletedInstrumentId, institutionId, searchTerm);
+      jdbcTemplate.update(
+          "UPDATE instruments SET deleted_at = CURRENT_TIMESTAMP WHERE instrument_id = ?",
+          deletedInstrumentId);
+      insertInstrument(currentInstrumentId, institutionId, searchTerm);
+
+      assertSearchContainsOnly(
+          searchService.platformSummary(String.valueOf(academicYear), 5),
+          SearchEntityType.ACADEMIC_YEAR,
+          currentYearId);
+      assertSearchContainsOnly(
+          searchService.platformSummary(searchTerm, 5),
+          SearchEntityType.TRAINING_PATH,
+          currentPathId);
+      assertSearchContainsOnly(
+          searchService.platformSummary(searchTerm, 5), SearchEntityType.STUDY_PLAN, currentPlanId);
+      assertSearchContainsOnly(
+          searchService.platformSummary(searchTerm, 5),
+          SearchEntityType.ACADEMIC_SPACE,
+          currentSpaceId);
+      assertSearchContainsOnly(
+          searchService.platformSummary(searchTerm, 5),
+          SearchEntityType.INSTRUMENT,
+          currentInstrumentId);
+
+      final Set<PermissionCode> permissions =
+          Set.of(
+              PermissionCode.ACADEMIC_YEAR_READ,
+              PermissionCode.TRAINING_PATH_READ,
+              PermissionCode.STUDY_PLAN_READ,
+              PermissionCode.ACADEMIC_SPACE_READ,
+              PermissionCode.INSTRUMENT_READ);
+      assertSearchContainsOnly(
+          searchService.institutionalSummary(institutionId, searchTerm, 5, permissions),
+          SearchEntityType.TRAINING_PATH,
+          currentPathId);
+      assertSearchContainsOnly(
+          searchService.institutionalSummary(institutionId, searchTerm, 5, permissions),
+          SearchEntityType.STUDY_PLAN,
+          currentPlanId);
+      assertSearchContainsOnly(
+          searchService.institutionalSummary(
+              institutionId, String.valueOf(academicYear), 5, permissions),
+          SearchEntityType.ACADEMIC_YEAR,
+          currentYearId);
+      assertSearchContainsOnly(
+          searchService.institutionalSummary(institutionId, searchTerm, 5, permissions),
+          SearchEntityType.ACADEMIC_SPACE,
+          currentSpaceId);
+      assertSearchContainsOnly(
+          searchService.institutionalSummary(institutionId, searchTerm, 5, permissions),
+          SearchEntityType.INSTRUMENT,
+          currentInstrumentId);
+
+      assertThat(
+              searchService
+                  .platformPage(SearchEntityType.ACADEMIC_YEAR, String.valueOf(academicYear), 0, 5)
+                  .items())
+          .extracting(item -> item.id())
+          .containsExactly(currentYearId);
+      assertThat(
+              searchService.platformPage(SearchEntityType.TRAINING_PATH, searchTerm, 0, 5).items())
+          .extracting(item -> item.id())
+          .containsExactly(currentPathId);
+      assertThat(searchService.platformPage(SearchEntityType.STUDY_PLAN, searchTerm, 0, 5).items())
+          .extracting(item -> item.id())
+          .containsExactly(currentPlanId);
+      assertThat(
+              searchService.platformPage(SearchEntityType.ACADEMIC_SPACE, searchTerm, 0, 5).items())
+          .extracting(item -> item.id())
+          .containsExactly(currentSpaceId);
+      assertThat(searchService.platformPage(SearchEntityType.INSTRUMENT, searchTerm, 0, 5).items())
+          .extracting(item -> item.id())
+          .containsExactly(currentInstrumentId);
+    } finally {
+      jdbcTemplate.update(
+          "DELETE FROM study_plans WHERE study_plan_id IN (?, ?, ?)",
+          deletedPlanId,
+          currentPlanId,
+          orphanedPlanId);
+      jdbcTemplate.update(
+          "DELETE FROM training_paths WHERE training_path_id IN (?, ?, ?)",
+          deletedPathId,
+          currentPathId,
+          orphanedPathId);
+      jdbcTemplate.update(
+          "DELETE FROM academic_years WHERE academic_year_id IN (?, ?)",
+          deletedYearId,
+          currentYearId);
+      jdbcTemplate.update(
+          "DELETE FROM academic_spaces WHERE academic_space_id IN (?, ?)",
+          deletedSpaceId,
+          currentSpaceId);
+      jdbcTemplate.update(
+          "DELETE FROM instruments WHERE instrument_id IN (?, ?)",
+          deletedInstrumentId,
+          currentInstrumentId);
+    }
+  }
+
+  private void assertSearchContainsOnly(
+      final SearchSummaryResponse summary,
+      final SearchEntityType entityType,
+      final UUID expectedId) {
+    assertThat(summary.groups())
+        .filteredOn(group -> group.entityType() == entityType)
+        .singleElement()
+        .satisfies(
+            group ->
+                assertThat(group.items())
+                    .extracting(item -> item.id())
+                    .containsExactly(expectedId));
   }
 
   @Test
@@ -242,22 +482,35 @@ class DatabaseMigrationIntegrationTest {
   }
 
   private void insertAcademicYear(final UUID id, final UUID institutionId, final int year) {
+    insertAcademicYearWithStatus(id, institutionId, year, "ACTIVE");
+  }
+
+  private void insertAcademicYearWithStatus(
+      final UUID id, final UUID institutionId, final int year, final String status) {
     jdbcTemplate.update(
         """
         INSERT INTO academic_years (
           academic_year_id, institution_id, year, start_date, end_date,
           status, created_at, updated_at
         ) VALUES (
-          ?, ?, ?, DATE '2031-03-01', DATE '2031-12-01',
-          'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+          ?, ?, ?, CASE WHEN ? = 'PLANNED' THEN NULL ELSE DATE '2031-03-01' END,
+          CASE WHEN ? = 'PLANNED' THEN NULL ELSE DATE '2031-12-01' END,
+          ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
         )
         """,
         id,
         institutionId,
-        year);
+        year,
+        status,
+        status,
+        status);
   }
 
   private void insertTrainingPath(final UUID id, final UUID institutionId) {
+    insertTrainingPath(id, institutionId, "Migration Path " + id);
+  }
+
+  private void insertTrainingPath(final UUID id, final UUID institutionId, final String name) {
     jdbcTemplate.update(
         """
         INSERT INTO training_paths (
@@ -266,10 +519,15 @@ class DatabaseMigrationIntegrationTest {
         """,
         id,
         institutionId,
-        "Migration Path " + id);
+        name);
   }
 
   private void insertStudyPlan(final UUID id, final UUID institutionId, final UUID trainingPathId) {
+    insertStudyPlan(id, institutionId, trainingPathId, "Migration Plan " + id);
+  }
+
+  private void insertStudyPlan(
+      final UUID id, final UUID institutionId, final UUID trainingPathId, final String name) {
     jdbcTemplate.update(
         """
         INSERT INTO study_plans (
@@ -279,10 +537,14 @@ class DatabaseMigrationIntegrationTest {
         id,
         institutionId,
         trainingPathId,
-        "Migration Plan " + id);
+        name);
   }
 
   private void insertAcademicSpace(final UUID id, final UUID institutionId) {
+    insertAcademicSpace(id, institutionId, "Migration Space " + id);
+  }
+
+  private void insertAcademicSpace(final UUID id, final UUID institutionId, final String name) {
     jdbcTemplate.update(
         """
         INSERT INTO academic_spaces (
@@ -291,7 +553,19 @@ class DatabaseMigrationIntegrationTest {
         """,
         id,
         institutionId,
-        "Migration Space " + id);
+        name);
+  }
+
+  private void insertInstrument(final UUID id, final UUID institutionId, final String name) {
+    jdbcTemplate.update(
+        """
+        INSERT INTO instruments (
+          instrument_id, institution_id, name, active, created_at, updated_at
+        ) VALUES (?, ?, ?, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """,
+        id,
+        institutionId,
+        name);
   }
 
   private void insertStudyPlanSpace(
@@ -358,6 +632,22 @@ class DatabaseMigrationIntegrationTest {
           AND tablename = 'people'
           AND indexname = 'people_active_document_number_unique'
           AND indexdef LIKE '%WHERE (deleted = false)%'
+        """,
+        Integer.class);
+  }
+
+  private Integer pgTrgmExtensionCount() {
+    return jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'", Integer.class);
+  }
+
+  private Integer searchTrigramIndexCount() {
+    return jdbcTemplate.queryForObject(
+        """
+        SELECT COUNT(*)
+        FROM pg_indexes
+        WHERE schemaname = 'public'
+          AND indexname LIKE '%_search_trgm_idx'
         """,
         Integer.class);
   }

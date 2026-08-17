@@ -70,7 +70,8 @@ enum SearchDefinition {
              y.status, NULL::text AS category,
              boero_search_rank(y.year::text, :query, :normalized) AS score
         FROM academic_years y JOIN institutions i ON i.institution_id = y.institution_id
-       WHERE boero_search_vector(y.year::text) @@ to_tsquery('simple', :query)
+       WHERE y.deleted_at IS NULL
+         AND boero_search_vector(y.year::text) @@ to_tsquery('simple', :query)
       """),
   TRAINING_PATH(
       SearchEntityType.TRAINING_PATH,
@@ -86,7 +87,9 @@ enum SearchDefinition {
              boero_search_rank(p.name, :query, :normalized) AS score
         FROM study_plans p JOIN institutions i ON i.institution_id = p.institution_id
         JOIN training_paths t ON t.training_path_id = p.training_path_id
-       WHERE boero_search_vector(p.name) @@ to_tsquery('simple', :query)
+       WHERE p.deleted_at IS NULL
+         AND t.deleted_at IS NULL
+         AND boero_search_vector(p.name) @@ to_tsquery('simple', :query)
       """),
   ACADEMIC_SPACE(
       SearchEntityType.ACADEMIC_SPACE,
@@ -97,7 +100,8 @@ enum SearchDefinition {
              CASE WHEN e.active THEN 'ACTIVE' ELSE 'INACTIVE' END AS status, e.type AS category,
              boero_search_rank(e.name, :query, :normalized) AS score
         FROM academic_spaces e JOIN institutions i ON i.institution_id = e.institution_id
-       WHERE boero_search_vector(e.name) @@ to_tsquery('simple', :query)
+       WHERE e.deleted_at IS NULL
+         AND boero_search_vector(e.name) @@ to_tsquery('simple', :query)
       """),
   INSTRUMENT(
       SearchEntityType.INSTRUMENT,
@@ -155,7 +159,8 @@ enum SearchDefinition {
                boero_search_rank(e.name, :query, :normalized) AS score
           FROM %s e
           JOIN institutions i ON i.institution_id = e.institution_id
-         WHERE boero_search_vector(e.name) @@ to_tsquery('simple', :query)
+         WHERE e.deleted_at IS NULL
+           AND boero_search_vector(e.name) @@ to_tsquery('simple', :query)
         """
         .formatted(idColumn, table);
   }

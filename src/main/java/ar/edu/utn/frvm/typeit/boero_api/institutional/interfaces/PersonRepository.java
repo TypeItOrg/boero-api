@@ -97,7 +97,7 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
           OR UNACCENT_LOWER(CONCAT(person.firstName, ' ', person.lastName))
               LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
           OR person.documentNumber LIKE CONCAT('%', CAST(:search AS string), '%')
-          OR UNACCENT_LOWER(COALESCE(person.email, ''))
+          OR UNACCENT_LOWER(person.email)
               LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
         )
       """)
