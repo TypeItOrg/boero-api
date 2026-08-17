@@ -33,7 +33,7 @@ public class UpdateAcademicYearStatusUseCase {
     }
     if (request.status() == AcademicYearStatus.ACTIVE
         && academicYear.getStatus() != AcademicYearStatus.ACTIVE
-        && academicYearRepository.existsByInstitution_IdAndStatus(
+        && academicYearRepository.existsByInstitution_IdAndStatusAndDeletedAtIsNull(
             institutionId, AcademicYearStatus.ACTIVE)) {
       throw AcademicConflictException.forField(
           "status", AcademicMessages.ACADEMIC_YEAR_ACTIVE_CONFLICT);

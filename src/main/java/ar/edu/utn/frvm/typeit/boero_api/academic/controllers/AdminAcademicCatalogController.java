@@ -74,8 +74,10 @@ public class AdminAcademicCatalogController {
       @RequestParam(required = false) @Size(max = 100) final String search,
       @RequestParam(required = false) final Boolean active,
       @RequestParam(required = false) final AcademicSpaceType type,
+      @RequestParam(defaultValue = "false") final boolean deleted,
       @PageableDefault(sort = "name", direction = Sort.Direction.ASC) final Pageable pageable) {
-    return listAcademicSpacesUseCase.execute(institutionId, search, active, type, pageable);
+    return listAcademicSpacesUseCase.execute(
+        institutionId, search, active, type, deleted, pageable);
   }
 
   @GetMapping(value = "/academic-spaces/{academicSpaceId}", version = Version.V1)
@@ -114,8 +116,9 @@ public class AdminAcademicCatalogController {
       @PathVariable final UUID institutionId,
       @RequestParam(required = false) @Size(max = 100) final String search,
       @RequestParam(required = false) final Boolean active,
+      @RequestParam(defaultValue = "false") final boolean deleted,
       @PageableDefault(sort = "name", direction = Sort.Direction.ASC) final Pageable pageable) {
-    return listInstrumentsUseCase.execute(institutionId, search, active, pageable);
+    return listInstrumentsUseCase.execute(institutionId, search, active, deleted, pageable);
   }
 
   @GetMapping(value = "/instruments/{instrumentId}", version = Version.V1)

@@ -1,9 +1,10 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.entities;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
+import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.InvalidAcademicStateException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.validation.AcademicNameNormalizer;
-import ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
+import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,6 +16,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -33,7 +35,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder(access = AccessLevel.PACKAGE)
-public class AcademicSpace extends Auditable {
+public class AcademicSpace extends SoftDeletable {
 
   @Id
   @GeneratedUUIDv7
@@ -79,5 +81,12 @@ public class AcademicSpace extends Auditable {
 
   public void updateStatus(final boolean active) {
     this.active = active;
+  }
+
+  public boolean delete(final LocalDateTime deletedAt) {
+    if (active) {
+      throw new InvalidAcademicStateException();
+    }
+    return markDeleted(deletedAt);
   }
 }

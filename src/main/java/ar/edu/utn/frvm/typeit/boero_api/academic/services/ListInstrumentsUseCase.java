@@ -20,10 +20,20 @@ public class ListInstrumentsUseCase {
       final UUID institutionId,
       final String search,
       final Boolean active,
+      final boolean deleted,
       final Pageable pageable) {
     return PaginatedResponse.from(
         instrumentRepository
-            .findByFilters(institutionId, AcademicNameNormalizer.search(search), active, pageable)
+            .findByFilters(
+                institutionId, AcademicNameNormalizer.search(search), active, deleted, pageable)
             .map(InstrumentResponse::from));
+  }
+
+  public PaginatedResponse<InstrumentResponse> execute(
+      final UUID institutionId,
+      final String search,
+      final Boolean active,
+      final Pageable pageable) {
+    return execute(institutionId, search, active, false, pageable);
   }
 }

@@ -35,7 +35,8 @@ public class UpdateStudyPlanSpaceUseCase {
     final var plan = studyPlanDraftGuard.lock(institutionId, existing.getStudyPlan().getId());
     final var space =
         academicSpaceRepository
-            .findByIdAndInstitution_IdAndActiveTrue(request.academicSpaceId(), institutionId)
+            .findByIdAndInstitution_IdAndActiveTrueAndDeletedAtIsNull(
+                request.academicSpaceId(), institutionId)
             .orElseThrow(AcademicSpaceNotFoundException::new);
     final var level = resolveLevel(plan.getId(), request.academicLevelId());
     existing.update(

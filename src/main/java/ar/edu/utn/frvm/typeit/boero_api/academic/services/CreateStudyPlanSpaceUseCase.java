@@ -31,7 +31,8 @@ public class CreateStudyPlanSpaceUseCase {
     final var plan = studyPlanDraftGuard.lock(institutionId, studyPlanId);
     final var space =
         academicSpaceRepository
-            .findByIdAndInstitution_IdAndActiveTrue(request.academicSpaceId(), institutionId)
+            .findByIdAndInstitution_IdAndActiveTrueAndDeletedAtIsNull(
+                request.academicSpaceId(), institutionId)
             .orElseThrow(AcademicSpaceNotFoundException::new);
     final var level = resolveLevel(studyPlanId, request.academicLevelId());
     try {

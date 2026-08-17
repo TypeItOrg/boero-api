@@ -49,10 +49,12 @@ public class ListAcademicYearsUseCase {
       final LocalDate startDate,
       final LocalDate endDate,
       final LocalDate validOn,
+      final boolean deleted,
       final Pageable pageable) {
     final var page =
         academicYearRepository.findAll(
-            byFilters(institutionId, search, status, year, startDate, endDate, validOn), pageable);
+            byFilters(institutionId, search, status, year, startDate, endDate, validOn, deleted),
+            pageable);
     return PaginatedResponse.from(page.map(AcademicYearResponse::from));
   }
 
@@ -65,7 +67,20 @@ public class ListAcademicYearsUseCase {
       final LocalDate startDate,
       final LocalDate endDate,
       final Pageable pageable) {
-    return execute(institutionId, search, status, year, startDate, endDate, null, pageable);
+    return execute(institutionId, search, status, year, startDate, endDate, null, false, pageable);
+  }
+
+  public PaginatedResponse<AcademicYearResponse> execute(
+      final UUID institutionId,
+      final String search,
+      final AcademicYearStatus status,
+      final Integer year,
+      final LocalDate startDate,
+      final LocalDate endDate,
+      final LocalDate validOn,
+      final Pageable pageable) {
+    return execute(
+        institutionId, search, status, year, startDate, endDate, validOn, false, pageable);
   }
 
   private static Specification<AcademicYear> byFilters(
@@ -75,10 +90,15 @@ public class ListAcademicYearsUseCase {
       final Integer year,
       final LocalDate startDate,
       final LocalDate endDate,
-      final LocalDate validOn) {
+      final LocalDate validOn,
+      final boolean deleted) {
     return (root, query, criteriaBuilder) -> {
       final List<Predicate> predicates = new ArrayList<>();
       predicates.add(criteriaBuilder.equal(root.get("institution").get("id"), institutionId));
+      predicates.add(
+          deleted
+              ? criteriaBuilder.isNotNull(root.get("deletedAt"))
+              : criteriaBuilder.isNull(root.get("deletedAt")));
       if (status != null) {
         predicates.add(criteriaBuilder.equal(root.get("status"), status));
       }

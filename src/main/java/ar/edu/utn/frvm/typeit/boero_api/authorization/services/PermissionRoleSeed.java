@@ -58,19 +58,29 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.ACADEMIC_YEAR_CREATE,
               PermissionCode.ACADEMIC_YEAR_UPDATE,
               PermissionCode.ACADEMIC_YEAR_STATUS_UPDATE,
+              PermissionCode.ACADEMIC_YEAR_DELETE,
+              PermissionCode.ACADEMIC_YEAR_RESTORE,
               PermissionCode.TRAINING_PATH_CREATE,
               PermissionCode.TRAINING_PATH_UPDATE,
               PermissionCode.TRAINING_PATH_STATUS_UPDATE,
+              PermissionCode.TRAINING_PATH_DELETE,
+              PermissionCode.TRAINING_PATH_RESTORE,
               PermissionCode.STUDY_PLAN_CREATE,
               PermissionCode.STUDY_PLAN_UPDATE,
               PermissionCode.STUDY_PLAN_STATUS_UPDATE,
               PermissionCode.STUDY_PLAN_CURRICULUM_UPDATE,
+              PermissionCode.STUDY_PLAN_DELETE,
+              PermissionCode.STUDY_PLAN_RESTORE,
               PermissionCode.ACADEMIC_SPACE_CREATE,
               PermissionCode.ACADEMIC_SPACE_UPDATE,
               PermissionCode.ACADEMIC_SPACE_STATUS_UPDATE,
+              PermissionCode.ACADEMIC_SPACE_DELETE,
+              PermissionCode.ACADEMIC_SPACE_RESTORE,
               PermissionCode.INSTRUMENT_CREATE,
               PermissionCode.INSTRUMENT_UPDATE,
-              PermissionCode.INSTRUMENT_STATUS_UPDATE));
+              PermissionCode.INSTRUMENT_STATUS_UPDATE,
+              PermissionCode.INSTRUMENT_DELETE,
+              PermissionCode.INSTRUMENT_RESTORE));
 
   private final PermissionRepository permissionRepository;
   private final RoleRepository roleRepository;

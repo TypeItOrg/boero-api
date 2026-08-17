@@ -4,8 +4,8 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.InvalidAcademicStateException;
-import ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
+import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,6 +18,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Year;
 import java.time.ZoneId;
 import java.util.Map;
@@ -34,16 +35,13 @@ import lombok.NoArgsConstructor;
     uniqueConstraints = {
       @UniqueConstraint(
           name = "academic_years_institution_id_id_unique",
-          columnNames = {"institution_id", "academic_year_id"}),
-      @UniqueConstraint(
-          name = "academic_years_institution_year_unique",
-          columnNames = {"institution_id", "year"})
+          columnNames = {"institution_id", "academic_year_id"})
     })
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder(access = AccessLevel.PACKAGE)
-public class AcademicYear extends Auditable {
+public class AcademicYear extends SoftDeletable {
 
   public static final int MIN_YEAR = 2000;
 
@@ -108,6 +106,13 @@ public class AcademicYear extends Auditable {
       throw new InvalidAcademicStateException();
     }
     status = target;
+  }
+
+  public boolean delete(final LocalDateTime deletedAt) {
+    if (status != AcademicYearStatus.PLANNED) {
+      throw new InvalidAcademicStateException();
+    }
+    return markDeleted(deletedAt);
   }
 
   private static void validate(final int year, final LocalDate startDate, final LocalDate endDate) {

@@ -27,7 +27,7 @@ public class CreateStudyPlanUseCase {
       final UUID institutionId, final UUID trainingPathId, final CreateStudyPlanRequest request) {
     final var trainingPath =
         trainingPathRepository
-            .findByIdAndInstitution_IdAndActiveTrue(trainingPathId, institutionId)
+            .findByIdAndInstitution_IdAndActiveTrueAndDeletedAtIsNull(trainingPathId, institutionId)
             .orElseThrow(TrainingPathNotFoundException::new);
     final var name = AcademicNameNormalizer.display(request.name());
     if (studyPlanRepository.existsByNormalizedName(trainingPathId, name)) {

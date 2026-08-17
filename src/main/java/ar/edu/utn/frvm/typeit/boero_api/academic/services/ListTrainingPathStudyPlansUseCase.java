@@ -19,7 +19,8 @@ public class ListTrainingPathStudyPlansUseCase {
       final UUID institutionId, final UUID trainingPathId, final Pageable pageable) {
     return PaginatedResponse.from(
         studyPlanRepository
-            .findByTrainingPath_IdAndInstitution_Id(trainingPathId, institutionId, pageable)
+            .findByTrainingPath_IdAndInstitution_IdAndDeletedAtIsNull(
+                trainingPathId, institutionId, pageable)
             .map(StudyPlanResponse::from));
   }
 }

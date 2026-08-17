@@ -51,6 +51,12 @@ public final class AcademicMessages {
   public static final String INVALID_VALUE = "El valor indicado no es válido.";
   public static final String INVALID_NAME_FORMAT = "El nombre no tiene un formato válido.";
   public static final String INVALID_DISPLAY_ORDER = "El orden debe ser mayor que cero.";
+  public static final String DELETE_REFERENCED_RESOURCE =
+      "El recurso no puede eliminarse porque todavía tiene elementos vigentes asociados.";
+  public static final String RESTORE_PARENT_UNAVAILABLE =
+      "El recurso no puede restaurarse porque su elemento superior no está disponible.";
+  public static final String RESTORE_CONFLICT =
+      "El recurso no puede restaurarse porque sus datos ya están en uso.";
 
   private AcademicMessages() {}
 }

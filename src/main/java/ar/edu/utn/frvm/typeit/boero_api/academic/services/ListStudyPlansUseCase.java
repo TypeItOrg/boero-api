@@ -35,6 +35,7 @@ public class ListStudyPlansUseCase {
       final StudyPlanStatus status,
       final UUID trainingPathId,
       final LocalDate validOn,
+      final boolean deleted,
       final Pageable pageable) {
     return PaginatedResponse.from(
         studyPlanRepository
@@ -44,7 +45,8 @@ public class ListStudyPlansUseCase {
                     AcademicNameNormalizer.search(search),
                     status,
                     trainingPathId,
-                    validOn),
+                    validOn,
+                    deleted),
                 mapDateSort(pageable))
             .map(StudyPlanResponse::from));
   }
@@ -54,7 +56,17 @@ public class ListStudyPlansUseCase {
       final String search,
       final StudyPlanStatus status,
       final Pageable pageable) {
-    return execute(institutionId, search, status, null, null, pageable);
+    return execute(institutionId, search, status, null, null, false, pageable);
+  }
+
+  public PaginatedResponse<StudyPlanResponse> execute(
+      final UUID institutionId,
+      final String search,
+      final StudyPlanStatus status,
+      final UUID trainingPathId,
+      final LocalDate validOn,
+      final Pageable pageable) {
+    return execute(institutionId, search, status, trainingPathId, validOn, false, pageable);
   }
 
   private static Specification<StudyPlan> byFilters(
@@ -62,10 +74,15 @@ public class ListStudyPlansUseCase {
       final String search,
       final StudyPlanStatus status,
       final UUID trainingPathId,
-      final LocalDate validOn) {
+      final LocalDate validOn,
+      final boolean deleted) {
     return (root, query, criteriaBuilder) -> {
       final List<Predicate> predicates = new ArrayList<>();
       predicates.add(criteriaBuilder.equal(root.get("institution").get("id"), institutionId));
+      predicates.add(
+          deleted
+              ? criteriaBuilder.isNotNull(root.get("deletedAt"))
+              : criteriaBuilder.isNull(root.get("deletedAt")));
       if (status != null) {
         predicates.add(criteriaBuilder.equal(root.get("status"), status));
       }

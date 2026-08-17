@@ -14,7 +14,8 @@ public final class AcademicIntegrityViolationTranslator {
       return new AcademicConflictException(AcademicMessages.INVALID_RELATIONSHIP);
     }
     return switch (constraintName) {
-      case "academic_years_institution_year_unique" ->
+      case "academic_years_institution_year_unique",
+          "academic_years_current_institution_year_unique" ->
           conflict(AcademicMessages.DUPLICATE_YEAR, "year");
       case "academic_years_active_institution_unique" ->
           conflict(AcademicMessages.ACADEMIC_YEAR_ACTIVE_CONFLICT, "status");
@@ -26,10 +27,14 @@ public final class AcademicIntegrityViolationTranslator {
       case "academic_years_status_check", "study_plans_status_check" ->
           validation(AcademicMessages.INVALID_VALUE, "status");
       case "training_paths_institution_name_unique",
+          "training_paths_current_institution_name_unique",
           "study_plans_institution_name_unique",
+          "study_plans_current_training_path_name_unique",
           "academic_levels_study_plan_name_unique",
           "academic_spaces_institution_name_type_unique",
-          "instruments_institution_name_unique" ->
+          "academic_spaces_current_institution_name_type_unique",
+          "instruments_institution_name_unique",
+          "instruments_current_institution_name_unique" ->
           conflict(AcademicMessages.DUPLICATE_NAME, "name");
       case "training_paths_name_format_check",
           "study_plans_name_format_check",
@@ -50,6 +55,12 @@ public final class AcademicIntegrityViolationTranslator {
       case "academic_levels_display_order_check", "study_plan_spaces_display_order_check" ->
           validation(AcademicMessages.INVALID_DISPLAY_ORDER, "displayOrder");
       case "academic_spaces_type_check" -> validation(AcademicMessages.INVALID_VALUE, "type");
+      case "academic_years_deleted_state_check",
+          "training_paths_deleted_state_check",
+          "study_plans_deleted_state_check",
+          "academic_spaces_deleted_state_check",
+          "instruments_deleted_state_check" ->
+          new InvalidAcademicStateException();
       case "study_plan_spaces_requirement_type_check" ->
           validation(AcademicMessages.INVALID_VALUE, "requirementType");
       case "study_plan_spaces_approval_mode_check" ->

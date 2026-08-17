@@ -5,8 +5,8 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.InvalidAcademicStateException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.validation.AcademicNameNormalizer;
-import ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
+import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,6 +19,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -38,7 +39,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder(access = AccessLevel.PACKAGE)
-public class StudyPlan extends Auditable {
+public class StudyPlan extends SoftDeletable {
 
   @Id
   @GeneratedUUIDv7
@@ -111,6 +112,11 @@ public class StudyPlan extends Auditable {
     if (status != StudyPlanStatus.DRAFT) {
       throw new InvalidAcademicStateException();
     }
+  }
+
+  public boolean delete(final LocalDateTime deletedAt) {
+    ensureDraft();
+    return markDeleted(deletedAt);
   }
 
   private static void validateDates(final LocalDate effectiveFrom, final LocalDate effectiveTo) {

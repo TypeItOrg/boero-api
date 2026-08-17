@@ -62,8 +62,9 @@ public class TrainingPathController {
       @PathVariable final UUID institutionId,
       @RequestParam(required = false) @Size(max = 100) final String search,
       @RequestParam(required = false) final Boolean active,
+      @RequestParam(defaultValue = "false") final boolean deleted,
       @PageableDefault(sort = "name", direction = Sort.Direction.ASC) final Pageable pageable) {
-    return listTrainingPathsUseCase.execute(institutionId, search, active, pageable);
+    return listTrainingPathsUseCase.execute(institutionId, search, active, deleted, pageable);
   }
 
   @GetMapping(value = "/{trainingPathId}", version = Version.V1)

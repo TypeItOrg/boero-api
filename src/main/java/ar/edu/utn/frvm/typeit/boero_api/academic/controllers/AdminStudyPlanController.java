@@ -79,12 +79,14 @@ public class AdminStudyPlanController {
       @RequestParam(required = false) final UUID trainingPathId,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           final LocalDate validOn,
+      @RequestParam(defaultValue = "false") final boolean deleted,
       @PageableDefault(sort = "name", direction = Sort.Direction.ASC) final Pageable pageable) {
     if (trainingPathId == null && validOn == null) {
-      return listStudyPlansUseCase.execute(institutionId, search, status, pageable);
+      return listStudyPlansUseCase.execute(
+          institutionId, search, status, null, null, deleted, pageable);
     }
     return listStudyPlansUseCase.execute(
-        institutionId, search, status, trainingPathId, validOn, pageable);
+        institutionId, search, status, trainingPathId, validOn, deleted, pageable);
   }
 
   @GetMapping(value = "/study-plans/{studyPlanId}", version = Version.V1)

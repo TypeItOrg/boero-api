@@ -29,7 +29,7 @@ public class UpdateAcademicYearUseCase {
         academicYearRepository
             .findByIdAndInstitution_Id(id, institutionId)
             .orElseThrow(AcademicYearNotFoundException::new);
-    if (academicYearRepository.existsByInstitution_IdAndYearAndIdNot(
+    if (academicYearRepository.existsByInstitution_IdAndYearAndIdNotAndDeletedAtIsNull(
         institutionId, request.year(), id)) {
       throw AcademicConflictException.forField("year", AcademicMessages.DUPLICATE_YEAR);
     }
@@ -53,7 +53,7 @@ public class UpdateAcademicYearUseCase {
       throw new AcademicValidationException(AcademicMessages.ACADEMIC_YEAR_DATES_REQUIRED);
     }
     if (targetStatus == AcademicYearStatus.ACTIVE
-        && academicYearRepository.existsByInstitution_IdAndStatus(
+        && academicYearRepository.existsByInstitution_IdAndStatusAndDeletedAtIsNull(
             institutionId, AcademicYearStatus.ACTIVE)) {
       throw AcademicConflictException.forField(
           "status", AcademicMessages.ACADEMIC_YEAR_ACTIVE_CONFLICT);

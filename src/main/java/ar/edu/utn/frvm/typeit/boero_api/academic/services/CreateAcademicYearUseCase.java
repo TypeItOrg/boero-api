@@ -29,7 +29,8 @@ public class CreateAcademicYearUseCase {
         institutionRepository
             .findById(institutionId)
             .orElseThrow(InstitutionNotFoundException::new);
-    if (academicYearRepository.existsByInstitution_IdAndYear(institutionId, request.year())) {
+    if (academicYearRepository.existsByInstitution_IdAndYearAndDeletedAtIsNull(
+        institutionId, request.year())) {
       throw AcademicConflictException.forField("year", AcademicMessages.DUPLICATE_YEAR);
     }
     try {

@@ -20,28 +20,37 @@ public interface StudyPlanRepository
   Page<StudyPlan> findAll(Specification<StudyPlan> specification, Pageable pageable);
 
   @EntityGraph(attributePaths = "trainingPath")
-  Page<StudyPlan> findByTrainingPath_IdAndInstitution_Id(
+  Page<StudyPlan> findByTrainingPath_IdAndInstitution_IdAndDeletedAtIsNull(
       UUID trainingPathId, UUID institutionId, Pageable pageable);
 
   @EntityGraph(attributePaths = "trainingPath")
-  Optional<StudyPlan> findByIdAndInstitution_Id(UUID id, UUID institutionId);
+  @Query(
+      "SELECT plan FROM StudyPlan plan WHERE plan.id = :id AND plan.institution.id = :institutionId AND plan.deletedAt IS NULL")
+  Optional<StudyPlan> findByIdAndInstitution_Id(
+      @Param("id") UUID id, @Param("institutionId") UUID institutionId);
+
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query(
+      "SELECT plan FROM StudyPlan plan WHERE plan.id = :id AND plan.institution.id = :institutionId AND plan.deletedAt IS NULL")
+  Optional<StudyPlan> findByIdAndInstitution_IdForUpdate(
+      @Param("id") UUID id, @Param("institutionId") UUID institutionId);
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query(
       "SELECT plan FROM StudyPlan plan WHERE plan.id = :id AND plan.institution.id = :institutionId")
-  Optional<StudyPlan> findByIdAndInstitution_IdForUpdate(
+  Optional<StudyPlan> findByIdAndInstitution_IdForLifecycle(
       @Param("id") UUID id, @Param("institutionId") UUID institutionId);
 
   @Query(
       value =
-          "SELECT EXISTS (SELECT 1 FROM study_plans WHERE training_path_id = :trainingPathId AND lower(translate(name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN')) = lower(translate(:name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN'))) ",
+          "SELECT EXISTS (SELECT 1 FROM study_plans WHERE training_path_id = :trainingPathId AND deleted_at IS NULL AND lower(translate(name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN')) = lower(translate(:name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN'))) ",
       nativeQuery = true)
   boolean existsByNormalizedName(
       @Param("trainingPathId") UUID trainingPathId, @Param("name") String name);
 
   @Query(
       value =
-          "SELECT EXISTS (SELECT 1 FROM study_plans WHERE training_path_id = :trainingPathId AND study_plan_id <> :id AND lower(translate(name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN')) = lower(translate(:name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN'))) ",
+          "SELECT EXISTS (SELECT 1 FROM study_plans WHERE training_path_id = :trainingPathId AND deleted_at IS NULL AND study_plan_id <> :id AND lower(translate(name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN')) = lower(translate(:name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN'))) ",
       nativeQuery = true)
   boolean existsByNormalizedNameAndIdNot(
       @Param("trainingPathId") UUID trainingPathId,

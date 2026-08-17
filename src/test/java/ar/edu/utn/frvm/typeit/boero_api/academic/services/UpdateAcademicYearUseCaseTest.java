@@ -37,7 +37,7 @@ class UpdateAcademicYearUseCaseTest {
     given(academicYearRepository.findByIdAndInstitution_Id(academicYearId, institutionId))
         .willReturn(Optional.of(academicYear));
     given(
-            academicYearRepository.existsByInstitution_IdAndStatus(
+            academicYearRepository.existsByInstitution_IdAndStatusAndDeletedAtIsNull(
                 institutionId, AcademicYearStatus.ACTIVE))
         .willReturn(false);
 
@@ -68,7 +68,7 @@ class UpdateAcademicYearUseCaseTest {
     given(academicYearRepository.findByIdAndInstitution_Id(academicYearId, institutionId))
         .willReturn(Optional.of(academicYear));
     given(
-            academicYearRepository.existsByInstitution_IdAndStatus(
+            academicYearRepository.existsByInstitution_IdAndStatusAndDeletedAtIsNull(
                 institutionId, AcademicYearStatus.ACTIVE))
         .willReturn(true);
 

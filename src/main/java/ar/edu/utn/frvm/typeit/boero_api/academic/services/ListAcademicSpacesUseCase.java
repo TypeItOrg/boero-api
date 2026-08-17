@@ -22,11 +22,26 @@ public class ListAcademicSpacesUseCase {
       final String search,
       final Boolean active,
       final AcademicSpaceType type,
+      final boolean deleted,
       final Pageable pageable) {
     return PaginatedResponse.from(
         academicSpaceRepository
             .findByFilters(
-                institutionId, AcademicNameNormalizer.search(search), active, type, pageable)
+                institutionId,
+                AcademicNameNormalizer.search(search),
+                active,
+                type,
+                deleted,
+                pageable)
             .map(AcademicSpaceResponse::from));
+  }
+
+  public PaginatedResponse<AcademicSpaceResponse> execute(
+      final UUID institutionId,
+      final String search,
+      final Boolean active,
+      final AcademicSpaceType type,
+      final Pageable pageable) {
+    return execute(institutionId, search, active, type, false, pageable);
   }
 }

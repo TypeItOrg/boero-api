@@ -72,13 +72,18 @@ public class AcademicYearController {
           final LocalDate endDate,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           final LocalDate validOn,
+      @RequestParam(defaultValue = "false") final boolean deleted,
       @PageableDefault(sort = "year", direction = Sort.Direction.ASC) final Pageable pageable) {
-    if (validOn == null) {
+    if (deleted) {
       return listAcademicYearsUseCase.execute(
-          institutionId, search, status, year, startDate, endDate, pageable);
+          institutionId, search, status, year, startDate, endDate, validOn, true, pageable);
+    }
+    if (validOn != null) {
+      return listAcademicYearsUseCase.execute(
+          institutionId, search, status, year, startDate, endDate, validOn, pageable);
     }
     return listAcademicYearsUseCase.execute(
-        institutionId, search, status, year, startDate, endDate, validOn, pageable);
+        institutionId, search, status, year, startDate, endDate, pageable);
   }
 
   @GetMapping(value = "/{academicYearId}", version = Version.V1)

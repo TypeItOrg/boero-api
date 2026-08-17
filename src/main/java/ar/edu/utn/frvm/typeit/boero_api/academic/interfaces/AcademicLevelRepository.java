@@ -11,9 +11,17 @@ import org.springframework.data.repository.query.Param;
 public interface AcademicLevelRepository extends JpaRepository<AcademicLevel, UUID> {
   List<AcademicLevel> findByStudyPlan_IdOrderByDisplayOrderAsc(UUID studyPlanId);
 
-  Optional<AcademicLevel> findByIdAndStudyPlan_Institution_Id(UUID id, UUID institutionId);
+  void deleteByStudyPlan_Id(UUID studyPlanId);
 
-  Optional<AcademicLevel> findByIdAndStudyPlan_Id(UUID id, UUID studyPlanId);
+  @Query(
+      "SELECT level FROM AcademicLevel level WHERE level.id = :id AND level.studyPlan.institution.id = :institutionId AND level.studyPlan.deletedAt IS NULL")
+  Optional<AcademicLevel> findByIdAndStudyPlan_Institution_Id(
+      @Param("id") UUID id, @Param("institutionId") UUID institutionId);
+
+  @Query(
+      "SELECT level FROM AcademicLevel level WHERE level.id = :id AND level.studyPlan.id = :studyPlanId AND level.studyPlan.deletedAt IS NULL")
+  Optional<AcademicLevel> findByIdAndStudyPlan_Id(
+      @Param("id") UUID id, @Param("studyPlanId") UUID studyPlanId);
 
   boolean existsByStudyPlan_IdAndDisplayOrder(UUID studyPlanId, int displayOrder);
 

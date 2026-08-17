@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface StudyPlanSpaceRepository extends JpaRepository<StudyPlanSpace, UUID> {
+  void deleteByStudyPlan_Id(UUID studyPlanId);
+
   @Query(
       """
       SELECT space FROM StudyPlanSpace space
@@ -26,11 +28,15 @@ public interface StudyPlanSpaceRepository extends JpaRepository<StudyPlanSpace, 
       JOIN FETCH space.academicSpace
       WHERE space.id = :id
         AND space.institution.id = :institutionId
+        AND space.studyPlan.deletedAt IS NULL
       """)
   Optional<StudyPlanSpace> findDetailsByIdAndInstitutionId(
       @Param("id") UUID id, @Param("institutionId") UUID institutionId);
 
-  Optional<StudyPlanSpace> findByIdAndInstitution_Id(UUID id, UUID institutionId);
+  @Query(
+      "SELECT space FROM StudyPlanSpace space WHERE space.id = :id AND space.institution.id = :institutionId AND space.studyPlan.deletedAt IS NULL")
+  Optional<StudyPlanSpace> findByIdAndInstitution_Id(
+      @Param("id") UUID id, @Param("institutionId") UUID institutionId);
 
   boolean existsByAcademicLevel_Id(UUID academicLevelId);
 

@@ -84,7 +84,8 @@ class AcademicYearControllerWebMvcTest {
                             2026,
                             null,
                             null,
-                            AcademicYearStatus.PLANNED)))
+                            AcademicYearStatus.PLANNED,
+                            null)))
                 .page(0)
                 .size(20)
                 .totalItems(1)
