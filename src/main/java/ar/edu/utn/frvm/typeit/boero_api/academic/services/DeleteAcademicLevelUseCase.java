@@ -25,7 +25,7 @@ public class DeleteAcademicLevelUseCase {
             .orElseThrow(AcademicLevelNotFoundException::new);
     studyPlanDraftGuard.lock(institutionId, level.getStudyPlan().getId());
     if (studyPlanSpaceRepository.existsByAcademicLevel_Id(id)) {
-      throw new AcademicConflictException(AcademicMessages.MODIFICATION_NOT_ALLOWED);
+      throw new AcademicConflictException(AcademicMessages.ACADEMIC_LEVEL_HAS_SPACES);
     }
     academicLevelRepository.delete(level);
   }

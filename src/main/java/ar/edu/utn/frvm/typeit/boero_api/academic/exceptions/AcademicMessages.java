@@ -22,9 +22,23 @@ public final class AcademicMessages {
       "El espacio académico ya está incorporado en ese nivel del plan.";
   public static final String DUPLICATE_PREREQUISITE =
       "La correlatividad ya está configurada para esa instancia.";
+  public static final String STUDY_PLAN_SPACE_HAS_PREREQUISITES =
+      "El espacio no puede eliminarse porque participa en una correlatividad. Eliminá las correlatividades asociadas antes de continuar.";
+  public static final String STUDY_PLAN_CURRICULUM_REQUIRES_DRAFT =
+      "La estructura curricular solo puede modificarse mientras el plan de estudio está en borrador.";
+  public static final String ACADEMIC_LEVEL_HAS_SPACES =
+      "El nivel no puede eliminarse porque contiene espacios académicos. Quitá esos espacios antes de continuar.";
+  public static final String TRAINING_PATH_HAS_ACTIVE_PLANS =
+      "El trayecto formativo no puede desactivarse porque tiene planes de estudio activos asociados.";
+  public static final String ACADEMIC_SPACE_HAS_ACTIVE_OR_DRAFT_PLANS =
+      "El espacio académico no puede desactivarse porque está utilizado en un plan de estudio activo o en borrador.";
+  public static final String STUDY_PLAN_ACTIVATION_REQUIRES_START_AND_ACTIVE_PATH =
+      "El plan no puede activarse hasta completar la fecha de inicio y tener un trayecto formativo activo.";
+  public static final String STUDY_PLAN_ACTIVATION_REQUIRES_SPACES =
+      "El plan no puede activarse porque todavía no tiene espacios académicos incorporados.";
+  public static final String STUDY_PLAN_STATUS_TRANSITION_INVALID =
+      "El plan de estudio solo puede volver a borrador desde un estado válido.";
   public static final String INVALID_STATE = "La transición de estado solicitada no es válida.";
-  public static final String MODIFICATION_NOT_ALLOWED =
-      "El recurso no puede modificarse en su estado actual.";
   public static final String INVALID_RELATIONSHIP =
       "La relación académica especificada no es válida.";
   public static final String PREREQUISITE_CYCLE = "La correlatividad solicitada genera un ciclo.";

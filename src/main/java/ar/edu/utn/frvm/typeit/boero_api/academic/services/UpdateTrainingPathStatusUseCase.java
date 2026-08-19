@@ -22,7 +22,7 @@ public class UpdateTrainingPathStatusUseCase {
             .findByIdAndInstitution_Id(id, institutionId)
             .orElseThrow(TrainingPathNotFoundException::new);
     if (!request.active() && trainingPathRepository.existsActiveStudyPlan(id)) {
-      throw new AcademicConflictException(AcademicMessages.MODIFICATION_NOT_ALLOWED);
+      throw new AcademicConflictException(AcademicMessages.TRAINING_PATH_HAS_ACTIVE_PLANS);
     }
     path.updateStatus(request.active());
     trainingPathRepository.flush();

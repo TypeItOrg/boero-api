@@ -25,7 +25,7 @@ public class DeleteStudyPlanSpaceUseCase {
             .orElseThrow(StudyPlanSpaceNotFoundException::new);
     studyPlanDraftGuard.lock(institutionId, existing.getStudyPlan().getId());
     if (prerequisiteRepository.existsByTargetStudyPlanSpace_IdOrRequiredStudyPlanSpace_Id(id, id)) {
-      throw new AcademicConflictException(AcademicMessages.MODIFICATION_NOT_ALLOWED);
+      throw new AcademicConflictException(AcademicMessages.STUDY_PLAN_SPACE_HAS_PREREQUISITES);
     }
     studyPlanSpaceRepository.delete(existing);
   }

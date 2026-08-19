@@ -4,4 +4,8 @@ public class InvalidAcademicStateException extends AcademicConflictException {
   public InvalidAcademicStateException() {
     super(AcademicMessages.INVALID_STATE);
   }
+
+  public InvalidAcademicStateException(final String message) {
+    super(message);
+  }
 }

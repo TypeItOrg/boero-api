@@ -1,6 +1,9 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus;
+import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages;
+import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.InvalidAcademicStateException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.StudyPlanNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import java.util.UUID;
@@ -18,7 +21,10 @@ class StudyPlanDraftGuard {
         studyPlanRepository
             .findByIdAndInstitution_IdForUpdate(studyPlanId, institutionId)
             .orElseThrow(StudyPlanNotFoundException::new);
-    plan.ensureDraft();
+    if (plan.getStatus() != StudyPlanStatus.DRAFT) {
+      throw new InvalidAcademicStateException(
+          AcademicMessages.STUDY_PLAN_CURRICULUM_REQUIRES_DRAFT);
+    }
     return plan;
   }
 }

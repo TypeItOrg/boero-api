@@ -22,7 +22,8 @@ public class UpdateAcademicSpaceStatusUseCase {
             .findByIdAndInstitution_Id(id, institutionId)
             .orElseThrow(AcademicSpaceNotFoundException::new);
     if (!request.active() && academicSpaceRepository.existsInEditableOrActivePlan(id)) {
-      throw new AcademicConflictException(AcademicMessages.MODIFICATION_NOT_ALLOWED);
+      throw new AcademicConflictException(
+          AcademicMessages.ACADEMIC_SPACE_HAS_ACTIVE_OR_DRAFT_PLANS);
     }
     space.updateStatus(request.active());
     academicSpaceRepository.flush();

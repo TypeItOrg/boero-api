@@ -28,10 +28,11 @@ public class UpdateStudyPlanStatusUseCase {
             .orElseThrow(StudyPlanNotFoundException::new);
     if (request.status() == StudyPlanStatus.ACTIVE) {
       if (plan.getEffectiveFrom() == null || !plan.getTrainingPath().isActive()) {
-        throw new AcademicConflictException(AcademicMessages.MODIFICATION_NOT_ALLOWED);
+        throw new AcademicConflictException(
+            AcademicMessages.STUDY_PLAN_ACTIVATION_REQUIRES_START_AND_ACTIVE_PATH);
       }
       if (!studyPlanSpaceRepository.existsByStudyPlanId(id)) {
-        throw new AcademicConflictException(AcademicMessages.MODIFICATION_NOT_ALLOWED);
+        throw new AcademicConflictException(AcademicMessages.STUDY_PLAN_ACTIVATION_REQUIRES_SPACES);
       }
       plan.activate();
       studyPlanRepository.flush();
@@ -50,7 +51,7 @@ public class UpdateStudyPlanStatusUseCase {
       return;
     }
     if (request.status() != StudyPlanStatus.DRAFT || plan.getStatus() != StudyPlanStatus.DRAFT) {
-      throw new AcademicConflictException(AcademicMessages.INVALID_STATE);
+      throw new AcademicConflictException(AcademicMessages.STUDY_PLAN_STATUS_TRANSITION_INVALID);
     }
   }
 }
