@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+staged_java_files="$(git diff --cached --name-only --diff-filter=ACMR -- '*.java')"
+
+if [ -n "$staged_java_files" ]; then
+  ./gradlew --no-daemon spotlessCheck
+fi
