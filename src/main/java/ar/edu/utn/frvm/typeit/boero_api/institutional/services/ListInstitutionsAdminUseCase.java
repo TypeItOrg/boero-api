@@ -59,8 +59,6 @@ public class ListInstitutionsAdminUseCase {
 
   private static Map<UUID, Long> toMap(List<InstitutionUserCount> rows) {
     return rows.stream()
-        .collect(
-            Collectors.toMap(
-                InstitutionUserCount::getInstitutionId, InstitutionUserCount::getUserCount));
+        .collect(Collectors.toMap(row -> row.getInstitutionId(), row -> row.getUserCount()));
   }
 }

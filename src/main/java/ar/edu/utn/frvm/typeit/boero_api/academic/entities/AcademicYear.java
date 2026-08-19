@@ -57,7 +57,7 @@ public class AcademicYear extends SoftDeletable {
   @JoinColumn(name = "institution_id", nullable = false)
   private Institution institution;
 
-  @Column(nullable = false)
+  @Column(name = "\"year\"", nullable = false)
   private int year;
 
   @Column(name = "start_date")

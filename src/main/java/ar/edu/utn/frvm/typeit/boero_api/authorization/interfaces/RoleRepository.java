@@ -5,6 +5,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -42,7 +43,7 @@ public interface RoleRepository extends JpaRepository<Role, UUID> {
   Page<Role> findInstitutionRoles(
       @Param("scope") RoleScope scope,
       @Param("institutionId") UUID institutionId,
-      @Param("search") String search,
+      @Param("search") @Nullable String search,
       Pageable pageable);
 
   @EntityGraph(attributePaths = "institution")
@@ -62,9 +63,9 @@ public interface RoleRepository extends JpaRepository<Role, UUID> {
       """)
   Page<Role> findPlatformRoles(
       @Param("scope") RoleScope scope,
-      @Param("institutionId") UUID institutionId,
-      @Param("system") Boolean system,
-      @Param("search") String search,
+      @Param("institutionId") @Nullable UUID institutionId,
+      @Param("system") @Nullable Boolean system,
+      @Param("search") @Nullable String search,
       Pageable pageable);
 
   boolean existsByScopeAndInstitution_IdAndNameIgnoreCase(

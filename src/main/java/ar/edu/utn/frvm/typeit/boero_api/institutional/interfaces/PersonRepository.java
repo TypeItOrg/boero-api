@@ -4,6 +4,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import jakarta.persistence.LockModeType;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -74,8 +75,8 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
       """)
   Page<Person> search(
       @Param("institutionId") UUID institutionId,
-      @Param("search") String search,
-      @Param("roleId") UUID roleId,
+      @Param("search") @Nullable String search,
+      @Param("roleId") @Nullable UUID roleId,
       Pageable pageable);
 
   @EntityGraph(attributePaths = "institution")
@@ -102,9 +103,9 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
         )
       """)
   Page<Person> findPlatformPeople(
-      @Param("search") String search,
-      @Param("institutionId") UUID institutionId,
-      @Param("roleCode") String roleCode,
+      @Param("search") @Nullable String search,
+      @Param("institutionId") @Nullable UUID institutionId,
+      @Param("roleCode") @Nullable String roleCode,
       Pageable pageable);
 
   @EntityGraph(

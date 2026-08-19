@@ -1,7 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
-import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.MonthlyInstitutionCount;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PlatformDashboardSummaryCounts;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.MonthlyInstitutionRegistrationResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.PlatformDashboardResponse;
@@ -43,7 +42,7 @@ public class GetPlatformDashboardUseCase {
             .collect(
                 Collectors.toMap(
                     row -> YearMonth.of(row.getYear(), row.getMonth()),
-                    MonthlyInstitutionCount::getInstitutionCount));
+                    row -> row.getInstitutionCount()));
 
     return PlatformDashboardResponse.builder()
         .summary(

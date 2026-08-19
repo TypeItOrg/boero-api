@@ -279,10 +279,8 @@ public class InstitutionRoleManagementService {
     final List<UUID> roleIds = roles.stream().map(Role::getId).toList();
     final Map<UUID, Long> assignmentCounts =
         assignmentRepository.countByRoleIds(roleIds).stream()
-            .collect(
-                Collectors.toMap(
-                    PersonRoleAssignmentRepository.RoleAssignmentCount::getRoleId,
-                    PersonRoleAssignmentRepository.RoleAssignmentCount::getAssignmentCount));
+            .collect(Collectors.toMap(row -> row.getRoleId(), row -> row.getAssignmentCount()));
+
     final Map<UUID, Set<String>> permissionsByRole =
         rolePermissionRepository.findByRole_IdIn(roleIds).stream()
             .collect(

@@ -4,6 +4,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Instrument;
 import jakarta.persistence.LockModeType;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,8 +23,8 @@ public interface InstrumentRepository extends JpaRepository<Instrument, UUID> {
       """)
   Page<Instrument> findByFilters(
       @Param("institutionId") UUID institutionId,
-      @Param("search") String search,
-      @Param("active") Boolean active,
+      @Param("search") @Nullable String search,
+      @Param("active") @Nullable Boolean active,
       @Param("deleted") boolean deleted,
       Pageable pageable);
 

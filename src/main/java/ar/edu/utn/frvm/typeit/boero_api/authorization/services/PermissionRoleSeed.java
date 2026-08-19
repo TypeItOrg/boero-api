@@ -165,7 +165,8 @@ public class PermissionRoleSeed implements ApplicationRunner {
   private Map<PermissionCode, Permission> syncPermissions() {
     Map<String, Permission> byCode =
         permissionRepository.findAll().stream()
-            .collect(Collectors.toMap(Permission::getCode, permission -> permission));
+            .collect(
+                Collectors.toMap(permission -> permission.getCode(), permission -> permission));
 
     Map<PermissionCode, Permission> synced = new HashMap<>();
     for (PermissionCode code : PermissionCode.values()) {

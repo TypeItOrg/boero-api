@@ -3,6 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PlatformAccountRole;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,7 +13,7 @@ public interface PlatformAccountRoleRepository extends JpaRepository<PlatformAcc
   interface AuthorityRow {
     String getRoleCode();
 
-    String getPermissionCode();
+    @Nullable String getPermissionCode();
   }
 
   List<PlatformAccountRole> findByPlatformAccount_Id(UUID platformAccountId);

@@ -5,6 +5,7 @@ import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -35,7 +36,9 @@ public interface PlatformAccountRepository extends JpaRepository<PlatformAccount
         )
       """)
   Page<PlatformAccount> findByFilters(
-      @Param("search") String search, @Param("enabled") Boolean enabled, Pageable pageable);
+      @Param("search") @Nullable String search,
+      @Param("enabled") @Nullable Boolean enabled,
+      Pageable pageable);
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("SELECT account FROM PlatformAccount account ORDER BY account.id")

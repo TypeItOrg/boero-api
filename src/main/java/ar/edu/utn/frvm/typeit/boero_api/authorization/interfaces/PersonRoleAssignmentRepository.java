@@ -5,6 +5,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -15,7 +16,7 @@ public interface PersonRoleAssignmentRepository extends JpaRepository<PersonRole
   interface AuthorityRow {
     String getRoleName();
 
-    String getPermissionCode();
+    @Nullable String getPermissionCode();
   }
 
   interface RoleAssignmentCount {

@@ -6,7 +6,6 @@ import static ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorMessages.V
 import static ar.edu.utn.frvm.typeit.boero_api.security.handlers.SecurityErrorMessages.DEFAULT_FORBIDDEN_MESSAGE;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages;
-import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;
 import java.util.Map;
@@ -18,7 +17,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.DisabledException;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -54,7 +52,7 @@ public class GlobalExceptionHandler {
         e.getBindingResult().getFieldErrors().stream()
             .collect(
                 Collectors.toMap(
-                    FieldError::getField,
+                    fe -> fe.getField(),
                     fe -> Objects.toString(fe.getDefaultMessage(), ""),
                     (existing, replacement) -> existing));
     return validationErrorPayload(fieldErrors);
@@ -77,7 +75,7 @@ public class GlobalExceptionHandler {
             .collect(
                 Collectors.toMap(
                     cv -> lastPropertyName(cv.getPropertyPath()),
-                    ConstraintViolation::getMessage,
+                    cv -> cv.getMessage(),
                     (existing, replacement) -> existing));
     return validationErrorPayload(fieldErrors);
   }

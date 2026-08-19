@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -42,7 +43,9 @@ public interface InstitutionRepository extends JpaRepository<Institution, UUID> 
         )
       """)
   Page<Institution> findWithLocationByFilters(
-      @Param("search") String search, @Param("active") Boolean active, Pageable pageable);
+      @Param("search") @Nullable String search,
+      @Param("active") @Nullable Boolean active,
+      Pageable pageable);
 
   @EntityGraph(attributePaths = {"city", "city.province"})
   Optional<Institution> findByIdAndActiveTrue(UUID id);
