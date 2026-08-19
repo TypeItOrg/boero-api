@@ -24,6 +24,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.PrerequisiteReposito
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.services.GetAcademicSpaceUsageUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.GetStudyPlanCurriculumUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.GetStudyPlanSpaceUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListAcademicLevelsUseCase;
@@ -82,6 +83,7 @@ import org.testcontainers.utility.DockerImageName;
   JpaAuditingConfig.class,
   GetStudyPlanCurriculumUseCase.class,
   GetStudyPlanSpaceUseCase.class,
+  GetAcademicSpaceUsageUseCase.class,
   ListAcademicLevelsUseCase.class,
   ListAcademicSpacesUseCase.class,
   ListAcademicYearsUseCase.class,
@@ -123,12 +125,14 @@ class AcademicQueryPerformanceIntegrationTest {
   @Autowired private ListPrerequisitesUseCase listPrerequisitesUseCase;
   @Autowired private GetStudyPlanSpaceUseCase getStudyPlanSpaceUseCase;
   @Autowired private GetStudyPlanCurriculumUseCase getStudyPlanCurriculumUseCase;
+  @Autowired private GetAcademicSpaceUsageUseCase getAcademicSpaceUsageUseCase;
 
   private Statistics statistics;
   private UUID institutionId;
   private UUID trainingPathId;
   private UUID studyPlanId;
   private UUID targetStudyPlanSpaceId;
+  private UUID academicSpaceId;
 
   @DynamicPropertySource
   static void databaseProperties(final DynamicPropertyRegistry registry) {
@@ -155,6 +159,7 @@ class AcademicQueryPerformanceIntegrationTest {
 
     final var levels = persistLevels(primaryStudyPlan);
     final var academicSpaces = persistAcademicSpaces(institution);
+    academicSpaceId = academicSpaces.getFirst().getId();
     persistInstruments(institution);
     final var planSpaces = persistPlanSpaces(institution, primaryStudyPlan, levels, academicSpaces);
     targetStudyPlanSpaceId = planSpaces.getFirst().getId();
@@ -339,6 +344,21 @@ class AcademicQueryPerformanceIntegrationTest {
 
     assertThat(response.items()).hasSize(PAGE_SIZE);
     assertPreparedStatementCount(2);
+  }
+
+  @Test
+  @DisplayName("Should load academic space usage without N+1")
+  void shouldLoadAcademicSpaceUsageWithoutNPlusOne() {
+    final var response =
+        getAcademicSpaceUsageUseCase.execute(
+            institutionId, academicSpaceId, PageRequest.of(0, PAGE_SIZE));
+
+    assertThat(response.summary().totalPlans()).isEqualTo(1);
+    assertThat(response.summary().totalPlacements()).isEqualTo(1);
+    assertThat(response.plans().items()).hasSize(1);
+    assertThat(response.plans().items().getFirst().placements()).hasSize(1);
+    assertThat(response.summary().deactivationBlocked()).isTrue();
+    assertPreparedStatementCount(4);
   }
 
   @Test

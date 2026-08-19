@@ -25,6 +25,24 @@ public interface StudyPlanRepository
 
   @EntityGraph(attributePaths = "trainingPath")
   @Query(
+      """
+      SELECT plan FROM StudyPlan plan
+      WHERE plan.institution.id = :institutionId
+        AND plan.deletedAt IS NULL
+        AND EXISTS (
+          SELECT space.id FROM StudyPlanSpace space
+          WHERE space.studyPlan.id = plan.id
+            AND space.institution.id = :institutionId
+            AND space.academicSpace.id = :academicSpaceId
+        )
+      """)
+  Page<StudyPlan> findByAcademicSpaceIdAndInstitutionId(
+      @Param("institutionId") UUID institutionId,
+      @Param("academicSpaceId") UUID academicSpaceId,
+      Pageable pageable);
+
+  @EntityGraph(attributePaths = "trainingPath")
+  @Query(
       "SELECT plan FROM StudyPlan plan WHERE plan.id = :id AND plan.institution.id = :institutionId AND plan.deletedAt IS NULL")
   Optional<StudyPlan> findByIdAndInstitution_Id(
       @Param("id") UUID id, @Param("institutionId") UUID institutionId);

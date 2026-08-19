@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.controllers;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicSpaceResponse;
+import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicSpaceUsageResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.ActiveStatusRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreateAcademicSpaceRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreateInstrumentRequest;
@@ -10,6 +11,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.UpdateAcademicSpaceReq
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.UpdateInstrumentRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.CreateAcademicSpaceUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.CreateInstrumentUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.academic.services.GetAcademicSpaceUsageUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.GetAcademicSpaceUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.GetInstrumentUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListAcademicSpacesUseCase;
@@ -52,6 +54,7 @@ public class AdminAcademicCatalogController {
   private final CreateAcademicSpaceUseCase createAcademicSpaceUseCase;
   private final ListAcademicSpacesUseCase listAcademicSpacesUseCase;
   private final GetAcademicSpaceUseCase getAcademicSpaceUseCase;
+  private final GetAcademicSpaceUsageUseCase getAcademicSpaceUsageUseCase;
   private final UpdateAcademicSpaceUseCase updateAcademicSpaceUseCase;
   private final UpdateAcademicSpaceStatusUseCase updateAcademicSpaceStatusUseCase;
   private final CreateInstrumentUseCase createInstrumentUseCase;
@@ -84,6 +87,14 @@ public class AdminAcademicCatalogController {
   public AcademicSpaceResponse getSpace(
       @PathVariable final UUID institutionId, @PathVariable final UUID academicSpaceId) {
     return getAcademicSpaceUseCase.execute(institutionId, academicSpaceId);
+  }
+
+  @GetMapping(value = "/academic-spaces/{academicSpaceId}/usage", version = Version.V1)
+  public AcademicSpaceUsageResponse getSpaceUsage(
+      @PathVariable final UUID institutionId,
+      @PathVariable final UUID academicSpaceId,
+      @PageableDefault(sort = "name", direction = Sort.Direction.ASC) final Pageable pageable) {
+    return getAcademicSpaceUsageUseCase.execute(institutionId, academicSpaceId, pageable);
   }
 
   @PutMapping(value = "/academic-spaces/{academicSpaceId}", version = Version.V1)
