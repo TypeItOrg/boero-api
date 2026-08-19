@@ -78,8 +78,11 @@ Uses Lombok, JPA, PostgreSQL, Redis, Spring Security, JWT access/refresh tokens,
 
 ### Database migrations
 
-- Create migrations with `make migration <name>` so the filename uses the current UTC timestamp (`yyyyMMddHHmmss`).
-- Do not invent sequential or artificial timestamps.
+- **Mandatory creation workflow:** from the `boero-api` repository root, always run `make migration <name>` before writing a migration. Example: `make migration add_academic_space_usage_index`.
+- The Makefile command is the only approved way to create a migration file. It generates the current UTC timestamp (`yyyyMMddHHmmss`) and prints the exact path that must be edited.
+- Never create migration files manually with `touch`, shell redirection, an editor-created filename, copied filenames, or invented/sequential/artificial timestamps.
+- Use the exact generated filename unchanged; do not rename it, replace its timestamp, or create a second filename for the same schema change.
+- The migration name must start with a lowercase letter and use lowercase `snake_case`; the command validates this.
 - Once a migration is applied to a persistent environment, never modify or rename it.
 - If a filename must be corrected before production and the affected environment is disposable, recreate that environment instead of using Flyway repair, out-of-order execution, or ignored migration patterns.
 
