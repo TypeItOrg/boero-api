@@ -128,6 +128,7 @@ class PersonControllerWebMvcTest {
                     {
                       "firstName": "Carlos",
                       "phoneNumber": "0353-123456",
+                      "currentPassword": "old-password",
                       "password": "new-password",
                       "address": {
                         "cityId": "%s",

@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.exceptions;
 
 public final class AuthMessages {
   public static final String INVALID_CREDENTIALS = "Las credenciales proporcionadas son inválidas.";
+  public static final String INVALID_CURRENT_PASSWORD = "La contraseña actual no es correcta.";
   public static final String USER_DISABLED = "El usuario se encuentra deshabilitado.";
   public static final String USER_ALREADY_EXISTS =
       "Ya existe un usuario con este documento en la institución especificada.";

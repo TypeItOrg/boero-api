@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
+import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidCurrentPasswordException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
@@ -128,16 +129,44 @@ class UpdatePersonUseCaseTest {
             .password("old-hash")
             .build();
     when(userRepository.findById(principal.userId())).thenReturn(Optional.of(user));
+    when(passwordEncoder.matches("old-password", "old-hash")).thenReturn(true);
     when(passwordEncoder.encode("new-password")).thenReturn("new-hash");
     UpdatePersonRequest request =
-        new UpdatePersonRequest(null, null, null, null, null, null, null, null, "new-password");
+        new UpdatePersonRequest(
+            null, null, null, null, null, null, null, null, "old-password", "new-password");
 
     updatePersonUseCase.execute(principal, request);
 
     assertThat(user.getPassword()).isEqualTo("new-hash");
+    verify(passwordEncoder).matches("old-password", "old-hash");
     verify(passwordEncoder).encode("new-password");
     verify(userRepository).save(user);
     verify(sessionRevocationService).revokeInstitutionalSessionsForUser(principal.userId());
+  }
+
+  @Test
+  @DisplayName("Should reject a password change when the current password is invalid")
+  void execute_rejectsInvalidCurrentPassword() {
+    User user =
+        User.builder()
+            .id(principal.userId())
+            .institution(institution)
+            .person(person)
+            .password("old-hash")
+            .build();
+    when(userRepository.findById(principal.userId())).thenReturn(Optional.of(user));
+    when(passwordEncoder.matches("wrong-password", "old-hash")).thenReturn(false);
+    UpdatePersonRequest request =
+        new UpdatePersonRequest(
+            null, null, null, null, null, null, null, null, "wrong-password", "new-password");
+
+    assertThatThrownBy(() -> updatePersonUseCase.execute(principal, request))
+        .isInstanceOf(InvalidCurrentPasswordException.class);
+
+    verify(personRepository, never()).save(any());
+    verify(passwordEncoder, never()).encode(any());
+    verifyNoInteractions(sessionRevocationService);
+    assertThat(user.getPassword()).isEqualTo("old-hash");
   }
 
   @Test

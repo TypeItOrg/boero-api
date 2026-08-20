@@ -36,6 +36,8 @@ public record UpdatePersonRequest(
     UUID birthCityId,
     UUID nationalityCountryId,
     @Valid UpdateAddressRequest address,
+    @Size(max = PASSWORD_MAX, message = "La contraseña actual no puede superar los 255 caracteres.")
+        String currentPassword,
     @Pattern(
             regexp = "^$|(?s:.{" + PASSWORD_MIN + "," + PASSWORD_MAX + "})$",
             message = "La contraseña debe tener entre 8 y 255 caracteres.")
@@ -59,6 +61,30 @@ public record UpdatePersonRequest(
         birthCityId,
         nationalityCountryId,
         address,
+        null,
         null);
+  }
+
+  public UpdatePersonRequest(
+      String firstName,
+      String lastName,
+      LocalDate birthDate,
+      String email,
+      String phoneNumber,
+      UUID birthCityId,
+      UUID nationalityCountryId,
+      UpdateAddressRequest address,
+      String password) {
+    this(
+        firstName,
+        lastName,
+        birthDate,
+        email,
+        phoneNumber,
+        birthCityId,
+        nationalityCountryId,
+        address,
+        null,
+        password);
   }
 }

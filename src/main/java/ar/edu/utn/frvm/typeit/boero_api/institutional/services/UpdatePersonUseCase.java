@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidCredentialsException;
+import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidCurrentPasswordException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
@@ -18,6 +19,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.PersonResp
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.UpdatePersonRequest;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -42,6 +44,8 @@ public class UpdatePersonUseCase {
         personRepository
             .findByIdAndInstitution_Id(principal.personId(), principal.institutionId())
             .orElseThrow(PersonNotFoundException::new);
+    final String password = request.password();
+    final Optional<User> passwordUser = verifyCurrentPassword(principal, request);
 
     var birthCity = person.getBirthCity();
     if (request.birthCityId() != null) {
@@ -102,14 +106,12 @@ public class UpdatePersonUseCase {
     assertPersonValid(person);
     personRepository.save(person);
 
-    final String password = request.password();
-    if (password != null && !password.isEmpty()) {
-      final User user =
-          userRepository.findById(principal.userId()).orElseThrow(InvalidCredentialsException::new);
-      user.changePassword(passwordEncoder.encode(password));
-      userRepository.save(user);
-      sessionRevocationService.revokeInstitutionalSessionsForUser(user.getId());
-    }
+    passwordUser.ifPresent(
+        user -> {
+          user.changePassword(passwordEncoder.encode(password));
+          userRepository.save(user);
+          sessionRevocationService.revokeInstitutionalSessionsForUser(user.getId());
+        });
 
     return personRepository
         .findWithDetailsByIdAndInstitution_Id(principal.personId(), principal.institutionId())
@@ -120,5 +122,20 @@ public class UpdatePersonUseCase {
   private void assertPersonValid(final Person person) {
     final var violations = validator.validate(person);
     if (!violations.isEmpty()) throw new ConstraintViolationException(violations);
+  }
+
+  private Optional<User> verifyCurrentPassword(
+      final JwtAuthenticatedUser principal, final UpdatePersonRequest request) {
+    final String password = request.password();
+    if (password == null || password.isEmpty()) return Optional.empty();
+
+    final User user =
+        userRepository.findById(principal.userId()).orElseThrow(InvalidCredentialsException::new);
+    if (request.currentPassword() == null
+        || !passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+      throw new InvalidCurrentPasswordException();
+    }
+
+    return Optional.of(user);
   }
 }
