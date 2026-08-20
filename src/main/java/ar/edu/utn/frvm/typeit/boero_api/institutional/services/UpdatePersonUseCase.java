@@ -1,6 +1,10 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
+import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidCredentialsException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
+import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Address;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.CityNotFoundException;
@@ -15,6 +19,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person.UpdatePers
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,9 +28,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class UpdatePersonUseCase {
 
   private final PersonRepository personRepository;
+  private final UserRepository userRepository;
   private final CityRepository cityRepository;
   private final CountryRepository countryRepository;
   private final AddressRepository addressRepository;
+  private final PasswordEncoder passwordEncoder;
+  private final SessionRevocationService sessionRevocationService;
   private final Validator validator;
 
   @Transactional
@@ -93,6 +101,15 @@ public class UpdatePersonUseCase {
 
     assertPersonValid(person);
     personRepository.save(person);
+
+    final String password = request.password();
+    if (password != null && !password.isEmpty()) {
+      final User user =
+          userRepository.findById(principal.userId()).orElseThrow(InvalidCredentialsException::new);
+      user.changePassword(passwordEncoder.encode(password));
+      userRepository.save(user);
+      sessionRevocationService.revokeInstitutionalSessionsForUser(user.getId());
+    }
 
     return personRepository
         .findWithDetailsByIdAndInstitution_Id(principal.personId(), principal.institutionId())

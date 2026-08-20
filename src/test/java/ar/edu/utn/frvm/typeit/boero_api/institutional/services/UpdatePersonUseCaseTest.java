@@ -5,9 +5,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
+import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Address;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.City;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Country;
@@ -40,15 +44,19 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class UpdatePersonUseCaseTest {
 
   @Mock private PersonRepository personRepository;
+  @Mock private UserRepository userRepository;
   @Mock private CityRepository cityRepository;
   @Mock private CountryRepository countryRepository;
   @Mock private AddressRepository addressRepository;
+  @Mock private PasswordEncoder passwordEncoder;
+  @Mock private SessionRevocationService sessionRevocationService;
 
   @Spy private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
@@ -107,6 +115,38 @@ class UpdatePersonUseCaseTest {
     var response = updatePersonUseCase.execute(principal, request);
 
     assertThat(response.email()).isEqualTo("carlos@test.com");
+  }
+
+  @Test
+  @DisplayName("Should hash the new password and revoke institutional sessions")
+  void execute_updatesPassword() {
+    User user =
+        User.builder()
+            .id(principal.userId())
+            .institution(institution)
+            .person(person)
+            .password("old-hash")
+            .build();
+    when(userRepository.findById(principal.userId())).thenReturn(Optional.of(user));
+    when(passwordEncoder.encode("new-password")).thenReturn("new-hash");
+    UpdatePersonRequest request =
+        new UpdatePersonRequest(null, null, null, null, null, null, null, null, "new-password");
+
+    updatePersonUseCase.execute(principal, request);
+
+    assertThat(user.getPassword()).isEqualTo("new-hash");
+    verify(passwordEncoder).encode("new-password");
+    verify(userRepository).save(user);
+    verify(sessionRevocationService).revokeInstitutionalSessionsForUser(principal.userId());
+  }
+
+  @Test
+  @DisplayName("Should preserve the password when it is omitted")
+  void execute_preservesPasswordWhenOmitted() {
+    updatePersonUseCase.execute(
+        principal, new UpdatePersonRequest(null, null, null, null, null, null, null, null, null));
+
+    verifyNoInteractions(userRepository, passwordEncoder, sessionRevocationService);
   }
 
   @Test
