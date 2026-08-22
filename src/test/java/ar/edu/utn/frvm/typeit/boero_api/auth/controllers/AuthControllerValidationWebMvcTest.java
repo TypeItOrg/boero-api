@@ -13,6 +13,8 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.services.LoginUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.LogoutUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RefreshTokenUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RegisterUserUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.RequestInstitutionalPasswordRecoveryUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.ResetInstitutionalPasswordUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.TokenBlacklistService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,6 +38,11 @@ class AuthControllerValidationWebMvcTest {
   @MockitoBean private RegisterUserUseCase registerUserUseCase;
   @MockitoBean private LoginUseCase loginUseCase;
   @MockitoBean private RefreshTokenUseCase refreshTokenUseCase;
+
+  @MockitoBean
+  private RequestInstitutionalPasswordRecoveryUseCase requestInstitutionalPasswordRecoveryUseCase;
+
+  @MockitoBean private ResetInstitutionalPasswordUseCase resetInstitutionalPasswordUseCase;
   @MockitoBean private LogoutUseCase logoutUseCase;
   @MockitoBean private GetActiveSessionsUseCase getActiveSessionsUseCase;
   @MockitoBean private GetCurrentUserUseCase getCurrentUserUseCase;
@@ -46,6 +53,30 @@ class AuthControllerValidationWebMvcTest {
   @MockitoBean
   private ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUseCase
       isPlatformSessionActiveUseCase;
+
+  @Test
+  @DisplayName("Should reject register when email is missing")
+  void shouldRejectRegisterWhenEmailIsMissing() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "name": "Ana",
+                      "lastName": "Garcia",
+                      "birthDate": "2010-01-01",
+                      "documentNumber": "12345678",
+                      "password": "password123",
+                      "institutionId": "22222222-2222-2222-2222-222222222222"
+                    }
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.fieldErrors.email").value("El email es requerido."));
+
+    verifyNoInteractions(registerUserUseCase);
+  }
 
   @Test
   @DisplayName("Should reject register when document number is invalid")

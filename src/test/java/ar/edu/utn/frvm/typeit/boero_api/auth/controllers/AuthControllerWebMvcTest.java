@@ -28,6 +28,8 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.services.LoginUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.LogoutUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RefreshTokenUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RegisterUserUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.RequestInstitutionalPasswordRecoveryUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.ResetInstitutionalPasswordUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.TokenBlacklistService;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import java.time.LocalDateTime;
@@ -64,6 +66,11 @@ class AuthControllerWebMvcTest {
   @MockitoBean private RegisterUserUseCase registerUserUseCase;
   @MockitoBean private LoginUseCase loginUseCase;
   @MockitoBean private RefreshTokenUseCase refreshTokenUseCase;
+
+  @MockitoBean
+  private RequestInstitutionalPasswordRecoveryUseCase requestInstitutionalPasswordRecoveryUseCase;
+
+  @MockitoBean private ResetInstitutionalPasswordUseCase resetInstitutionalPasswordUseCase;
   @MockitoBean private LogoutUseCase logoutUseCase;
   @MockitoBean private GetActiveSessionsUseCase getActiveSessionsUseCase;
   @MockitoBean private GetCurrentUserUseCase getCurrentUserUseCase;
@@ -97,6 +104,7 @@ class AuthControllerWebMvcTest {
                       "lastName": "Garcia",
                       "birthDate": "2010-01-01",
                       "documentNumber": "12345678",
+                      "email": "ana@example.com",
                       "password": "password123",
                       "institutionId": "22222222-2222-2222-2222-222222222222"
                     }

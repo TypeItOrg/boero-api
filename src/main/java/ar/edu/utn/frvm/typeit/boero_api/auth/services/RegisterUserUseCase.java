@@ -35,7 +35,7 @@ public class RegisterUserUseCase {
   private final AssignPersonSystemRoleUseCase assignPersonSystemRoleUseCase;
 
   @Transactional
-  public UserRegisteredResponse execute(RegisterRequest request) {
+  public UserRegisteredResponse execute(final RegisterRequest request) {
     Institution institution =
         institutionRepository
             .findById(request.institutionId())
@@ -57,6 +57,7 @@ public class RegisterUserUseCase {
             .lastName(request.lastName())
             .birthDate(request.birthDate())
             .documentNumber(request.documentNumber())
+            .email(request.email())
             .build();
     assertPersonValid(person);
     try {

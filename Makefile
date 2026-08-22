@@ -47,6 +47,10 @@ format:
 format-check:
 	./gradlew spotlessCheck
 
+ifeq ($(OS),Windows_NT)
+migration:
+	@powershell -NoProfile -Command "$$name = '$(MIGRATION_NAME)'; if ([string]::IsNullOrWhiteSpace($$name)) { Write-Error 'Usage: make migration add_description_to_users_table'; exit 1 }; if ($$name -notmatch '^[a-z][a-z0-9_]*$$') { Write-Error 'Migration name must use lowercase snake_case and start with a lowercase letter'; exit 1 }; $$timestamp = (Get-Date).ToUniversalTime().ToString('yyyyMMddHHmmss'); $$path = 'src/main/resources/db/migration/' + $$timestamp + '__' + $$name + '.sql'; if (Test-Path $$path) { Write-Error ('Migration already exists: ' + $$path); exit 1 }; New-Item -ItemType File -Path $$path | Out-Null; Write-Output ('Created ' + $$path)"
+else
 migration:
 	@name="$(MIGRATION_NAME)"; \
 	case "$$name" in \
@@ -62,3 +66,6 @@ migration:
 	if [ -e "$$path" ]; then echo "Migration already exists: $$path" >&2; exit 1; fi; \
 	touch "$$path"; \
 	echo "Created $$path"
+endif
+
+
