@@ -80,7 +80,12 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.INSTRUMENT_UPDATE,
               PermissionCode.INSTRUMENT_STATUS_UPDATE,
               PermissionCode.INSTRUMENT_DELETE,
-              PermissionCode.INSTRUMENT_RESTORE));
+              PermissionCode.INSTRUMENT_RESTORE,
+              PermissionCode.SHIFT_CREATE,
+              PermissionCode.SHIFT_UPDATE,
+              PermissionCode.SHIFT_STATUS_UPDATE,
+              PermissionCode.SHIFT_DELETE,
+              PermissionCode.SHIFT_RESTORE));
 
   private final PermissionRepository permissionRepository;
   private final RoleRepository roleRepository;

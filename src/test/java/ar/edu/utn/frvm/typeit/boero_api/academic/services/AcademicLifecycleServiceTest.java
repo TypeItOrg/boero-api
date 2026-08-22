@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicLifecycleEvent;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Shift;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicLifecycleAction;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicLifecycleResource;
@@ -15,6 +16,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicLifecycleEve
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.InstrumentRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.ShiftRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicLifecycleRequest;
@@ -37,6 +39,7 @@ class AcademicLifecycleServiceTest {
   @Mock private StudyPlanRepository studyPlanRepository;
   @Mock private AcademicSpaceRepository academicSpaceRepository;
   @Mock private InstrumentRepository instrumentRepository;
+  @Mock private ShiftRepository shiftRepository;
   @Mock private AcademicLifecycleEventRepository eventRepository;
   @Mock private AcademicLifecycleActorResolver actorResolver;
   @InjectMocks private AcademicLifecycleService service;
@@ -94,5 +97,66 @@ class AcademicLifecycleServiceTest {
 
     assertThat(path.isDeleted()).isFalse();
     verifyNoInteractions(eventRepository, actorResolver);
+  }
+
+  @Test
+  void deletesAnInactiveShiftAndRecordsItsActorAndReason() {
+    final var institutionId = UUID.randomUUID();
+    final var resourceId = UUID.randomUUID();
+    final var actorId = UUID.randomUUID();
+    final var institution = Institution.builder().id(institutionId).build();
+    final var shift = Shift.create(institution, "Turno mañana", null);
+    shift.updateStatus(false);
+    given(shiftRepository.findByIdAndInstitution_IdForLifecycle(resourceId, institutionId))
+        .willReturn(Optional.of(shift));
+    given(actorResolver.resolve())
+        .willReturn(new AcademicLifecycleActor(AccountType.INSTITUTION, actorId));
+
+    service.deleteShift(
+        institutionId, resourceId, new AcademicLifecycleRequest("  Baja solicitada  "));
+
+    assertThat(shift.isDeleted()).isTrue();
+    final var eventCaptor = ArgumentCaptor.forClass(AcademicLifecycleEvent.class);
+    verify(eventRepository).save(eventCaptor.capture());
+    verify(eventRepository).flush();
+    assertThat(eventCaptor.getValue())
+        .extracting(
+            AcademicLifecycleEvent::getResourceType,
+            AcademicLifecycleEvent::getResourceId,
+            AcademicLifecycleEvent::getAction,
+            AcademicLifecycleEvent::getActorType,
+            AcademicLifecycleEvent::getActorId,
+            AcademicLifecycleEvent::getReason)
+        .containsExactly(
+            AcademicLifecycleResource.SHIFT,
+            resourceId,
+            AcademicLifecycleAction.DELETE,
+            AccountType.INSTITUTION,
+            actorId,
+            "Baja solicitada");
+  }
+
+  @Test
+  void restoresADeletedShiftAndRecordsTheRestoreAction() {
+    final var institutionId = UUID.randomUUID();
+    final var resourceId = UUID.randomUUID();
+    final var actorId = UUID.randomUUID();
+    final var institution = Institution.builder().id(institutionId).build();
+    final var shift = Shift.create(institution, "Turno mañana", null);
+    shift.updateStatus(false);
+    shift.delete(java.time.LocalDateTime.now());
+    given(shiftRepository.findByIdAndInstitution_IdForLifecycle(resourceId, institutionId))
+        .willReturn(Optional.of(shift));
+    given(actorResolver.resolve())
+        .willReturn(new AcademicLifecycleActor(AccountType.PLATFORM, actorId));
+
+    service.restoreShift(institutionId, resourceId, null);
+
+    assertThat(shift.isDeleted()).isFalse();
+    final var eventCaptor = ArgumentCaptor.forClass(AcademicLifecycleEvent.class);
+    verify(eventRepository).save(eventCaptor.capture());
+    assertThat(eventCaptor.getValue().getResourceType()).isEqualTo(AcademicLifecycleResource.SHIFT);
+    assertThat(eventCaptor.getValue().getAction()).isEqualTo(AcademicLifecycleAction.RESTORE);
+    assertThat(eventCaptor.getValue().getActorType()).isEqualTo(AccountType.PLATFORM);
   }
 }

@@ -11,6 +11,7 @@ public final class AcademicMessages {
   public static final String ACADEMIC_SPACE_NOT_FOUND =
       "El espacio académico especificado no existe.";
   public static final String INSTRUMENT_NOT_FOUND = "El instrumento especificado no existe.";
+  public static final String SHIFT_NOT_FOUND = "El turno especificado no existe.";
   public static final String STUDY_PLAN_SPACE_NOT_FOUND =
       "El espacio del plan especificado no existe.";
   public static final String PREREQUISITE_NOT_FOUND = "La correlatividad especificada no existe.";

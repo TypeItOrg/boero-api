@@ -34,13 +34,16 @@ public final class AcademicIntegrityViolationTranslator {
           "academic_spaces_institution_name_type_unique",
           "academic_spaces_current_institution_name_type_unique",
           "instruments_institution_name_unique",
-          "instruments_current_institution_name_unique" ->
+          "instruments_current_institution_name_unique",
+          "shifts_institution_name_unique",
+          "shifts_current_institution_name_unique" ->
           conflict(AcademicMessages.DUPLICATE_NAME, "name");
       case "training_paths_name_format_check",
           "study_plans_name_format_check",
           "academic_levels_name_format_check",
           "academic_spaces_name_format_check",
-          "instruments_name_format_check" ->
+          "instruments_name_format_check",
+          "shifts_name_format_check" ->
           validation(AcademicMessages.INVALID_NAME_FORMAT, "name");
       case "study_plans_dates_check" ->
           validation(AcademicMessages.STUDY_PLAN_DATES_INVALID, "effectiveTo");
@@ -59,7 +62,8 @@ public final class AcademicIntegrityViolationTranslator {
           "training_paths_deleted_state_check",
           "study_plans_deleted_state_check",
           "academic_spaces_deleted_state_check",
-          "instruments_deleted_state_check" ->
+          "instruments_deleted_state_check",
+          "shifts_deleted_state_check" ->
           new InvalidAcademicStateException();
       case "study_plan_spaces_requirement_type_check" ->
           validation(AcademicMessages.INVALID_VALUE, "requirementType");

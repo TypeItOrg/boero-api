@@ -61,13 +61,13 @@ class DatabaseMigrationIntegrationTest {
   @Test
   @DisplayName("Should migrate an empty PostgreSQL database and validate the JPA model")
   void shouldMigrateSchemaAndDevelopmentData() {
-    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260818213803");
-    assertThat(tableCount()).isEqualTo(29);
+    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260822000050");
+    assertThat(tableCount()).isEqualTo(30);
     assertThat(institutionCount()).isPositive();
     assertThat(tenantRelationshipConstraintCount()).isEqualTo(7);
     assertThat(activePersonDocumentIndexCount()).isEqualTo(1);
     assertThat(pgTrgmExtensionCount()).isEqualTo(1);
-    assertThat(searchTrigramIndexCount()).isEqualTo(16);
+    assertThat(searchTrigramIndexCount()).isEqualTo(17);
   }
 
   @Test
@@ -174,6 +174,8 @@ class DatabaseMigrationIntegrationTest {
     final UUID currentSpaceId = UUID.randomUUID();
     final UUID deletedInstrumentId = UUID.randomUUID();
     final UUID currentInstrumentId = UUID.randomUUID();
+    final UUID deletedShiftId = UUID.randomUUID();
+    final UUID currentShiftId = UUID.randomUUID();
     try {
       insertAcademicYearWithStatus(deletedYearId, institutionId, academicYear, "PLANNED");
       jdbcTemplate.update(
@@ -211,6 +213,11 @@ class DatabaseMigrationIntegrationTest {
           deletedInstrumentId);
       insertInstrument(currentInstrumentId, institutionId, searchTerm);
 
+      insertShift(deletedShiftId, institutionId, searchTerm, false);
+      jdbcTemplate.update(
+          "UPDATE shifts SET deleted_at = CURRENT_TIMESTAMP WHERE shift_id = ?", deletedShiftId);
+      insertShift(currentShiftId, institutionId, searchTerm, true);
+
       assertSearchContainsOnly(
           searchService.platformSummary(String.valueOf(academicYear), 5),
           SearchEntityType.ACADEMIC_YEAR,
@@ -229,6 +236,8 @@ class DatabaseMigrationIntegrationTest {
           searchService.platformSummary(searchTerm, 5),
           SearchEntityType.INSTRUMENT,
           currentInstrumentId);
+      assertSearchContainsOnly(
+          searchService.platformSummary(searchTerm, 5), SearchEntityType.SHIFT, currentShiftId);
 
       final Set<PermissionCode> permissions =
           Set.of(
@@ -236,7 +245,8 @@ class DatabaseMigrationIntegrationTest {
               PermissionCode.TRAINING_PATH_READ,
               PermissionCode.STUDY_PLAN_READ,
               PermissionCode.ACADEMIC_SPACE_READ,
-              PermissionCode.INSTRUMENT_READ);
+              PermissionCode.INSTRUMENT_READ,
+              PermissionCode.SHIFT_READ);
       assertSearchContainsOnly(
           searchService.institutionalSummary(institutionId, searchTerm, 5, permissions),
           SearchEntityType.TRAINING_PATH,
@@ -258,6 +268,10 @@ class DatabaseMigrationIntegrationTest {
           searchService.institutionalSummary(institutionId, searchTerm, 5, permissions),
           SearchEntityType.INSTRUMENT,
           currentInstrumentId);
+      assertSearchContainsOnly(
+          searchService.institutionalSummary(institutionId, searchTerm, 5, permissions),
+          SearchEntityType.SHIFT,
+          currentShiftId);
 
       assertThat(
               searchService
@@ -279,6 +293,9 @@ class DatabaseMigrationIntegrationTest {
       assertThat(searchService.platformPage(SearchEntityType.INSTRUMENT, searchTerm, 0, 5).items())
           .extracting(item -> item.id())
           .containsExactly(currentInstrumentId);
+      assertThat(searchService.platformPage(SearchEntityType.SHIFT, searchTerm, 0, 5).items())
+          .extracting(item -> item.id())
+          .containsExactly(currentShiftId);
     } finally {
       jdbcTemplate.update(
           "DELETE FROM study_plans WHERE study_plan_id IN (?, ?, ?)",
@@ -302,7 +319,89 @@ class DatabaseMigrationIntegrationTest {
           "DELETE FROM instruments WHERE instrument_id IN (?, ?)",
           deletedInstrumentId,
           currentInstrumentId);
+      jdbcTemplate.update(
+          "DELETE FROM shifts WHERE shift_id IN (?, ?)", deletedShiftId, currentShiftId);
     }
+  }
+
+  @Test
+  @DisplayName("Should enforce shift name uniqueness only for non-deleted shifts")
+  void shouldEnforceShiftNameUniquenessOnlyForNonDeletedShifts() {
+    final UUID institutionId = firstInstitutionId();
+    final UUID deletedShiftId = UUID.randomUUID();
+    final UUID currentShiftId = UUID.randomUUID();
+    final String name = "Turno reutilizable " + deletedShiftId;
+    try {
+      insertShift(deletedShiftId, institutionId, name, false);
+      jdbcTemplate.update(
+          "UPDATE shifts SET deleted_at = CURRENT_TIMESTAMP WHERE shift_id = ?", deletedShiftId);
+      insertShift(currentShiftId, institutionId, name, true);
+
+      assertThatThrownBy(
+              () ->
+                  jdbcTemplate.update(
+                      "UPDATE shifts SET deleted_at = NULL WHERE shift_id = ?", deletedShiftId))
+          .isInstanceOf(DataIntegrityViolationException.class);
+      assertThatThrownBy(
+              () ->
+                  jdbcTemplate.update(
+                      "UPDATE shifts SET deleted_at = CURRENT_TIMESTAMP WHERE shift_id = ?",
+                      currentShiftId))
+          .isInstanceOf(DataIntegrityViolationException.class);
+      assertThatThrownBy(
+              () -> insertShift(UUID.randomUUID(), institutionId, "  Turno   reutilizable ", true))
+          .isInstanceOf(DataIntegrityViolationException.class);
+    } finally {
+      jdbcTemplate.update(
+          "DELETE FROM shifts WHERE shift_id IN (?, ?)", deletedShiftId, currentShiftId);
+    }
+  }
+
+  @Test
+  @DisplayName("Should record lifecycle events for shifts")
+  void shouldRecordLifecycleEventsForShifts() {
+    final UUID institutionId = firstInstitutionId();
+    final UUID shiftId = UUID.randomUUID();
+    final UUID eventId = UUID.randomUUID();
+    try {
+      insertShift(shiftId, institutionId, "Turno auditado " + shiftId, true);
+      jdbcTemplate.update(
+          """
+          INSERT INTO academic_lifecycle_events (
+            academic_lifecycle_event_id, institution_id, resource_type, resource_id,
+            action, actor_type, actor_id, created_at
+          ) VALUES (?, ?, 'SHIFT', ?, 'DELETE', 'INSTITUTION', ?, CURRENT_TIMESTAMP)
+          """,
+          eventId,
+          institutionId,
+          shiftId,
+          institutionId);
+
+      assertThat(
+              jdbcTemplate.queryForObject(
+                  "SELECT resource_type FROM academic_lifecycle_events WHERE academic_lifecycle_event_id = ?",
+                  String.class,
+                  eventId))
+          .isEqualTo("SHIFT");
+    } finally {
+      jdbcTemplate.update(
+          "DELETE FROM academic_lifecycle_events WHERE academic_lifecycle_event_id = ?", eventId);
+      jdbcTemplate.update("DELETE FROM shifts WHERE shift_id = ?", shiftId);
+    }
+  }
+
+  private void insertShift(
+      final UUID id, final UUID institutionId, final String name, final boolean active) {
+    jdbcTemplate.update(
+        """
+        INSERT INTO shifts (
+          shift_id, institution_id, name, active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """,
+        id,
+        institutionId,
+        name,
+        active);
   }
 
   private void assertSearchContainsOnly(

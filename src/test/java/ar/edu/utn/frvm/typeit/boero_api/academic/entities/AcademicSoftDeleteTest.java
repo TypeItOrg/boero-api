@@ -26,25 +26,30 @@ class AcademicSoftDeleteTest {
     final var space =
         AcademicSpace.create(institution, "Programación", null, AcademicSpaceType.SUBJECT);
     final var instrument = Instrument.create(institution, "Examen", null);
+    final var shift = Shift.create(institution, "Turno mañana", null);
 
     path.updateStatus(false);
     space.updateStatus(false);
     instrument.updateStatus(false);
+    shift.updateStatus(false);
 
     assertThat(year.delete(deletedAt)).isTrue();
     assertThat(path.delete(deletedAt)).isTrue();
     assertThat(plan.delete(deletedAt)).isTrue();
     assertThat(space.delete(deletedAt)).isTrue();
     assertThat(instrument.delete(deletedAt)).isTrue();
+    assertThat(shift.delete(deletedAt)).isTrue();
 
     assertThat(year.restore()).isTrue();
     assertThat(path.restore()).isTrue();
     assertThat(plan.restore()).isTrue();
     assertThat(space.restore()).isTrue();
     assertThat(instrument.restore()).isTrue();
+    assertThat(shift.restore()).isTrue();
     assertThat(path.isActive()).isFalse();
     assertThat(space.isActive()).isFalse();
     assertThat(instrument.isActive()).isFalse();
+    assertThat(shift.isActive()).isFalse();
   }
 
   @Test
@@ -53,12 +58,15 @@ class AcademicSoftDeleteTest {
     final var space =
         AcademicSpace.create(institution, "Programación", null, AcademicSpaceType.SUBJECT);
     final var instrument = Instrument.create(institution, "Examen", null);
+    final var shift = Shift.create(institution, "Turno mañana", null);
 
     assertThatThrownBy(() -> path.delete(deletedAt))
         .isInstanceOf(InvalidAcademicStateException.class);
     assertThatThrownBy(() -> space.delete(deletedAt))
         .isInstanceOf(InvalidAcademicStateException.class);
     assertThatThrownBy(() -> instrument.delete(deletedAt))
+        .isInstanceOf(InvalidAcademicStateException.class);
+    assertThatThrownBy(() -> shift.delete(deletedAt))
         .isInstanceOf(InvalidAcademicStateException.class);
   }
 }

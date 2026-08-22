@@ -9,12 +9,14 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicSpaceNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicYearNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.InstrumentNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.ShiftNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.StudyPlanNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.TrainingPathNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicLifecycleEventRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.InstrumentRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.ShiftRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicLifecycleRequest;
@@ -40,6 +42,7 @@ public class AcademicLifecycleService {
   private final StudyPlanRepository studyPlanRepository;
   private final AcademicSpaceRepository academicSpaceRepository;
   private final InstrumentRepository instrumentRepository;
+  private final ShiftRepository shiftRepository;
   private final AcademicLifecycleEventRepository eventRepository;
   private final AcademicLifecycleActorResolver actorResolver;
 
@@ -184,6 +187,33 @@ public class AcademicLifecycleService {
             .orElseThrow(InstrumentNotFoundException::new);
     restore(
         instrument, instrument.getInstitution(), AcademicLifecycleResource.INSTRUMENT, id, request);
+  }
+
+  @Transactional
+  public void deleteShift(
+      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+    final var shift =
+        shiftRepository
+            .findByIdAndInstitution_IdForLifecycle(id, institutionId)
+            .orElseThrow(ShiftNotFoundException::new);
+    if (shift.delete(LocalDateTime.now())) {
+      record(
+          shift.getInstitution(),
+          AcademicLifecycleResource.SHIFT,
+          id,
+          AcademicLifecycleAction.DELETE,
+          request);
+    }
+  }
+
+  @Transactional
+  public void restoreShift(
+      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+    final var shift =
+        shiftRepository
+            .findByIdAndInstitution_IdForLifecycle(id, institutionId)
+            .orElseThrow(ShiftNotFoundException::new);
+    restore(shift, shift.getInstitution(), AcademicLifecycleResource.SHIFT, id, request);
   }
 
   private void restore(

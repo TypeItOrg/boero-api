@@ -106,7 +106,8 @@ enum SearchDefinition {
   INSTRUMENT(
       SearchEntityType.INSTRUMENT,
       PermissionCode.INSTRUMENT_READ,
-      namedEntity("instruments", "instrument_id"));
+      namedEntity("instruments", "instrument_id")),
+  SHIFT(SearchEntityType.SHIFT, PermissionCode.SHIFT_READ, namedEntity("shifts", "shift_id"));
 
   private final SearchEntityType type;
   private final @Nullable PermissionCode permission;
