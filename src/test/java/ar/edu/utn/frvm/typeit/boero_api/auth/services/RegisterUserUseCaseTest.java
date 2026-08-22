@@ -68,7 +68,13 @@ class RegisterUserUseCaseTest {
     UUID institutionId = UUID.randomUUID();
     RegisterRequest request =
         new RegisterRequest(
-            "Ana", "Garcia", LocalDate.of(2010, 1, 1), "12345678", "password123", institutionId);
+            "Ana",
+            "Garcia",
+            LocalDate.of(2010, 1, 1),
+            "12345678",
+            "ana@example.com",
+            "password123",
+            institutionId);
 
     stubSuccessfulRegistration(institutionId, "password123", "encoded-hash");
 
@@ -89,7 +95,13 @@ class RegisterUserUseCaseTest {
     UUID institutionId = UUID.randomUUID();
     RegisterRequest request =
         new RegisterRequest(
-            "Ana", "Garcia", LocalDate.of(2010, 1, 1), "12345678", "password123", institutionId);
+            "Ana",
+            "Garcia",
+            LocalDate.of(2010, 1, 1),
+            "12345678",
+            "ana@example.com",
+            "password123",
+            institutionId);
 
     stubSuccessfulRegistration(institutionId, "password123", "encoded-hash");
 
@@ -106,7 +118,13 @@ class RegisterUserUseCaseTest {
     UUID institutionId = UUID.randomUUID();
     RegisterRequest request =
         new RegisterRequest(
-            "Ana", "Garcia", LocalDate.of(2010, 1, 1), "12345678", "plaintext", institutionId);
+            "Ana",
+            "Garcia",
+            LocalDate.of(2010, 1, 1),
+            "12345678",
+            "ana@example.com",
+            "plaintext",
+            institutionId);
 
     stubSuccessfulRegistration(institutionId, "plaintext", "bcrypt-hash");
 
@@ -125,7 +143,13 @@ class RegisterUserUseCaseTest {
     UUID institutionId = UUID.randomUUID();
     RegisterRequest request =
         new RegisterRequest(
-            "Ana", "Garcia", LocalDate.of(2010, 1, 1), "12345678", "password123", institutionId);
+            "Ana",
+            "Garcia",
+            LocalDate.of(2010, 1, 1),
+            "12345678",
+            "ana@example.com",
+            "password123",
+            institutionId);
 
     when(institutionRepository.findById(institutionId)).thenReturn(Optional.empty());
 
@@ -143,7 +167,13 @@ class RegisterUserUseCaseTest {
     final UUID institutionId = UUID.randomUUID();
     final RegisterRequest request =
         new RegisterRequest(
-            "Ana", "Garcia", LocalDate.of(2010, 1, 1), "12345678", "password123", institutionId);
+            "Ana",
+            "Garcia",
+            LocalDate.of(2010, 1, 1),
+            "12345678",
+            "ana@example.com",
+            "password123",
+            institutionId);
     final Institution institution = institutionWith(institutionId);
     institution.updateStatus(false);
     when(institutionRepository.findById(institutionId)).thenReturn(Optional.of(institution));
@@ -162,7 +192,13 @@ class RegisterUserUseCaseTest {
     UUID institutionId = UUID.randomUUID();
     RegisterRequest request =
         new RegisterRequest(
-            "Ana", "Garcia", LocalDate.of(2010, 1, 1), "12345678", "password123", institutionId);
+            "Ana",
+            "Garcia",
+            LocalDate.of(2010, 1, 1),
+            "12345678",
+            "ana@example.com",
+            "password123",
+            institutionId);
     Institution institution = institutionWith(institutionId);
 
     when(institutionRepository.findById(institutionId)).thenReturn(Optional.of(institution));
@@ -184,7 +220,13 @@ class RegisterUserUseCaseTest {
     UUID institutionId = UUID.randomUUID();
     RegisterRequest request =
         new RegisterRequest(
-            "Ana", "Garcia", LocalDate.of(2010, 1, 1), "12345678", "password123", institutionId);
+            "Ana",
+            "Garcia",
+            LocalDate.of(2010, 1, 1),
+            "12345678",
+            "ana@example.com",
+            "password123",
+            institutionId);
     Institution institution = institutionWith(institutionId);
     ConstraintViolation<Person> violation =
         (ConstraintViolation<Person>) org.mockito.Mockito.mock(ConstraintViolation.class);
@@ -224,6 +266,7 @@ class RegisterUserUseCaseTest {
         .firstName(person.getFirstName())
         .lastName(person.getLastName())
         .birthDate(person.getBirthDate())
+        .email(person.getEmail())
         .build();
   }
 

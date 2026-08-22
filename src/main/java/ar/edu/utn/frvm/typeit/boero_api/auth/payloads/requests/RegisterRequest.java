@@ -9,6 +9,7 @@ import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldCons
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.PASSWORD_MIN;
 
 import ar.edu.utn.frvm.typeit.boero_api.common.validation.MinimumAge;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -42,6 +43,10 @@ public record RegisterRequest(
             regexp = DOCUMENT_PATTERN,
             message = "El número de documento debe tener exactamente 8 dígitos numéricos.")
         String documentNumber,
+    @NotBlank(message = "El email es requerido.")
+        @Email(message = "El email debe tener un formato válido.")
+        @Size(max = 150, message = "El email debe tener menos de 150 caracteres.")
+        String email,
     @NotNull(message = "La contraseña es requerida.")
         @Size.List({
           @Size(min = PASSWORD_MIN, message = "La contraseña debe tener al menos 8 caracteres."),

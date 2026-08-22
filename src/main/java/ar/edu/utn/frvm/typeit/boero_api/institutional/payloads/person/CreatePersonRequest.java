@@ -41,7 +41,10 @@ public record CreatePersonRequest(
             regexp = DOCUMENT_PATTERN,
             message = "El número de documento debe tener exactamente 8 dígitos numéricos.")
         String documentNumber,
-    @Email(message = "El email debe tener un formato válido.") String email,
+    @NotBlank(message = "El email es requerido.")
+        @Email(message = "El email debe tener un formato válido.")
+        @Size(max = 150, message = "El email debe tener menos de 150 caracteres.")
+        String email,
     String phoneNumber,
     @NotNull(message = "La fecha de nacimiento es requerida.") @MinimumAge(MINIMUM_AGE)
         LocalDate birthDate,

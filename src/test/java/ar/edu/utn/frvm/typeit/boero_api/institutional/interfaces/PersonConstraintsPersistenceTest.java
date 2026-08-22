@@ -33,6 +33,7 @@ class PersonConstraintsPersistenceTest {
             .firstName("AB")
             .lastName("Garcia")
             .documentNumber("12345678")
+            .email("ana@example.com")
             .build();
     assertPersistFlushFailsBeanValidation(person);
   }
@@ -47,6 +48,7 @@ class PersonConstraintsPersistenceTest {
             .firstName("Ana")
             .lastName("Garcia")
             .documentNumber("abcdefgh")
+            .email("ana@example.com")
             .build();
     assertPersistFlushFailsBeanValidation(person);
   }

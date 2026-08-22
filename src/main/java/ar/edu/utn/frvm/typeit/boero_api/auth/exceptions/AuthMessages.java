@@ -26,6 +26,9 @@ public final class AuthMessages {
       "No podés deshabilitar tu propia cuenta de plataforma.";
   public static final String LAST_PLATFORM_ADMIN_DISABLE =
       "No podés deshabilitar la última cuenta administradora activa.";
+  public static final String PASSWORD_RECOVERY_TOKEN_INVALID =
+      "El enlace de recuperación es inválido o ha expirado.";
+  public static final String PASSWORD_CONFIRMATION_MISMATCH = "Las contraseñas no coinciden.";
 
   private AuthMessages() {}
 }

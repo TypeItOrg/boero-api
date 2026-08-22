@@ -2,8 +2,10 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.controllers;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.LoginRequest;
+import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PasswordRecoveryRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RefreshTokenRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RegisterRequest;
+import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.ResetPasswordRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.ActiveSessionResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.AuthResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.UserRegisteredResponse;
@@ -14,6 +16,8 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.services.LoginUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.LogoutUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RefreshTokenUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RegisterUserUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.RequestInstitutionalPasswordRecoveryUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.ResetInstitutionalPasswordUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.common.utils.HeaderUtils;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
@@ -45,6 +49,9 @@ public class AuthController {
   private final LogoutUseCase logoutUseCase;
   private final RefreshTokenUseCase refreshTokenUseCase;
   private final RegisterUserUseCase registerUserUseCase;
+  private final RequestInstitutionalPasswordRecoveryUseCase
+      requestInstitutionalPasswordRecoveryUseCase;
+  private final ResetInstitutionalPasswordUseCase resetInstitutionalPasswordUseCase;
 
   @PostMapping(version = Version.V1, path = "/register")
   @ResponseStatus(HttpStatus.CREATED)
@@ -61,6 +68,18 @@ public class AuthController {
   @PostMapping(version = Version.V1, path = "/refresh")
   public AuthResponse refresh(@Valid @RequestBody RefreshTokenRequest request) {
     return refreshTokenUseCase.execute(request);
+  }
+
+  @PostMapping(version = Version.V1, path = "/password-recovery")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void requestPasswordRecovery(@Valid @RequestBody final PasswordRecoveryRequest request) {
+    requestInstitutionalPasswordRecoveryUseCase.execute(request);
+  }
+
+  @PostMapping(version = Version.V1, path = "/password-recovery/reset")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void resetPassword(@Valid @RequestBody final ResetPasswordRequest request) {
+    resetInstitutionalPasswordUseCase.execute(request);
   }
 
   @PostMapping(version = Version.V1, path = "/logout")

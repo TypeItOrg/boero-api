@@ -61,8 +61,8 @@ class DatabaseMigrationIntegrationTest {
   @Test
   @DisplayName("Should migrate an empty PostgreSQL database and validate the JPA model")
   void shouldMigrateSchemaAndDevelopmentData() {
-    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260818213803");
-    assertThat(tableCount()).isEqualTo(29);
+    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260821181658");
+    assertThat(tableCount()).isEqualTo(30);
     assertThat(institutionCount()).isPositive();
     assertThat(tenantRelationshipConstraintCount()).isEqualTo(7);
     assertThat(activePersonDocumentIndexCount()).isEqualTo(1);
@@ -596,12 +596,13 @@ class DatabaseMigrationIntegrationTest {
         """
         INSERT INTO people (
           person_id, institution_id, document_number, first_name, last_name,
-          created_at, updated_at, deleted
-        ) VALUES (?, ?, ?, 'Ana', 'Garcia', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)
+          email, created_at, updated_at, deleted
+        ) VALUES (?, ?, ?, 'Ana', 'Garcia', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)
         """,
         personId,
         institutionId,
         documentNumber,
+        documentNumber + "@example.com",
         deleted);
   }
 
