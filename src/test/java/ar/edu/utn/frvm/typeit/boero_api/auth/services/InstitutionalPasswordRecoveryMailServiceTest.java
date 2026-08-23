@@ -4,13 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.config.PasswordRecoveryProperties;
-import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
+import ar.edu.utn.frvm.typeit.boero_api.auth.events.InstitutionalPasswordRecoveryRequested;
 import ar.edu.utn.frvm.typeit.boero_api.common.mail.MailMessage;
 import ar.edu.utn.frvm.typeit.boero_api.common.mail.MailProperties;
 import ar.edu.utn.frvm.typeit.boero_api.common.mail.MailSender;
-import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
-import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import java.time.Duration;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,13 +48,15 @@ class InstitutionalPasswordRecoveryMailServiceTest {
 
   @Test
   void sendRendersPasswordRecoveryTemplateAndDelegatesToMailSender() {
-    final Institution institution =
-        Institution.builder().name("Conservatorio Superior de Música Felipe Boero").build();
-    final Person person =
-        Person.builder().firstName("Ana").lastName("García").email("ana@example.com").build();
-    final User user = User.builder().institution(institution).person(person).build();
+    final InstitutionalPasswordRecoveryRequested event =
+        new InstitutionalPasswordRecoveryRequested(
+            UUID.randomUUID(),
+            "ana@example.com",
+            "Conservatorio Superior de Música Felipe Boero",
+            "Ana García",
+            "token-123");
 
-    mailService.send(user, "token-123");
+    mailService.send(event);
 
     final ArgumentCaptor<MailMessage> mailCaptor = ArgumentCaptor.forClass(MailMessage.class);
     verify(mailSender).send(mailCaptor.capture());

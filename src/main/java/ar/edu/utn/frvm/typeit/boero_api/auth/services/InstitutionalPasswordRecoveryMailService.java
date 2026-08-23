@@ -1,7 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.config.PasswordRecoveryProperties;
-import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
+import ar.edu.utn.frvm.typeit.boero_api.auth.events.InstitutionalPasswordRecoveryRequested;
 import ar.edu.utn.frvm.typeit.boero_api.common.mail.MailMessage;
 import ar.edu.utn.frvm.typeit.boero_api.common.mail.MailMessages;
 import ar.edu.utn.frvm.typeit.boero_api.common.mail.MailProperties;
@@ -9,12 +9,14 @@ import ar.edu.utn.frvm.typeit.boero_api.common.mail.MailSender;
 import java.net.URI;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
 @Service
 @RequiredArgsConstructor
+@NullMarked
 public class InstitutionalPasswordRecoveryMailService {
 
   private static final String LOGO_PATH = "/boero-logo.png";
@@ -25,19 +27,19 @@ public class InstitutionalPasswordRecoveryMailService {
   private final PasswordRecoveryProperties passwordRecoveryProperties;
   private final SpringTemplateEngine templateEngine;
 
-  public void send(final User user, final String token) {
+  public void send(final InstitutionalPasswordRecoveryRequested event) {
     final Context context = new Context(Locale.forLanguageTag("es"));
-    context.setVariable("resetUrl", buildResetUrl(token));
+    context.setVariable("resetUrl", buildResetUrl(event.token()));
     context.setVariable("logoUrl", buildLogoUrl());
-    context.setVariable("institutionName", user.getInstitution().getName());
-    context.setVariable("fullName", user.getName() + " " + user.getLastName());
+    context.setVariable("institutionName", event.institutionName());
+    context.setVariable("fullName", event.fullName());
     context.setVariable(
         "expirationMinutes", passwordRecoveryProperties.tokenExpiration().toMinutes());
 
     mailSender.send(
         new MailMessage(
             mailProperties.from(),
-            user.getPerson().getEmail(),
+            event.recipientEmail(),
             MailMessages.PASSWORD_RECOVERY_SUBJECT,
             templateEngine.process(TEMPLATE_NAME, context)));
   }
