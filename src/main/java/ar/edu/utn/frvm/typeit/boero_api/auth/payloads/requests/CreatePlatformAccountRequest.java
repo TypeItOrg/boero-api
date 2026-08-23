@@ -6,37 +6,25 @@ import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldCons
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.PASSWORD_MAX;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.PASSWORD_MIN;
 
+import ar.edu.utn.frvm.typeit.boero_api.common.validation.ValidationMessages;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record CreatePlatformAccountRequest(
-    @NotBlank(message = "El nombre es requerido.")
-        @Size(
-            min = NAME_MIN,
-            max = NAME_MAX,
-            message = "El nombre debe tener entre 3 y 255 caracteres.")
-        @Pattern(
-            regexp = NAME_PATTERN,
-            message = "El nombre solo puede contener letras y espacios.")
+    @NotBlank(message = ValidationMessages.FIRST_NAME_REQUIRED)
+        @Size(min = NAME_MIN, max = NAME_MAX, message = ValidationMessages.FIRST_NAME_RANGE)
+        @Pattern(regexp = NAME_PATTERN, message = ValidationMessages.FIRST_NAME_FORMAT)
         String name,
-    @NotBlank(message = "El apellido es requerido.")
-        @Size(
-            min = NAME_MIN,
-            max = NAME_MAX,
-            message = "El apellido debe tener entre 3 y 255 caracteres.")
-        @Pattern(
-            regexp = NAME_PATTERN,
-            message = "El apellido solo puede contener letras y espacios.")
+    @NotBlank(message = ValidationMessages.LAST_NAME_REQUIRED)
+        @Size(min = NAME_MIN, max = NAME_MAX, message = ValidationMessages.LAST_NAME_RANGE)
+        @Pattern(regexp = NAME_PATTERN, message = ValidationMessages.LAST_NAME_FORMAT)
         String lastName,
-    @NotBlank(message = "El correo electrónico es requerido.")
-        @Email(message = "El correo electrónico debe tener un formato válido.")
-        @Size(max = 150, message = "El correo electrónico debe tener menos de 150 caracteres.")
+    @NotBlank(message = ValidationMessages.EMAIL_REQUIRED)
+        @Email(message = ValidationMessages.EMAIL_FORMAT)
+        @Size(max = 150, message = ValidationMessages.EMAIL_MAX_LENGTH)
         String email,
-    @NotBlank(message = "La contraseña es requerida.")
-        @Size(
-            min = PASSWORD_MIN,
-            max = PASSWORD_MAX,
-            message = "La contraseña debe tener entre 8 y 255 caracteres.")
+    @NotBlank(message = ValidationMessages.PASSWORD_REQUIRED)
+        @Size(min = PASSWORD_MIN, max = PASSWORD_MAX, message = ValidationMessages.PASSWORD_RANGE)
         String password) {}

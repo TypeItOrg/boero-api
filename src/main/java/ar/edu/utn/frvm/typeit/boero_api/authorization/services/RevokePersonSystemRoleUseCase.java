@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
+import static ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.AuthorizationMessages.SYSTEM_ROLE_NOT_SEEDED;
+
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
@@ -27,7 +29,7 @@ public class RevokePersonSystemRoleUseCase {
             .findByScopeAndCodeAndInstitution_Id(
                 RoleScope.INSTITUTION, roleCode.name(), institution.getId())
             .orElseThrow(
-                () -> new IllegalStateException("System role not seeded: " + roleCode.name()));
+                () -> new IllegalStateException(String.format(SYSTEM_ROLE_NOT_SEEDED, roleCode)));
 
     personRoleAssignmentRepository
         .findByPerson_IdAndRole_IdAndInstitution_Id(

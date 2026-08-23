@@ -1,5 +1,10 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
+import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.REFRESH_REPLAY_CACHE_INVALID;
+import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.REFRESH_REPLAY_ENCRYPTION_FAILED;
+import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.REFRESH_REPLAY_VALUE_INVALID_FORMAT;
+import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.REFRESH_REPLAY_VALUE_TOO_SHORT;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.config.RefreshReplayProperties;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -44,7 +49,7 @@ public class RefreshReplayCache {
     try {
       return Optional.of(decrypt(cacheKey, encryptedValue));
     } catch (GeneralSecurityException | IllegalArgumentException exception) {
-      throw new IllegalStateException("Refresh replay cache contains an invalid value", exception);
+      throw new IllegalStateException(REFRESH_REPLAY_CACHE_INVALID, exception);
     }
   }
 
@@ -57,7 +62,7 @@ public class RefreshReplayCache {
       throws GeneralSecurityException {
     final byte[] encrypted = Base64.getDecoder().decode(encryptedValue);
     if (encrypted.length <= NONCE_LENGTH_BYTES) {
-      throw new IllegalArgumentException("Encrypted replay value is too short");
+      throw new IllegalArgumentException(REFRESH_REPLAY_VALUE_TOO_SHORT);
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(encrypted);
@@ -76,7 +81,7 @@ public class RefreshReplayCache {
     final String[] tokens =
         new String(cipher.doFinal(ciphertext), StandardCharsets.UTF_8).split("\\n", -1);
     if (tokens.length != 2 || tokens[0].isBlank() || tokens[1].isBlank()) {
-      throw new IllegalArgumentException("Encrypted replay value has an invalid format");
+      throw new IllegalArgumentException(REFRESH_REPLAY_VALUE_INVALID_FORMAT);
     }
 
     return new RefreshReplay(tokens[0], tokens[1]);
@@ -102,7 +107,7 @@ public class RefreshReplayCache {
       buffer.put(nonce).put(ciphertext);
       return Base64.getEncoder().encodeToString(buffer.array());
     } catch (GeneralSecurityException exception) {
-      throw new IllegalStateException("Unable to encrypt refresh replay", exception);
+      throw new IllegalStateException(REFRESH_REPLAY_ENCRYPTION_FAILED, exception);
     }
   }
 

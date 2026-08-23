@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.security;
 
+import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.PLATFORM_USERNAME_INVALID;
+
 public final class PlatformUsername {
 
   private static final String PREFIX = "platform:";
@@ -16,8 +18,7 @@ public final class PlatformUsername {
 
   public static String parseEmail(String principal) {
     if (!isPlatformPrincipal(principal)) {
-      throw new IllegalArgumentException(
-          "El formato del nombre de usuario de plataforma no es válido.");
+      throw new IllegalArgumentException(PLATFORM_USERNAME_INVALID);
     }
 
     return principal.substring(PREFIX.length());

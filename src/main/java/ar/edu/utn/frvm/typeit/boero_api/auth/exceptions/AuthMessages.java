@@ -10,12 +10,13 @@ public final class AuthMessages {
   public static final String TOKEN_EXPIRED = "El token de acceso ha expirado.";
   public static final String TOKEN_INVALID = "El token de acceso es inválido.";
   public static final String TOKEN_MISSING =
-      "Se requiere el header Authorization con un Bearer token.";
+      "Se requiere el encabezado Authorization con un token Bearer.";
   public static final String TOKEN_BLACKLISTED = "El token ha sido revocado.";
   public static final String TOKEN_SESSION_INACTIVE = "La sesión asociada al token no está activa.";
-  public static final String REFRESH_TOKEN_INVALID = "El refresh token es inválido o ha expirado.";
+  public static final String REFRESH_TOKEN_INVALID =
+      "El token de actualización es inválido o ha expirado.";
   public static final String REFRESH_TOKEN_REUSE =
-      "Se detectó reutilización del refresh token. Todas las sesiones fueron revocadas.";
+      "Se detectó la reutilización del token de actualización. Todas las sesiones fueron revocadas.";
   public static final String PLATFORM_ACCOUNT_DISABLED =
       "La cuenta de plataforma se encuentra deshabilitada.";
   public static final String PLATFORM_ACCOUNT_NOT_FOUND =
@@ -29,6 +30,30 @@ public final class AuthMessages {
   public static final String PASSWORD_RECOVERY_TOKEN_INVALID =
       "El enlace de recuperación es inválido o ha expirado.";
   public static final String PASSWORD_CONFIRMATION_MISMATCH = "Las contraseñas no coinciden.";
+  public static final String INSTITUTIONAL_USERNAME_REQUIRED = "El nombre de usuario es requerido.";
+  public static final String INSTITUTIONAL_USERNAME_INVALID =
+      "El nombre de usuario institucional no es válido.";
+  public static final String PLATFORM_USERNAME_INVALID =
+      "El formato del nombre de usuario de plataforma no es válido.";
+  public static final String USER_PERSON_INSTITUTION_MISMATCH =
+      "El usuario y la persona deben pertenecer a la misma institución.";
+  public static final String SHA_256_UNAVAILABLE = "SHA-256 debe estar disponible.";
+  public static final String REFRESH_REPLAY_CACHE_INVALID =
+      "La caché de reutilización del token de actualización contiene un valor inválido.";
+  public static final String REFRESH_REPLAY_VALUE_TOO_SHORT =
+      "El valor cifrado de la reutilización es demasiado corto.";
+  public static final String REFRESH_REPLAY_VALUE_INVALID_FORMAT =
+      "El valor cifrado de la reutilización tiene un formato inválido.";
+  public static final String REFRESH_REPLAY_ENCRYPTION_FAILED =
+      "No se pudo cifrar la reutilización del token de actualización.";
+  public static final String REFRESH_REPLAY_ENCRYPTION_KEY_REQUIRED =
+      "La propiedad app.auth.refresh-replay.encryption-key es obligatoria.";
+  public static final String REFRESH_REPLAY_TTL_INVALID =
+      "La propiedad app.auth.refresh-replay.ttl debe ser positiva.";
+  public static final String REFRESH_REPLAY_ENCRYPTION_KEY_INVALID_BASE64 =
+      "La propiedad app.auth.refresh-replay.encryption-key debe contener una clave Base64 válida.";
+  public static final String REFRESH_REPLAY_ENCRYPTION_KEY_INVALID_SIZE =
+      "La propiedad app.auth.refresh-replay.encryption-key debe decodificar a 32 bytes.";
 
   private AuthMessages() {}
 }

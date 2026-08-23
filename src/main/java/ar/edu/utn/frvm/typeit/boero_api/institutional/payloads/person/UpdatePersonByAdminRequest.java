@@ -4,28 +4,25 @@ import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldCons
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_MIN;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_PATTERN;
 
+import ar.edu.utn.frvm.typeit.boero_api.common.validation.ValidationMessages;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record UpdatePersonByAdminRequest(
     @Size.List({
-          @Size(min = NAME_MIN, message = "El nombre debe tener al menos 3 caracteres."),
-          @Size(max = NAME_MAX, message = "El nombre debe tener menos de 255 caracteres.")
+          @Size(min = NAME_MIN, message = ValidationMessages.FIRST_NAME_MIN_LENGTH),
+          @Size(max = NAME_MAX, message = ValidationMessages.FIRST_NAME_MAX_LENGTH)
         })
-        @Pattern(
-            regexp = NAME_PATTERN,
-            message = "El nombre solo puede contener letras y espacios.")
+        @Pattern(regexp = NAME_PATTERN, message = ValidationMessages.FIRST_NAME_FORMAT)
         String firstName,
     @Size.List({
-          @Size(min = NAME_MIN, message = "El apellido debe tener al menos 3 caracteres."),
-          @Size(max = NAME_MAX, message = "El apellido debe tener menos de 255 caracteres.")
+          @Size(min = NAME_MIN, message = ValidationMessages.LAST_NAME_MIN_LENGTH),
+          @Size(max = NAME_MAX, message = ValidationMessages.LAST_NAME_MAX_LENGTH)
         })
-        @Pattern(
-            regexp = NAME_PATTERN,
-            message = "El apellido solo puede contener letras y espacios.")
+        @Pattern(regexp = NAME_PATTERN, message = ValidationMessages.LAST_NAME_FORMAT)
         String lastName,
-    @Email(message = "El email debe tener un formato válido.") String email,
+    @Email(message = ValidationMessages.PERSON_EMAIL_FORMAT) String email,
     String phoneNumber) {
 
   public boolean isEmpty() {

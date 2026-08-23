@@ -1,5 +1,8 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.security;
 
+import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.INSTITUTIONAL_USERNAME_INVALID;
+import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.INSTITUTIONAL_USERNAME_REQUIRED;
+
 import java.util.UUID;
 import org.jspecify.annotations.NullMarked;
 
@@ -18,12 +21,12 @@ public final class InstitutionalUsername {
 
   public static Parts parse(String username) {
     if (username == null || username.isBlank()) {
-      throw new IllegalArgumentException("El nombre de usuario es requerido.");
+      throw new IllegalArgumentException(INSTITUTIONAL_USERNAME_REQUIRED);
     }
 
     int sep = username.indexOf(SEPARATOR);
     if (sep < 0 || sep == username.length() - 1) {
-      throw new IllegalArgumentException("El nombre de usuario institucional no es válido.");
+      throw new IllegalArgumentException(INSTITUTIONAL_USERNAME_INVALID);
     }
 
     String institutionPart = username.substring(0, sep);

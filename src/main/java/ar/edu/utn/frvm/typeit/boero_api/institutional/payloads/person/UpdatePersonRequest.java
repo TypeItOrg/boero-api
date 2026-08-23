@@ -8,6 +8,7 @@ import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldCons
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.PASSWORD_MIN;
 
 import ar.edu.utn.frvm.typeit.boero_api.common.validation.MinimumAge;
+import ar.edu.utn.frvm.typeit.boero_api.common.validation.ValidationMessages;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
@@ -16,31 +17,27 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 public record UpdatePersonRequest(
-    @Size(min = NAME_MIN, message = "El nombre debe tener al menos 3 caracteres.")
-        @Size(max = NAME_MAX, message = "El nombre debe tener menos de 255 caracteres.")
-        @Pattern(
-            regexp = NAME_PATTERN,
-            message = "El nombre solo puede contener letras y espacios.")
+    @Size(min = NAME_MIN, message = ValidationMessages.FIRST_NAME_MIN_LENGTH)
+        @Size(max = NAME_MAX, message = ValidationMessages.FIRST_NAME_MAX_LENGTH)
+        @Pattern(regexp = NAME_PATTERN, message = ValidationMessages.FIRST_NAME_FORMAT)
         String firstName,
-    @Size(min = NAME_MIN, message = "El apellido debe tener al menos 3 caracteres.")
-        @Size(max = NAME_MAX, message = "El apellido debe tener menos de 255 caracteres.")
-        @Pattern(
-            regexp = NAME_PATTERN,
-            message = "El apellido solo puede contener letras y espacios.")
+    @Size(min = NAME_MIN, message = ValidationMessages.LAST_NAME_MIN_LENGTH)
+        @Size(max = NAME_MAX, message = ValidationMessages.LAST_NAME_MAX_LENGTH)
+        @Pattern(regexp = NAME_PATTERN, message = ValidationMessages.LAST_NAME_FORMAT)
         String lastName,
     @MinimumAge(MINIMUM_AGE) LocalDate birthDate,
-    @Email(message = "El correo electrónico debe tener un formato válido.")
-        @Size(max = 150, message = "El correo electrónico debe tener menos de 150 caracteres.")
+    @Email(message = ValidationMessages.EMAIL_FORMAT)
+        @Size(max = 150, message = ValidationMessages.EMAIL_MAX_LENGTH)
         String email,
-    @Size(max = 30, message = "El teléfono debe tener menos de 30 caracteres.") String phoneNumber,
+    @Size(max = 30, message = ValidationMessages.PHONE_MAX_LENGTH) String phoneNumber,
     UUID birthCityId,
     UUID nationalityCountryId,
     @Valid UpdateAddressRequest address,
-    @Size(max = PASSWORD_MAX, message = "La contraseña actual no puede superar los 255 caracteres.")
+    @Size(max = PASSWORD_MAX, message = ValidationMessages.CURRENT_PASSWORD_MAX_LENGTH)
         String currentPassword,
     @Pattern(
             regexp = "^$|(?s:.{" + PASSWORD_MIN + "," + PASSWORD_MAX + "})$",
-            message = "La contraseña debe tener entre 8 y 255 caracteres.")
+            message = ValidationMessages.PASSWORD_RANGE)
         String password) {
 
   public UpdatePersonRequest(

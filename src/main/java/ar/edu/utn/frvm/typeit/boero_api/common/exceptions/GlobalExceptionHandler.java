@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.common.exceptions;
 
 import static ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorMessages.INTERNAL_SERVER_ERROR_MESSAGE;
+import static ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorMessages.MALFORMED_REQUEST_BODY;
 import static ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorMessages.UNHANDLED_EXCEPTION_MESSAGE;
 import static ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorMessages.VALIDATION_ERROR_MESSAGE;
 import static ar.edu.utn.frvm.typeit.boero_api.security.handlers.SecurityErrorMessages.DEFAULT_FORBIDDEN_MESSAGE;
@@ -63,7 +64,7 @@ public class GlobalExceptionHandler {
   public ExceptionPayload handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
     return ExceptionPayload.builder()
         .status(HttpStatus.BAD_REQUEST.value())
-        .message("El formato del cuerpo de la solicitud es inválido.")
+        .message(MALFORMED_REQUEST_BODY)
         .build();
   }
 

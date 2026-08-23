@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface MinimumAge {
 
-  String message() default "La persona debe tener al menos {value} años.";
+  String message() default ValidationMessages.MINIMUM_AGE;
 
   Class<?>[] groups() default {};
 

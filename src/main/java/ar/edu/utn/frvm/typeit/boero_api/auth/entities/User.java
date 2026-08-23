@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.entities;
 
+import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.USER_PERSON_INSTITUTION_MISMATCH;
+
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints;
@@ -113,8 +115,7 @@ public class User extends Auditable implements UserDetails {
   @PreUpdate
   private void validateInstitutionConsistency() {
     if (!institution.getId().equals(person.getInstitution().getId())) {
-      throw new IllegalStateException(
-          "El usuario y la persona deben pertenecer a la misma institución.");
+      throw new IllegalStateException(USER_PERSON_INSTITUTION_MISMATCH);
     }
   }
 }

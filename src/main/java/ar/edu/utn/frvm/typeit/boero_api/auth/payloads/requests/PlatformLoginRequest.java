@@ -2,15 +2,16 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests;
 
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.PASSWORD_MAX;
 
+import ar.edu.utn.frvm.typeit.boero_api.common.validation.ValidationMessages;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record PlatformLoginRequest(
-    @NotBlank(message = "El correo electrónico es requerido.")
-        @Email(message = "El correo electrónico debe tener un formato válido.")
+    @NotBlank(message = ValidationMessages.EMAIL_REQUIRED)
+        @Email(message = ValidationMessages.EMAIL_FORMAT)
         String email,
-    @NotBlank(message = "La contraseña es requerida.")
-        @Size(max = PASSWORD_MAX, message = "La contraseña debe tener menos de 255 caracteres.")
+    @NotBlank(message = ValidationMessages.PASSWORD_REQUIRED)
+        @Size(max = PASSWORD_MAX, message = ValidationMessages.PASSWORD_MAX_LENGTH)
         String password,
     Boolean rememberMe) {}

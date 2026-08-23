@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.enums;
 
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.AuthorizationMessages;
 import java.util.EnumSet;
 import java.util.Set;
 import lombok.Getter;
@@ -312,6 +313,7 @@ public enum PermissionCode {
         return permission;
       }
     }
-    throw new IllegalArgumentException("Código de permiso desconocido: " + code);
+    throw new IllegalArgumentException(
+        String.format(AuthorizationMessages.UNKNOWN_PERMISSION_CODE, code));
   }
 }
