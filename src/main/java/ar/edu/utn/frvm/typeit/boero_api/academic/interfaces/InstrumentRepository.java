@@ -7,22 +7,25 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface InstrumentRepository extends JpaRepository<Instrument, UUID> {
+  @EntityGraph(attributePaths = "institution")
   @Query(
       """
       SELECT instrument FROM Instrument instrument
-      WHERE instrument.institution.id = :institutionId
+      WHERE (:institutionId IS NULL OR instrument.institution.id = :institutionId)
         AND ((:deleted = true AND instrument.deletedAt IS NOT NULL) OR (:deleted = false AND instrument.deletedAt IS NULL))
         AND (:active IS NULL OR instrument.active = :active)
-        AND (:search IS NULL OR UNACCENT_LOWER(instrument.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%')))
+        AND (:search IS NULL OR UNACCENT_LOWER(instrument.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
+          OR UNACCENT_LOWER(instrument.institution.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%')))
       """)
   Page<Instrument> findByFilters(
-      @Param("institutionId") UUID institutionId,
+      @Param("institutionId") @Nullable UUID institutionId,
       @Param("search") @Nullable String search,
       @Param("active") @Nullable Boolean active,
       @Param("deleted") boolean deleted,

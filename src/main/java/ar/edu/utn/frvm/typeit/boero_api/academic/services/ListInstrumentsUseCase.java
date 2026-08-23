@@ -6,6 +6,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.validation.AcademicNameNormaliz
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +18,7 @@ public class ListInstrumentsUseCase {
 
   @Transactional(readOnly = true)
   public PaginatedResponse<InstrumentResponse> execute(
-      final UUID institutionId,
+      final @Nullable UUID institutionId,
       final String search,
       final Boolean active,
       final boolean deleted,

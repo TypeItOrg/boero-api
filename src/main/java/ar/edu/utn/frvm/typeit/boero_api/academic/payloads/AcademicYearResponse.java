@@ -11,6 +11,7 @@ import java.util.UUID;
     requiredProperties = {
       "id",
       "institutionId",
+      "institutionName",
       "year",
       "startDate",
       "endDate",
@@ -20,6 +21,7 @@ import java.util.UUID;
 public record AcademicYearResponse(
     UUID id,
     UUID institutionId,
+    String institutionName,
     int year,
     @Schema(nullable = true) LocalDate startDate,
     @Schema(nullable = true) LocalDate endDate,
@@ -30,6 +32,7 @@ public record AcademicYearResponse(
     return new AcademicYearResponse(
         year.getId(),
         year.getInstitution().getId(),
+        year.getInstitution().getName(),
         year.getYear(),
         year.getStartDate(),
         year.getEndDate(),

@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -30,7 +31,7 @@ public class ListStudyPlansUseCase {
 
   @Transactional(readOnly = true)
   public PaginatedResponse<StudyPlanResponse> execute(
-      final UUID institutionId,
+      final @Nullable UUID institutionId,
       final String search,
       final StudyPlanStatus status,
       final UUID trainingPathId,
@@ -52,7 +53,7 @@ public class ListStudyPlansUseCase {
   }
 
   public PaginatedResponse<StudyPlanResponse> execute(
-      final UUID institutionId,
+      final @Nullable UUID institutionId,
       final String search,
       final StudyPlanStatus status,
       final Pageable pageable) {
@@ -70,7 +71,7 @@ public class ListStudyPlansUseCase {
   }
 
   private static Specification<StudyPlan> byFilters(
-      final UUID institutionId,
+      final @Nullable UUID institutionId,
       final String search,
       final StudyPlanStatus status,
       final UUID trainingPathId,
@@ -78,7 +79,9 @@ public class ListStudyPlansUseCase {
       final boolean deleted) {
     return (root, query, criteriaBuilder) -> {
       final List<Predicate> predicates = new ArrayList<>();
-      predicates.add(criteriaBuilder.equal(root.get("institution").get("id"), institutionId));
+      if (institutionId != null) {
+        predicates.add(criteriaBuilder.equal(root.get("institution").get("id"), institutionId));
+      }
       predicates.add(
           deleted
               ? criteriaBuilder.isNotNull(root.get("deletedAt"))
@@ -102,7 +105,12 @@ public class ListStudyPlansUseCase {
         final var normalizedSearch =
             SearchNormalization.unaccentLower(
                 criteriaBuilder, criteriaBuilder.literal("%" + search + "%"));
-        predicates.add(criteriaBuilder.like(normalizedName, normalizedSearch));
+        final var normalizedInstitutionName =
+            SearchNormalization.unaccentLower(criteriaBuilder, root.get("institution").get("name"));
+        predicates.add(
+            criteriaBuilder.or(
+                criteriaBuilder.like(normalizedName, normalizedSearch),
+                criteriaBuilder.like(normalizedInstitutionName, normalizedSearch)));
       }
       return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
     };

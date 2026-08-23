@@ -10,6 +10,7 @@ import java.util.UUID;
     requiredProperties = {
       "id",
       "institutionId",
+      "institutionName",
       "name",
       "description",
       "type",
@@ -19,6 +20,7 @@ import java.util.UUID;
 public record AcademicSpaceResponse(
     UUID id,
     UUID institutionId,
+    String institutionName,
     String name,
     @Schema(nullable = true) String description,
     AcademicSpaceType type,
@@ -29,6 +31,7 @@ public record AcademicSpaceResponse(
     return new AcademicSpaceResponse(
         space.getId(),
         space.getInstitution().getId(),
+        space.getInstitution().getName(),
         space.getName(),
         space.getDescription(),
         space.getType(),

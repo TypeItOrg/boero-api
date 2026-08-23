@@ -11,6 +11,7 @@ import java.util.UUID;
     requiredProperties = {
       "id",
       "institutionId",
+      "institutionName",
       "trainingPathId",
       "trainingPathName",
       "name",
@@ -22,6 +23,7 @@ import java.util.UUID;
 public record StudyPlanResponse(
     UUID id,
     UUID institutionId,
+    String institutionName,
     UUID trainingPathId,
     String trainingPathName,
     String name,
@@ -34,6 +36,7 @@ public record StudyPlanResponse(
     return new StudyPlanResponse(
         plan.getId(),
         plan.getInstitution().getId(),
+        plan.getInstitution().getName(),
         plan.getTrainingPath().getId(),
         plan.getTrainingPath().getName(),
         plan.getName(),

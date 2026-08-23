@@ -16,14 +16,14 @@ import org.springframework.data.repository.query.Param;
 
 public interface StudyPlanRepository
     extends JpaRepository<StudyPlan, UUID>, JpaSpecificationExecutor<StudyPlan> {
-  @EntityGraph(attributePaths = "trainingPath")
+  @EntityGraph(attributePaths = {"institution", "trainingPath"})
   Page<StudyPlan> findAll(Specification<StudyPlan> specification, Pageable pageable);
 
-  @EntityGraph(attributePaths = "trainingPath")
+  @EntityGraph(attributePaths = {"institution", "trainingPath"})
   Page<StudyPlan> findByTrainingPath_IdAndInstitution_IdAndDeletedAtIsNull(
       UUID trainingPathId, UUID institutionId, Pageable pageable);
 
-  @EntityGraph(attributePaths = "trainingPath")
+  @EntityGraph(attributePaths = {"institution", "trainingPath"})
   @Query(
       """
       SELECT plan FROM StudyPlan plan
@@ -41,7 +41,7 @@ public interface StudyPlanRepository
       @Param("academicSpaceId") UUID academicSpaceId,
       Pageable pageable);
 
-  @EntityGraph(attributePaths = "trainingPath")
+  @EntityGraph(attributePaths = {"institution", "trainingPath"})
   @Query(
       "SELECT plan FROM StudyPlan plan WHERE plan.id = :id AND plan.institution.id = :institutionId AND plan.deletedAt IS NULL")
   Optional<StudyPlan> findByIdAndInstitution_Id(

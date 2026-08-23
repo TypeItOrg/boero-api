@@ -5,10 +5,20 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Schema(requiredProperties = {"id", "institutionId", "name", "description", "active", "deletedAt"})
+@Schema(
+    requiredProperties = {
+      "id",
+      "institutionId",
+      "institutionName",
+      "name",
+      "description",
+      "active",
+      "deletedAt"
+    })
 public record InstrumentResponse(
     UUID id,
     UUID institutionId,
+    String institutionName,
     String name,
     @Schema(nullable = true) String description,
     boolean active,
@@ -18,6 +28,7 @@ public record InstrumentResponse(
     return new InstrumentResponse(
         instrument.getId(),
         instrument.getInstitution().getId(),
+        instrument.getInstitution().getName(),
         instrument.getName(),
         instrument.getDescription(),
         instrument.isActive(),

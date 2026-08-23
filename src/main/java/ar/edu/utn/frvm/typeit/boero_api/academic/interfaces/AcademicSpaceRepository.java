@@ -8,23 +8,26 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface AcademicSpaceRepository extends JpaRepository<AcademicSpace, UUID> {
+  @EntityGraph(attributePaths = "institution")
   @Query(
       """
       SELECT space FROM AcademicSpace space
-      WHERE space.institution.id = :institutionId
+      WHERE (:institutionId IS NULL OR space.institution.id = :institutionId)
         AND ((:deleted = true AND space.deletedAt IS NOT NULL) OR (:deleted = false AND space.deletedAt IS NULL))
         AND (:active IS NULL OR space.active = :active)
         AND (:type IS NULL OR space.type = :type)
-        AND (:search IS NULL OR UNACCENT_LOWER(space.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%')))
+        AND (:search IS NULL OR UNACCENT_LOWER(space.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
+          OR UNACCENT_LOWER(space.institution.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%')))
       """)
   Page<AcademicSpace> findByFilters(
-      @Param("institutionId") UUID institutionId,
+      @Param("institutionId") @Nullable UUID institutionId,
       @Param("search") @Nullable String search,
       @Param("active") @Nullable Boolean active,
       @Param("type") @Nullable AcademicSpaceType type,

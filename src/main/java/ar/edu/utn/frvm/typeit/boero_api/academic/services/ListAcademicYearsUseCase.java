@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -42,7 +43,7 @@ public class ListAcademicYearsUseCase {
 
   @Transactional(readOnly = true)
   public PaginatedResponse<AcademicYearResponse> execute(
-      final UUID institutionId,
+      final @Nullable UUID institutionId,
       final String search,
       final AcademicYearStatus status,
       final Integer year,
@@ -60,7 +61,7 @@ public class ListAcademicYearsUseCase {
 
   @Transactional(readOnly = true)
   public PaginatedResponse<AcademicYearResponse> execute(
-      final UUID institutionId,
+      final @Nullable UUID institutionId,
       final String search,
       final AcademicYearStatus status,
       final Integer year,
@@ -84,7 +85,7 @@ public class ListAcademicYearsUseCase {
   }
 
   private static Specification<AcademicYear> byFilters(
-      final UUID institutionId,
+      final @Nullable UUID institutionId,
       final String search,
       final AcademicYearStatus status,
       final Integer year,
@@ -94,7 +95,9 @@ public class ListAcademicYearsUseCase {
       final boolean deleted) {
     return (root, query, criteriaBuilder) -> {
       final List<Predicate> predicates = new ArrayList<>();
-      predicates.add(criteriaBuilder.equal(root.get("institution").get("id"), institutionId));
+      if (institutionId != null) {
+        predicates.add(criteriaBuilder.equal(root.get("institution").get("id"), institutionId));
+      }
       predicates.add(
           deleted
               ? criteriaBuilder.isNotNull(root.get("deletedAt"))
@@ -137,6 +140,11 @@ public class ListAcademicYearsUseCase {
                     String.class,
                     root.get("year"),
                     criteriaBuilder.literal(YEAR_FORMAT))),
+            pattern));
+    matches.add(
+        like(
+            criteriaBuilder,
+            SearchNormalization.unaccentLower(criteriaBuilder, root.get("institution").get("name")),
             pattern));
     matches.add(
         like(

@@ -5,10 +5,20 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Schema(requiredProperties = {"id", "institutionId", "name", "description", "active", "deletedAt"})
+@Schema(
+    requiredProperties = {
+      "id",
+      "institutionId",
+      "institutionName",
+      "name",
+      "description",
+      "active",
+      "deletedAt"
+    })
 public record TrainingPathResponse(
     UUID id,
     UUID institutionId,
+    String institutionName,
     String name,
     @Schema(nullable = true) String description,
     boolean active,
@@ -18,6 +28,7 @@ public record TrainingPathResponse(
     return new TrainingPathResponse(
         path.getId(),
         path.getInstitution().getId(),
+        path.getInstitution().getName(),
         path.getName(),
         path.getDescription(),
         path.isActive(),

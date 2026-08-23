@@ -129,6 +129,7 @@ class AcademicQueryPerformanceIntegrationTest {
 
   private Statistics statistics;
   private UUID institutionId;
+  private String institutionName;
   private UUID trainingPathId;
   private UUID studyPlanId;
   private UUID targetStudyPlanSpaceId;
@@ -147,6 +148,7 @@ class AcademicQueryPerformanceIntegrationTest {
     statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
     final var institution = institutionRepository.findAll().getFirst();
     institutionId = institution.getId();
+    institutionName = institution.getName();
 
     persistAcademicYears(institution);
     final var trainingPaths = persistTrainingPaths(institution);
@@ -168,6 +170,58 @@ class AcademicQueryPerformanceIntegrationTest {
     entityManager.flush();
     entityManager.clear();
     statistics.clear();
+  }
+
+  @Test
+  @DisplayName("Should list global academic years by institution name without N+1")
+  void shouldListGlobalAcademicYearsByInstitutionNameWithoutNPlusOne() {
+    final var response =
+        listAcademicYearsUseCase.execute(
+            null,
+            institutionName,
+            null,
+            null,
+            null,
+            null,
+            null,
+            false,
+            PageRequest.of(0, PAGE_SIZE));
+
+    assertThat(response.items()).hasSize(PAGE_SIZE);
+    assertThat(response.items())
+        .allSatisfy(year -> assertThat(year.institutionName()).isEqualTo(institutionName));
+    assertPreparedStatementCount(2);
+  }
+
+  @Test
+  @DisplayName("Should list every global academic collection by institution name")
+  void shouldListEveryGlobalAcademicCollectionByInstitutionName() {
+    assertThat(
+            listTrainingPathsUseCase
+                .execute(null, institutionName, null, PageRequest.of(0, PAGE_SIZE))
+                .items())
+        .hasSize(PAGE_SIZE);
+    entityManager.clear();
+
+    assertThat(
+            listStudyPlansUseCase
+                .execute(null, institutionName, null, PageRequest.of(0, PAGE_SIZE))
+                .items())
+        .hasSize(PAGE_SIZE);
+    entityManager.clear();
+
+    assertThat(
+            listAcademicSpacesUseCase
+                .execute(null, institutionName, null, null, PageRequest.of(0, PAGE_SIZE))
+                .items())
+        .hasSize(PAGE_SIZE);
+    entityManager.clear();
+
+    assertThat(
+            listInstrumentsUseCase
+                .execute(null, institutionName, null, PageRequest.of(0, PAGE_SIZE))
+                .items())
+        .hasSize(PAGE_SIZE);
   }
 
   @Test

@@ -14,7 +14,11 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicYearResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.CreateAcademicYearUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.GetAcademicYearUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListAcademicSpacesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListAcademicYearsUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListInstrumentsUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListStudyPlansUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListTrainingPathsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.UpdateAcademicYearStatusUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.UpdateAcademicYearUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUseCase;
@@ -40,7 +44,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.util.PathMatcher;
 
-@WebMvcTest({AcademicYearController.class, AdminAcademicYearController.class})
+@WebMvcTest({
+  AcademicYearController.class,
+  AdminAcademicYearController.class,
+  PlatformAcademicCollectionController.class
+})
 @AutoConfigureMockMvc(addFilters = false)
 class AcademicYearControllerWebMvcTest {
 
@@ -53,6 +61,10 @@ class AcademicYearControllerWebMvcTest {
 
   @MockitoBean private CreateAcademicYearUseCase createAcademicYearUseCase;
   @MockitoBean private ListAcademicYearsUseCase listAcademicYearsUseCase;
+  @MockitoBean private ListAcademicSpacesUseCase listAcademicSpacesUseCase;
+  @MockitoBean private ListInstrumentsUseCase listInstrumentsUseCase;
+  @MockitoBean private ListStudyPlansUseCase listStudyPlansUseCase;
+  @MockitoBean private ListTrainingPathsUseCase listTrainingPathsUseCase;
   @MockitoBean private GetAcademicYearUseCase getAcademicYearUseCase;
   @MockitoBean private UpdateAcademicYearUseCase updateAcademicYearUseCase;
   @MockitoBean private UpdateAcademicYearStatusUseCase updateAcademicYearStatusUseCase;
@@ -62,6 +74,38 @@ class AcademicYearControllerWebMvcTest {
   @MockitoBean private TokenBlacklistService tokenBlacklistService;
   @MockitoBean private IsSessionActiveUseCase isSessionActiveUseCase;
   @MockitoBean private IsPlatformSessionActiveUseCase isPlatformSessionActiveUseCase;
+
+  @Test
+  @DisplayName("Should list academic years across institutions for platform administration")
+  void list_usesGlobalPlatformRoute() throws Exception {
+    when(listAcademicYearsUseCase.execute(
+            isNull(),
+            eq("conservatorio"),
+            isNull(),
+            isNull(),
+            isNull(),
+            isNull(),
+            isNull(),
+            eq(false),
+            any(Pageable.class)))
+        .thenReturn(emptyPage());
+
+    mockMvc
+        .perform(get("/api/v1/admin/academic-years").param("search", "conservatorio"))
+        .andExpect(status().isOk());
+
+    verify(listAcademicYearsUseCase)
+        .execute(
+            isNull(),
+            eq("conservatorio"),
+            isNull(),
+            isNull(),
+            isNull(),
+            isNull(),
+            isNull(),
+            eq(false),
+            any(Pageable.class));
+  }
 
   @Test
   @DisplayName("Should list academic years under the institution route")
@@ -81,6 +125,7 @@ class AcademicYearControllerWebMvcTest {
                         new AcademicYearResponse(
                             ACADEMIC_YEAR_ID,
                             INSTITUTION_ID,
+                            "Conservatorio",
                             2026,
                             null,
                             null,
