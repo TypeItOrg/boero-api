@@ -71,6 +71,19 @@ class UserRepositoryTest {
   }
 
   @Test
+  @DisplayName("Should find the user for password recovery with their relations loaded")
+  void shouldFindUserForPasswordRecovery() {
+    Institution institution = createInstitution(entityManager, "boero-recovery");
+    User user = createUser(entityManager, institution, "12345678");
+    entityManager.flush();
+
+    assertThat(
+            userRepository.findWithPersonAndInstitutionForPasswordRecovery(
+                "12345678", institution.getId()))
+        .contains(user);
+  }
+
+  @Test
   @DisplayName("Should check user existence by document number within institution")
   void shouldCheckUserExistenceByDocumentNumberWithinInstitution() {
     Institution institution = createInstitution(entityManager, "boero");

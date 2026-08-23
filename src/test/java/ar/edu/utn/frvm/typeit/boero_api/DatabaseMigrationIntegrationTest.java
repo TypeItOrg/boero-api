@@ -61,11 +61,12 @@ class DatabaseMigrationIntegrationTest {
   @Test
   @DisplayName("Should migrate an empty PostgreSQL database and validate the JPA model")
   void shouldMigrateSchemaAndDevelopmentData() {
-    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260821181658");
+    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260822233706");
     assertThat(tableCount()).isEqualTo(30);
     assertThat(institutionCount()).isPositive();
     assertThat(tenantRelationshipConstraintCount()).isEqualTo(7);
     assertThat(activePersonDocumentIndexCount()).isEqualTo(1);
+    assertThat(passwordResetTokenUserUniqueIndexCount()).isEqualTo(1);
     assertThat(pgTrgmExtensionCount()).isEqualTo(1);
     assertThat(searchTrigramIndexCount()).isEqualTo(16);
   }
@@ -633,6 +634,19 @@ class DatabaseMigrationIntegrationTest {
           AND tablename = 'people'
           AND indexname = 'people_active_document_number_unique'
           AND indexdef LIKE '%WHERE (deleted = false)%'
+        """,
+        Integer.class);
+  }
+
+  private Integer passwordResetTokenUserUniqueIndexCount() {
+    return jdbcTemplate.queryForObject(
+        """
+        SELECT COUNT(*)
+        FROM pg_indexes
+        WHERE schemaname = 'public'
+          AND tablename = 'institutional_password_reset_tokens'
+          AND indexname = 'institutional_password_reset_tokens_user_unique'
+          AND indexdef LIKE 'CREATE UNIQUE INDEX%'
         """,
         Integer.class);
   }
