@@ -18,6 +18,7 @@ endif
 .PHONY: dev build down logs clean reset-data ps test format format-check migration
 
 dev:
+	@$(COMPOSE) rm --stop --force dev
 	@$(COMPOSE) up --build --watch --remove-orphans
 
 build:
