@@ -5,10 +5,10 @@ import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.SHA_
 import ar.edu.utn.frvm.typeit.boero_api.auth.config.PasswordRecoveryProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.InstitutionalPasswordResetToken;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
+import ar.edu.utn.frvm.typeit.boero_api.auth.events.InstitutionalPasswordRecoveryRequested;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.InstitutionalPasswordResetTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PasswordRecoveryRequest;
-import ar.edu.utn.frvm.typeit.boero_api.common.mail.MailSendingException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +30,7 @@ public class RequestInstitutionalPasswordRecoveryUseCase {
 
   private final UserRepository userRepository;
   private final InstitutionalPasswordResetTokenRepository passwordResetTokenRepository;
-  private final InstitutionalPasswordRecoveryMailService mailService;
+  private final ApplicationEventPublisher eventPublisher;
   private final PasswordRecoveryProperties passwordRecoveryProperties;
   private final SecureRandom secureRandom = new SecureRandom();
 
@@ -58,11 +59,7 @@ public class RequestInstitutionalPasswordRecoveryUseCase {
             .expiresAt(LocalDateTime.now().plus(passwordRecoveryProperties.tokenExpiration()))
             .build());
 
-    try {
-      mailService.send(user, token);
-    } catch (final MailSendingException exception) {
-      log.warn("[Auth] Password recovery email could not be sent, userId: {}", user.getId());
-    }
+    eventPublisher.publishEvent(InstitutionalPasswordRecoveryRequested.from(user, token));
   }
 
   private String generateToken() {
