@@ -13,6 +13,8 @@ import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldCons
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.common.validation.MinimumAge;
+import ar.edu.utn.frvm.typeit.boero_api.common.validation.ValidationMessages;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionMessages;
 import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -23,6 +25,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -82,28 +85,26 @@ public class Person extends Auditable {
   @JoinColumn(name = "nationality_country_id")
   private Country nationalityCountry;
 
-  @NotBlank(message = "El número de documento es requerido.")
-  @Pattern(
-      regexp = DOCUMENT_PATTERN,
-      message = "El número de documento debe tener exactamente 8 dígitos numéricos.")
+  @NotBlank(message = ValidationMessages.DOCUMENT_REQUIRED)
+  @Pattern(regexp = DOCUMENT_PATTERN, message = ValidationMessages.DOCUMENT_FORMAT)
   @Column(name = "document_number", nullable = false, length = DOCUMENT_LENGTH)
   private String documentNumber;
 
-  @NotBlank(message = "El nombre es requerido.")
+  @NotBlank(message = ValidationMessages.FIRST_NAME_REQUIRED)
   @Size.List({
-    @Size(min = NAME_MIN, message = "El nombre debe tener al menos 3 caracteres."),
-    @Size(max = NAME_MAX, message = "El nombre debe tener menos de 255 caracteres.")
+    @Size(min = NAME_MIN, message = ValidationMessages.FIRST_NAME_MIN_LENGTH),
+    @Size(max = NAME_MAX, message = ValidationMessages.FIRST_NAME_MAX_LENGTH)
   })
-  @Pattern(regexp = NAME_PATTERN, message = "El nombre solo puede contener letras y espacios.")
+  @Pattern(regexp = NAME_PATTERN, message = ValidationMessages.FIRST_NAME_FORMAT)
   @Column(name = "first_name", nullable = false, length = NAME_MAX)
   private String firstName;
 
-  @NotBlank(message = "El apellido es requerido.")
+  @NotBlank(message = ValidationMessages.LAST_NAME_REQUIRED)
   @Size.List({
-    @Size(min = NAME_MIN, message = "El apellido debe tener al menos 3 caracteres."),
-    @Size(max = NAME_MAX, message = "El apellido debe tener menos de 255 caracteres.")
+    @Size(min = NAME_MIN, message = ValidationMessages.LAST_NAME_MIN_LENGTH),
+    @Size(max = NAME_MAX, message = ValidationMessages.LAST_NAME_MAX_LENGTH)
   })
-  @Pattern(regexp = NAME_PATTERN, message = "El apellido solo puede contener letras y espacios.")
+  @Pattern(regexp = NAME_PATTERN, message = ValidationMessages.LAST_NAME_FORMAT)
   @Column(name = "last_name", nullable = false, length = NAME_MAX)
   private String lastName;
 
@@ -114,7 +115,10 @@ public class Person extends Auditable {
   @Column(name = "phone_number", length = 30)
   private String phoneNumber;
 
-  @Column(length = 150)
+  @NotBlank(message = ValidationMessages.PERSON_EMAIL_REQUIRED)
+  @Email(message = ValidationMessages.PERSON_EMAIL_FORMAT)
+  @Size(max = 150, message = ValidationMessages.PERSON_EMAIL_MAX_LENGTH)
+  @Column(nullable = false, length = 150)
   private String email;
 
   @Column(name = "deleted", nullable = false)
@@ -141,8 +145,7 @@ public class Person extends Auditable {
 
   public void changeAddress(final Address address) {
     if (address != null && !institution.getId().equals(address.getInstitution().getId())) {
-      throw new IllegalArgumentException(
-          "La persona y el domicilio deben pertenecer a la misma institución.");
+      throw new IllegalArgumentException(InstitutionMessages.PERSON_ADDRESS_INSTITUTION_MISMATCH);
     }
 
     this.address = address;
