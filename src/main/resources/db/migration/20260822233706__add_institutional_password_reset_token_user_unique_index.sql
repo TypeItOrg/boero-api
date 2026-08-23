@@ -1,0 +1,4 @@
+DROP INDEX institutional_password_reset_tokens_user_id_idx;
+
+CREATE UNIQUE INDEX institutional_password_reset_tokens_user_unique
+    ON institutional_password_reset_tokens(user_id);

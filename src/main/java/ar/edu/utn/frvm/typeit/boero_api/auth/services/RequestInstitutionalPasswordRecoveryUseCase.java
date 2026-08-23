@@ -1,11 +1,14 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
+import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.SHA_256_UNAVAILABLE;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.config.PasswordRecoveryProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.InstitutionalPasswordResetToken;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.InstitutionalPasswordResetTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PasswordRecoveryRequest;
+import ar.edu.utn.frvm.typeit.boero_api.common.mail.MailSendingException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -14,7 +17,6 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.mail.MailException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,7 +36,7 @@ public class RequestInstitutionalPasswordRecoveryUseCase {
   @Transactional
   public void execute(final PasswordRecoveryRequest request) {
     userRepository
-        .findWithPersonAndInstitutionByPersonDocumentNumberAndInstitution_Id(
+        .findWithPersonAndInstitutionForPasswordRecovery(
             request.documentNumber(), request.institutionId())
         .filter(this::canRecoverPassword)
         .ifPresent(this::createAndSendToken);
@@ -48,7 +50,7 @@ public class RequestInstitutionalPasswordRecoveryUseCase {
 
   private void createAndSendToken(final User user) {
     final String token = generateToken();
-    passwordResetTokenRepository.deleteByUser_Id(user.getId());
+    passwordResetTokenRepository.deleteByUserId(user.getId());
     passwordResetTokenRepository.save(
         InstitutionalPasswordResetToken.builder()
             .user(user)
@@ -58,7 +60,7 @@ public class RequestInstitutionalPasswordRecoveryUseCase {
 
     try {
       mailService.send(user, token);
-    } catch (final MailException exception) {
+    } catch (final MailSendingException exception) {
       log.warn("[Auth] Password recovery email could not be sent, userId: {}", user.getId());
     }
   }
@@ -75,7 +77,7 @@ public class RequestInstitutionalPasswordRecoveryUseCase {
           .encodeToString(
               MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8)));
     } catch (final NoSuchAlgorithmException exception) {
-      throw new IllegalStateException("SHA-256 debe estar disponible.", exception);
+      throw new IllegalStateException(SHA_256_UNAVAILABLE, exception);
     }
   }
 }

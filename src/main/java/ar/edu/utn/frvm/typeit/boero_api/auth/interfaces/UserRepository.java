@@ -1,12 +1,14 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.interfaces;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
+import jakarta.persistence.LockModeType;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -31,6 +33,19 @@ public interface UserRepository extends JpaRepository<User, UUID> {
       """)
   Optional<User> findWithPersonAndInstitutionByPersonDocumentNumberAndInstitution_Id(
       @Param("documentNumber") String documentNumber, @Param("institutionId") UUID institutionId);
+
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @EntityGraph(attributePaths = {"person", "institution"})
+  @Query(
+      """
+      SELECT user FROM User user
+      WHERE user.person.documentNumber = :documentNumber
+        AND user.institution.id = :institutionId
+        AND user.person.deleted = false
+      """)
+  Optional<User> findWithPersonAndInstitutionForPasswordRecovery(
+      @Param("documentNumber") final String documentNumber,
+      @Param("institutionId") final UUID institutionId);
 
   @Query(
       """
