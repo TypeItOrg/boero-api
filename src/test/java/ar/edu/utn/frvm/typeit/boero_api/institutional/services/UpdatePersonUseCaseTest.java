@@ -80,6 +80,7 @@ class UpdatePersonUseCaseTest {
             .firstName("Juan")
             .lastName("Pérez")
             .documentNumber("12345678")
+            .email("juan@example.com")
             .institution(institution)
             .build();
     principal =

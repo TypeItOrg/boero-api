@@ -53,6 +53,7 @@ class UpdatePersonByAdminUseCaseTest {
             .firstName("Ana")
             .lastName("García")
             .documentNumber("12345678")
+            .email("ana@example.com")
             .build();
   }
 

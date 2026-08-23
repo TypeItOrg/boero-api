@@ -43,6 +43,7 @@ public final class InstitutionalTestData {
         .firstName("Ana")
         .lastName("Garcia")
         .documentNumber(documentNumber)
+        .email(documentNumber + "@example.com")
         .build();
   }
 

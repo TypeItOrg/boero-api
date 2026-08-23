@@ -102,7 +102,7 @@ class CreatePersonUseCaseTest {
     createPersonUseCase.execute(
         institutionId,
         new CreatePersonRequest(
-            "Ana", "García", "12345678", null, null, null, "admin-pass-123", null));
+            "Ana", "García", "12345678", "ana@example.com", null, null, "admin-pass-123", null));
 
     verify(assignPersonSystemRoleUseCase).execute(any(Person.class), eq(SystemRoleCode.APPLICANT));
   }
@@ -122,7 +122,7 @@ class CreatePersonUseCaseTest {
                         "Ana",
                         "García",
                         "12345678",
-                        null,
+                        "ana@example.com",
                         null,
                         null,
                         "admin-pass-123",
@@ -146,7 +146,7 @@ class CreatePersonUseCaseTest {
                         "Ana",
                         "García",
                         "12345678",
-                        null,
+                        "ana@example.com",
                         null,
                         null,
                         "admin-pass-123",
@@ -174,7 +174,7 @@ class CreatePersonUseCaseTest {
                         "Ana",
                         "García",
                         "12345678",
-                        null,
+                        "ana@example.com",
                         null,
                         null,
                         "admin-pass-123",

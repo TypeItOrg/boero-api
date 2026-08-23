@@ -54,6 +54,21 @@ class PersonConstraintsPersistenceTest {
   }
 
   @Test
+  @DisplayName("Should reject persist when email is missing (Bean Validation)")
+  void shouldRejectPersistWhenEmailIsMissing() {
+    Institution institution = createInstitution(entityManager, "person-bv-email");
+    Person person =
+        Person.builder()
+            .institution(institution)
+            .firstName("Ana")
+            .lastName("Garcia")
+            .documentNumber("12345678")
+            .build();
+
+    assertPersistFlushFailsBeanValidation(person);
+  }
+
+  @Test
   @DisplayName("Should reject native insert when document violates CHECK constraint")
   void shouldRejectNativeInsertWhenDocumentViolatesCheckConstraint() {
     Institution institution = createInstitution(entityManager, "person-check-doc");
