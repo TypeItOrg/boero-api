@@ -18,7 +18,7 @@ endif
 .PHONY: dev build down logs clean reset-data ps test format format-check migration
 
 dev:
-	@$(COMPOSE) up --watch --remove-orphans
+	@$(COMPOSE) up --build --watch --remove-orphans
 
 build:
 	$(COMPOSE) build
@@ -67,5 +67,3 @@ migration:
 	touch "$$path"; \
 	echo "Created $$path"
 endif
-
-
