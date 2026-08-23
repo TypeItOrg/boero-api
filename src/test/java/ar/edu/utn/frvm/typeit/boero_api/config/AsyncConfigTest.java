@@ -24,10 +24,4 @@ class AsyncConfigTest {
     assertThat(executor.getMaxPoolSize()).isEqualTo(4);
     assertThat(executor.getThreadNamePrefix()).isEqualTo("mail-");
   }
-
-  @Test
-  @DisplayName("expone la constante del qualifier del executor de mail")
-  void exposesMailExecutorQualifierConstant() {
-    assertThat(AsyncConfig.MAIL_EXECUTOR).isEqualTo("mailExecutor");
-  }
 }

@@ -16,14 +16,12 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class RequestInstitutionalPasswordRecoveryUseCase {
 
   private static final int TOKEN_BYTES = 32;
@@ -40,7 +38,7 @@ public class RequestInstitutionalPasswordRecoveryUseCase {
         .findWithPersonAndInstitutionForPasswordRecovery(
             request.documentNumber(), request.institutionId())
         .filter(this::canRecoverPassword)
-        .ifPresent(this::createAndSendToken);
+        .ifPresent(this::createTokenAndPublishEvent);
   }
 
   private boolean canRecoverPassword(final User user) {
@@ -49,7 +47,7 @@ public class RequestInstitutionalPasswordRecoveryUseCase {
         && !user.getPerson().getEmail().isBlank();
   }
 
-  private void createAndSendToken(final User user) {
+  private void createTokenAndPublishEvent(final User user) {
     final String token = generateToken();
     passwordResetTokenRepository.deleteByUserId(user.getId());
     passwordResetTokenRepository.save(
