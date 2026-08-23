@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
+import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.SHA_256_UNAVAILABLE;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.config.JwtProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.AccessTokenParseResult;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.AccountType;
@@ -76,7 +78,7 @@ public class JwtService {
       byte[] hash = digest.digest(rawToken.getBytes(StandardCharsets.UTF_8));
       return Base64.getEncoder().encodeToString(hash);
     } catch (NoSuchAlgorithmException e) {
-      throw new IllegalStateException("SHA-256 algorithm not available", e);
+      throw new IllegalStateException(SHA_256_UNAVAILABLE, e);
     }
   }
 

@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.entities;
 
+import static ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.AuthorizationMessages.PERSON_ROLE_INSTITUTION_MISMATCH;
+
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
@@ -84,8 +86,7 @@ public class PersonRoleAssignment extends Auditable {
         roleInstitutionId == null || institutionId.equals(roleInstitutionId);
 
     if (!personMatches || !roleMatches) {
-      throw new IllegalStateException(
-          "La persona, el rol y la asignación deben pertenecer a la misma institución.");
+      throw new IllegalStateException(PERSON_ROLE_INSTITUTION_MISMATCH);
     }
   }
 }

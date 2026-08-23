@@ -1,5 +1,10 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.config;
 
+import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.REFRESH_REPLAY_ENCRYPTION_KEY_INVALID_BASE64;
+import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.REFRESH_REPLAY_ENCRYPTION_KEY_INVALID_SIZE;
+import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.REFRESH_REPLAY_ENCRYPTION_KEY_REQUIRED;
+import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.REFRESH_REPLAY_TTL_INVALID;
+
 import java.time.Duration;
 import java.util.Base64;
 import javax.crypto.SecretKey;
@@ -13,10 +18,10 @@ public record RefreshReplayProperties(String encryptionKey, Duration ttl) {
 
   public RefreshReplayProperties {
     if (encryptionKey == null || encryptionKey.isBlank()) {
-      throw new IllegalArgumentException("app.auth.refresh-replay.encryption-key is required");
+      throw new IllegalArgumentException(REFRESH_REPLAY_ENCRYPTION_KEY_REQUIRED);
     }
     if (ttl == null || ttl.isZero() || ttl.isNegative()) {
-      throw new IllegalArgumentException("app.auth.refresh-replay.ttl must be positive");
+      throw new IllegalArgumentException(REFRESH_REPLAY_TTL_INVALID);
     }
     decodeKey(encryptionKey);
   }
@@ -30,13 +35,11 @@ public record RefreshReplayProperties(String encryptionKey, Duration ttl) {
     try {
       decodedKey = Base64.getDecoder().decode(encodedKey);
     } catch (IllegalArgumentException exception) {
-      throw new IllegalArgumentException(
-          "app.auth.refresh-replay.encryption-key must be valid Base64", exception);
+      throw new IllegalArgumentException(REFRESH_REPLAY_ENCRYPTION_KEY_INVALID_BASE64, exception);
     }
 
     if (decodedKey.length != KEY_SIZE_BYTES) {
-      throw new IllegalArgumentException(
-          "app.auth.refresh-replay.encryption-key must decode to 32 bytes");
+      throw new IllegalArgumentException(REFRESH_REPLAY_ENCRYPTION_KEY_INVALID_SIZE);
     }
 
     return decodedKey;

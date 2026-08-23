@@ -1,9 +1,10 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.payloads;
 
+import ar.edu.utn.frvm.typeit.boero_api.common.validation.ValidationMessages;
 import jakarta.validation.constraints.Min;
 import java.time.LocalDate;
 
 public record CreateAcademicYearRequest(
-    @Min(value = 2000, message = "El año debe ser igual o posterior a 2000.") int year,
+    @Min(value = 2000, message = ValidationMessages.YEAR_MINIMUM) int year,
     LocalDate startDate,
     LocalDate endDate) {}

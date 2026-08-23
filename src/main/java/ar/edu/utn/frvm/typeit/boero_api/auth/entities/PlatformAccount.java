@@ -6,6 +6,7 @@ import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldCons
 
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
+import ar.edu.utn.frvm.typeit.boero_api.common.validation.ValidationMessages;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -44,21 +45,21 @@ public class PlatformAccount extends Auditable implements UserDetails {
   @Column(nullable = false, length = 150)
   private String email;
 
-  @NotBlank(message = "El nombre es requerido.")
+  @NotBlank(message = ValidationMessages.FIRST_NAME_REQUIRED)
   @Size.List({
-    @Size(min = NAME_MIN, message = "El nombre debe tener al menos 3 caracteres."),
-    @Size(max = NAME_MAX, message = "El nombre debe tener menos de 255 caracteres.")
+    @Size(min = NAME_MIN, message = ValidationMessages.FIRST_NAME_MIN_LENGTH),
+    @Size(max = NAME_MAX, message = ValidationMessages.FIRST_NAME_MAX_LENGTH)
   })
-  @Pattern(regexp = NAME_PATTERN, message = "El nombre solo puede contener letras y espacios.")
+  @Pattern(regexp = NAME_PATTERN, message = ValidationMessages.FIRST_NAME_FORMAT)
   @Column(name = "first_name", nullable = false, length = NAME_MAX)
   private String name;
 
-  @NotBlank(message = "El apellido es requerido.")
+  @NotBlank(message = ValidationMessages.LAST_NAME_REQUIRED)
   @Size.List({
-    @Size(min = NAME_MIN, message = "El apellido debe tener al menos 3 caracteres."),
-    @Size(max = NAME_MAX, message = "El apellido debe tener menos de 255 caracteres.")
+    @Size(min = NAME_MIN, message = ValidationMessages.LAST_NAME_MIN_LENGTH),
+    @Size(max = NAME_MAX, message = ValidationMessages.LAST_NAME_MAX_LENGTH)
   })
-  @Pattern(regexp = NAME_PATTERN, message = "El apellido solo puede contener letras y espacios.")
+  @Pattern(regexp = NAME_PATTERN, message = ValidationMessages.LAST_NAME_FORMAT)
   @Column(name = "last_name", nullable = false, length = NAME_MAX)
   private String lastName;
 

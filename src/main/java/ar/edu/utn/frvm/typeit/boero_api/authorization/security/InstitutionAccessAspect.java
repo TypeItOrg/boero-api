@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.security;
 
+import static ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.AuthorizationMessages.INSTITUTION_ACCESS_ANNOTATION_MISCONFIGURED;
+
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -43,8 +45,7 @@ public class InstitutionAccessAspect {
     }
 
     if (institutionId == null) {
-      throw new IllegalStateException(
-          "RequiresInstitutionAccess annotation used on method without institutionId UUID parameter");
+      throw new IllegalStateException(INSTITUTION_ACCESS_ANNOTATION_MISCONFIGURED);
     }
 
     institutionalCallerGuard.ensureCallerBelongsToInstitution(authentication, institutionId);

@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.authorization.entities;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.AuthorizationMessages;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import jakarta.persistence.Column;
@@ -47,7 +48,7 @@ public class PlatformAccountRole extends Auditable {
 
   public static PlatformAccountRole assign(final PlatformAccount platformAccount, final Role role) {
     if (role.getScope() != RoleScope.PLATFORM || role.getInstitution() != null) {
-      throw new IllegalArgumentException("El rol asignado debe pertenecer a la plataforma.");
+      throw new IllegalArgumentException(AuthorizationMessages.PLATFORM_ROLE_REQUIRED);
     }
 
     return PlatformAccountRole.builder().platformAccount(platformAccount).role(role).build();

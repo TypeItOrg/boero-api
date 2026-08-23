@@ -10,6 +10,7 @@ import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldCons
 
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.common.validation.MinimumAge;
+import ar.edu.utn.frvm.typeit.boero_api.common.validation.ValidationMessages;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,40 +19,34 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
 public record CreatePersonRequest(
-    @NotBlank(message = "El nombre es requerido.")
+    @NotBlank(message = ValidationMessages.FIRST_NAME_REQUIRED)
         @Size.List({
-          @Size(min = NAME_MIN, message = "El nombre debe tener al menos 3 caracteres."),
-          @Size(max = NAME_MAX, message = "El nombre debe tener menos de 255 caracteres.")
+          @Size(min = NAME_MIN, message = ValidationMessages.FIRST_NAME_MIN_LENGTH),
+          @Size(max = NAME_MAX, message = ValidationMessages.FIRST_NAME_MAX_LENGTH)
         })
-        @Pattern(
-            regexp = NAME_PATTERN,
-            message = "El nombre solo puede contener letras y espacios.")
+        @Pattern(regexp = NAME_PATTERN, message = ValidationMessages.FIRST_NAME_FORMAT)
         String firstName,
-    @NotBlank(message = "El apellido es requerido.")
+    @NotBlank(message = ValidationMessages.LAST_NAME_REQUIRED)
         @Size.List({
-          @Size(min = NAME_MIN, message = "El apellido debe tener al menos 3 caracteres."),
-          @Size(max = NAME_MAX, message = "El apellido debe tener menos de 255 caracteres.")
+          @Size(min = NAME_MIN, message = ValidationMessages.LAST_NAME_MIN_LENGTH),
+          @Size(max = NAME_MAX, message = ValidationMessages.LAST_NAME_MAX_LENGTH)
         })
-        @Pattern(
-            regexp = NAME_PATTERN,
-            message = "El apellido solo puede contener letras y espacios.")
+        @Pattern(regexp = NAME_PATTERN, message = ValidationMessages.LAST_NAME_FORMAT)
         String lastName,
-    @NotBlank(message = "El número de documento es requerido.")
-        @Pattern(
-            regexp = DOCUMENT_PATTERN,
-            message = "El número de documento debe tener exactamente 8 dígitos numéricos.")
+    @NotBlank(message = ValidationMessages.DOCUMENT_REQUIRED)
+        @Pattern(regexp = DOCUMENT_PATTERN, message = ValidationMessages.DOCUMENT_FORMAT)
         String documentNumber,
-    @NotBlank(message = "El email es requerido.")
-        @Email(message = "El email debe tener un formato válido.")
-        @Size(max = 150, message = "El email debe tener menos de 150 caracteres.")
+    @NotBlank(message = ValidationMessages.PERSON_EMAIL_REQUIRED)
+        @Email(message = ValidationMessages.PERSON_EMAIL_FORMAT)
+        @Size(max = 150, message = ValidationMessages.PERSON_EMAIL_MAX_LENGTH)
         String email,
     String phoneNumber,
-    @NotNull(message = "La fecha de nacimiento es requerida.") @MinimumAge(MINIMUM_AGE)
+    @NotNull(message = ValidationMessages.BIRTH_DATE_REQUIRED) @MinimumAge(MINIMUM_AGE)
         LocalDate birthDate,
-    @NotBlank(message = "La contraseña es requerida.")
+    @NotBlank(message = ValidationMessages.PASSWORD_REQUIRED)
         @Size.List({
-          @Size(min = PASSWORD_MIN, message = "La contraseña debe tener al menos 8 caracteres."),
-          @Size(max = PASSWORD_MAX, message = "La contraseña debe tener menos de 255 caracteres.")
+          @Size(min = PASSWORD_MIN, message = ValidationMessages.PASSWORD_MIN_LENGTH),
+          @Size(max = PASSWORD_MAX, message = ValidationMessages.PASSWORD_MAX_LENGTH)
         })
         String password,
     SystemRoleCode initialRole) {}

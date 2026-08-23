@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
+import static ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.AuthorizationMessages.PLATFORM_ROLE_NOT_SEEDED;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PlatformAccountRole;
@@ -32,7 +34,7 @@ public class AssignPlatformRoleUseCase {
         roleRepository
             .findByScopeAndCodeAndInstitutionIsNull(RoleScope.PLATFORM, roleCode.name())
             .orElseThrow(
-                () -> new IllegalStateException("Platform role not seeded: " + roleCode.name()));
+                () -> new IllegalStateException(String.format(PLATFORM_ROLE_NOT_SEEDED, roleCode)));
 
     if (platformAccountRoleRepository.existsByPlatformAccount_IdAndRole_Id(
         account.getId(), role.getId())) {

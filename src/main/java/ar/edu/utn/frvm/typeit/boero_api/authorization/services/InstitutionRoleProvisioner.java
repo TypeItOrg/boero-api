@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
+import static ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.AuthorizationMessages.PERMISSION_NOT_SEEDED;
+
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Permission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.RolePermission;
@@ -71,7 +73,8 @@ public class InstitutionRoleProvisioner {
       Permission permission =
           permissionRepository
               .findByCode(code.getCode())
-              .orElseThrow(() -> new IllegalStateException("Permission not seeded: " + code));
+              .orElseThrow(
+                  () -> new IllegalStateException(String.format(PERMISSION_NOT_SEEDED, code)));
       if (!rolePermissionRepository.existsByRoleIdAndPermissionId(
           role.getId(), permission.getId())) {
         rolePermissionRepository.save(RolePermission.of(role, permission));

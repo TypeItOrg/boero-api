@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.search;
 
+import static ar.edu.utn.frvm.typeit.boero_api.search.SearchMessages.INVALID_ENTITY_TYPE;
+
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
@@ -29,6 +31,6 @@ public enum SearchEntityType {
     return Arrays.stream(values())
         .filter(type -> type.code.equals(code))
         .findFirst()
-        .orElseThrow(() -> new IllegalArgumentException("Tipo de entidad de búsqueda inválido."));
+        .orElseThrow(() -> new IllegalArgumentException(INVALID_ENTITY_TYPE));
   }
 }

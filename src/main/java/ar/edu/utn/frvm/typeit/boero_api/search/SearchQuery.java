@@ -18,7 +18,7 @@ public record SearchQuery(String normalized, String tsQuery) {
             .map(token -> token + ":*")
             .collect(Collectors.joining(" & "));
     if (tsQuery.isEmpty()) {
-      throw new IllegalArgumentException("La búsqueda no contiene texto válido.");
+      throw new IllegalArgumentException(SearchMessages.INVALID_QUERY);
     }
     return new SearchQuery(normalized, tsQuery);
   }
