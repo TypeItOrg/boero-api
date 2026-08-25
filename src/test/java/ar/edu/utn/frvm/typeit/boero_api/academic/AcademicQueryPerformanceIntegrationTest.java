@@ -10,6 +10,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Prerequisite;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.ApprovalMode;
@@ -516,7 +517,11 @@ class AcademicQueryPerformanceIntegrationTest {
             .mapToObj(
                 index ->
                     AcademicSpace.create(
-                        institution, "Performance Space " + index, null, AcademicSpaceType.SUBJECT))
+                        institution,
+                        "Performance Space " + index,
+                        null,
+                        AcademicSpaceType.SUBJECT,
+                        AcademicSpaceFormat.INDIVIDUAL))
             .toList();
     return academicSpaceRepository.saveAll(spaces);
   }

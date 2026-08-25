@@ -61,7 +61,7 @@ class DatabaseMigrationIntegrationTest {
   @Test
   @DisplayName("Should migrate an empty PostgreSQL database and validate the JPA model")
   void shouldMigrateSchemaAndDevelopmentData() {
-    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260822233706");
+    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260825015733");
     assertThat(tableCount()).isEqualTo(30);
     assertThat(institutionCount()).isPositive();
     assertThat(tenantRelationshipConstraintCount()).isEqualTo(7);
@@ -417,6 +417,28 @@ class DatabaseMigrationIntegrationTest {
   }
 
   @Test
+  @DisplayName("Should enforce academic space format values and name uniqueness per format")
+  void shouldEnforceAcademicSpaceFormatConstraintAndUniqueness() {
+    final UUID institutionId = firstInstitutionId();
+    final UUID firstSpaceId = UUID.randomUUID();
+    final UUID secondSpaceId = UUID.randomUUID();
+    try {
+      insertAcademicSpace(firstSpaceId, institutionId, "Format Space");
+      assertThatThrownBy(
+              () ->
+                  insertAcademicSpace(
+                      UUID.randomUUID(), institutionId, "Invalid Format Space", "HYBRID"))
+          .isInstanceOf(DataIntegrityViolationException.class);
+      insertAcademicSpace(secondSpaceId, institutionId, "Format Space", "GRUPAL");
+    } finally {
+      jdbcTemplate.update(
+          "DELETE FROM academic_spaces WHERE academic_space_id IN (?, ?)",
+          firstSpaceId,
+          secondSpaceId);
+    }
+  }
+
+  @Test
   @DisplayName("Should reject a study plan space that crosses institutions")
   void shouldRejectCrossInstitutionStudyPlanSpace() {
     final UUID firstInstitutionId = firstInstitutionId();
@@ -546,15 +568,21 @@ class DatabaseMigrationIntegrationTest {
   }
 
   private void insertAcademicSpace(final UUID id, final UUID institutionId, final String name) {
+    insertAcademicSpace(id, institutionId, name, "INDIVIDUAL");
+  }
+
+  private void insertAcademicSpace(
+      final UUID id, final UUID institutionId, final String name, final String format) {
     jdbcTemplate.update(
         """
         INSERT INTO academic_spaces (
-          academic_space_id, institution_id, name, type, active, created_at, updated_at
-        ) VALUES (?, ?, ?, 'SUBJECT', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          academic_space_id, institution_id, name, type, format, active, created_at, updated_at
+        ) VALUES (?, ?, ?, 'SUBJECT', ?, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         """,
         id,
         institutionId,
-        name);
+        name,
+        format);
   }
 
   private void insertInstrument(final UUID id, final UUID institutionId, final String name) {
