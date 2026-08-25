@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.controllers;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicSpaceResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicSpaceUsageResponse;
@@ -77,10 +78,11 @@ public class AdminAcademicCatalogController {
       @RequestParam(required = false) @Size(max = 100) final String search,
       @RequestParam(required = false) final Boolean active,
       @RequestParam(required = false) final AcademicSpaceType type,
+      @RequestParam(required = false) final AcademicSpaceFormat format,
       @RequestParam(defaultValue = "false") final boolean deleted,
       @PageableDefault(sort = "name", direction = Sort.Direction.ASC) final Pageable pageable) {
     return listAcademicSpacesUseCase.execute(
-        institutionId, search, active, type, deleted, pageable);
+        institutionId, search, active, type, format, deleted, pageable);
   }
 
   @GetMapping(value = "/academic-spaces/{academicSpaceId}", version = Version.V1)

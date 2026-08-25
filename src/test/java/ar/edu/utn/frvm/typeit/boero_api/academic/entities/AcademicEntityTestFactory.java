@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.entities;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.ApprovalMode;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequiredCondition;
@@ -33,6 +34,7 @@ public final class AcademicEntityTestFactory {
             .institution(plan.getInstitution())
             .name(id.toString())
             .type(AcademicSpaceType.SUBJECT)
+            .format(AcademicSpaceFormat.INDIVIDUAL)
             .active(true)
             .build();
     return StudyPlanSpace.builder()

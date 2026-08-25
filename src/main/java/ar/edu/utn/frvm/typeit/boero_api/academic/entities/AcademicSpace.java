@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.entities;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.InvalidAcademicStateException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.validation.AcademicNameNormalizer;
@@ -56,6 +57,10 @@ public class AcademicSpace extends SoftDeletable {
   @Column(nullable = false, length = 20)
   private AcademicSpaceType type;
 
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private AcademicSpaceFormat format;
+
   @Column(nullable = false)
   private boolean active;
 
@@ -63,20 +68,27 @@ public class AcademicSpace extends SoftDeletable {
       final Institution institution,
       final String name,
       final String description,
-      final AcademicSpaceType type) {
+      final AcademicSpaceType type,
+      final AcademicSpaceFormat format) {
     return AcademicSpace.builder()
         .institution(institution)
         .name(AcademicNameNormalizer.display(name))
         .description(description)
         .type(type)
+        .format(format)
         .active(true)
         .build();
   }
 
-  public void update(final String name, final String description, final AcademicSpaceType type) {
+  public void update(
+      final String name,
+      final String description,
+      final AcademicSpaceType type,
+      final AcademicSpaceFormat format) {
     this.name = AcademicNameNormalizer.display(name);
     this.description = description;
     this.type = type;
+    this.format = format;
   }
 
   public void updateStatus(final boolean active) {

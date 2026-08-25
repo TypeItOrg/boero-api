@@ -3,6 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.entities;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.InvalidAcademicStateException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
@@ -24,7 +25,12 @@ class AcademicSoftDeleteTest {
     final var path = TrainingPath.create(institution, "Tecnicatura", null);
     final var plan = StudyPlan.create(institution, path, "Plan 2027", null, null);
     final var space =
-        AcademicSpace.create(institution, "Programación", null, AcademicSpaceType.SUBJECT);
+        AcademicSpace.create(
+            institution,
+            "Programación",
+            null,
+            AcademicSpaceType.SUBJECT,
+            AcademicSpaceFormat.INDIVIDUAL);
     final var instrument = Instrument.create(institution, "Examen", null);
 
     path.updateStatus(false);
@@ -51,7 +57,12 @@ class AcademicSoftDeleteTest {
   void rejectsDeleteWhenOperationalStateDoesNotAllowIt() {
     final var path = TrainingPath.create(institution, "Tecnicatura", null);
     final var space =
-        AcademicSpace.create(institution, "Programación", null, AcademicSpaceType.SUBJECT);
+        AcademicSpace.create(
+            institution,
+            "Programación",
+            null,
+            AcademicSpaceType.SUBJECT,
+            AcademicSpaceFormat.INDIVIDUAL);
     final var instrument = Instrument.create(institution, "Examen", null);
 
     assertThatThrownBy(() -> path.delete(deletedAt))

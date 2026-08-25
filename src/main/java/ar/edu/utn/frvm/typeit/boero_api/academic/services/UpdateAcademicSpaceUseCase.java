@@ -27,11 +27,11 @@ public class UpdateAcademicSpaceUseCase {
             .findByIdAndInstitution_Id(id, institutionId)
             .orElseThrow(AcademicSpaceNotFoundException::new);
     final var name = AcademicNameNormalizer.display(request.name());
-    if (academicSpaceRepository.existsByNormalizedNameAndTypeAndIdNot(
-        institutionId, name, request.type().name(), id)) {
+    if (academicSpaceRepository.existsByNormalizedNameAndTypeAndFormatAndIdNot(
+        institutionId, name, request.type().name(), request.format().name(), id)) {
       throw AcademicConflictException.forField("name", AcademicMessages.DUPLICATE_NAME);
     }
-    space.update(name, request.description(), request.type());
+    space.update(name, request.description(), request.type(), request.format());
     try {
       academicSpaceRepository.flush();
     } catch (DataIntegrityViolationException exception) {

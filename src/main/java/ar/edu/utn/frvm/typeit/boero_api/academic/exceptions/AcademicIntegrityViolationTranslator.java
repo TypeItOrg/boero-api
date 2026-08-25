@@ -33,6 +33,7 @@ public final class AcademicIntegrityViolationTranslator {
           "academic_levels_study_plan_name_unique",
           "academic_spaces_institution_name_type_unique",
           "academic_spaces_current_institution_name_type_unique",
+          "academic_spaces_current_institution_name_type_format_unique",
           "instruments_institution_name_unique",
           "instruments_current_institution_name_unique" ->
           conflict(AcademicMessages.DUPLICATE_NAME, "name");
@@ -55,6 +56,7 @@ public final class AcademicIntegrityViolationTranslator {
       case "academic_levels_display_order_check", "study_plan_spaces_display_order_check" ->
           validation(AcademicMessages.INVALID_DISPLAY_ORDER, "displayOrder");
       case "academic_spaces_type_check" -> validation(AcademicMessages.INVALID_VALUE, "type");
+      case "academic_spaces_format_check" -> validation(AcademicMessages.INVALID_VALUE, "format");
       case "academic_years_deleted_state_check",
           "training_paths_deleted_state_check",
           "study_plans_deleted_state_check",

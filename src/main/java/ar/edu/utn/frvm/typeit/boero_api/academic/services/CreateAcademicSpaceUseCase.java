@@ -30,14 +30,15 @@ public class CreateAcademicSpaceUseCase {
             .findById(institutionId)
             .orElseThrow(InstitutionNotFoundException::new);
     final var name = AcademicNameNormalizer.display(request.name());
-    if (academicSpaceRepository.existsByNormalizedNameAndType(
-        institutionId, name, request.type().name())) {
+    if (academicSpaceRepository.existsByNormalizedNameAndTypeAndFormat(
+        institutionId, name, request.type().name(), request.format().name())) {
       throw AcademicConflictException.forField("name", AcademicMessages.DUPLICATE_NAME);
     }
     try {
       final var saved =
           academicSpaceRepository.save(
-              AcademicSpace.create(institution, name, request.description(), request.type()));
+              AcademicSpace.create(
+                  institution, name, request.description(), request.type(), request.format()));
       academicSpaceRepository.flush();
       return AcademicSpaceResponse.from(saved);
     } catch (DataIntegrityViolationException exception) {
