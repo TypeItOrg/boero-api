@@ -51,7 +51,7 @@ public final class AcademicMessages {
   public static final String STUDY_PLAN_ACTIVATION_REQUIRES_SPACES =
       "El plan no puede activarse porque todavía no tiene espacios académicos incorporados.";
   public static final String STUDY_PLAN_STATUS_TRANSITION_INVALID =
-      "El plan de estudio solo puede volver a borrador desde un estado válido.";
+      "La transición de estado solicitada no es válida para el plan de estudio.";
   public static final String INVALID_STATE = "La transición de estado solicitada no es válida.";
   public static final String INVALID_RELATIONSHIP =
       "La relación académica especificada no es válida.";
@@ -72,6 +72,18 @@ public final class AcademicMessages {
       "La fecha final es requerida al inactivar el plan.";
   public static final String STUDY_PLAN_END_DATE_INVALID =
       "La fecha final no puede ser anterior al inicio del plan.";
+  public static final String STUDY_PLAN_END_DATE_CANNOT_BE_FUTURE =
+      "La fecha de finalización no puede ser posterior a la fecha actual.";
+  public static final String STUDY_PLAN_VERSION_REQUIRES_ORDERED_DATES =
+      "La nueva versión necesita una fecha de inicio para ordenar la vigencia.";
+  public static final String STUDY_PLAN_VERSION_DATE_OVERLAP =
+      "La vigencia de la nueva versión se superpone con la versión anterior.";
+  public static final String STUDY_PLAN_VERSION_SOURCE_INVALID =
+      "Solo se puede crear una versión a partir de un plan publicado o retirado.";
+  public static final String STUDY_PLAN_VERSION_ALREADY_EXISTS =
+      "El plan ya tiene una versión posterior vigente o en preparación.";
+  public static final String STUDY_PLAN_VERSION_START_REQUIRED =
+      "Definí la fecha de inicio de la nueva versión.";
   public static final String STUDY_PLAN_DATES_INVALID = "La vigencia del plan no es válida.";
   public static final String STUDY_PLAN_START_DATE_REQUIRED =
       "Completá la fecha de inicio antes de indicar una fecha final.";

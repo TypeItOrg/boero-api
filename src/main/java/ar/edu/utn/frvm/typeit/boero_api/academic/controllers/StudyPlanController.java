@@ -2,11 +2,13 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.controllers;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreateStudyPlanRequest;
+import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreateStudyPlanVersionRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanCurriculumResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanStatusRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.UpdateStudyPlanRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.CreateStudyPlanUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.academic.services.CreateStudyPlanVersionUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.GetStudyPlanCurriculumUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.GetStudyPlanUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListStudyPlansUseCase;
@@ -48,6 +50,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class StudyPlanController {
 
   private final CreateStudyPlanUseCase createStudyPlanUseCase;
+  private final CreateStudyPlanVersionUseCase createStudyPlanVersionUseCase;
   private final ListTrainingPathStudyPlansUseCase listTrainingPathStudyPlansUseCase;
   private final ListStudyPlansUseCase listStudyPlansUseCase;
   private final GetStudyPlanUseCase getStudyPlanUseCase;
@@ -63,6 +66,16 @@ public class StudyPlanController {
       @PathVariable final UUID trainingPathId,
       @Valid @RequestBody final CreateStudyPlanRequest request) {
     return createStudyPlanUseCase.execute(institutionId, trainingPathId, request);
+  }
+
+  @PostMapping(value = "/study-plans/{studyPlanId}/versions", version = Version.V1)
+  @ResponseStatus(HttpStatus.CREATED)
+  @RequiresPermission(PermissionCode.STUDY_PLAN_CREATE)
+  public StudyPlanResponse createVersion(
+      @PathVariable final UUID institutionId,
+      @PathVariable final UUID studyPlanId,
+      @Valid @RequestBody final CreateStudyPlanVersionRequest request) {
+    return createStudyPlanVersionUseCase.execute(institutionId, studyPlanId, request);
   }
 
   @GetMapping(value = "/training-paths/{trainingPathId}/study-plans", version = Version.V1)

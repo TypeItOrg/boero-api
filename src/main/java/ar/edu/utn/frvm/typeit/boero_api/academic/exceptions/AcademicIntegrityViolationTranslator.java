@@ -30,6 +30,7 @@ public final class AcademicIntegrityViolationTranslator {
           "training_paths_current_institution_name_unique",
           "study_plans_institution_name_unique",
           "study_plans_current_training_path_name_unique",
+          "study_plans_current_training_path_name_version_unique",
           "academic_levels_study_plan_name_unique",
           "academic_spaces_institution_name_type_unique",
           "academic_spaces_current_institution_name_type_unique",
@@ -71,6 +72,12 @@ public final class AcademicIntegrityViolationTranslator {
           "academic_spaces_deleted_state_check",
           "instruments_deleted_state_check" ->
           new InvalidAcademicStateException();
+      case "study_plans_previous_version_institution_fk",
+          "study_plans_previous_version_self_check",
+          "study_plans_version_number_check" ->
+          new AcademicConflictException(AcademicMessages.INVALID_RELATIONSHIP);
+      case "study_plans_current_successor_unique" ->
+          new AcademicConflictException(AcademicMessages.STUDY_PLAN_VERSION_ALREADY_EXISTS);
       case "study_plan_spaces_requirement_type_check" ->
           validation(AcademicMessages.INVALID_VALUE, "requirementType");
       case "study_plan_spaces_approval_mode_check" ->

@@ -139,6 +139,17 @@ public class AcademicLifecycleService {
   }
 
   @Transactional
+  public void recordStudyPlanVersionCreated(
+      final Institution institution, final UUID versionId, final UUID previousVersionId) {
+    record(
+        institution,
+        AcademicLifecycleResource.STUDY_PLAN,
+        versionId,
+        AcademicLifecycleAction.CREATE_VERSION,
+        new AcademicLifecycleRequest("Versión creada a partir del plan " + previousVersionId));
+  }
+
+  @Transactional
   public void deleteAcademicSpace(
       final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
     final var space =

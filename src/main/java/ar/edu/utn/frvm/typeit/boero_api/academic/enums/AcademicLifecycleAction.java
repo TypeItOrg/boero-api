@@ -2,5 +2,6 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.enums;
 
 public enum AcademicLifecycleAction {
   DELETE,
-  RESTORE
+  RESTORE,
+  CREATE_VERSION
 }

@@ -18,6 +18,8 @@ import java.util.UUID;
       "effectiveFrom",
       "effectiveTo",
       "status",
+      "previousVersionId",
+      "versionNumber",
       "deletedAt"
     })
 public record StudyPlanResponse(
@@ -30,6 +32,8 @@ public record StudyPlanResponse(
     @Schema(nullable = true) LocalDate effectiveFrom,
     @Schema(nullable = true) LocalDate effectiveTo,
     StudyPlanStatus status,
+    @Schema(nullable = true) UUID previousVersionId,
+    int versionNumber,
     @Schema(nullable = true) LocalDateTime deletedAt) {
 
   public static StudyPlanResponse from(final StudyPlan plan) {
@@ -43,6 +47,8 @@ public record StudyPlanResponse(
         plan.getEffectiveFrom(),
         plan.getEffectiveTo(),
         plan.getStatus(),
+        plan.getPreviousVersion() == null ? null : plan.getPreviousVersion().getId(),
+        plan.getVersionNumber(),
         plan.getDeletedAt());
   }
 }
