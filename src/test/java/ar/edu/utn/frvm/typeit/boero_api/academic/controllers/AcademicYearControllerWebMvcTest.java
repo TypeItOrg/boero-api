@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicYearResponse;
+import ar.edu.utn.frvm.typeit.boero_api.academic.services.CountCoursesForYearUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.CreateAcademicYearUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.GetAcademicYearUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListAcademicSpacesUseCase;
@@ -68,6 +69,7 @@ class AcademicYearControllerWebMvcTest {
   @MockitoBean private GetAcademicYearUseCase getAcademicYearUseCase;
   @MockitoBean private UpdateAcademicYearUseCase updateAcademicYearUseCase;
   @MockitoBean private UpdateAcademicYearStatusUseCase updateAcademicYearStatusUseCase;
+  @MockitoBean private CountCoursesForYearUseCase countCoursesForYearUseCase;
   @MockitoBean private PathMatcher pathMatcher;
   @MockitoBean private AuthenticationEntryPoint authenticationEntryPoint;
   @MockitoBean private JwtService jwtService;

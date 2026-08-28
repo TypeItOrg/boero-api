@@ -57,6 +57,14 @@ public final class AcademicIntegrityViolationTranslator {
           validation(AcademicMessages.INVALID_DISPLAY_ORDER, "displayOrder");
       case "academic_spaces_type_check" -> validation(AcademicMessages.INVALID_VALUE, "type");
       case "academic_spaces_format_check" -> validation(AcademicMessages.INVALID_VALUE, "format");
+      case "courses_institution_space_year_unique" ->
+          conflict(AcademicMessages.COURSE_ALREADY_EXISTS, "academicSpaceId");
+      case "course_class_days_day_of_week_check",
+          "course_class_days_capacity_check",
+          "course_class_days_period_duration_check",
+          "course_class_schedules_time_range_check" ->
+          validation(AcademicMessages.INVALID_VALUE, "classes");
+      case "courses_deleted_state_check" -> new InvalidAcademicStateException();
       case "academic_years_deleted_state_check",
           "training_paths_deleted_state_check",
           "study_plans_deleted_state_check",
@@ -83,7 +91,14 @@ public final class AcademicIntegrityViolationTranslator {
           "prerequisites_study_plan_fk",
           "prerequisites_target_plan_fk",
           "prerequisites_required_plan_fk",
-          "prerequisites_distinct_spaces_check" ->
+          "prerequisites_distinct_spaces_check",
+          "courses_study_plan_fk",
+          "courses_academic_space_fk",
+          "courses_academic_year_fk",
+          "course_classes_course_fk",
+          "course_class_days_class_fk",
+          "course_class_schedules_day_fk",
+          "course_class_teachers_class_fk" ->
           new AcademicConflictException(AcademicMessages.INVALID_RELATIONSHIP);
       default -> new AcademicConflictException(AcademicMessages.INVALID_RELATIONSHIP);
     };

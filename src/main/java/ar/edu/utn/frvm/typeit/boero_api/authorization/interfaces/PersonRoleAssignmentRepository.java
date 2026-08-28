@@ -78,6 +78,19 @@ public interface PersonRoleAssignmentRepository extends JpaRepository<PersonRole
 
   @Query(
       """
+      SELECT COUNT(DISTINCT assignment.person.id)
+      FROM PersonRoleAssignment assignment
+      WHERE assignment.institution.id = :institutionId
+        AND assignment.person.id IN :personIds
+        AND assignment.role.code = :roleCode
+      """)
+  long countDistinctPersonsByInstitutionAndRoleCode(
+      @Param("institutionId") UUID institutionId,
+      @Param("personIds") List<UUID> personIds,
+      @Param("roleCode") String roleCode);
+
+  @Query(
+      """
       SELECT pra.role.name AS roleName, permission.code AS permissionCode
       FROM PersonRoleAssignment pra
       LEFT JOIN RolePermission rp ON rp.role.id = pra.role.id

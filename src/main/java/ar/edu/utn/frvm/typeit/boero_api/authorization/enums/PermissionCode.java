@@ -235,7 +235,37 @@ public enum PermissionCode {
       "institution:instrument:restore",
       PermissionScope.INSTITUTION,
       PermissionGroup.ACADEMIC,
-      "Restaurar instrumentos");
+      "Restaurar instrumentos"),
+  COURSE_READ(
+      "institution:course:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Ver cursos"),
+  COURSE_CREATE(
+      "institution:course:create",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Crear cursos"),
+  COURSE_UPDATE(
+      "institution:course:update",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Editar cursos"),
+  COURSE_STATUS_UPDATE(
+      "institution:course:update-status",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Activar o desactivar cursos"),
+  COURSE_DELETE(
+      "institution:course:delete",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Eliminar cursos"),
+  COURSE_RESTORE(
+      "institution:course:restore",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Restaurar cursos");
 
   private final String code;
   private final PermissionScope scope;
@@ -289,6 +319,8 @@ public enum PermissionCode {
           INSTRUMENT_DELETE,
           INSTRUMENT_RESTORE ->
           Set.of(INSTRUMENT_READ);
+      case COURSE_CREATE, COURSE_UPDATE, COURSE_STATUS_UPDATE, COURSE_DELETE, COURSE_RESTORE ->
+          Set.of(COURSE_READ);
       default -> Set.of();
     };
   }
