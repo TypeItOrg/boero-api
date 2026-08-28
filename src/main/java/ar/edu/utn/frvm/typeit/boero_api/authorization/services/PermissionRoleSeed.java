@@ -80,7 +80,13 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.INSTRUMENT_UPDATE,
               PermissionCode.INSTRUMENT_STATUS_UPDATE,
               PermissionCode.INSTRUMENT_DELETE,
-              PermissionCode.INSTRUMENT_RESTORE));
+              PermissionCode.INSTRUMENT_RESTORE,
+              PermissionCode.COURSE_READ,
+              PermissionCode.COURSE_CREATE,
+              PermissionCode.COURSE_UPDATE,
+              PermissionCode.COURSE_STATUS_UPDATE,
+              PermissionCode.COURSE_DELETE,
+              PermissionCode.COURSE_RESTORE));
 
   private final PermissionRepository permissionRepository;
   private final RoleRepository roleRepository;
@@ -214,12 +220,23 @@ public class PermissionRoleSeed implements ApplicationRunner {
   }
 
   private Role upsertSystemRole(RoleScope scope, String code, String displayName) {
-    return roleRepository
-        .findByScopeAndCodeAndInstitutionIsNull(scope, code)
-        .orElseGet(
-            () ->
-                roleRepository.save(
-                    Role.builder().scope(scope).code(code).name(displayName).system(true).build()));
+    Role role =
+        roleRepository
+            .findByScopeAndCodeAndInstitutionIsNull(scope, code)
+            .orElseGet(
+                () ->
+                    roleRepository.save(
+                        Role.builder()
+                            .scope(scope)
+                            .code(code)
+                            .name(displayName)
+                            .system(true)
+                            .build()));
+    if (!role.getName().equals(displayName)) {
+      role.rename(displayName);
+      roleRepository.save(role);
+    }
+    return role;
   }
 
   private void syncRolePermissions(

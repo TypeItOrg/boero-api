@@ -5,6 +5,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicConflictExce
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.StudyPlanNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanStatusRequest;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UpdateStudyPlanStatusUseCase {
   private final StudyPlanRepository studyPlanRepository;
   private final StudyPlanSpaceRepository studyPlanSpaceRepository;
+  private final CourseRepository courseRepository;
 
   @Transactional
   public void execute(
@@ -45,6 +47,11 @@ public class UpdateStudyPlanStatusUseCase {
       if (plan.getEffectiveFrom() != null
           && request.effectiveTo().isBefore(plan.getEffectiveFrom())) {
         throw new AcademicValidationException(AcademicMessages.STUDY_PLAN_END_DATE_INVALID);
+      }
+      if (courseRepository
+          .existsByInstitution_IdAndStudyPlan_IdAndStatusNotClosedAndDeletedAtIsNull(
+              institutionId, id)) {
+        throw new AcademicConflictException(AcademicMessages.STUDY_PLAN_HAS_ACTIVE_COURSES);
       }
       plan.deactivate(request.effectiveTo());
       studyPlanRepository.flush();

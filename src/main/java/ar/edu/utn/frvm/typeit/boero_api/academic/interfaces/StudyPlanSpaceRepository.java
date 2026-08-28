@@ -44,6 +44,8 @@ public interface StudyPlanSpaceRepository extends JpaRepository<StudyPlanSpace, 
       "SELECT COUNT(space) > 0 FROM StudyPlanSpace space WHERE space.studyPlan.id = :studyPlanId")
   boolean existsByStudyPlanId(@Param("studyPlanId") UUID studyPlanId);
 
+  boolean existsByStudyPlan_IdAndAcademicSpace_Id(UUID studyPlanId, UUID academicSpaceId);
+
   @Query(
       """
       SELECT

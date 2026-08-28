@@ -3,17 +3,20 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.services;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicLifecycleEvent;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicLifecycleAction;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicLifecycleResource;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicConflictException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicIntegrityViolationTranslator;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicSpaceNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicYearNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.CourseNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.InstrumentNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.StudyPlanNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.TrainingPathNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicLifecycleEventRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.InstrumentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
@@ -40,6 +43,7 @@ public class AcademicLifecycleService {
   private final StudyPlanRepository studyPlanRepository;
   private final AcademicSpaceRepository academicSpaceRepository;
   private final InstrumentRepository instrumentRepository;
+  private final CourseRepository courseRepository;
   private final AcademicLifecycleEventRepository eventRepository;
   private final AcademicLifecycleActorResolver actorResolver;
 
@@ -184,6 +188,36 @@ public class AcademicLifecycleService {
             .orElseThrow(InstrumentNotFoundException::new);
     restore(
         instrument, instrument.getInstitution(), AcademicLifecycleResource.INSTRUMENT, id, request);
+  }
+
+  @Transactional
+  public void deleteCourse(
+      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+    final var course =
+        courseRepository
+            .findByIdAndInstitution_IdForLifecycle(id, institutionId)
+            .orElseThrow(CourseNotFoundException::new);
+    if (course.delete(LocalDateTime.now())) {
+      record(
+          course.getInstitution(),
+          AcademicLifecycleResource.COURSE,
+          id,
+          AcademicLifecycleAction.DELETE,
+          request);
+    }
+  }
+
+  @Transactional
+  public void restoreCourse(
+      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+    final var course =
+        courseRepository
+            .findByIdAndInstitution_IdForLifecycle(id, institutionId)
+            .orElseThrow(CourseNotFoundException::new);
+    if (course.isDeleted() && course.getStudyPlan().getStatus() != StudyPlanStatus.ACTIVE) {
+      throw new AcademicConflictException(AcademicMessages.RESTORE_PARENT_UNAVAILABLE);
+    }
+    restore(course, course.getInstitution(), AcademicLifecycleResource.COURSE, id, request);
   }
 
   private void restore(

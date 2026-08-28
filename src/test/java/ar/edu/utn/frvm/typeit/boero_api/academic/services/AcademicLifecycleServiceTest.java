@@ -14,6 +14,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicConflictExce
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicLifecycleEventRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.InstrumentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
@@ -37,6 +38,7 @@ class AcademicLifecycleServiceTest {
   @Mock private StudyPlanRepository studyPlanRepository;
   @Mock private AcademicSpaceRepository academicSpaceRepository;
   @Mock private InstrumentRepository instrumentRepository;
+  @Mock private CourseRepository courseRepository;
   @Mock private AcademicLifecycleEventRepository eventRepository;
   @Mock private AcademicLifecycleActorResolver actorResolver;
   @InjectMocks private AcademicLifecycleService service;

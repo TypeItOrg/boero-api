@@ -5,5 +5,6 @@ public enum AcademicLifecycleResource {
   TRAINING_PATH,
   STUDY_PLAN,
   ACADEMIC_SPACE,
-  INSTRUMENT
+  INSTRUMENT,
+  COURSE
 }

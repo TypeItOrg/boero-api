@@ -19,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class UpdateAcademicYearStatusUseCase {
 
   private final AcademicYearRepository academicYearRepository;
+  private final ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository
+      courseRepository;
 
   @Transactional
   public void execute(
@@ -38,11 +40,34 @@ public class UpdateAcademicYearStatusUseCase {
       throw AcademicConflictException.forField(
           "status", AcademicMessages.ACADEMIC_YEAR_ACTIVE_CONFLICT);
     }
+    final boolean closing = request.status() == AcademicYearStatus.CLOSED;
     try {
       academicYear.transitionTo(request.status());
+      if (closing) {
+        final var courses = courseRepository.findAllByAcademicYearId(id);
+        for (final var course : courses) {
+          if (course.getStatus()
+              != ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus.CLOSED) {
+            course.close();
+          }
+        }
+      }
       academicYearRepository.flush();
+      if (closing) {
+        courseRepository.flush();
+      }
     } catch (DataIntegrityViolationException exception) {
       throw AcademicIntegrityViolationTranslator.translate(exception);
     }
+  }
+
+  public long countActiveOrInactiveCoursesForYear(final UUID academicYearId) {
+    return courseRepository.findAllByAcademicYearId(academicYearId).stream()
+        .filter(c -> c.getDeletedAt() == null)
+        .filter(
+            c ->
+                c.getStatus()
+                    != ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus.CLOSED)
+        .count();
   }
 }

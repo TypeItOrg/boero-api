@@ -125,4 +125,24 @@ public class AcademicLifecycleController {
       @Valid @RequestBody(required = false) final AcademicLifecycleRequest request) {
     lifecycleService.restoreInstrument(institutionId, id, request);
   }
+
+  @DeleteMapping(value = "/courses/{id}", version = Version.V1)
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @RequiresPermission(PermissionCode.COURSE_DELETE)
+  public void deleteCourse(
+      @PathVariable final UUID institutionId,
+      @PathVariable final UUID id,
+      @Valid @RequestBody(required = false) final AcademicLifecycleRequest request) {
+    lifecycleService.deleteCourse(institutionId, id, request);
+  }
+
+  @PostMapping(value = "/courses/{id}/restore", version = Version.V1)
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @RequiresPermission(PermissionCode.COURSE_RESTORE)
+  public void restoreCourse(
+      @PathVariable final UUID institutionId,
+      @PathVariable final UUID id,
+      @Valid @RequestBody(required = false) final AcademicLifecycleRequest request) {
+    lifecycleService.restoreCourse(institutionId, id, request);
+  }
 }

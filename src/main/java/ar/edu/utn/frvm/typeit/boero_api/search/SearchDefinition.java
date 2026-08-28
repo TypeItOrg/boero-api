@@ -106,7 +106,25 @@ enum SearchDefinition {
   INSTRUMENT(
       SearchEntityType.INSTRUMENT,
       PermissionCode.INSTRUMENT_READ,
-      namedEntity("instruments", "instrument_id"));
+      namedEntity("instruments", "instrument_id")),
+  COURSE(
+      SearchEntityType.COURSE,
+      PermissionCode.COURSE_READ,
+      """
+      SELECT c.course_id AS id, c.institution_id, i.name AS institution_name,
+             i.active AS institution_active, e.name AS title, p.name AS subtitle,
+             c.status,
+             NULL::text AS category,
+             boero_search_rank(e.name || ' ' || p.name, :query, :normalized) AS score
+        FROM courses c
+        JOIN institutions i ON i.institution_id = c.institution_id
+        JOIN academic_spaces e ON e.academic_space_id = c.academic_space_id
+        JOIN study_plans p ON p.study_plan_id = c.study_plan_id
+       WHERE c.deleted_at IS NULL
+         AND e.deleted_at IS NULL
+         AND p.deleted_at IS NULL
+         AND boero_search_vector(e.name || ' ' || p.name) @@ to_tsquery('simple', :query)
+      """);
 
   private final SearchEntityType type;
   private final @Nullable PermissionCode permission;
