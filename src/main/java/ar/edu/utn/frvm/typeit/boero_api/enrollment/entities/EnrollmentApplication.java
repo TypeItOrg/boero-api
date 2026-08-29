@@ -5,9 +5,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotEditableException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -16,24 +16,38 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 @Entity
-@Table(name = "enrollment_applications")
+@Table(
+    name = "enrollment_applications",
+    uniqueConstraints = {
+      @UniqueConstraint(
+          name = "enrollment_applications_institution_id_id_unique",
+          columnNames = {"institution_id", "enrollment_application_id"}),
+      @UniqueConstraint(
+          name = "enrollment_applications_person_id_id_unique",
+          columnNames = {"person_id", "enrollment_application_id"})
+    })
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@Builder
+@Builder(access = AccessLevel.PACKAGE)
 public class EnrollmentApplication extends SoftDeletable {
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Id
   @GeneratedUUIDv7
@@ -41,12 +55,12 @@ public class EnrollmentApplication extends SoftDeletable {
   private UUID id;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "institution_id", nullable = false)
-  private Institution institution;
+  @JoinColumn(name = "person_id", nullable = false)
+  private Person person;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "applicant_person_id", nullable = false)
-  private Person applicantPerson;
+  @JoinColumn(name = "institution_id", nullable = false)
+  private Institution institution;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "study_plan_id", nullable = false)
@@ -56,80 +70,56 @@ public class EnrollmentApplication extends SoftDeletable {
   @JoinColumn(name = "academic_year_id", nullable = false)
   private AcademicYear academicYear;
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "enrollment_period_id", nullable = false)
-  private EnrollmentPeriod enrollmentPeriod;
+  @Column(name = "enrollment_period_id")
+  private UUID enrollmentPeriodId;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "status", nullable = false, length = 20)
+  @Column(nullable = false, length = 20)
   private EnrollmentApplicationStatus status;
 
-  @OneToOne(
-      mappedBy = "enrollmentApplication",
-      cascade = CascadeType.ALL,
-      fetch = FetchType.LAZY,
-      orphanRemoval = true)
-  private ApplicantEducationBackground educationBackground;
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(nullable = false)
+  private JsonNode data;
 
-  @OneToOne(
-      mappedBy = "enrollmentApplication",
-      cascade = CascadeType.ALL,
-      fetch = FetchType.LAZY,
-      orphanRemoval = true)
-  private ApplicantHealthInclusion healthInclusion;
-
-  @OneToOne(
-      mappedBy = "enrollmentApplication",
-      cascade = CascadeType.ALL,
-      fetch = FetchType.LAZY,
-      orphanRemoval = true)
-  private ApplicantResponsible responsible;
-
-  @OneToOne(
-      mappedBy = "enrollmentApplication",
-      cascade = CascadeType.ALL,
-      fetch = FetchType.LAZY,
-      orphanRemoval = true)
-  private ApplicantPreference preference;
-
-  @jakarta.persistence.OneToMany(
-      mappedBy = "enrollmentApplication",
-      cascade = CascadeType.ALL,
-      fetch = FetchType.LAZY,
-      orphanRemoval = true)
-  @Builder.Default
-  private java.util.List<EnrollmentAttachment> attachments = new java.util.ArrayList<>();
-
-  public void setEducationBackground(ApplicantEducationBackground educationBackground) {
-    this.educationBackground = educationBackground;
-    if (educationBackground != null) {
-      educationBackground.setEnrollmentApplication(this);
-    }
+  public static EnrollmentApplication create(
+      final Person person,
+      final Institution institution,
+      final StudyPlan studyPlan,
+      final AcademicYear academicYear,
+      final UUID enrollmentPeriodId) {
+    return EnrollmentApplication.builder()
+        .person(person)
+        .institution(institution)
+        .studyPlan(studyPlan)
+        .academicYear(academicYear)
+        .enrollmentPeriodId(enrollmentPeriodId)
+        .status(EnrollmentApplicationStatus.DRAFT)
+        .data(OBJECT_MAPPER.createObjectNode())
+        .build();
   }
 
-  public void setHealthInclusion(ApplicantHealthInclusion healthInclusion) {
-    this.healthInclusion = healthInclusion;
-    if (healthInclusion != null) {
-      healthInclusion.setEnrollmentApplication(this);
-    }
+  public boolean isEditable() {
+    return status == EnrollmentApplicationStatus.DRAFT && getDeletedAt() == null;
   }
 
-  public void setResponsible(ApplicantResponsible responsible) {
-    this.responsible = responsible;
-    if (responsible != null) {
-      responsible.setEnrollmentApplication(this);
+  public void replaceDraftData(final JsonNode data) {
+    if (!isEditable()) {
+      throw new EnrollmentApplicationNotEditableException();
     }
+    this.data = data == null ? OBJECT_MAPPER.createObjectNode() : data.deepCopy();
   }
 
-  public void setPreference(ApplicantPreference preference) {
-    this.preference = preference;
-    if (preference != null) {
-      preference.setEnrollmentApplication(this);
+  public void cancel() {
+    if (!isEditable()) {
+      throw new EnrollmentApplicationNotEditableException();
     }
+    status = EnrollmentApplicationStatus.CANCELLED;
   }
 
-  public void addAttachment(EnrollmentAttachment attachment) {
-    attachments.add(attachment);
-    attachment.setEnrollmentApplication(this);
+  public ObjectNode editableData() {
+    if (data instanceof ObjectNode objectNode) {
+      return objectNode;
+    }
+    return OBJECT_MAPPER.createObjectNode();
   }
 }

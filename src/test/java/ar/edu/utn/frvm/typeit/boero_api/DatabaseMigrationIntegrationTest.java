@@ -17,10 +17,10 @@ class DatabaseMigrationIntegrationTest extends DatabaseMigrationTestSupport {
   @Test
   @DisplayName("Should migrate an empty PostgreSQL database and validate the JPA model")
   void shouldMigrateSchemaAndDevelopmentData() {
-    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260908150000");
-    assertThat(tableCount()).isEqualTo(43);
+    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260829004918");
+    assertThat(tableCount()).isEqualTo(31);
     assertThat(institutionCount()).isPositive();
-    assertThat(tenantRelationshipConstraintCount()).isEqualTo(8);
+    assertThat(tenantRelationshipConstraintCount()).isEqualTo(10);
     assertThat(activePersonDocumentIndexCount()).isEqualTo(1);
     assertThat(passwordResetTokenUserUniqueIndexCount()).isEqualTo(1);
     assertThat(pgTrgmExtensionCount()).isEqualTo(1);
@@ -108,7 +108,9 @@ class DatabaseMigrationIntegrationTest extends DatabaseMigrationTestSupport {
           'student_guardians_student_institution_fk',
           'student_guardians_guardian_institution_fk',
           'person_role_assignments_person_institution_fk',
-          'course_class_teachers_person_institution_fk'
+          'enrollment_applications_person_institution_fk',
+          'enrollment_applications_study_plan_institution_fk',
+          'enrollment_applications_academic_year_institution_fk'
         )
         """,
         Integer.class);

@@ -4,6 +4,5 @@ public enum EnrollmentApplicationStatus {
   DRAFT,
   SUBMITTED,
   CANCELLED,
-  APPROVED,
   REJECTED
 }
