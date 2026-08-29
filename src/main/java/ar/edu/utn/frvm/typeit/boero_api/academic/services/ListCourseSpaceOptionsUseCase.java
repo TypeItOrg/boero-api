@@ -8,6 +8,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseSpaceOptionResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.validation.AcademicNameNormalizer;
+import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
@@ -34,12 +35,15 @@ public class ListCourseSpaceOptionsUseCase {
     }
     final var normalizedSearchValue = AcademicNameNormalizer.search(search);
     final var normalizedSearch =
-        normalizedSearchValue == null ? null : normalizedSearchValue.toLowerCase();
+        normalizedSearchValue == null
+            ? null
+            : SearchNormalization.normalizeForComparison(normalizedSearchValue);
     final var spaces = new LinkedHashMap<UUID, CourseSpaceOptionResponse>();
     for (final var space : studyPlanSpaceRepository.findByStudyPlanIdWithDetails(studyPlanId)) {
       final var academicSpace = space.getAcademicSpace();
       if (normalizedSearch != null
-          && !academicSpace.getName().toLowerCase().contains(normalizedSearch)) {
+          && !SearchNormalization.normalizeForComparison(academicSpace.getName())
+              .contains(normalizedSearch)) {
         continue;
       }
       spaces.putIfAbsent(academicSpace.getId(), CourseSpaceOptionResponse.from(academicSpace));
