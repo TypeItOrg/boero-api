@@ -1,8 +1,10 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicLifecycleEvent;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicLifecycleAction;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicLifecycleResource;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicConflictException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicIntegrityViolationTranslator;
@@ -193,6 +195,7 @@ public class AcademicLifecycleService {
   @Transactional
   public void deleteCourse(
       final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+    lockCourseAcademicYear(institutionId, id);
     final var course =
         courseRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
@@ -210,14 +213,29 @@ public class AcademicLifecycleService {
   @Transactional
   public void restoreCourse(
       final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+    final var academicYear = lockCourseAcademicYear(institutionId, id);
     final var course =
         courseRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
             .orElseThrow(CourseNotFoundException::new);
-    if (course.isDeleted() && course.getStudyPlan().getStatus() != StudyPlanStatus.ACTIVE) {
+    final boolean parentUnavailable =
+        course.isDeleted()
+            && (course.getStudyPlan().getStatus() != StudyPlanStatus.ACTIVE
+                || academicYear.getStatus() != AcademicYearStatus.ACTIVE);
+    if (parentUnavailable) {
       throw new AcademicConflictException(AcademicMessages.RESTORE_PARENT_UNAVAILABLE);
     }
     restore(course, course.getInstitution(), AcademicLifecycleResource.COURSE, id, request);
+  }
+
+  private AcademicYear lockCourseAcademicYear(final UUID institutionId, final UUID courseId) {
+    final var academicYearId =
+        courseRepository
+            .findAcademicYearIdByIdAndInstitution_Id(courseId, institutionId)
+            .orElseThrow(CourseNotFoundException::new);
+    return academicYearRepository
+        .findByIdAndInstitution_IdForUpdate(academicYearId, institutionId)
+        .orElseThrow(AcademicYearNotFoundException::new);
   }
 
   private void restore(

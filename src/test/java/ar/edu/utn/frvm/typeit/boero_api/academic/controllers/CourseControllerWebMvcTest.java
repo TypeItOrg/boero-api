@@ -210,6 +210,53 @@ class CourseControllerWebMvcTest {
         .andExpect(jsonPath("$.fieldErrors.classes").exists());
   }
 
+  @Test
+  @DisplayName("Should reject null elements in nested course classes")
+  void create_rejectsNullClassElement() throws Exception {
+    final String body =
+        """
+        {"studyPlanId": "%s", "academicSpaceId": "%s", "academicYearId": "%s", "classes": [null]}
+        """
+            .formatted(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+
+    mockMvc
+        .perform(
+            post("/api/v1/institutions/" + INSTITUTION_ID + "/courses")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("Should reject null elements at every nested course level")
+  void create_rejectsNullNestedElements() throws Exception {
+    final String body =
+        """
+        {
+          "studyPlanId": "%s",
+          "academicSpaceId": "%s",
+          "academicYearId": "%s",
+          "classes": [{
+            "teacherIds": [null],
+            "days": [null, {
+              "dayOfWeek": "MONDAY",
+              "capacity": 10,
+              "periodDurationMinutes": null,
+              "schedules": [null]
+            }]
+          }]
+        }
+        """
+            .formatted(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+
+    mockMvc
+        .perform(
+            post("/api/v1/institutions/" + INSTITUTION_ID + "/courses")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+        .andExpect(status().isBadRequest());
+  }
+
   private static void assertThatSortIs(final Pageable pageable, final String property) {
     assertThat(pageable.getSort().getOrderFor(property))
         .isNotNull()

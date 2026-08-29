@@ -10,4 +10,4 @@ public record CreateCourseRequest(
     @NotNull UUID studyPlanId,
     @NotNull UUID academicSpaceId,
     @NotNull UUID academicYearId,
-    @NotEmpty @Valid List<CourseClassRequest> classes) {}
+    @NotEmpty @Valid List<@NotNull @Valid CourseClassRequest> classes) {}
