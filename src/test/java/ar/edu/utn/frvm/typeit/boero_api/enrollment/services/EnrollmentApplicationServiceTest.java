@@ -11,6 +11,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantEducationBackground;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
@@ -26,7 +27,6 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentPeriod
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
@@ -48,7 +48,6 @@ class EnrollmentApplicationServiceTest {
   @Mock private AcademicYearRepository academicYearRepository;
 
   private EnrollmentApplicationService service;
-  private final ObjectMapper objectMapper = new ObjectMapper();
 
   private final UUID institutionId = UUID.randomUUID();
   private final UUID personId = UUID.randomUUID();
@@ -65,8 +64,7 @@ class EnrollmentApplicationServiceTest {
             periodRepository,
             personRepository,
             studyPlanRepository,
-            academicYearRepository,
-            objectMapper);
+            academicYearRepository);
   }
 
   @Test
@@ -77,6 +75,9 @@ class EnrollmentApplicationServiceTest {
     
     Person person = org.mockito.Mockito.mock(Person.class);
     when(person.getId()).thenReturn(personId);
+    when(person.getFirstName()).thenReturn("Juan");
+    when(person.getLastName()).thenReturn("Pérez");
+    when(person.getDocumentNumber()).thenReturn("12345678");
     
     StudyPlan studyPlan = org.mockito.Mockito.mock(StudyPlan.class);
     when(studyPlan.getId()).thenReturn(studyPlanId);
@@ -95,7 +96,6 @@ class EnrollmentApplicationServiceTest {
             .academicYear(academicYear)
             .enrollmentPeriod(period)
             .status(EnrollmentApplicationStatus.DRAFT)
-            .data("{\"key\":\"value\"}")
             .build();
     existing.setId(applicationId);
 
@@ -112,7 +112,8 @@ class EnrollmentApplicationServiceTest {
 
     assertThat(response.getApplicationId()).isEqualTo(applicationId);
     assertThat(response.isEditable()).isTrue();
-    assertThat(response.getData()).containsEntry("key", "value");
+    Map<String, Object> personalData = (Map<String, Object>) response.getData().get("personalData");
+    assertThat(personalData).containsEntry("firstName", "Juan");
   }
 
   @Test
@@ -142,6 +143,9 @@ class EnrollmentApplicationServiceTest {
     
     Person person = org.mockito.Mockito.mock(Person.class);
     when(person.getId()).thenReturn(personId);
+    when(person.getFirstName()).thenReturn("Juan");
+    when(person.getLastName()).thenReturn("Pérez");
+    when(person.getDocumentNumber()).thenReturn("12345678");
     
     StudyPlan studyPlan = org.mockito.Mockito.mock(StudyPlan.class);
     when(studyPlan.getId()).thenReturn(studyPlanId);
@@ -174,7 +178,6 @@ class EnrollmentApplicationServiceTest {
             .academicYear(academicYear)
             .enrollmentPeriod(period)
             .status(EnrollmentApplicationStatus.DRAFT)
-            .data("{}")
             .build();
     newApp.setId(applicationId);
 
@@ -195,6 +198,9 @@ class EnrollmentApplicationServiceTest {
   void updateDraft_success() {
     Person person = org.mockito.Mockito.mock(Person.class);
     when(person.getId()).thenReturn(personId);
+    when(person.getFirstName()).thenReturn("Juan");
+    when(person.getLastName()).thenReturn("Pérez");
+    when(person.getDocumentNumber()).thenReturn("12345678");
     
     Institution institution = org.mockito.Mockito.mock(Institution.class);
     when(institution.getId()).thenReturn(institutionId);
@@ -216,7 +222,6 @@ class EnrollmentApplicationServiceTest {
             .academicYear(academicYear)
             .enrollmentPeriod(period)
             .status(EnrollmentApplicationStatus.DRAFT)
-            .data("{}")
             .build();
     application.setId(applicationId);
 
@@ -224,11 +229,16 @@ class EnrollmentApplicationServiceTest {
     when(applicationRepository.save(any(EnrollmentApplication.class))).thenReturn(application);
 
     UpdateEnrollmentDraftRequest request =
-        new UpdateEnrollmentDraftRequest(Map.of("firstName", "Juan"));
+        new UpdateEnrollmentDraftRequest(
+            Map.of(
+                "personalData", Map.of("firstName", "Mariano"),
+                "academicBackground", Map.of("secondarySchool", "Colegio Nacional")
+            )
+        );
 
     EnrollmentApplicationResponse response = service.updateDraft(personId, applicationId, request);
 
-    assertThat(response.getData()).containsEntry("firstName", "Juan");
+    verify(person).setFirstName("Mariano");
     verify(applicationRepository).save(application);
   }
 
@@ -248,7 +258,7 @@ class EnrollmentApplicationServiceTest {
     when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
 
     UpdateEnrollmentDraftRequest request =
-        new UpdateEnrollmentDraftRequest(Map.of("firstName", "Juan"));
+        new UpdateEnrollmentDraftRequest(Map.of("personalData", Map.of("firstName", "Juan")));
 
     assertThatThrownBy(() -> service.updateDraft(personId, applicationId, request))
         .isInstanceOf(ApplicationNotEditableException.class);

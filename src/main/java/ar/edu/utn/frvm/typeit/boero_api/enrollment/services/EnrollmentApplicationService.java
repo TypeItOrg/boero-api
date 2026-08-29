@@ -4,6 +4,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantEducationBackground;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
@@ -18,9 +19,6 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentApplic
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentPeriodRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +37,6 @@ public class EnrollmentApplicationService {
   private final PersonRepository personRepository;
   private final StudyPlanRepository studyPlanRepository;
   private final AcademicYearRepository academicYearRepository;
-  private final ObjectMapper objectMapper;
 
   @Transactional
   public EnrollmentApplicationResponse startOrGetApplication(
@@ -88,13 +85,13 @@ public class EnrollmentApplicationService {
             .academicYear(academicYear)
             .enrollmentPeriod(activePeriod)
             .status(EnrollmentApplicationStatus.DRAFT)
-            .data("{}")
             .build();
 
     EnrollmentApplication saved = applicationRepository.save(newApplication);
     return toResponse(saved);
   }
 
+  @SuppressWarnings("unchecked")
   @Transactional
   public EnrollmentApplicationResponse updateDraft(
       UUID personId, UUID applicationId, UpdateEnrollmentDraftRequest request) {
@@ -109,16 +106,37 @@ public class EnrollmentApplicationService {
       throw new ApplicationNotEditableException(applicationId);
     }
 
-    String jsonString = "{}";
     if (request.getData() != null) {
-      try {
-        jsonString = objectMapper.writeValueAsString(request.getData());
-      } catch (JsonProcessingException e) {
-        throw new IllegalArgumentException("Formato de datos inválido", e);
+      // 1. Mapear datos personales a la entidad Person
+      Map<String, Object> personalData = (Map<String, Object>) request.getData().get("personalData");
+      if (personalData != null) {
+        Person applicant = application.getApplicantPerson();
+        if (personalData.containsKey("firstName")) {
+          applicant.setFirstName((String) personalData.get("firstName"));
+        }
+        if (personalData.containsKey("lastName")) {
+          applicant.setLastName((String) personalData.get("lastName"));
+        }
+        if (personalData.containsKey("documentNumber")) {
+          applicant.setDocumentNumber((String) personalData.get("documentNumber"));
+        }
+        personRepository.save(applicant);
+      }
+
+      // 2. Mapear datos académicos a la entidad relacionada
+      Map<String, Object> academicBg = (Map<String, Object>) request.getData().get("academicBackground");
+      if (academicBg != null) {
+        ApplicantEducationBackground bg = application.getEducationBackground();
+        if (bg == null) {
+          bg = ApplicantEducationBackground.builder().enrollmentApplication(application).build();
+          application.setEducationBackground(bg);
+        }
+        if (academicBg.containsKey("secondarySchool")) {
+          bg.setSecondarySchool((String) academicBg.get("secondarySchool"));
+        }
       }
     }
 
-    application.setData(jsonString);
     EnrollmentApplication saved = applicationRepository.save(application);
     return toResponse(saved);
   }
@@ -136,14 +154,23 @@ public class EnrollmentApplicationService {
   }
 
   private EnrollmentApplicationResponse toResponse(EnrollmentApplication entity) {
-    Map<String, Object> dataMap = new HashMap<>();
-    if (entity.getData() != null && !entity.getData().isBlank()) {
-      try {
-        dataMap = objectMapper.readValue(entity.getData(), new TypeReference<>() {});
-      } catch (JsonProcessingException e) {
-        // Fallback si la cadena json es inválida
-      }
+    Map<String, Object> personalDataMap = new HashMap<>();
+    Person applicant = entity.getApplicantPerson();
+    if (applicant != null) {
+      personalDataMap.put("firstName", applicant.getFirstName());
+      personalDataMap.put("lastName", applicant.getLastName());
+      personalDataMap.put("documentNumber", applicant.getDocumentNumber());
     }
+
+    Map<String, Object> academicBgMap = new HashMap<>();
+    ApplicantEducationBackground bg = entity.getEducationBackground();
+    if (bg != null) {
+      academicBgMap.put("secondarySchool", bg.getSecondarySchool());
+    }
+
+    Map<String, Object> dataMap = new HashMap<>();
+    dataMap.put("personalData", personalDataMap);
+    dataMap.put("academicBackground", academicBgMap);
 
     boolean editable =
         entity.getStatus() == EnrollmentApplicationStatus.DRAFT && entity.getDeletedAt() == null;
