@@ -61,10 +61,10 @@ class DatabaseMigrationIntegrationTest {
   @Test
   @DisplayName("Should migrate an empty PostgreSQL database and validate the JPA model")
   void shouldMigrateSchemaAndDevelopmentData() {
-    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260827044049");
+    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260829000134");
     assertThat(tableCount()).isEqualTo(35);
     assertThat(institutionCount()).isPositive();
-    assertThat(tenantRelationshipConstraintCount()).isEqualTo(7);
+    assertThat(tenantRelationshipConstraintCount()).isEqualTo(8);
     assertThat(activePersonDocumentIndexCount()).isEqualTo(1);
     assertThat(passwordResetTokenUserUniqueIndexCount()).isEqualTo(1);
     assertThat(pgTrgmExtensionCount()).isEqualTo(1);
@@ -439,6 +439,59 @@ class DatabaseMigrationIntegrationTest {
   }
 
   @Test
+  @DisplayName("Should reject a course teacher that belongs to another institution")
+  void shouldRejectCrossInstitutionCourseTeacher() {
+    final UUID institutionId = firstInstitutionId();
+    final UUID otherInstitutionId = UUID.randomUUID();
+    final UUID trainingPathId = UUID.randomUUID();
+    final UUID studyPlanId = UUID.randomUUID();
+    final UUID academicSpaceId = UUID.randomUUID();
+    final UUID academicYearId = UUID.randomUUID();
+    final UUID courseId = UUID.randomUUID();
+    final UUID courseClassId = UUID.randomUUID();
+    final UUID personId = UUID.randomUUID();
+    final UUID courseClassTeacherId = UUID.randomUUID();
+    try {
+      insertTestInstitution(otherInstitutionId);
+      insertTrainingPath(trainingPathId, institutionId);
+      insertStudyPlan(studyPlanId, institutionId, trainingPathId);
+      insertAcademicSpace(academicSpaceId, institutionId);
+      insertAcademicYearWithStatus(academicYearId, institutionId, 2099, "PLANNED");
+      insertCourse(courseId, institutionId, studyPlanId, academicSpaceId, academicYearId);
+      insertCourseClass(courseClassId, institutionId, courseId);
+      insertPerson(personId, otherInstitutionId, randomDocumentNumber(), false);
+
+      assertThatThrownBy(
+              () ->
+                  jdbcTemplate.update(
+                      """
+                      INSERT INTO course_class_teachers (
+                        course_class_teacher_id, institution_id, course_class_id, person_id,
+                        created_at, updated_at
+                      ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                      """,
+                      courseClassTeacherId,
+                      institutionId,
+                      courseClassId,
+                      personId))
+          .isInstanceOf(DataIntegrityViolationException.class);
+    } finally {
+      jdbcTemplate.update(
+          "DELETE FROM course_class_teachers WHERE course_class_teacher_id = ?",
+          courseClassTeacherId);
+      jdbcTemplate.update("DELETE FROM course_classes WHERE course_class_id = ?", courseClassId);
+      jdbcTemplate.update("DELETE FROM courses WHERE course_id = ?", courseId);
+      jdbcTemplate.update("DELETE FROM people WHERE person_id = ?", personId);
+      jdbcTemplate.update("DELETE FROM academic_years WHERE academic_year_id = ?", academicYearId);
+      jdbcTemplate.update(
+          "DELETE FROM academic_spaces WHERE academic_space_id = ?", academicSpaceId);
+      jdbcTemplate.update("DELETE FROM study_plans WHERE study_plan_id = ?", studyPlanId);
+      jdbcTemplate.update("DELETE FROM training_paths WHERE training_path_id = ?", trainingPathId);
+      jdbcTemplate.update("DELETE FROM institutions WHERE institution_id = ?", otherInstitutionId);
+    }
+  }
+
+  @Test
   @DisplayName("Should reject a study plan space that crosses institutions")
   void shouldRejectCrossInstitutionStudyPlanSpace() {
     final UUID firstInstitutionId = firstInstitutionId();
@@ -585,6 +638,38 @@ class DatabaseMigrationIntegrationTest {
         format);
   }
 
+  private void insertCourse(
+      final UUID id,
+      final UUID institutionId,
+      final UUID studyPlanId,
+      final UUID academicSpaceId,
+      final UUID academicYearId) {
+    jdbcTemplate.update(
+        """
+        INSERT INTO courses (
+          course_id, institution_id, study_plan_id, academic_space_id, academic_year_id,
+          status, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """,
+        id,
+        institutionId,
+        studyPlanId,
+        academicSpaceId,
+        academicYearId);
+  }
+
+  private void insertCourseClass(final UUID id, final UUID institutionId, final UUID courseId) {
+    jdbcTemplate.update(
+        """
+        INSERT INTO course_classes (
+          course_class_id, institution_id, course_id, created_at, updated_at
+        ) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """,
+        id,
+        institutionId,
+        courseId);
+  }
+
   private void insertInstrument(final UUID id, final UUID institutionId, final String name) {
     jdbcTemplate.update(
         """
@@ -647,7 +732,8 @@ class DatabaseMigrationIntegrationTest {
           'guardian_profiles_person_institution_fk',
           'student_guardians_student_institution_fk',
           'student_guardians_guardian_institution_fk',
-          'person_role_assignments_person_institution_fk'
+          'person_role_assignments_person_institution_fk',
+          'course_class_teachers_person_institution_fk'
         )
         """,
         Integer.class);

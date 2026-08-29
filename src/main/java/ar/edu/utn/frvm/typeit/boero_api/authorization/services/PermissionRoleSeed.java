@@ -107,7 +107,6 @@ public class PermissionRoleSeed implements ApplicationRunner {
     syncInstitutionalRoles(permissions);
     syncPlatformRoles(permissions);
     provisionInstitutionRoles();
-    migrateGlobalInstitutionalAssignments();
     if (shouldBackfillApplicants()) {
       backfillApplicantRoleForPersonsWithoutRoles();
     }
@@ -115,46 +114,8 @@ public class PermissionRoleSeed implements ApplicationRunner {
   }
 
   private void provisionInstitutionRoles() {
-    institutionRepository.findAll().forEach(institutionRoleProvisioner::provision);
-  }
-
-  private void migrateGlobalInstitutionalAssignments() {
-    for (var assignment : personRoleAssignmentRepository.findAll()) {
-      Role currentRole = assignment.getRole();
-      if (currentRole.getScope() != RoleScope.INSTITUTION || currentRole.getInstitution() != null) {
-        continue;
-      }
-
-      var institution = assignment.getInstitution();
-      boolean technical =
-          currentRole.getCode().equals(SystemRoleCode.APPLICANT.name())
-              || currentRole.getCode().equals(SystemRoleCode.STUDENT.name())
-              || currentRole.getCode().equals(SystemRoleCode.INSTITUTIONAL_AUTHORITY.name());
-      String localCode = technical ? currentRole.getCode() : "LEGACY_" + currentRole.getCode();
-      Role localRole =
-          roleRepository
-              .findByScopeAndCodeAndInstitution_Id(
-                  RoleScope.INSTITUTION, localCode, institution.getId())
-              .orElseGet(
-                  () ->
-                      roleRepository.save(
-                          Role.builder()
-                              .scope(RoleScope.INSTITUTION)
-                              .code(localCode)
-                              .name(currentRole.getName())
-                              .system(technical)
-                              .institution(institution)
-                              .build()));
-      for (RolePermission rolePermission :
-          rolePermissionRepository.findByRole_Id(currentRole.getId())) {
-        if (!rolePermissionRepository.existsByRoleIdAndPermissionId(
-            localRole.getId(), rolePermission.getPermission().getId())) {
-          rolePermissionRepository.save(
-              RolePermission.of(localRole, rolePermission.getPermission()));
-        }
-      }
-      assignment.replaceRole(localRole);
-      personRoleAssignmentRepository.save(assignment);
+    for (final var institution : institutionRepository.findAll()) {
+      institutionRoleProvisioner.provision(institution);
     }
   }
 
@@ -241,19 +202,19 @@ public class PermissionRoleSeed implements ApplicationRunner {
 
   private void syncRolePermissions(
       Role role, Set<PermissionCode> permissionCodes, Map<PermissionCode, Permission> permissions) {
-    permissionCodes = PermissionCode.withRequiredPermissions(permissionCodes);
+    final var requiredPermissionCodes = PermissionCode.withRequiredPermissions(permissionCodes);
     Set<UUID> desiredPermissionIds =
-        permissionCodes.stream()
+        requiredPermissionCodes.stream()
             .map(code -> permissions.get(code).getId())
             .collect(Collectors.toSet());
 
-    rolePermissionRepository.findByRole_Id(role.getId()).stream()
-        .filter(
-            rolePermission ->
-                !desiredPermissionIds.contains(rolePermission.getPermission().getId()))
-        .forEach(rolePermissionRepository::delete);
+    for (final var rolePermission : rolePermissionRepository.findByRole_Id(role.getId())) {
+      if (!desiredPermissionIds.contains(rolePermission.getPermission().getId())) {
+        rolePermissionRepository.delete(rolePermission);
+      }
+    }
 
-    for (PermissionCode permissionCode : permissionCodes) {
+    for (PermissionCode permissionCode : requiredPermissionCodes) {
       Permission permission = permissions.get(permissionCode);
       if (!rolePermissionRepository.existsByRoleIdAndPermissionId(
           role.getId(), permission.getId())) {

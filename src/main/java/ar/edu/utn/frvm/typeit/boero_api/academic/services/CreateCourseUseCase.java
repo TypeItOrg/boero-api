@@ -34,6 +34,7 @@ public class CreateCourseUseCase {
   private final StudyPlanSpaceRepository studyPlanSpaceRepository;
   private final CourseRepository courseRepository;
   private final CourseClassAssembler courseClassAssembler;
+  private final CourseTreeReader courseTreeReader;
 
   @Transactional
   public CourseResponse execute(final UUID institutionId, final CreateCourseRequest request) {
@@ -50,7 +51,7 @@ public class CreateCourseUseCase {
     }
     final var space =
         academicSpaceRepository
-            .findByIdAndInstitution_Id(request.academicSpaceId(), institutionId)
+            .findByIdAndInstitution_IdForUpdate(request.academicSpaceId(), institutionId)
             .orElseThrow(AcademicSpaceNotFoundException::new);
     if (!studyPlanSpaceRepository.existsByStudyPlan_IdAndAcademicSpace_Id(
         plan.getId(), space.getId())) {
@@ -58,7 +59,7 @@ public class CreateCourseUseCase {
     }
     final var year =
         academicYearRepository
-            .findByIdAndInstitution_Id(request.academicYearId(), institutionId)
+            .findByIdAndInstitution_IdForUpdate(request.academicYearId(), institutionId)
             .orElseThrow(AcademicYearNotFoundException::new);
     if (year.getStatus() != AcademicYearStatus.ACTIVE) {
       throw new AcademicConflictException(AcademicMessages.COURSE_YEAR_NOT_ACTIVE);
@@ -71,7 +72,7 @@ public class CreateCourseUseCase {
       final var course = courseRepository.save(Course.create(institution, plan, space, year));
       courseClassAssembler.assemble(institution, course, space.getFormat(), request.classes());
       courseRepository.flush();
-      return CourseResponse.from(course);
+      return CourseResponse.from(course, courseTreeReader.read(course.getId()));
     } catch (DataIntegrityViolationException exception) {
       throw AcademicIntegrityViolationTranslator.translate(exception);
     }

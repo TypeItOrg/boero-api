@@ -42,6 +42,12 @@ public interface AcademicSpaceRepository extends JpaRepository<AcademicSpace, UU
   Optional<AcademicSpace> findByIdAndInstitution_Id(
       @Param("id") UUID id, @Param("institutionId") UUID institutionId);
 
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query(
+      "SELECT space FROM AcademicSpace space WHERE space.id = :id AND space.institution.id = :institutionId AND space.deletedAt IS NULL")
+  Optional<AcademicSpace> findByIdAndInstitution_IdForUpdate(
+      @Param("id") UUID id, @Param("institutionId") UUID institutionId);
+
   Optional<AcademicSpace> findByIdAndInstitution_IdAndActiveTrueAndDeletedAtIsNull(
       UUID id, UUID institutionId);
 
@@ -75,4 +81,9 @@ public interface AcademicSpaceRepository extends JpaRepository<AcademicSpace, UU
   @Query(
       "SELECT COUNT(space) > 0 FROM StudyPlanSpace space WHERE space.academicSpace.id = :academicSpaceId AND space.studyPlan.deletedAt IS NULL AND space.studyPlan.status IN (ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus.DRAFT, ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus.ACTIVE)")
   boolean existsInEditableOrActivePlan(@Param("academicSpaceId") UUID academicSpaceId);
+
+  @Query(
+      "SELECT COUNT(course) > 0 FROM Course course WHERE course.institution.id = :institutionId AND course.academicSpace.id = :academicSpaceId")
+  boolean existsInCourse(
+      @Param("institutionId") UUID institutionId, @Param("academicSpaceId") UUID academicSpaceId);
 }

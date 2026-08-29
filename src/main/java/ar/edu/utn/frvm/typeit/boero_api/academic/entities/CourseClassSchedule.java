@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.Duration;
 import java.time.LocalTime;
 import java.util.Map;
 import java.util.UUID;
@@ -67,7 +68,7 @@ public class CourseClassSchedule extends Auditable {
   }
 
   public int durationMinutes() {
-    return (int) java.time.Duration.between(startTime, endTime).toMinutes();
+    return (int) Duration.between(startTime, endTime).toMinutes();
   }
 
   public boolean overlaps(final CourseClassSchedule other) {

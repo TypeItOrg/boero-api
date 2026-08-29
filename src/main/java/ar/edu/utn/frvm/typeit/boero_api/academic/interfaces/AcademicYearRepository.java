@@ -28,6 +28,12 @@ public interface AcademicYearRepository
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query(
+      "SELECT year FROM AcademicYear year WHERE year.id = :id AND year.institution.id = :institutionId AND year.deletedAt IS NULL")
+  Optional<AcademicYear> findByIdAndInstitution_IdForUpdate(
+      @Param("id") UUID id, @Param("institutionId") UUID institutionId);
+
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query(
       "SELECT year FROM AcademicYear year WHERE year.id = :id AND year.institution.id = :institutionId")
   Optional<AcademicYear> findByIdAndInstitution_IdForLifecycle(
       @Param("id") UUID id, @Param("institutionId") UUID institutionId);

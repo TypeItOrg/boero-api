@@ -44,6 +44,8 @@ public final class AcademicMessages {
   public static final String COURSE_REQUIRES_CLASS = "El curso debe tener al menos una clase.";
   public static final String ACADEMIC_SPACE_HAS_ACTIVE_OR_DRAFT_PLANS =
       "El espacio académico no puede desactivarse porque está utilizado en un plan de estudio activo o en borrador.";
+  public static final String ACADEMIC_SPACE_FORMAT_HAS_COURSES =
+      "El formato del espacio académico no puede modificarse porque ya tiene cursos asociados.";
   public static final String STUDY_PLAN_ACTIVATION_REQUIRES_START_AND_ACTIVE_PATH =
       "El plan no puede activarse hasta completar la fecha de inicio y tener un trayecto formativo activo.";
   public static final String STUDY_PLAN_ACTIVATION_REQUIRES_SPACES =

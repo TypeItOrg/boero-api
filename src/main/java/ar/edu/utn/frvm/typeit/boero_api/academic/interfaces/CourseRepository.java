@@ -45,7 +45,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
       @Param("trainingPathId") @Nullable UUID trainingPathId,
       @Param("studyPlanId") @Nullable UUID studyPlanId,
       @Param("year") @Nullable Integer year,
-      boolean deleted,
+      @Param("deleted") boolean deleted,
       Pageable pageable);
 
   @EntityGraph(
@@ -102,11 +102,15 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
 
   List<Course> findByAcademicYear_IdAndInstitution_Id(UUID academicYearId, UUID institutionId);
 
+  List<Course> findByAcademicYear_IdAndInstitution_IdAndDeletedAtIsNull(
+      UUID academicYearId, UUID institutionId);
+
   List<Course> findByAcademicYear_Id(UUID academicYearId);
 
   @Query(
-      "SELECT COUNT(c) FROM Course c WHERE c.academicYear.id = :academicYearId AND c.status != :excludedStatus")
-  long countByAcademicYearIdAndStatusNot(
+      "SELECT COUNT(c) FROM Course c WHERE c.institution.id = :institutionId AND c.academicYear.id = :academicYearId AND c.deletedAt IS NULL AND c.status != :excludedStatus")
+  long countByInstitutionIdAndAcademicYearIdAndStatusNot(
+      @Param("institutionId") UUID institutionId,
       @Param("academicYearId") UUID academicYearId,
       @Param("excludedStatus") CourseStatus excludedStatus);
 
