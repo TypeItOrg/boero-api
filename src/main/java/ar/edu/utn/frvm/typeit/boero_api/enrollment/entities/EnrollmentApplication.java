@@ -7,6 +7,7 @@ import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,6 +16,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -23,8 +25,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "enrollment_applications")
@@ -64,7 +64,6 @@ public class EnrollmentApplication extends SoftDeletable {
   @Column(name = "status", nullable = false, length = 20)
   private EnrollmentApplicationStatus status;
 
-  @JdbcTypeCode(SqlTypes.JSON)
-  @Column(name = "data", columnDefinition = "jsonb")
-  private String data;
+  @OneToOne(mappedBy = "enrollmentApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+  private ApplicantEducationBackground educationBackground;
 }
