@@ -51,7 +51,7 @@ public class CourseClassAssembler {
       final List<CourseClassRequest> requests) {
     validateTeacherIds(institution.getId(), requests);
     validateUniqueDays(requests);
-    validateSchedules(requests, spaceFormat);
+    validateSchedules(requests);
     final List<CourseClass> classes = new ArrayList<>(requests.size());
     for (final var request : requests) {
       classes.add(assembleClass(institution, course, spaceFormat, request));
@@ -130,8 +130,7 @@ public class CourseClassAssembler {
     return (int) Duration.between(startTime, endTime).toMinutes();
   }
 
-  private static void validateSchedules(
-      final List<CourseClassRequest> requests, final AcademicSpaceFormat spaceFormat) {
+  private static void validateSchedules(final List<CourseClassRequest> requests) {
     for (final var request : requests) {
       for (final var dayRequest : request.days()) {
         final List<CourseSlot> slots = new ArrayList<>(dayRequest.schedules().size());
@@ -139,11 +138,7 @@ public class CourseClassAssembler {
           if (!schedule.startTime().isBefore(schedule.endTime())) {
             throw invalid(AcademicMessages.COURSE_SCHEDULE_INVALID);
           }
-          final var slot =
-              new CourseSlot(
-                  durationMinutes(schedule.startTime(), schedule.endTime()),
-                  schedule.startTime(),
-                  schedule.endTime());
+          final var slot = new CourseSlot(schedule.startTime(), schedule.endTime());
           for (final var existing : slots) {
             if (slot.overlaps(existing)) {
               throw invalid(AcademicMessages.COURSE_SCHEDULE_OVERLAP);
@@ -155,13 +150,13 @@ public class CourseClassAssembler {
     }
   }
 
-  private record CourseSlot(int durationMinutes, LocalTime startTime, LocalTime endTime) {
+  private record CourseSlot(LocalTime startTime, LocalTime endTime) {
     private boolean overlaps(final CourseSlot other) {
-      return !startTime.isAfter(other.endTime()) && !other.startTime().isAfter(endTime);
+      return startTime.isBefore(other.endTime()) && other.startTime().isBefore(endTime);
     }
   }
 
-  private void validateUniqueDays(final List<CourseClassRequest> requests) {
+  private static void validateUniqueDays(final List<CourseClassRequest> requests) {
     for (final var request : requests) {
       final Set<CourseDay> seenDays = new HashSet<>();
       for (final var dayRequest : request.days()) {
@@ -186,7 +181,9 @@ public class CourseClassAssembler {
   private void validateTeacherIds(
       final UUID institutionId, final List<CourseClassRequest> requests) {
     final Set<UUID> allTeacherIds = new HashSet<>();
-    requests.forEach(request -> allTeacherIds.addAll(request.teacherIds()));
+    for (final var request : requests) {
+      allTeacherIds.addAll(request.teacherIds());
+    }
     if (allTeacherIds.isEmpty()) {
       throw invalid(AcademicMessages.COURSE_TEACHERS_INVALID);
     }

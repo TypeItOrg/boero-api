@@ -326,8 +326,8 @@ public enum PermissionCode {
   }
 
   public static Set<PermissionCode> withRequiredPermissions(Set<PermissionCode> permissions) {
-    EnumSet<PermissionCode> expanded =
-        permissions.isEmpty() ? EnumSet.noneOf(PermissionCode.class) : EnumSet.copyOf(permissions);
+    final EnumSet<PermissionCode> expanded = EnumSet.noneOf(PermissionCode.class);
+    expanded.addAll(permissions);
     boolean changed;
     do {
       changed =

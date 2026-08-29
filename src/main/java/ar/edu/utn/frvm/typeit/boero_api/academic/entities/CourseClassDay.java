@@ -45,10 +45,9 @@ public class CourseClassDay extends Auditable {
   @Column(name = "day_of_week", nullable = false, length = 20)
   private CourseDay dayOfWeek;
 
-  @Column(nullable = true)
-  private Integer capacity;
+  @Column private Integer capacity;
 
-  @Column(name = "period_duration_minutes", nullable = true)
+  @Column(name = "period_duration_minutes")
   private Integer periodDurationMinutes;
 
   public static CourseClassDay create(

@@ -4,7 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Course;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
@@ -171,6 +174,29 @@ class CourseClassAssemblerTest {
   }
 
   @Test
+  @DisplayName("Should allow contiguous schedules within the same day")
+  void allowsContiguousSchedules() {
+    stubValidTeachers();
+    final var request =
+        new CourseClassRequest(
+            List.of(UUID.randomUUID()),
+            List.of(
+                new CourseClassDayRequest(
+                    CourseDay.THURSDAY,
+                    10,
+                    null,
+                    List.of(
+                        new CourseClassScheduleRequest(LocalTime.of(14, 0), LocalTime.of(16, 0)),
+                        new CourseClassScheduleRequest(
+                            LocalTime.of(16, 0), LocalTime.of(18, 0))))));
+
+    final var classes =
+        assembler.assemble(institution, course, AcademicSpaceFormat.GRUPAL, List.of(request));
+
+    assertThat(classes).hasSize(1);
+  }
+
+  @Test
   @DisplayName("Should reject a day configured twice in the same class")
   void rejectsDuplicatedDays() {
     stubValidTeachers();
@@ -210,9 +236,9 @@ class CourseClassAssemblerTest {
   }
 
   private void verifySavedCapacity(final Integer expected) {
-    org.mockito.Mockito.verify(courseClassDayRepository, org.mockito.Mockito.atLeastOnce())
+    verify(courseClassDayRepository, atLeastOnce())
         .save(
-            org.mockito.ArgumentMatchers.argThat(
+            argThat(
                 day ->
                     expected == null
                         ? day.getCapacity() == null

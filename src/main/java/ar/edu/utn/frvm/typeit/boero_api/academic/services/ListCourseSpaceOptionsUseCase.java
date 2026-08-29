@@ -32,21 +32,18 @@ public class ListCourseSpaceOptionsUseCase {
     if (plan.getStatus() != StudyPlanStatus.ACTIVE) {
       throw new AcademicConflictException(AcademicMessages.COURSE_STUDY_PLAN_NOT_ACTIVE);
     }
+    final var normalizedSearchValue = AcademicNameNormalizer.search(search);
     final var normalizedSearch =
-        search == null ? null : AcademicNameNormalizer.search(search).toLowerCase();
+        normalizedSearchValue == null ? null : normalizedSearchValue.toLowerCase();
     final var spaces = new LinkedHashMap<UUID, CourseSpaceOptionResponse>();
-    studyPlanSpaceRepository
-        .findByStudyPlanIdWithDetails(studyPlanId)
-        .forEach(
-            space -> {
-              final var academicSpace = space.getAcademicSpace();
-              if (normalizedSearch != null
-                  && !academicSpace.getName().toLowerCase().contains(normalizedSearch)) {
-                return;
-              }
-              spaces.putIfAbsent(
-                  academicSpace.getId(), CourseSpaceOptionResponse.from(academicSpace));
-            });
+    for (final var space : studyPlanSpaceRepository.findByStudyPlanIdWithDetails(studyPlanId)) {
+      final var academicSpace = space.getAcademicSpace();
+      if (normalizedSearch != null
+          && !academicSpace.getName().toLowerCase().contains(normalizedSearch)) {
+        continue;
+      }
+      spaces.putIfAbsent(academicSpace.getId(), CourseSpaceOptionResponse.from(academicSpace));
+    }
     return List.copyOf(spaces.values());
   }
 }

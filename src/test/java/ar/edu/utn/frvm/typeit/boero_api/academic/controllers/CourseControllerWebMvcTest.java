@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.controllers;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -12,6 +13,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseStatusRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.CreateCourseUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.GetCourseUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListCourseSpaceOptionsUseCase;
@@ -187,10 +189,7 @@ class CourseControllerWebMvcTest {
         .andExpect(status().isNoContent());
 
     verify(updateCourseStatusUseCase)
-        .execute(
-            eq(INSTITUTION_ID),
-            eq(COURSE_ID),
-            any(ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseStatusRequest.class));
+        .execute(eq(INSTITUTION_ID), eq(COURSE_ID), any(CourseStatusRequest.class));
   }
 
   @Test
@@ -212,7 +211,7 @@ class CourseControllerWebMvcTest {
   }
 
   private static void assertThatSortIs(final Pageable pageable, final String property) {
-    org.assertj.core.api.Assertions.assertThat(pageable.getSort().getOrderFor(property))
+    assertThat(pageable.getSort().getOrderFor(property))
         .isNotNull()
         .extracting(Sort.Order::getDirection)
         .isEqualTo(Sort.Direction.ASC);

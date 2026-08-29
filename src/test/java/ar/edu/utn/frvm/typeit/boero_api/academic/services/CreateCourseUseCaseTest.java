@@ -4,14 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Course;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicConflictException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicSpaceRepository;
@@ -19,6 +23,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearReposito
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseClassResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreateCourseRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
@@ -52,6 +57,7 @@ class CreateCourseUseCaseTest {
   @Mock private StudyPlanSpaceRepository studyPlanSpaceRepository;
   @Mock private CourseRepository courseRepository;
   @Mock private CourseClassAssembler courseClassAssembler;
+  @Mock private CourseTreeReader courseTreeReader;
   @InjectMocks private CreateCourseUseCase useCase;
 
   private final Institution institution = Institution.builder().id(INSTITUTION_ID).build();
@@ -61,15 +67,11 @@ class CreateCourseUseCaseTest {
   }
 
   private void stubPlan(final StudyPlanStatus status) {
-    final var plan =
-        org.mockito.Mockito.mock(
-            ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan.class);
+    final var plan = mock(StudyPlan.class);
     given(plan.getId()).willReturn(PLAN_ID);
     given(plan.getName()).willReturn("Plan");
     given(plan.getStatus()).willReturn(status);
-    final var path =
-        org.mockito.Mockito.mock(
-            ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath.class);
+    final var path = mock(TrainingPath.class);
     given(path.getId()).willReturn(UUID.randomUUID());
     given(path.getName()).willReturn("Trayecto");
     given(plan.getTrainingPath()).willReturn(path);
@@ -78,22 +80,21 @@ class CreateCourseUseCaseTest {
   }
 
   private void stubSpace() {
-    final var space = org.mockito.Mockito.mock(AcademicSpace.class);
+    final var space = mock(AcademicSpace.class);
     given(space.getId()).willReturn(SPACE_ID);
     given(space.getName()).willReturn("Espacio");
     given(space.getType()).willReturn(AcademicSpaceType.SUBJECT);
     given(space.getFormat()).willReturn(AcademicSpaceFormat.INDIVIDUAL);
-    given(academicSpaceRepository.findByIdAndInstitution_Id(SPACE_ID, INSTITUTION_ID))
+    given(academicSpaceRepository.findByIdAndInstitution_IdForUpdate(SPACE_ID, INSTITUTION_ID))
         .willReturn(Optional.of(space));
   }
 
   private void stubYear() {
-    final var year = org.mockito.Mockito.mock(AcademicYear.class);
+    final var year = mock(AcademicYear.class);
     given(year.getId()).willReturn(YEAR_ID);
     given(year.getYear()).willReturn(2027);
-    given(year.getStatus())
-        .willReturn(ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus.ACTIVE);
-    given(academicYearRepository.findByIdAndInstitution_Id(YEAR_ID, INSTITUTION_ID))
+    given(year.getStatus()).willReturn(AcademicYearStatus.ACTIVE);
+    given(academicYearRepository.findByIdAndInstitution_IdForUpdate(YEAR_ID, INSTITUTION_ID))
         .willReturn(Optional.of(year));
   }
 
@@ -122,11 +123,15 @@ class CreateCourseUseCaseTest {
     stubDuplicate(false);
     given(courseRepository.save(any(Course.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    final var expectedClasses =
+        List.of(new CourseClassResponse(UUID.randomUUID(), List.of(), List.of()));
+    given(courseTreeReader.read(any())).willReturn(expectedClasses);
 
     final var response = useCase.execute(INSTITUTION_ID, request());
 
     assertThat(response.studyPlanId()).isEqualTo(PLAN_ID);
     assertThat(response.academicSpaceFormat()).isEqualTo("INDIVIDUAL");
+    assertThat(response.classes()).isEqualTo(expectedClasses);
     verify(courseClassAssembler).assemble(any(), any(), any(), any());
   }
 

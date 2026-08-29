@@ -98,7 +98,8 @@ public final class AcademicIntegrityViolationTranslator {
           "course_classes_course_fk",
           "course_class_days_class_fk",
           "course_class_schedules_day_fk",
-          "course_class_teachers_class_fk" ->
+          "course_class_teachers_class_fk",
+          "course_class_teachers_person_institution_fk" ->
           new AcademicConflictException(AcademicMessages.INVALID_RELATIONSHIP);
       default -> new AcademicConflictException(AcademicMessages.INVALID_RELATIONSHIP);
     };

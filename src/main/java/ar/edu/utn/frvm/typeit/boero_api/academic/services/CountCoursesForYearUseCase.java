@@ -1,6 +1,8 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus;
+import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicYearNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -11,9 +13,14 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CountCoursesForYearUseCase {
   private final CourseRepository courseRepository;
+  private final AcademicYearRepository academicYearRepository;
 
   @Transactional(readOnly = true)
-  public long execute(final UUID academicYearId) {
-    return courseRepository.countByAcademicYearIdAndStatusNot(academicYearId, CourseStatus.CLOSED);
+  public long execute(final UUID institutionId, final UUID academicYearId) {
+    academicYearRepository
+        .findByIdAndInstitution_Id(academicYearId, institutionId)
+        .orElseThrow(AcademicYearNotFoundException::new);
+    return courseRepository.countByInstitutionIdAndAcademicYearIdAndStatusNot(
+        institutionId, academicYearId, CourseStatus.CLOSED);
   }
 }

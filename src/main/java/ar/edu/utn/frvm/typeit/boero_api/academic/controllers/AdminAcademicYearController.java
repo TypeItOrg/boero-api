@@ -18,6 +18,7 @@ import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -109,9 +110,9 @@ public class AdminAcademicYearController {
   }
 
   @GetMapping(value = "/{academicYearId}/courses/count", version = Version.V1)
-  public java.util.Map<String, Long> countCoursesForYear(
+  public Map<String, Long> countCoursesForYear(
       @PathVariable final UUID institutionId, @PathVariable final UUID academicYearId) {
-    final long count = countCoursesForYearUseCase.execute(academicYearId);
-    return java.util.Map.of("count", count);
+    final long count = countCoursesForYearUseCase.execute(institutionId, academicYearId);
+    return Map.of("count", count);
   }
 }

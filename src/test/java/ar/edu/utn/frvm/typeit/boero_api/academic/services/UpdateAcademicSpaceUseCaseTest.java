@@ -40,7 +40,7 @@ class UpdateAcademicSpaceUseCaseTest {
     final UUID institutionId = UUID.randomUUID();
     final UUID spaceId = UUID.randomUUID();
     final var institution = Institution.builder().id(institutionId).build();
-    given(academicSpaceRepository.findByIdAndInstitution_Id(spaceId, institutionId))
+    given(academicSpaceRepository.findByIdAndInstitution_IdForUpdate(spaceId, institutionId))
         .willReturn(Optional.of(existingSpace(institution)));
     given(
             academicSpaceRepository.existsByNormalizedNameAndTypeAndFormatAndIdNot(
@@ -65,7 +65,7 @@ class UpdateAcademicSpaceUseCaseTest {
     final UUID institutionId = UUID.randomUUID();
     final UUID spaceId = UUID.randomUUID();
     final var institution = Institution.builder().id(institutionId).build();
-    given(academicSpaceRepository.findByIdAndInstitution_Id(spaceId, institutionId))
+    given(academicSpaceRepository.findByIdAndInstitution_IdForUpdate(spaceId, institutionId))
         .willReturn(Optional.of(existingSpace(institution)));
     given(
             academicSpaceRepository.existsByNormalizedNameAndTypeAndFormatAndIdNot(

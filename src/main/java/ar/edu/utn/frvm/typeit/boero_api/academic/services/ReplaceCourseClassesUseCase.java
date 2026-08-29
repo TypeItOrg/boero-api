@@ -1,7 +1,9 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicIntegrityViolationTranslator;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.CourseNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.InvalidAcademicStateException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseResponse;
@@ -27,9 +29,8 @@ public class ReplaceCourseClassesUseCase {
         courseRepository
             .findByIdAndInstitution_IdForUpdate(courseId, institutionId)
             .orElseThrow(CourseNotFoundException::new);
-    if (course.getStatus() == ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus.CLOSED) {
-      throw new ar.edu.utn.frvm.typeit.boero_api.academic.exceptions
-          .InvalidAcademicStateException();
+    if (course.getStatus() == CourseStatus.CLOSED) {
+      throw new InvalidAcademicStateException();
     }
     try {
       deleteCurrentClasses(courseId);

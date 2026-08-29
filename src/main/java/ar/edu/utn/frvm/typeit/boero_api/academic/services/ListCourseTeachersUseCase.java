@@ -9,6 +9,7 @@ import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,22 +26,16 @@ public class ListCourseTeachersUseCase {
     final var localRole =
         roleRepository.findByScopeAndCodeAndInstitution_Id(
             RoleScope.INSTITUTION, SystemRoleCode.TEACHER.name(), institutionId);
-    final var teacherRoleId =
-        localRole
-            .map(role -> role.getId())
-            .orElseGet(
-                () ->
-                    roleRepository
-                        .findByScopeAndCodeAndInstitutionIsNull(
-                            RoleScope.INSTITUTION, SystemRoleCode.TEACHER.name())
-                        .map(role -> role.getId())
-                        .orElse(null));
-    if (teacherRoleId == null) {
-      return PaginatedResponse.from(org.springframework.data.domain.Page.empty());
+    if (localRole.isEmpty()) {
+      return PaginatedResponse.from(Page.empty());
     }
     return PaginatedResponse.from(
         personRepository
-            .search(institutionId, AcademicNameNormalizer.search(search), teacherRoleId, pageable)
+            .search(
+                institutionId,
+                AcademicNameNormalizer.search(search),
+                localRole.orElseThrow().getId(),
+                pageable)
             .map(TeacherOptionResponse::from));
   }
 }
