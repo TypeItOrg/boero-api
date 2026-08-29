@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.entities;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.InvalidAcademicStateException;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
@@ -80,7 +81,7 @@ public class Course extends SoftDeletable {
     if (status == CourseStatus.CLOSED) {
       throw new InvalidAcademicStateException();
     }
-    ensureAcademicYearActive();
+    ensureParentsActive();
     status = CourseStatus.ACTIVE;
   }
 
@@ -124,7 +125,7 @@ public class Course extends SoftDeletable {
       throw new InvalidAcademicStateException();
     }
     if (target == CourseStatus.ACTIVE) {
-      ensureAcademicYearActive();
+      ensureParentsActive();
     }
     status = target;
   }
@@ -145,7 +146,7 @@ public class Course extends SoftDeletable {
       throw new InvalidAcademicStateException();
     }
     if (isDeleted()) {
-      ensureAcademicYearActive();
+      ensureParentsActive();
     }
     return super.restore();
   }
@@ -154,5 +155,12 @@ public class Course extends SoftDeletable {
     if (academicYear.getStatus() != AcademicYearStatus.ACTIVE) {
       throw new InvalidAcademicStateException();
     }
+  }
+
+  private void ensureParentsActive() {
+    if (studyPlan.getStatus() != StudyPlanStatus.ACTIVE) {
+      throw new InvalidAcademicStateException();
+    }
+    ensureAcademicYearActive();
   }
 }

@@ -74,9 +74,19 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
       @Param("id") UUID id, @Param("institutionId") UUID institutionId);
 
   @Query(
-      "SELECT course.academicYear.id FROM Course course WHERE course.id = :courseId AND course.institution.id = :institutionId")
-  Optional<UUID> findAcademicYearIdByIdAndInstitution_Id(
+      """
+      SELECT course.academicYear.id AS academicYearId, course.studyPlan.id AS studyPlanId
+      FROM Course course
+      WHERE course.id = :courseId AND course.institution.id = :institutionId
+      """)
+  Optional<CourseAcademicContext> findAcademicContextByIdAndInstitution_Id(
       @Param("courseId") UUID courseId, @Param("institutionId") UUID institutionId);
+
+  interface CourseAcademicContext {
+    UUID getAcademicYearId();
+
+    UUID getStudyPlanId();
+  }
 
   @Query(
       value =

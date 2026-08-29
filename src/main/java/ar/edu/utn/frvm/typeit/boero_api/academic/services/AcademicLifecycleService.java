@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicLifecycleEvent;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicLifecycleAction;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicLifecycleResource;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
@@ -195,7 +196,7 @@ public class AcademicLifecycleService {
   @Transactional
   public void deleteCourse(
       final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
-    lockCourseAcademicYear(institutionId, id);
+    lockCourseParents(institutionId, id);
     final var course =
         courseRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
@@ -213,30 +214,38 @@ public class AcademicLifecycleService {
   @Transactional
   public void restoreCourse(
       final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
-    final var academicYear = lockCourseAcademicYear(institutionId, id);
+    final var parents = lockCourseParents(institutionId, id);
     final var course =
         courseRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
             .orElseThrow(CourseNotFoundException::new);
     final boolean parentUnavailable =
         course.isDeleted()
-            && (course.getStudyPlan().getStatus() != StudyPlanStatus.ACTIVE
-                || academicYear.getStatus() != AcademicYearStatus.ACTIVE);
+            && (parents.studyPlan().getStatus() != StudyPlanStatus.ACTIVE
+                || parents.academicYear().getStatus() != AcademicYearStatus.ACTIVE);
     if (parentUnavailable) {
       throw new AcademicConflictException(AcademicMessages.RESTORE_PARENT_UNAVAILABLE);
     }
     restore(course, course.getInstitution(), AcademicLifecycleResource.COURSE, id, request);
   }
 
-  private AcademicYear lockCourseAcademicYear(final UUID institutionId, final UUID courseId) {
-    final var academicYearId =
+  private CourseLifecycleParents lockCourseParents(final UUID institutionId, final UUID courseId) {
+    final var context =
         courseRepository
-            .findAcademicYearIdByIdAndInstitution_Id(courseId, institutionId)
+            .findAcademicContextByIdAndInstitution_Id(courseId, institutionId)
             .orElseThrow(CourseNotFoundException::new);
-    return academicYearRepository
-        .findByIdAndInstitution_IdForUpdate(academicYearId, institutionId)
-        .orElseThrow(AcademicYearNotFoundException::new);
+    final var studyPlan =
+        studyPlanRepository
+            .findByIdAndInstitution_IdForLifecycle(context.getStudyPlanId(), institutionId)
+            .orElseThrow(StudyPlanNotFoundException::new);
+    final var academicYear =
+        academicYearRepository
+            .findByIdAndInstitution_IdForUpdate(context.getAcademicYearId(), institutionId)
+            .orElseThrow(AcademicYearNotFoundException::new);
+    return new CourseLifecycleParents(studyPlan, academicYear);
   }
+
+  private record CourseLifecycleParents(StudyPlan studyPlan, AcademicYear academicYear) {}
 
   private void restore(
       final SoftDeletable resource,

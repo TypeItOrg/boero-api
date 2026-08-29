@@ -3,7 +3,10 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.entities;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.InvalidAcademicStateException;
@@ -55,6 +58,35 @@ class AcademicDomainTest {
             () -> plan.updateDraft("Plan nuevo", plan.getEffectiveFrom(), plan.getEffectiveTo()))
         .isInstanceOf(InvalidAcademicStateException.class);
     assertThat(plan.getStatus()).isEqualTo(StudyPlanStatus.ACTIVE);
+  }
+
+  @Test
+  @DisplayName("Should reject course activation when its study plan is inactive")
+  void courseRejectsActivationWhenStudyPlanIsInactive() {
+    final var institution = institution();
+    final var path = TrainingPath.create(institution, "Profesorado", null);
+    final var plan = StudyPlan.create(institution, path, "Plan 2026", null, null);
+    plan.activate();
+    plan.deactivate(LocalDate.of(2026, 12, 31));
+    final var academicYear =
+        AcademicYear.create(
+            institution,
+            currentYear(),
+            LocalDate.of(currentYear(), 3, 1),
+            LocalDate.of(currentYear(), 12, 15));
+    academicYear.transitionTo(AcademicYearStatus.ACTIVE);
+    final var academicSpace =
+        AcademicSpace.create(
+            institution,
+            "Programación",
+            null,
+            AcademicSpaceType.SUBJECT,
+            AcademicSpaceFormat.INDIVIDUAL);
+    final var course = Course.create(institution, plan, academicSpace, academicYear);
+    course.deactivate();
+
+    assertThatThrownBy(() -> course.updateStatus(CourseStatus.ACTIVE))
+        .isInstanceOf(InvalidAcademicStateException.class);
   }
 
   @Test
