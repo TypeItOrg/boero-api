@@ -11,6 +11,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.ApprovalMode;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequirementType;
+import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.TrainingPathResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsSessionActiveUseCase;
@@ -27,6 +30,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicatio
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentApplicationDraftRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CreateEnrollmentApplicationUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.GetEnrollmentApplicationUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationStudyPlanSpacesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationTrainingPathsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.UpdateEnrollmentApplicationDraftUseCase;
 import java.time.LocalDateTime;
@@ -62,6 +66,10 @@ class EnrollmentApplicationControllerWebMvcTest {
       UUID.fromString("55555555-5555-5555-5555-555555555555");
   private static final UUID TRAINING_PATH_ID =
       UUID.fromString("66666666-6666-6666-6666-666666666666");
+  private static final UUID STUDY_PLAN_SPACE_ID =
+      UUID.fromString("77777777-7777-7777-7777-777777777777");
+  private static final UUID ACADEMIC_SPACE_ID =
+      UUID.fromString("88888888-8888-8888-8888-888888888888");
 
   @Autowired private MockMvc mockMvc;
 
@@ -82,6 +90,10 @@ class EnrollmentApplicationControllerWebMvcTest {
   @MockitoBean
   private ListEnrollmentApplicationTrainingPathsUseCase
       listEnrollmentApplicationTrainingPathsUseCase;
+
+  @MockitoBean
+  private ListEnrollmentApplicationStudyPlanSpacesUseCase
+      listEnrollmentApplicationStudyPlanSpacesUseCase;
 
   @Test
   @DisplayName("Should create an enrollment application")
@@ -168,6 +180,36 @@ class EnrollmentApplicationControllerWebMvcTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].id").value(TRAINING_PATH_ID.toString()))
         .andExpect(jsonPath("$[0].name").value("Trayecto A"));
+  }
+
+  @Test
+  @DisplayName("Should list available study plan spaces for the applicant application")
+  void listsStudyPlanSpaces() throws Exception {
+    final var authentication =
+        new TestingAuthenticationToken(
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+    when(listEnrollmentApplicationStudyPlanSpacesUseCase.execute(any(), eq(APPLICATION_ID)))
+        .thenReturn(
+            List.of(
+                new StudyPlanSpaceResponse(
+                    STUDY_PLAN_SPACE_ID,
+                    STUDY_PLAN_ID,
+                    ACADEMIC_SPACE_ID,
+                    "Armonia I",
+                    null,
+                    null,
+                    RequirementType.REQUIRED,
+                    1,
+                    ApprovalMode.FINAL_EXAM)));
+
+    mockMvc
+        .perform(
+            get("/api/v1/enrollment-applications/{applicationId}/study-plan-spaces", APPLICATION_ID)
+                .principal(authentication))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").value(STUDY_PLAN_SPACE_ID.toString()))
+        .andExpect(jsonPath("$[0].academicSpaceId").value(ACADEMIC_SPACE_ID.toString()))
+        .andExpect(jsonPath("$[0].academicSpaceName").value("Armonia I"));
   }
 
   private static EnrollmentApplicationResponse response(final ObjectNode data) {

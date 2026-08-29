@@ -8,11 +8,13 @@ import static org.mockito.Mockito.verify;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotEditableException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentApplicationDraftRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
@@ -37,6 +39,7 @@ class UpdateEnrollmentApplicationDraftUseCaseTest {
   @Mock private PersonRoleAssignmentRepository personRoleAssignmentRepository;
   @Mock private EnrollmentApplicationRepository enrollmentApplicationRepository;
   @Mock private TrainingPathRepository trainingPathRepository;
+  @Mock private StudyPlanSpaceRepository studyPlanSpaceRepository;
 
   @Test
   @DisplayName("Should reject draft updates when the application is not editable")
@@ -87,11 +90,34 @@ class UpdateEnrollmentApplicationDraftUseCaseTest {
     verify(enrollmentApplicationRepository).save(application);
   }
 
+  @Test
+  @DisplayName("Should reject draft updates when selected study plan spaces are invalid")
+  void rejectsInvalidSelectedStudyPlanSpaces() {
+    final var application = application();
+    final var principal = principal(application);
+    final var useCase = useCase();
+    final var data = OBJECT_MAPPER.createObjectNode();
+    data.putObject("academicSpaceSelection").putArray("studyPlanSpaceIds").add("not-a-uuid");
+    givenApplicant(principal, application.getPerson());
+    given(
+            enrollmentApplicationRepository.findByIdAndPerson_IdAndInstitution_IdAndDeletedAtIsNull(
+                application.getId(), principal.personId(), principal.institutionId()))
+        .willReturn(Optional.of(application));
+
+    assertThatThrownBy(
+            () ->
+                useCase.execute(
+                    principal,
+                    application.getId(),
+                    new UpdateEnrollmentApplicationDraftRequest(data)))
+        .isInstanceOf(EnrollmentValidationException.class);
+  }
+
   private UpdateEnrollmentApplicationDraftUseCase useCase() {
     return new UpdateEnrollmentApplicationDraftUseCase(
         new ApplicantEnrollmentGuard(personRepository, personRoleAssignmentRepository),
         enrollmentApplicationRepository,
-        new EnrollmentDraftDataValidator(trainingPathRepository));
+        new EnrollmentDraftDataValidator(trainingPathRepository, studyPlanSpaceRepository));
   }
 
   private void givenApplicant(final JwtAuthenticatedUser principal, final Person person) {

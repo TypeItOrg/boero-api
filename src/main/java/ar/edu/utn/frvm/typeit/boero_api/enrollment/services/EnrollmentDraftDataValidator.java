@@ -1,10 +1,16 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.TrainingPathNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -15,8 +21,10 @@ import tools.jackson.databind.JsonNode;
 public class EnrollmentDraftDataValidator {
 
   private final TrainingPathRepository trainingPathRepository;
+  private final StudyPlanSpaceRepository studyPlanSpaceRepository;
 
-  public void validate(final UUID institutionId, final JsonNode data) {
+  public void validate(
+      final UUID institutionId, final EnrollmentApplication application, final JsonNode data) {
     if (data == null) {
       throw new EnrollmentValidationException(
           EnrollmentMessages.ENROLLMENT_APPLICATION_DATA_REQUIRED,
@@ -29,6 +37,7 @@ public class EnrollmentDraftDataValidator {
     }
     final JsonNode trainingPathNode = data.path("careerSelection").path("trainingPathId");
     if (trainingPathNode.isMissingNode() || trainingPathNode.isNull()) {
+      validateStudyPlanSpaceSelection(institutionId, application, data);
       return;
     }
     final UUID trainingPathId;
@@ -44,5 +53,58 @@ public class EnrollmentDraftDataValidator {
     trainingPathRepository
         .findByIdAndInstitution_IdAndActiveTrueAndDeletedAtIsNull(trainingPathId, institutionId)
         .orElseThrow(TrainingPathNotFoundException::new);
+    validateStudyPlanSpaceSelection(institutionId, application, data);
+  }
+
+  private void validateStudyPlanSpaceSelection(
+      final UUID institutionId, final EnrollmentApplication application, final JsonNode data) {
+    final JsonNode studyPlanSpaceIdsNode =
+        data.path("academicSpaceSelection").path("studyPlanSpaceIds");
+    if (studyPlanSpaceIdsNode.isMissingNode() || studyPlanSpaceIdsNode.isNull()) {
+      return;
+    }
+    if (!studyPlanSpaceIdsNode.isArray()) {
+      throw invalidStudyPlanSpaces();
+    }
+    final List<UUID> studyPlanSpaceIds = new ArrayList<>();
+    final Set<UUID> uniqueIds = new HashSet<>();
+    for (final JsonNode studyPlanSpaceIdNode : studyPlanSpaceIdsNode) {
+      if (!studyPlanSpaceIdNode.isTextual()) {
+        throw invalidStudyPlanSpaces();
+      }
+      final UUID studyPlanSpaceId;
+      try {
+        studyPlanSpaceId = UUID.fromString(studyPlanSpaceIdNode.asText());
+      } catch (IllegalArgumentException exception) {
+        throw invalidStudyPlanSpaces();
+      }
+      if (!uniqueIds.add(studyPlanSpaceId)) {
+        throw invalidStudyPlanSpaces();
+      }
+      studyPlanSpaceIds.add(studyPlanSpaceId);
+    }
+    if (studyPlanSpaceIds.isEmpty()) {
+      return;
+    }
+    final int eligibleCount =
+        studyPlanSpaceRepository
+            .findEligibleByIdInAndStudyPlanId(
+                institutionId, application.getStudyPlan().getId(), studyPlanSpaceIds)
+            .size();
+    if (eligibleCount != studyPlanSpaceIds.size()) {
+      throw new EnrollmentValidationException(
+          EnrollmentMessages.ENROLLMENT_APPLICATION_STUDY_PLAN_SPACE_INVALID,
+          Map.of(
+              "data.academicSpaceSelection.studyPlanSpaceIds",
+              EnrollmentMessages.ENROLLMENT_APPLICATION_STUDY_PLAN_SPACE_INVALID));
+    }
+  }
+
+  private EnrollmentValidationException invalidStudyPlanSpaces() {
+    return new EnrollmentValidationException(
+        EnrollmentMessages.ENROLLMENT_APPLICATION_STUDY_PLAN_SPACES_INVALID,
+        Map.of(
+            "data.academicSpaceSelection.studyPlanSpaceIds",
+            EnrollmentMessages.ENROLLMENT_APPLICATION_STUDY_PLAN_SPACES_INVALID));
   }
 }
