@@ -74,6 +74,11 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
       @Param("id") UUID id, @Param("institutionId") UUID institutionId);
 
   @Query(
+      "SELECT course.academicYear.id FROM Course course WHERE course.id = :courseId AND course.institution.id = :institutionId")
+  Optional<UUID> findAcademicYearIdByIdAndInstitution_Id(
+      @Param("courseId") UUID courseId, @Param("institutionId") UUID institutionId);
+
+  @Query(
       value =
           "SELECT EXISTS (SELECT 1 FROM courses WHERE institution_id = :institutionId AND academic_space_id = :academicSpaceId AND academic_year_id = :academicYearId AND deleted_at IS NULL)",
       nativeQuery = true)
@@ -102,6 +107,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
 
   List<Course> findByAcademicYear_IdAndInstitution_Id(UUID academicYearId, UUID institutionId);
 
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
   List<Course> findByAcademicYear_IdAndInstitution_IdAndDeletedAtIsNull(
       UUID academicYearId, UUID institutionId);
 

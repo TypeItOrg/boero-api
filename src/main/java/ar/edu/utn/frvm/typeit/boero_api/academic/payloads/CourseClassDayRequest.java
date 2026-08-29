@@ -11,4 +11,4 @@ public record CourseClassDayRequest(
     @NotNull CourseDay dayOfWeek,
     @Positive Integer capacity,
     @Positive Integer periodDurationMinutes,
-    @NotEmpty @Valid List<CourseClassScheduleRequest> schedules) {}
+    @NotEmpty @Valid List<@NotNull @Valid CourseClassScheduleRequest> schedules) {}

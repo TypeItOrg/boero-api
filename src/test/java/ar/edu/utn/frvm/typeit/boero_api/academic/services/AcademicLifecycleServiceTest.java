@@ -7,9 +7,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicLifecycleEvent;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Course;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicLifecycleAction;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicLifecycleResource;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicConflictException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicLifecycleEventRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicSpaceRepository;
@@ -19,8 +27,11 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.InstrumentRepository
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicLifecycleRequest;
+import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicYearStatusRequest;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.AccountType;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -96,5 +107,57 @@ class AcademicLifecycleServiceTest {
 
     assertThat(path.isDeleted()).isFalse();
     verifyNoInteractions(eventRepository, actorResolver);
+  }
+
+  @Test
+  void rejectsRestoringDeletedCourseAfterDeleteAndAcademicYearClosure() {
+    final var institutionId = UUID.randomUUID();
+    final var courseId = UUID.randomUUID();
+    final var academicYearId = UUID.randomUUID();
+    final var institution = Institution.builder().id(institutionId).build();
+    final var academicYear =
+        AcademicYear.create(
+            institution, 2027, LocalDate.of(2027, 3, 1), LocalDate.of(2027, 12, 15));
+    academicYear.transitionTo(AcademicYearStatus.ACTIVE);
+    final var trainingPath = TrainingPath.create(institution, "Tecnicatura", null);
+    final var studyPlan = StudyPlan.create(institution, trainingPath, "Plan 2027", null, null);
+    studyPlan.activate();
+    final var academicSpace =
+        AcademicSpace.create(
+            institution,
+            "Programación",
+            null,
+            AcademicSpaceType.SUBJECT,
+            AcademicSpaceFormat.INDIVIDUAL);
+    final var course = Course.create(institution, studyPlan, academicSpace, academicYear);
+    course.deactivate();
+    final var lifecycleRequest = new AcademicLifecycleRequest("Prueba de ciclo");
+    given(courseRepository.findAcademicYearIdByIdAndInstitution_Id(courseId, institutionId))
+        .willReturn(Optional.of(academicYearId));
+    given(academicYearRepository.findByIdAndInstitution_IdForUpdate(academicYearId, institutionId))
+        .willReturn(Optional.of(academicYear));
+    given(courseRepository.findByIdAndInstitution_IdForLifecycle(courseId, institutionId))
+        .willReturn(Optional.of(course));
+    given(actorResolver.resolve())
+        .willReturn(new AcademicLifecycleActor(AccountType.INSTITUTION, UUID.randomUUID()));
+
+    service.deleteCourse(institutionId, courseId, lifecycleRequest);
+
+    given(
+            courseRepository.findByAcademicYear_IdAndInstitution_IdAndDeletedAtIsNull(
+                academicYearId, institutionId))
+        .willReturn(List.of());
+
+    new UpdateAcademicYearStatusUseCase(academicYearRepository, courseRepository)
+        .execute(
+            institutionId,
+            academicYearId,
+            new AcademicYearStatusRequest(AcademicYearStatus.CLOSED));
+
+    assertThatThrownBy(() -> service.restoreCourse(institutionId, courseId, null))
+        .isInstanceOf(AcademicConflictException.class);
+
+    assertThat(course.isDeleted()).isTrue();
+    assertThat(course.getStatus()).isEqualTo(CourseStatus.INACTIVE);
   }
 }
