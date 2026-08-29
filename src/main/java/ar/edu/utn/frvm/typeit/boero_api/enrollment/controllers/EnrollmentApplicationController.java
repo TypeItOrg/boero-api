@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.controllers;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
@@ -8,6 +9,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicatio
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentApplicationDraftRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CreateEnrollmentApplicationUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.GetEnrollmentApplicationUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationStudyPlanSpacesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationTrainingPathsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.UpdateEnrollmentApplicationDraftUseCase;
 import jakarta.validation.Valid;
@@ -36,6 +38,8 @@ public class EnrollmentApplicationController {
   private final UpdateEnrollmentApplicationDraftUseCase updateEnrollmentApplicationDraftUseCase;
   private final ListEnrollmentApplicationTrainingPathsUseCase
       listEnrollmentApplicationTrainingPathsUseCase;
+  private final ListEnrollmentApplicationStudyPlanSpacesUseCase
+      listEnrollmentApplicationStudyPlanSpacesUseCase;
 
   @PostMapping(version = Version.V1)
   @ResponseStatus(HttpStatus.CREATED)
@@ -68,6 +72,13 @@ public class EnrollmentApplicationController {
           final Authentication authentication, @PathVariable final UUID applicationId) {
     final var principal = principal(authentication);
     return listEnrollmentApplicationTrainingPathsUseCase.execute(principal, applicationId);
+  }
+
+  @GetMapping(value = "/{applicationId}/study-plan-spaces", version = Version.V1)
+  public List<StudyPlanSpaceResponse> listStudyPlanSpaces(
+      final Authentication authentication, @PathVariable final UUID applicationId) {
+    final var principal = principal(authentication);
+    return listEnrollmentApplicationStudyPlanSpacesUseCase.execute(principal, applicationId);
   }
 
   private JwtAuthenticatedUser principal(final Authentication authentication) {

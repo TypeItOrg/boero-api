@@ -12,6 +12,10 @@ public final class EnrollmentMessages {
       "Los datos del borrador deben ser un objeto JSON válido.";
   public static final String ENROLLMENT_APPLICATION_TRAINING_PATH_INVALID =
       "El trayecto formativo seleccionado no está habilitado para inscripción.";
+  public static final String ENROLLMENT_APPLICATION_STUDY_PLAN_SPACES_INVALID =
+      "Los espacios academicos seleccionados no son validos.";
+  public static final String ENROLLMENT_APPLICATION_STUDY_PLAN_SPACE_INVALID =
+      "Uno o mas espacios academicos seleccionados no estan habilitados para inscripcion.";
   public static final String ENROLLMENT_APPLICATION_APPLICANT_REQUIRED =
       "Solo un postulante puede operar sobre solicitudes de inscripción.";
 
