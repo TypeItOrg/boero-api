@@ -64,6 +64,10 @@ public class EnrollmentApplication extends SoftDeletable {
   @Column(name = "status", nullable = false, length = 20)
   private EnrollmentApplicationStatus status;
 
-  @OneToOne(mappedBy = "enrollmentApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+  @OneToOne(
+      mappedBy = "enrollmentApplication",
+      cascade = CascadeType.ALL,
+      fetch = FetchType.LAZY,
+      orphanRemoval = true)
   private ApplicantEducationBackground educationBackground;
 }

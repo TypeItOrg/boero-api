@@ -11,13 +11,11 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantEducationBackground;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.ApplicationNotEditableException;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentPeriodClosedException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.StartEnrollmentApplicationRequest;
@@ -72,19 +70,19 @@ class EnrollmentApplicationServiceTest {
   void startOrGetApplication_existingDraft() {
     Institution institution = org.mockito.Mockito.mock(Institution.class);
     when(institution.getId()).thenReturn(institutionId);
-    
+
     Person person = org.mockito.Mockito.mock(Person.class);
     when(person.getId()).thenReturn(personId);
     when(person.getFirstName()).thenReturn("Juan");
     when(person.getLastName()).thenReturn("Pérez");
     when(person.getDocumentNumber()).thenReturn("12345678");
-    
+
     StudyPlan studyPlan = org.mockito.Mockito.mock(StudyPlan.class);
     when(studyPlan.getId()).thenReturn(studyPlanId);
-    
+
     AcademicYear academicYear = org.mockito.Mockito.mock(AcademicYear.class);
     when(academicYear.getId()).thenReturn(academicYearId);
-    
+
     EnrollmentPeriod period = org.mockito.Mockito.mock(EnrollmentPeriod.class);
     when(period.getId()).thenReturn(periodId);
 
@@ -125,7 +123,10 @@ class EnrollmentApplicationServiceTest {
         .thenReturn(Optional.empty());
 
     when(periodRepository.findActivePeriod(
-            eq(institutionId), eq(academicYearId), eq(EnrollmentPeriodStatus.OPEN), any(LocalDateTime.class)))
+            eq(institutionId),
+            eq(academicYearId),
+            eq(EnrollmentPeriodStatus.OPEN),
+            any(LocalDateTime.class)))
         .thenReturn(Optional.empty());
 
     StartEnrollmentApplicationRequest request =
@@ -140,19 +141,19 @@ class EnrollmentApplicationServiceTest {
   void startOrGetApplication_createNewDraft() {
     Institution institution = org.mockito.Mockito.mock(Institution.class);
     when(institution.getId()).thenReturn(institutionId);
-    
+
     Person person = org.mockito.Mockito.mock(Person.class);
     when(person.getId()).thenReturn(personId);
     when(person.getFirstName()).thenReturn("Juan");
     when(person.getLastName()).thenReturn("Pérez");
     when(person.getDocumentNumber()).thenReturn("12345678");
-    
+
     StudyPlan studyPlan = org.mockito.Mockito.mock(StudyPlan.class);
     when(studyPlan.getId()).thenReturn(studyPlanId);
-    
+
     AcademicYear academicYear = org.mockito.Mockito.mock(AcademicYear.class);
     when(academicYear.getId()).thenReturn(academicYearId);
-    
+
     EnrollmentPeriod period = org.mockito.Mockito.mock(EnrollmentPeriod.class);
     when(period.getId()).thenReturn(periodId);
     when(period.getInstitution()).thenReturn(institution);
@@ -163,7 +164,10 @@ class EnrollmentApplicationServiceTest {
         .thenReturn(Optional.empty());
 
     when(periodRepository.findActivePeriod(
-            eq(institutionId), eq(academicYearId), eq(EnrollmentPeriodStatus.OPEN), any(LocalDateTime.class)))
+            eq(institutionId),
+            eq(academicYearId),
+            eq(EnrollmentPeriodStatus.OPEN),
+            any(LocalDateTime.class)))
         .thenReturn(Optional.of(period));
 
     when(personRepository.findById(personId)).thenReturn(Optional.of(person));
@@ -201,16 +205,16 @@ class EnrollmentApplicationServiceTest {
     when(person.getFirstName()).thenReturn("Juan");
     when(person.getLastName()).thenReturn("Pérez");
     when(person.getDocumentNumber()).thenReturn("12345678");
-    
+
     Institution institution = org.mockito.Mockito.mock(Institution.class);
     when(institution.getId()).thenReturn(institutionId);
-    
+
     StudyPlan studyPlan = org.mockito.Mockito.mock(StudyPlan.class);
     when(studyPlan.getId()).thenReturn(studyPlanId);
-    
+
     AcademicYear academicYear = org.mockito.Mockito.mock(AcademicYear.class);
     when(academicYear.getId()).thenReturn(academicYearId);
-    
+
     EnrollmentPeriod period = org.mockito.Mockito.mock(EnrollmentPeriod.class);
     when(period.getId()).thenReturn(periodId);
 
@@ -232,9 +236,7 @@ class EnrollmentApplicationServiceTest {
         new UpdateEnrollmentDraftRequest(
             Map.of(
                 "personalData", Map.of("firstName", "Mariano"),
-                "academicBackground", Map.of("secondarySchool", "Colegio Nacional")
-            )
-        );
+                "academicBackground", Map.of("secondarySchool", "Colegio Nacional")));
 
     EnrollmentApplicationResponse response = service.updateDraft(personId, applicationId, request);
 
@@ -247,7 +249,7 @@ class EnrollmentApplicationServiceTest {
   void updateDraft_notEditable() {
     Person person = org.mockito.Mockito.mock(Person.class);
     when(person.getId()).thenReturn(personId);
-    
+
     EnrollmentApplication application =
         EnrollmentApplication.builder()
             .applicantPerson(person)
