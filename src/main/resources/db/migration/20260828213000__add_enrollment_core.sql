@@ -42,6 +42,7 @@ CREATE TABLE applicant_education_backgrounds (
     secondary_school varchar(255),
     created_at timestamp(6) NOT NULL,
     updated_at timestamp(6) NOT NULL,
+    deleted_at timestamp(6),
     CONSTRAINT applicant_education_bg_pkey PRIMARY KEY (applicant_education_background_id),
     CONSTRAINT applicant_education_bg_app_fk FOREIGN KEY (enrollment_application_id) REFERENCES enrollment_applications (enrollment_application_id)
 );

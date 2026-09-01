@@ -1,13 +1,13 @@
 package ar.edu.utn.frvm.typeit.boero_api.security.handlers;
 
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ExceptionPayload;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
 @RequiredArgsConstructor

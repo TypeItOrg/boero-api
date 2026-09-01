@@ -44,11 +44,12 @@ public class EnrollmentApplicationService {
 
     // 1. Buscar borrador existente activo
     Optional<EnrollmentApplication> existingDraft =
-        applicationRepository.findByApplicantPersonIdAndStudyPlanIdAndAcademicYearIdAndStatusAndDeletedAtIsNull(
-            personId,
-            request.getStudyPlanId(),
-            request.getAcademicYearId(),
-            EnrollmentApplicationStatus.DRAFT);
+        applicationRepository
+            .findByApplicantPersonIdAndStudyPlanIdAndAcademicYearIdAndStatusAndDeletedAtIsNull(
+                personId,
+                request.getStudyPlanId(),
+                request.getAcademicYearId(),
+                EnrollmentApplicationStatus.DRAFT);
 
     if (existingDraft.isPresent()) {
       return toResponse(existingDraft.get());
@@ -108,7 +109,8 @@ public class EnrollmentApplicationService {
 
     if (request.getData() != null) {
       // 1. Mapear datos personales a la entidad Person
-      Map<String, Object> personalData = (Map<String, Object>) request.getData().get("personalData");
+      Map<String, Object> personalData =
+          (Map<String, Object>) request.getData().get("personalData");
       if (personalData != null) {
         Person applicant = application.getApplicantPerson();
         if (personalData.containsKey("firstName")) {
@@ -124,7 +126,8 @@ public class EnrollmentApplicationService {
       }
 
       // 2. Mapear datos académicos a la entidad relacionada
-      Map<String, Object> academicBg = (Map<String, Object>) request.getData().get("academicBackground");
+      Map<String, Object> academicBg =
+          (Map<String, Object>) request.getData().get("academicBackground");
       if (academicBg != null) {
         ApplicantEducationBackground bg = application.getEducationBackground();
         if (bg == null) {
