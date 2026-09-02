@@ -15,6 +15,7 @@ public interface EnrollmentApplicationRepository
       UUID id, UUID personId, UUID institutionId);
 
   @EntityGraph(attributePaths = {"person", "institution", "studyPlan", "academicYear"})
-  List<EnrollmentApplication> findByPerson_IdAndInstitution_IdAndDeletedAtIsNullOrderByCreatedAtDesc(
-      UUID personId, UUID institutionId);
+  List<EnrollmentApplication>
+      findByPerson_IdAndInstitution_IdAndDeletedAtIsNullOrderByCreatedAtDesc(
+          UUID personId, UUID institutionId);
 }

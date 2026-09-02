@@ -1,16 +1,24 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicLevel;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Instrument;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpaceInstrument;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicConflictException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicIntegrityViolationTranslator;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicSpaceNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicLevelRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicSpaceRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.InstrumentRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceInstrumentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreateStudyPlanSpaceRequest;
+import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceInstrumentOptionResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceResponse;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -23,6 +31,8 @@ public class CreateStudyPlanSpaceUseCase {
   private final StudyPlanSpaceRepository studyPlanSpaceRepository;
   private final AcademicSpaceRepository academicSpaceRepository;
   private final AcademicLevelRepository academicLevelRepository;
+  private final InstrumentRepository instrumentRepository;
+  private final StudyPlanSpaceInstrumentRepository studyPlanSpaceInstrumentRepository;
   private final StudyPlanDraftGuard studyPlanDraftGuard;
 
   @Transactional
@@ -35,6 +45,7 @@ public class CreateStudyPlanSpaceUseCase {
                 request.academicSpaceId(), institutionId)
             .orElseThrow(AcademicSpaceNotFoundException::new);
     final var level = resolveLevel(studyPlanId, request.academicLevelId());
+    final var instruments = resolveInstruments(institutionId, request.instrumentIds());
     try {
       final var saved =
           studyPlanSpaceRepository.save(
@@ -46,8 +57,9 @@ public class CreateStudyPlanSpaceUseCase {
                   request.requirementType(),
                   request.displayOrder(),
                   request.approvalMode()));
+      saveInstrumentRelations(saved, instruments);
       studyPlanSpaceRepository.flush();
-      return StudyPlanSpaceResponse.from(saved);
+      return StudyPlanSpaceResponse.from(saved, instrumentOptions(instruments));
     } catch (DataIntegrityViolationException exception) {
       throw AcademicIntegrityViolationTranslator.translate(exception);
     }
@@ -60,5 +72,48 @@ public class CreateStudyPlanSpaceUseCase {
     return academicLevelRepository
         .findByIdAndStudyPlan_Id(academicLevelId, studyPlanId)
         .orElseThrow(() -> new AcademicConflictException(AcademicMessages.INVALID_RELATIONSHIP));
+  }
+
+  private List<Instrument> resolveInstruments(
+      final UUID institutionId, final List<UUID> instrumentIds) {
+    if (instrumentIds == null || instrumentIds.isEmpty()) {
+      return List.of();
+    }
+
+    final var uniqueIds = new LinkedHashSet<>(instrumentIds);
+    if (uniqueIds.size() != instrumentIds.size()) {
+      throw new AcademicConflictException(AcademicMessages.INVALID_RELATIONSHIP);
+    }
+
+    final List<Instrument> instruments = new ArrayList<>();
+    for (final UUID instrumentId : uniqueIds) {
+      final var instrument =
+          instrumentRepository
+              .findByIdAndInstitution_Id(instrumentId, institutionId)
+              .filter(Instrument::isActive)
+              .orElseThrow(
+                  () -> new AcademicConflictException(AcademicMessages.INVALID_RELATIONSHIP));
+      instruments.add(instrument);
+    }
+    return instruments;
+  }
+
+  private void saveInstrumentRelations(
+      final StudyPlanSpace studyPlanSpace, final List<Instrument> instruments) {
+    for (final Instrument instrument : instruments) {
+      studyPlanSpaceInstrumentRepository.save(
+          StudyPlanSpaceInstrument.create(
+              studyPlanSpace.getInstitution(), studyPlanSpace, instrument));
+    }
+  }
+
+  private List<StudyPlanSpaceInstrumentOptionResponse> instrumentOptions(
+      final List<Instrument> instruments) {
+    return instruments.stream()
+        .map(
+            instrument ->
+                new StudyPlanSpaceInstrumentOptionResponse(
+                    instrument.getId(), instrument.getName()))
+        .toList();
   }
 }

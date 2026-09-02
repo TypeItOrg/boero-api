@@ -4,6 +4,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.ApprovalMode;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequirementType;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
 import java.util.UUID;
 
 @Schema(
@@ -16,7 +17,9 @@ import java.util.UUID;
       "academicLevelName",
       "requirementType",
       "displayOrder",
-      "approvalMode"
+      "approvalMode",
+      "requiresInstrument",
+      "allowedInstruments"
     })
 public record StudyPlanSpaceResponse(
     UUID id,
@@ -27,9 +30,17 @@ public record StudyPlanSpaceResponse(
     @Schema(nullable = true) String academicLevelName,
     RequirementType requirementType,
     int displayOrder,
-    ApprovalMode approvalMode) {
+    ApprovalMode approvalMode,
+    boolean requiresInstrument,
+    List<StudyPlanSpaceInstrumentOptionResponse> allowedInstruments) {
 
   public static StudyPlanSpaceResponse from(final StudyPlanSpace space) {
+    return from(space, List.of());
+  }
+
+  public static StudyPlanSpaceResponse from(
+      final StudyPlanSpace space,
+      final List<StudyPlanSpaceInstrumentOptionResponse> allowedInstruments) {
     final var level = space.getAcademicLevel();
     return new StudyPlanSpaceResponse(
         space.getId(),
@@ -40,6 +51,8 @@ public record StudyPlanSpaceResponse(
         level == null ? null : level.getName(),
         space.getRequirementType(),
         space.getDisplayOrder(),
-        space.getApprovalMode());
+        space.getApprovalMode(),
+        !allowedInstruments.isEmpty(),
+        allowedInstruments);
   }
 }

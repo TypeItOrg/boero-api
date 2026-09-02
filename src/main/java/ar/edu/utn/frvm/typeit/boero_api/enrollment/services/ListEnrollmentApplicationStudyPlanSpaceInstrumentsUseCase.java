@@ -3,11 +3,14 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceInstrumentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceInstrumentOptionResponse;
-import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationRepository;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentStudyPlanSpaceInstrumentOptionsResponse;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class ListEnrollmentApplicationStudyPlanSpacesUseCase {
+public class ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase {
 
   private final ApplicantEnrollmentGuard applicantEnrollmentGuard;
   private final EnrollmentApplicationRepository enrollmentApplicationRepository;
@@ -24,8 +27,8 @@ public class ListEnrollmentApplicationStudyPlanSpacesUseCase {
   private final StudyPlanSpaceInstrumentRepository studyPlanSpaceInstrumentRepository;
 
   @Transactional(readOnly = true)
-  public List<StudyPlanSpaceResponse> execute(
-      final JwtAuthenticatedUser principal, final UUID applicationId) {
+  public EnrollmentStudyPlanSpaceInstrumentOptionsResponse execute(
+      final JwtAuthenticatedUser principal, final UUID applicationId, final UUID studyPlanSpaceId) {
     applicantEnrollmentGuard.requireApplicant(principal);
     final var application =
         enrollmentApplicationRepository
@@ -34,32 +37,27 @@ public class ListEnrollmentApplicationStudyPlanSpacesUseCase {
             .orElseThrow(EnrollmentApplicationNotFoundException::new);
     final var effectiveStudyPlan =
         enrollmentEffectiveStudyPlanResolver.resolve(principal.institutionId(), application);
-    final var studyPlanSpaces =
-        studyPlanSpaceRepository.findEligibleByStudyPlanId(
-            principal.institutionId(), effectiveStudyPlan.getId());
-    final var allowedInstrumentsByStudyPlanSpaceId =
-        studyPlanSpaceInstrumentRepository
-            .findActiveByStudyPlanSpaceIds(
-                principal.institutionId(),
-                studyPlanSpaces.stream().map(space -> space.getId()).toList())
-            .stream()
-            .collect(
-                java.util.stream.Collectors.groupingBy(
-                    relation -> relation.getStudyPlanSpace().getId(),
-                    java.util.stream.Collectors.mapping(
-                        relation ->
-                            new StudyPlanSpaceInstrumentOptionResponse(
-                                relation.getInstrument().getId(),
-                                relation.getInstrument().getName()),
-                        java.util.stream.Collectors.toList())));
-
-    return studyPlanSpaces.stream()
-        .map(
-            studyPlanSpace ->
-                StudyPlanSpaceResponse.from(
-                    studyPlanSpace,
-                    allowedInstrumentsByStudyPlanSpaceId.getOrDefault(
-                        studyPlanSpace.getId(), List.of())))
-        .toList();
+    final var eligibleSpaces =
+        studyPlanSpaceRepository.findEligibleByIdInAndStudyPlanId(
+            principal.institutionId(), effectiveStudyPlan.getId(), List.of(studyPlanSpaceId));
+    if (eligibleSpaces.isEmpty()) {
+      throw new EnrollmentValidationException(
+          EnrollmentMessages.ENROLLMENT_APPLICATION_STUDY_PLAN_SPACE_INVALID,
+          Map.of(
+              "studyPlanSpaceId",
+              EnrollmentMessages.ENROLLMENT_APPLICATION_STUDY_PLAN_SPACE_INVALID));
+    }
+    final var instruments =
+        studyPlanSpaceInstrumentRepository.findActiveByStudyPlanSpaceId(
+            principal.institutionId(), studyPlanSpaceId);
+    final var options =
+        instruments.stream()
+            .map(
+                relation ->
+                    new StudyPlanSpaceInstrumentOptionResponse(
+                        relation.getInstrument().getId(), relation.getInstrument().getName()))
+            .toList();
+    return new EnrollmentStudyPlanSpaceInstrumentOptionsResponse(
+        studyPlanSpaceId, !options.isEmpty(), options);
   }
 }
