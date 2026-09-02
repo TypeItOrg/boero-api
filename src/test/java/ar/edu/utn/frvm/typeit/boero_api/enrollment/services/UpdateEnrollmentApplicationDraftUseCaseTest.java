@@ -8,6 +8,8 @@ import static org.mockito.Mockito.verify;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
@@ -21,6 +23,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -39,6 +42,7 @@ class UpdateEnrollmentApplicationDraftUseCaseTest {
   @Mock private PersonRoleAssignmentRepository personRoleAssignmentRepository;
   @Mock private EnrollmentApplicationRepository enrollmentApplicationRepository;
   @Mock private TrainingPathRepository trainingPathRepository;
+  @Mock private StudyPlanRepository studyPlanRepository;
   @Mock private StudyPlanSpaceRepository studyPlanSpaceRepository;
 
   @Test
@@ -83,6 +87,13 @@ class UpdateEnrollmentApplicationDraftUseCaseTest {
             trainingPathRepository.findByIdAndInstitution_IdAndActiveTrueAndDeletedAtIsNull(
                 trainingPathId, principal.institutionId()))
         .willReturn(Optional.of(trainingPath));
+    given(
+            studyPlanRepository.findActiveByTrainingPathIdAndInstitutionIdValidOn(
+                trainingPathId,
+                principal.institutionId(),
+                StudyPlanStatus.ACTIVE,
+                application.getAcademicYear().getStartDate()))
+        .willReturn(List.of(application.getStudyPlan()));
     given(enrollmentApplicationRepository.save(application)).willReturn(application);
 
     useCase.execute(principal, application.getId(), request);
@@ -117,7 +128,8 @@ class UpdateEnrollmentApplicationDraftUseCaseTest {
     return new UpdateEnrollmentApplicationDraftUseCase(
         new ApplicantEnrollmentGuard(personRepository, personRoleAssignmentRepository),
         enrollmentApplicationRepository,
-        new EnrollmentDraftDataValidator(trainingPathRepository, studyPlanSpaceRepository));
+        new EnrollmentDraftDataValidator(
+            trainingPathRepository, studyPlanRepository, studyPlanSpaceRepository));
   }
 
   private void givenApplicant(final JwtAuthenticatedUser principal, final Person person) {

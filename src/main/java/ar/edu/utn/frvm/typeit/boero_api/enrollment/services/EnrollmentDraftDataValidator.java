@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.TrainingPathNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
@@ -21,6 +22,7 @@ import tools.jackson.databind.JsonNode;
 public class EnrollmentDraftDataValidator {
 
   private final TrainingPathRepository trainingPathRepository;
+  private final StudyPlanRepository studyPlanRepository;
   private final StudyPlanSpaceRepository studyPlanSpaceRepository;
 
   public void validate(
@@ -53,11 +55,28 @@ public class EnrollmentDraftDataValidator {
     trainingPathRepository
         .findByIdAndInstitution_IdAndActiveTrueAndDeletedAtIsNull(trainingPathId, institutionId)
         .orElseThrow(TrainingPathNotFoundException::new);
-    validateStudyPlanSpaceSelection(institutionId, application, data);
+    validateStudyPlanSpaceSelection(institutionId, application, data, trainingPathId);
+    return;
+
+    // unreachable, kept for clarity in the control flow above
   }
 
   private void validateStudyPlanSpaceSelection(
       final UUID institutionId, final EnrollmentApplication application, final JsonNode data) {
+    validateStudyPlanSpaceSelection(institutionId, application, data, null);
+  }
+
+  private void validateStudyPlanSpaceSelection(
+      final UUID institutionId,
+      final EnrollmentApplication application,
+      final JsonNode data,
+      final UUID trainingPathId) {
+    final UUID effectiveStudyPlanId = resolveEffectiveStudyPlanId(institutionId, application, trainingPathId);
+    validateStudyPlanSpaceSelection(institutionId, effectiveStudyPlanId, data);
+  }
+
+  private void validateStudyPlanSpaceSelection(
+      final UUID institutionId, final UUID studyPlanId, final JsonNode data) {
     final JsonNode studyPlanSpaceIdsNode =
         data.path("academicSpaceSelection").path("studyPlanSpaceIds");
     if (studyPlanSpaceIdsNode.isMissingNode() || studyPlanSpaceIdsNode.isNull()) {
@@ -88,8 +107,7 @@ public class EnrollmentDraftDataValidator {
     }
     final int eligibleCount =
         studyPlanSpaceRepository
-            .findEligibleByIdInAndStudyPlanId(
-                institutionId, application.getStudyPlan().getId(), studyPlanSpaceIds)
+            .findEligibleByIdInAndStudyPlanId(institutionId, studyPlanId, studyPlanSpaceIds)
             .size();
     if (eligibleCount != studyPlanSpaceIds.size()) {
       throw new EnrollmentValidationException(
@@ -106,5 +124,29 @@ public class EnrollmentDraftDataValidator {
         Map.of(
             "data.academicSpaceSelection.studyPlanSpaceIds",
             EnrollmentMessages.ENROLLMENT_APPLICATION_STUDY_PLAN_SPACES_INVALID));
+  }
+
+  private UUID resolveEffectiveStudyPlanId(
+      final UUID institutionId,
+      final EnrollmentApplication application,
+      final UUID trainingPathId) {
+    if (trainingPathId == null) {
+      return application.getStudyPlan().getId();
+    }
+
+    final var validOn = application.getAcademicYear().getStartDate() != null
+        ? application.getAcademicYear().getStartDate()
+        : java.time.LocalDate.now();
+
+    return studyPlanRepository
+        .findActiveByTrainingPathIdAndInstitutionIdValidOn(
+            trainingPathId,
+            institutionId,
+            ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus.ACTIVE,
+            validOn)
+        .stream()
+        .findFirst()
+        .orElseThrow(ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.StudyPlanNotFoundException::new)
+        .getId();
   }
 }

@@ -17,6 +17,7 @@ public class ListEnrollmentApplicationStudyPlanSpacesUseCase {
 
   private final ApplicantEnrollmentGuard applicantEnrollmentGuard;
   private final EnrollmentApplicationRepository enrollmentApplicationRepository;
+  private final EnrollmentEffectiveStudyPlanResolver enrollmentEffectiveStudyPlanResolver;
   private final StudyPlanSpaceRepository studyPlanSpaceRepository;
 
   @Transactional(readOnly = true)
@@ -28,8 +29,10 @@ public class ListEnrollmentApplicationStudyPlanSpacesUseCase {
             .findByIdAndPerson_IdAndInstitution_IdAndDeletedAtIsNull(
                 applicationId, principal.personId(), principal.institutionId())
             .orElseThrow(EnrollmentApplicationNotFoundException::new);
+    final var effectiveStudyPlan =
+        enrollmentEffectiveStudyPlanResolver.resolve(principal.institutionId(), application);
     return studyPlanSpaceRepository
-        .findEligibleByStudyPlanId(principal.institutionId(), application.getStudyPlan().getId())
+        .findEligibleByStudyPlanId(principal.institutionId(), effectiveStudyPlan.getId())
         .stream()
         .map(StudyPlanSpaceResponse::from)
         .toList();

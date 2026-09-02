@@ -5,6 +5,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationSt
 import java.time.LocalDateTime;
 import java.util.UUID;
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 public record EnrollmentApplicationResponse(
     UUID applicationId,
@@ -19,6 +20,8 @@ public record EnrollmentApplicationResponse(
     LocalDateTime createdAt,
     LocalDateTime updatedAt) {
 
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
   public static EnrollmentApplicationResponse from(final EnrollmentApplication application) {
     return new EnrollmentApplicationResponse(
         application.getId(),
@@ -29,8 +32,12 @@ public record EnrollmentApplicationResponse(
         application.getEnrollmentPeriodId(),
         application.getStatus(),
         application.isEditable(),
-        application.getData(),
+        toResponseJson(application),
         application.getCreatedAt(),
         application.getUpdatedAt());
+  }
+
+  private static JsonNode toResponseJson(final EnrollmentApplication application) {
+    return OBJECT_MAPPER.readTree(application.getData().toString());
   }
 }
