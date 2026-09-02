@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
@@ -12,6 +13,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.ApprovalMode;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequirementType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceInstrumentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
@@ -41,6 +43,7 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
   @Mock private EnrollmentApplicationRepository enrollmentApplicationRepository;
   @Mock private StudyPlanRepository studyPlanRepository;
   @Mock private StudyPlanSpaceRepository studyPlanSpaceRepository;
+  @Mock private StudyPlanSpaceInstrumentRepository studyPlanSpaceInstrumentRepository;
 
   @Test
   @DisplayName("Should list eligible study plan spaces using the application study plan")
@@ -59,12 +62,23 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
             RequirementType.REQUIRED,
             1,
             ApprovalMode.FINAL_EXAM);
+    final var studyPlanSpaceId = UUID.randomUUID();
+    final var persistedStudyPlanSpace = mock(StudyPlanSpace.class);
+    given(persistedStudyPlanSpace.getId()).willReturn(studyPlanSpaceId);
+    given(persistedStudyPlanSpace.getStudyPlan()).willReturn(studyPlanSpace.getStudyPlan());
+    given(persistedStudyPlanSpace.getAcademicSpace()).willReturn(studyPlanSpace.getAcademicSpace());
+    given(persistedStudyPlanSpace.getAcademicLevel()).willReturn(studyPlanSpace.getAcademicLevel());
+    given(persistedStudyPlanSpace.getRequirementType())
+        .willReturn(studyPlanSpace.getRequirementType());
+    given(persistedStudyPlanSpace.getDisplayOrder()).willReturn(studyPlanSpace.getDisplayOrder());
+    given(persistedStudyPlanSpace.getApprovalMode()).willReturn(studyPlanSpace.getApprovalMode());
     final var useCase =
         new ListEnrollmentApplicationStudyPlanSpacesUseCase(
             new ApplicantEnrollmentGuard(personRepository, personRoleAssignmentRepository),
             enrollmentApplicationRepository,
             new EnrollmentEffectiveStudyPlanResolver(studyPlanRepository),
-            studyPlanSpaceRepository);
+            studyPlanSpaceRepository,
+            studyPlanSpaceInstrumentRepository);
     givenApplicant(principal, application.getPerson());
     given(
             enrollmentApplicationRepository.findByIdAndPerson_IdAndInstitution_IdAndDeletedAtIsNull(
@@ -73,7 +87,11 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
     given(
             studyPlanSpaceRepository.findEligibleByStudyPlanId(
                 principal.institutionId(), application.getStudyPlan().getId()))
-        .willReturn(List.of(studyPlanSpace));
+        .willReturn(List.of(persistedStudyPlanSpace));
+    given(
+            studyPlanSpaceInstrumentRepository.findActiveByStudyPlanSpaceIds(
+                principal.institutionId(), List.of(studyPlanSpaceId)))
+        .willReturn(List.of());
 
     final var response = useCase.execute(principal, application.getId());
 
@@ -83,16 +101,23 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
   }
 
   @Test
-  @DisplayName("Should list eligible study plan spaces using the selected training path active plan")
+  @DisplayName(
+      "Should list eligible study plan spaces using the selected training path active plan")
   void listsEligibleStudyPlanSpacesUsingSelectedTrainingPath() {
     final var application = application();
     final var principal = principal(application);
     final var selectedPathId = UUID.randomUUID();
     final var selectedPath = TrainingPath.create(application.getInstitution(), "Canto", null);
     final var selectedPlan =
-        StudyPlan.create(application.getInstitution(), selectedPath, "Plan Canto", LocalDate.of(2026, 3, 1), null);
+        StudyPlan.create(
+            application.getInstitution(),
+            selectedPath,
+            "Plan Canto",
+            LocalDate.of(2026, 3, 1),
+            null);
     final var academicSpace =
-        AcademicSpace.create(application.getInstitution(), "Tecnica Vocal I", "", AcademicSpaceType.SUBJECT);
+        AcademicSpace.create(
+            application.getInstitution(), "Tecnica Vocal I", "", AcademicSpaceType.SUBJECT);
     final var studyPlanSpace =
         StudyPlanSpace.create(
             application.getInstitution(),
@@ -102,6 +127,16 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
             RequirementType.REQUIRED,
             1,
             ApprovalMode.FINAL_EXAM);
+    final var studyPlanSpaceId = UUID.randomUUID();
+    final var persistedStudyPlanSpace = mock(StudyPlanSpace.class);
+    given(persistedStudyPlanSpace.getId()).willReturn(studyPlanSpaceId);
+    given(persistedStudyPlanSpace.getStudyPlan()).willReturn(studyPlanSpace.getStudyPlan());
+    given(persistedStudyPlanSpace.getAcademicSpace()).willReturn(studyPlanSpace.getAcademicSpace());
+    given(persistedStudyPlanSpace.getAcademicLevel()).willReturn(studyPlanSpace.getAcademicLevel());
+    given(persistedStudyPlanSpace.getRequirementType())
+        .willReturn(studyPlanSpace.getRequirementType());
+    given(persistedStudyPlanSpace.getDisplayOrder()).willReturn(studyPlanSpace.getDisplayOrder());
+    given(persistedStudyPlanSpace.getApprovalMode()).willReturn(studyPlanSpace.getApprovalMode());
     final var draftData = com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
     draftData.putObject("careerSelection").put("trainingPathId", selectedPathId.toString());
     application.replaceDraftData(draftData);
@@ -110,7 +145,8 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
             new ApplicantEnrollmentGuard(personRepository, personRoleAssignmentRepository),
             enrollmentApplicationRepository,
             new EnrollmentEffectiveStudyPlanResolver(studyPlanRepository),
-            studyPlanSpaceRepository);
+            studyPlanSpaceRepository,
+            studyPlanSpaceInstrumentRepository);
     givenApplicant(principal, application.getPerson());
     given(
             enrollmentApplicationRepository.findByIdAndPerson_IdAndInstitution_IdAndDeletedAtIsNull(
@@ -126,7 +162,11 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
     given(
             studyPlanSpaceRepository.findEligibleByStudyPlanId(
                 principal.institutionId(), selectedPlan.getId()))
-        .willReturn(List.of(studyPlanSpace));
+        .willReturn(List.of(persistedStudyPlanSpace));
+    given(
+            studyPlanSpaceInstrumentRepository.findActiveByStudyPlanSpaceIds(
+                principal.institutionId(), List.of(studyPlanSpaceId)))
+        .willReturn(List.of());
 
     final var response = useCase.execute(principal, application.getId());
 
