@@ -5,6 +5,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequirementType;
 import ar.edu.utn.frvm.typeit.boero_api.common.validation.ValidationMessages;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 import java.util.UUID;
 
 public record UpdateStudyPlanSpaceRequest(
@@ -12,4 +13,5 @@ public record UpdateStudyPlanSpaceRequest(
     UUID academicLevelId,
     @NotNull RequirementType requirementType,
     @Min(value = 1, message = ValidationMessages.ORDER_POSITIVE) int displayOrder,
-    @NotNull ApprovalMode approvalMode) {}
+    @NotNull ApprovalMode approvalMode,
+    List<UUID> instrumentIds) {}

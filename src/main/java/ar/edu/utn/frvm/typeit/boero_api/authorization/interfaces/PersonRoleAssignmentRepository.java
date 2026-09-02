@@ -28,6 +28,9 @@ public interface PersonRoleAssignmentRepository extends JpaRepository<PersonRole
   boolean existsByPerson_IdAndRole_IdAndInstitution_Id(
       UUID personId, UUID roleId, UUID institutionId);
 
+  boolean existsByPerson_IdAndInstitution_IdAndRole_Code(
+      UUID personId, UUID institutionId, String roleCode);
+
   Optional<PersonRoleAssignment> findByPerson_IdAndRole_IdAndInstitution_Id(
       UUID personId, UUID roleId, UUID institutionId);
 
