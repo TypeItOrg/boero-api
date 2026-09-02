@@ -30,6 +30,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicatio
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentApplicationDraftRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CreateEnrollmentApplicationUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.GetEnrollmentApplicationUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationStudyPlanSpacesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationTrainingPathsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.UpdateEnrollmentApplicationDraftUseCase;
@@ -82,6 +83,7 @@ class EnrollmentApplicationControllerWebMvcTest {
   @MockitoBean private AuthorizationService authorizationService;
   @MockitoBean private InstitutionalCallerGuard institutionalCallerGuard;
   @MockitoBean private CreateEnrollmentApplicationUseCase createEnrollmentApplicationUseCase;
+  @MockitoBean private ListEnrollmentApplicationsUseCase listEnrollmentApplicationsUseCase;
   @MockitoBean private GetEnrollmentApplicationUseCase getEnrollmentApplicationUseCase;
 
   @MockitoBean
@@ -121,6 +123,21 @@ class EnrollmentApplicationControllerWebMvcTest {
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.applicationId").value(APPLICATION_ID.toString()))
         .andExpect(jsonPath("$.isEditable").value(true));
+  }
+
+  @Test
+  @DisplayName("Should list the applicant enrollment applications")
+  void listsApplications() throws Exception {
+    final var authentication =
+        new TestingAuthenticationToken(
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+    when(listEnrollmentApplicationsUseCase.execute(any())).thenReturn(List.of(response(data())));
+
+    mockMvc
+        .perform(get("/api/v1/enrollment-applications").principal(authentication))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].applicationId").value(APPLICATION_ID.toString()))
+        .andExpect(jsonPath("$[0].studyPlanId").value(STUDY_PLAN_ID.toString()));
   }
 
   @Test

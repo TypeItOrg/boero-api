@@ -9,6 +9,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicatio
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentApplicationDraftRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CreateEnrollmentApplicationUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.GetEnrollmentApplicationUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationStudyPlanSpacesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationTrainingPathsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.UpdateEnrollmentApplicationDraftUseCase;
@@ -34,6 +35,7 @@ public class EnrollmentApplicationController {
 
   private final InstitutionalCallerGuard institutionalCallerGuard;
   private final CreateEnrollmentApplicationUseCase createEnrollmentApplicationUseCase;
+  private final ListEnrollmentApplicationsUseCase listEnrollmentApplicationsUseCase;
   private final GetEnrollmentApplicationUseCase getEnrollmentApplicationUseCase;
   private final UpdateEnrollmentApplicationDraftUseCase updateEnrollmentApplicationDraftUseCase;
   private final ListEnrollmentApplicationTrainingPathsUseCase
@@ -48,6 +50,12 @@ public class EnrollmentApplicationController {
       @Valid @RequestBody final CreateEnrollmentApplicationRequest request) {
     final var principal = principal(authentication);
     return createEnrollmentApplicationUseCase.execute(principal, request);
+  }
+
+  @GetMapping(version = Version.V1)
+  public List<EnrollmentApplicationResponse> list(final Authentication authentication) {
+    final var principal = principal(authentication);
+    return listEnrollmentApplicationsUseCase.execute(principal);
   }
 
   @GetMapping(value = "/{applicationId}", version = Version.V1)

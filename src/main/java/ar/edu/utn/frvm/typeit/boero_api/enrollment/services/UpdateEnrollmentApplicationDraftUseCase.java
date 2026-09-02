@@ -5,6 +5,8 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicat
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentApplicationDraftRequest;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class UpdateEnrollmentApplicationDraftUseCase {
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final ApplicantEnrollmentGuard applicantEnrollmentGuard;
   private final EnrollmentApplicationRepository enrollmentApplicationRepository;
@@ -30,7 +34,15 @@ public class UpdateEnrollmentApplicationDraftUseCase {
                 applicationId, principal.personId(), principal.institutionId())
             .orElseThrow(EnrollmentApplicationNotFoundException::new);
     enrollmentDraftDataValidator.validate(principal.institutionId(), application, request.data());
-    application.replaceDraftData(request.data());
+    application.replaceDraftData(toPersistenceJson(request.data()));
     return EnrollmentApplicationResponse.from(enrollmentApplicationRepository.save(application));
+  }
+
+  private JsonNode toPersistenceJson(final tools.jackson.databind.JsonNode data) {
+    try {
+      return OBJECT_MAPPER.readTree(data.toString());
+    } catch (java.io.IOException exception) {
+      throw new IllegalArgumentException("Could not convert enrollment draft data.", exception);
+    }
   }
 }
