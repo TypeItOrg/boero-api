@@ -38,6 +38,39 @@ public interface StudyPlanSpaceRepository extends JpaRepository<StudyPlanSpace, 
   Optional<StudyPlanSpace> findByIdAndInstitution_Id(
       @Param("id") UUID id, @Param("institutionId") UUID institutionId);
 
+  @Query(
+      """
+      SELECT space FROM StudyPlanSpace space
+      LEFT JOIN FETCH space.academicLevel level
+      JOIN FETCH space.academicSpace academicSpace
+      JOIN FETCH space.studyPlan studyPlan
+      WHERE studyPlan.id = :studyPlanId
+        AND space.institution.id = :institutionId
+        AND studyPlan.deletedAt IS NULL
+        AND academicSpace.active = true
+        AND academicSpace.deletedAt IS NULL
+      ORDER BY level.displayOrder NULLS LAST, space.displayOrder
+      """)
+  List<StudyPlanSpace> findEligibleByStudyPlanId(
+      @Param("institutionId") UUID institutionId, @Param("studyPlanId") UUID studyPlanId);
+
+  @Query(
+      """
+      SELECT space FROM StudyPlanSpace space
+      JOIN FETCH space.academicSpace academicSpace
+      JOIN FETCH space.studyPlan studyPlan
+      WHERE space.id IN :ids
+        AND studyPlan.id = :studyPlanId
+        AND space.institution.id = :institutionId
+        AND studyPlan.deletedAt IS NULL
+        AND academicSpace.active = true
+        AND academicSpace.deletedAt IS NULL
+      """)
+  List<StudyPlanSpace> findEligibleByIdInAndStudyPlanId(
+      @Param("institutionId") UUID institutionId,
+      @Param("studyPlanId") UUID studyPlanId,
+      @Param("ids") List<UUID> ids);
+
   boolean existsByAcademicLevel_Id(UUID academicLevelId);
 
   @Query(
