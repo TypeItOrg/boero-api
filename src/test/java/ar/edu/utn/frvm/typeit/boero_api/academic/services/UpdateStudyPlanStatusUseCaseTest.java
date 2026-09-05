@@ -13,6 +13,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceReposi
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanStatusRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -28,6 +29,7 @@ class UpdateStudyPlanStatusUseCaseTest {
   private static final UUID INSTITUTION_ID =
       UUID.fromString("22222222-2222-2222-2222-222222222222");
   private static final UUID PLAN_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
+  private static final ZoneId ARGENTINA_TIME_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
 
   @Mock private StudyPlanRepository studyPlanRepository;
   @Mock private StudyPlanSpaceRepository studyPlanSpaceRepository;
@@ -48,7 +50,7 @@ class UpdateStudyPlanStatusUseCaseTest {
                 "Trayecto",
                 null),
             "Plan",
-            LocalDate.of(2027, 3, 1),
+            LocalDate.now(ARGENTINA_TIME_ZONE).minusMonths(1),
             null);
     plan.activate();
     return plan;
@@ -72,7 +74,7 @@ class UpdateStudyPlanStatusUseCaseTest {
                     INSTITUTION_ID,
                     PLAN_ID,
                     new StudyPlanStatusRequest(
-                        StudyPlanStatus.INACTIVE, LocalDate.of(2027, 12, 15))))
+                        StudyPlanStatus.INACTIVE, LocalDate.now(ARGENTINA_TIME_ZONE).minusDays(1))))
         .isInstanceOf(AcademicConflictException.class);
   }
 
@@ -94,7 +96,7 @@ class UpdateStudyPlanStatusUseCaseTest {
                     INSTITUTION_ID,
                     PLAN_ID,
                     new StudyPlanStatusRequest(
-                        StudyPlanStatus.INACTIVE, LocalDate.of(2027, 12, 15))))
+                        StudyPlanStatus.INACTIVE, LocalDate.now(ARGENTINA_TIME_ZONE).minusDays(1))))
         .isInstanceOf(AcademicConflictException.class);
   }
 
@@ -113,7 +115,8 @@ class UpdateStudyPlanStatusUseCaseTest {
     useCase.execute(
         INSTITUTION_ID,
         PLAN_ID,
-        new StudyPlanStatusRequest(StudyPlanStatus.INACTIVE, LocalDate.of(2027, 12, 15)));
+        new StudyPlanStatusRequest(
+            StudyPlanStatus.INACTIVE, LocalDate.now(ARGENTINA_TIME_ZONE).minusDays(1)));
 
     verify(studyPlanRepository).flush();
   }

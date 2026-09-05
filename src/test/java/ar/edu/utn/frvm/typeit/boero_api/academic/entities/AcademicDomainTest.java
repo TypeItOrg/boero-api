@@ -65,7 +65,9 @@ class AcademicDomainTest {
   void courseRejectsActivationWhenStudyPlanIsInactive() {
     final var institution = institution();
     final var path = TrainingPath.create(institution, "Profesorado", null);
-    final var plan = StudyPlan.create(institution, path, "Plan 2026", null, null);
+    final var plan =
+        StudyPlan.create(
+            institution, path, "Plan 2026", LocalDate.of(2026, 3, 1), LocalDate.of(2026, 12, 31));
     plan.activate();
     plan.deactivate(LocalDate.of(2026, 12, 31));
     final var academicYear =

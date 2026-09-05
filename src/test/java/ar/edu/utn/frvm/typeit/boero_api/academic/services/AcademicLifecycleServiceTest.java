@@ -123,7 +123,13 @@ class AcademicLifecycleServiceTest {
             institution, 2027, LocalDate.of(2027, 3, 1), LocalDate.of(2027, 12, 15));
     academicYear.transitionTo(AcademicYearStatus.ACTIVE);
     final var trainingPath = TrainingPath.create(institution, "Tecnicatura", null);
-    final var studyPlan = StudyPlan.create(institution, trainingPath, "Plan 2027", null, null);
+    final var studyPlan =
+        StudyPlan.create(
+            institution,
+            trainingPath,
+            "Plan 2027",
+            LocalDate.of(2027, 3, 1),
+            LocalDate.of(2027, 12, 31));
     studyPlan.activate();
     final var academicSpace =
         AcademicSpace.create(
@@ -181,7 +187,13 @@ class AcademicLifecycleServiceTest {
             institution, 2027, LocalDate.of(2027, 3, 1), LocalDate.of(2027, 12, 15));
     academicYear.transitionTo(AcademicYearStatus.ACTIVE);
     final var trainingPath = TrainingPath.create(institution, "Tecnicatura", null);
-    final var studyPlan = StudyPlan.create(institution, trainingPath, "Plan 2027", null, null);
+    final var studyPlan =
+        StudyPlan.create(
+            institution,
+            trainingPath,
+            "Plan 2027",
+            LocalDate.of(2027, 3, 1),
+            LocalDate.of(2027, 12, 31));
     studyPlan.activate();
     studyPlan.deactivate(LocalDate.of(2027, 12, 31));
     final var academicSpace =
