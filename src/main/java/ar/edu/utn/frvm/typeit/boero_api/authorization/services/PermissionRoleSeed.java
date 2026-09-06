@@ -106,7 +106,10 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.COURSE_UPDATE,
               PermissionCode.COURSE_STATUS_UPDATE,
               PermissionCode.COURSE_DELETE,
-              PermissionCode.COURSE_RESTORE));
+              PermissionCode.COURSE_RESTORE,
+              PermissionCode.ENROLLMENT_APPLICATION_READ,
+              PermissionCode.ENROLLMENT_APPLICATION_APPROVE,
+              PermissionCode.ENROLLMENT_APPLICATION_REJECT));
 
   private final PermissionRepository permissionRepository;
   private final RoleRepository roleRepository;

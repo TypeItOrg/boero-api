@@ -320,7 +320,22 @@ public enum PermissionCode {
       "institution:course:restore",
       PermissionScope.INSTITUTION,
       PermissionGroup.ACADEMIC,
-      "Restaurar cursos");
+      "Restaurar cursos"),
+  ENROLLMENT_APPLICATION_READ(
+      "institution:enrollment-application:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Ver solicitudes de inscripción"),
+  ENROLLMENT_APPLICATION_APPROVE(
+      "institution:enrollment-application:approve",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Aprobar solicitudes de inscripción"),
+  ENROLLMENT_APPLICATION_REJECT(
+      "institution:enrollment-application:reject",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Rechazar solicitudes de inscripción");
 
   private final String code;
   private final PermissionScope scope;
@@ -383,6 +398,8 @@ public enum PermissionCode {
           Set.of(SHIFT_READ);
       case COURSE_CREATE, COURSE_UPDATE, COURSE_STATUS_UPDATE, COURSE_DELETE, COURSE_RESTORE ->
           Set.of(COURSE_READ);
+      case ENROLLMENT_APPLICATION_APPROVE, ENROLLMENT_APPLICATION_REJECT ->
+          Set.of(ENROLLMENT_APPLICATION_READ);
       default -> Set.of();
     };
   }
