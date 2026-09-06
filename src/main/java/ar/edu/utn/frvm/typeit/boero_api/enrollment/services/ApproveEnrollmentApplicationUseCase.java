@@ -1,0 +1,48 @@
+package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
+
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentApplicationRepository;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Student;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.StudentRepository;
+import java.time.LocalDateTime;
+import java.time.Year;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class ApproveEnrollmentApplicationUseCase {
+
+  private final EnrollmentApplicationRepository enrollmentApplicationRepository;
+  private final StudentRepository studentRepository;
+
+  @Transactional
+  public EnrollmentApplicationResponse execute(final UUID institutionId, final UUID applicationId) {
+    final var application =
+        enrollmentApplicationRepository
+            .findByIdAndInstitutionIdForUpdate(institutionId, applicationId)
+            .orElseThrow(EnrollmentApplicationNotFoundException::new);
+
+    application.approve(LocalDateTime.now());
+
+    if (!studentRepository.existsByInstitution_IdAndPerson_Id(
+        institutionId, application.getApplicantPerson().getId())) {
+      studentRepository.save(
+          Student.builder()
+              .institution(application.getInstitution())
+              .person(application.getApplicantPerson())
+              .fileNumber(generateFileNumber(institutionId))
+              .build());
+    }
+    return EnrollmentApplicationResponse.from(application);
+  }
+
+  private String generateFileNumber(final UUID institutionId) {
+    final int year = Year.now().getValue();
+    final long count = studentRepository.countByInstitution_Id(institutionId);
+    return String.format("%d-%05d", year, count + 1);
+  }
+}

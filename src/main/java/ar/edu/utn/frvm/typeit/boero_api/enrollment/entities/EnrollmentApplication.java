@@ -5,6 +5,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidEnrollmentApplicationStateException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.MissingRejectionReasonException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import jakarta.persistence.CascadeType;
@@ -19,6 +22,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -30,7 +35,12 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "enrollment_applications")
+@Table(
+    name = "enrollment_applications",
+    uniqueConstraints =
+        @UniqueConstraint(
+            name = "enrollment_applications_institution_id_id_unique",
+            columnNames = {"institution_id", "enrollment_application_id"}))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -66,6 +76,12 @@ public class EnrollmentApplication extends SoftDeletable {
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 20)
   private EnrollmentApplicationStatus status;
+
+  @Column(name = "rejection_reason", columnDefinition = "text")
+  private String rejectionReason;
+
+  @Column(name = "resolved_at")
+  private LocalDateTime resolvedAt;
 
   @OneToOne(
       mappedBy = "enrollmentApplication",
@@ -153,7 +169,89 @@ public class EnrollmentApplication extends SoftDeletable {
     selectedSpaces.clear();
   }
 
+  public static EnrollmentApplication create(
+      final Institution institution,
+      final Person applicantPerson,
+      final StudyPlan studyPlan,
+      final AcademicYear academicYear,
+      final EnrollmentPeriod enrollmentPeriod) {
+    return EnrollmentApplication.builder()
+        .institution(institution)
+        .applicantPerson(applicantPerson)
+        .studyPlan(studyPlan)
+        .academicYear(academicYear)
+        .enrollmentPeriod(enrollmentPeriod)
+        .status(EnrollmentApplicationStatus.DRAFT)
+        .build();
+  }
+
+  public void submit() {
+    if (isEditable()) {
+      status = EnrollmentApplicationStatus.SUBMITTED;
+      return;
+    }
+    throw new InvalidEnrollmentApplicationStateException(
+        EnrollmentMessages.APPLICATION_CANNOT_SUBMIT);
+  }
+
+  public void updateEducationBackground(final String secondarySchool) {
+    if (!isEditable()) {
+      throw new InvalidEnrollmentApplicationStateException(
+          EnrollmentMessages.APPLICATION_NOT_EDITABLE);
+    }
+    if (educationBackground == null) {
+      educationBackground =
+          ApplicantEducationBackground.builder()
+              .enrollmentApplication(this)
+              .secondarySchool(secondarySchool)
+              .build();
+      return;
+    }
+    educationBackground.setSecondarySchool(secondarySchool);
+  }
+
   public boolean isEditable() {
     return status == EnrollmentApplicationStatus.DRAFT && getDeletedAt() == null;
+  }
+
+  public boolean isPendingEvaluation() {
+    return status == EnrollmentApplicationStatus.SUBMITTED;
+  }
+
+  public boolean isApproved() {
+    return status == EnrollmentApplicationStatus.APPROVED;
+  }
+
+  public boolean isResolved() {
+    return status == EnrollmentApplicationStatus.APPROVED
+        || status == EnrollmentApplicationStatus.REJECTED
+        || status == EnrollmentApplicationStatus.CANCELLED;
+  }
+
+  public void approve(final LocalDateTime resolvedAt) {
+    ensurePendingEvaluation();
+    status = EnrollmentApplicationStatus.APPROVED;
+    this.resolvedAt = resolvedAt;
+  }
+
+  public void reject(final String rejectionReason, final LocalDateTime resolvedAt) {
+    ensurePendingEvaluation();
+    if (rejectionReason == null || rejectionReason.isBlank()) {
+      throw new MissingRejectionReasonException();
+    }
+    status = EnrollmentApplicationStatus.REJECTED;
+    this.rejectionReason = rejectionReason;
+    this.resolvedAt = resolvedAt;
+  }
+
+  private void ensurePendingEvaluation() {
+    if (isResolved()) {
+      throw new InvalidEnrollmentApplicationStateException(
+          EnrollmentMessages.APPLICATION_ALREADY_RESOLVED);
+    }
+    if (!isPendingEvaluation()) {
+      throw new InvalidEnrollmentApplicationStateException(
+          EnrollmentMessages.APPLICATION_NOT_PENDING_EVALUATION);
+    }
   }
 }
