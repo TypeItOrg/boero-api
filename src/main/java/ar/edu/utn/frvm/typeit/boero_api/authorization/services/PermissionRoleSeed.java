@@ -96,7 +96,21 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.ENROLLMENT_PERIOD_CREATE,
               PermissionCode.ENROLLMENT_PERIOD_UPDATE,
               PermissionCode.ENROLLMENT_PERIOD_STATUS_UPDATE,
-              PermissionCode.ENROLLMENT_PERIOD_DELETE));
+              PermissionCode.ENROLLMENT_PERIOD_DELETE,
+              PermissionCode.SHIFT_CREATE,
+              PermissionCode.SHIFT_UPDATE,
+              PermissionCode.SHIFT_STATUS_UPDATE,
+              PermissionCode.SHIFT_DELETE,
+              PermissionCode.SHIFT_RESTORE,
+              PermissionCode.COURSE_READ,
+              PermissionCode.COURSE_CREATE,
+              PermissionCode.COURSE_UPDATE,
+              PermissionCode.COURSE_STATUS_UPDATE,
+              PermissionCode.COURSE_DELETE,
+              PermissionCode.COURSE_RESTORE,
+              PermissionCode.ENROLLMENT_APPLICATION_READ,
+              PermissionCode.ENROLLMENT_APPLICATION_APPROVE,
+              PermissionCode.ENROLLMENT_APPLICATION_REJECT));
 
   private final PermissionRepository permissionRepository;
   private final RoleRepository roleRepository;
