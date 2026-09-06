@@ -1,10 +1,13 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
-import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationRepository;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentApplicationRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
-import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,17 +15,15 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ListEnrollmentApplicationsUseCase {
 
-  private final ApplicantEnrollmentGuard applicantEnrollmentGuard;
   private final EnrollmentApplicationRepository enrollmentApplicationRepository;
 
   @Transactional(readOnly = true)
-  public List<EnrollmentApplicationResponse> execute(final JwtAuthenticatedUser principal) {
-    applicantEnrollmentGuard.requireApplicant(principal);
+  public Page<EnrollmentApplicationResponse> execute(
+      final UUID institutionId,
+      @Nullable final EnrollmentApplicationStatus status,
+      final Pageable pageable) {
     return enrollmentApplicationRepository
-        .findByPerson_IdAndInstitution_IdAndDeletedAtIsNullOrderByCreatedAtDesc(
-            principal.personId(), principal.institutionId())
-        .stream()
-        .map(EnrollmentApplicationResponse::from)
-        .toList();
+        .findByInstitutionId(institutionId, status, pageable)
+        .map(EnrollmentApplicationResponse::from);
   }
 }

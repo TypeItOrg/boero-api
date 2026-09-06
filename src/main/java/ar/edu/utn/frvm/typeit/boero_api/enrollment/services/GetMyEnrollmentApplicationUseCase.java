@@ -10,14 +10,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class GetEnrollmentApplicationUseCase {
+public class GetMyEnrollmentApplicationUseCase {
 
   private final EnrollmentApplicationRepository enrollmentApplicationRepository;
 
   @Transactional(readOnly = true)
-  public EnrollmentApplicationResponse execute(final UUID institutionId, final UUID applicationId) {
+  public EnrollmentApplicationResponse execute(
+      final UUID institutionId, final UUID personId, final UUID applicationId) {
     return enrollmentApplicationRepository
-        .findByIdAndInstitutionId(institutionId, applicationId)
+        .findByIdAndApplicantPersonIdAndInstitutionId(institutionId, personId, applicationId)
         .map(EnrollmentApplicationResponse::from)
         .orElseThrow(EnrollmentApplicationNotFoundException::new);
   }

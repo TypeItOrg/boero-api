@@ -5,7 +5,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotEditableException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidEnrollmentApplicationStateException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.MissingRejectionReasonException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -21,6 +23,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -33,14 +38,10 @@ import org.hibernate.type.SqlTypes;
 @Entity
 @Table(
     name = "enrollment_applications",
-    uniqueConstraints = {
-      @UniqueConstraint(
-          name = "enrollment_applications_institution_id_id_unique",
-          columnNames = {"institution_id", "enrollment_application_id"}),
-      @UniqueConstraint(
-          name = "enrollment_applications_person_id_id_unique",
-          columnNames = {"person_id", "enrollment_application_id"})
-    })
+    uniqueConstraints =
+        @UniqueConstraint(
+            name = "enrollment_applications_institution_id_id_unique",
+            columnNames = {"institution_id", "enrollment_application_id"}))
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -77,9 +78,18 @@ public class EnrollmentApplication extends SoftDeletable {
   @Column(nullable = false, length = 20)
   private EnrollmentApplicationStatus status;
 
-  @JdbcTypeCode(SqlTypes.JSON)
-  @Column(nullable = false)
-  private JsonNode data;
+  @Column(name = "rejection_reason", columnDefinition = "text")
+  private String rejectionReason;
+
+  @Column(name = "resolved_at")
+  private LocalDateTime resolvedAt;
+
+  @OneToOne(
+      mappedBy = "enrollmentApplication",
+      cascade = CascadeType.ALL,
+      fetch = FetchType.LAZY,
+      orphanRemoval = true)
+  private ApplicantEducationBackground educationBackground;
 
   public static EnrollmentApplication create(
       final Person person,
@@ -98,28 +108,89 @@ public class EnrollmentApplication extends SoftDeletable {
         .build();
   }
 
+  public static EnrollmentApplication create(
+      final Institution institution,
+      final Person applicantPerson,
+      final StudyPlan studyPlan,
+      final AcademicYear academicYear,
+      final EnrollmentPeriod enrollmentPeriod) {
+    return EnrollmentApplication.builder()
+        .institution(institution)
+        .applicantPerson(applicantPerson)
+        .studyPlan(studyPlan)
+        .academicYear(academicYear)
+        .enrollmentPeriod(enrollmentPeriod)
+        .status(EnrollmentApplicationStatus.DRAFT)
+        .build();
+  }
+
+  public void submit() {
+    if (isEditable()) {
+      status = EnrollmentApplicationStatus.SUBMITTED;
+      return;
+    }
+    throw new InvalidEnrollmentApplicationStateException(
+        EnrollmentMessages.APPLICATION_CANNOT_SUBMIT);
+  }
+
+  public void updateEducationBackground(final String secondarySchool) {
+    if (!isEditable()) {
+      throw new InvalidEnrollmentApplicationStateException(
+          EnrollmentMessages.APPLICATION_NOT_EDITABLE);
+    }
+    if (educationBackground == null) {
+      educationBackground =
+          ApplicantEducationBackground.builder()
+              .enrollmentApplication(this)
+              .secondarySchool(secondarySchool)
+              .build();
+      return;
+    }
+    educationBackground.setSecondarySchool(secondarySchool);
+  }
+
   public boolean isEditable() {
     return status == EnrollmentApplicationStatus.DRAFT && getDeletedAt() == null;
   }
 
-  public void replaceDraftData(final JsonNode data) {
-    if (!isEditable()) {
-      throw new EnrollmentApplicationNotEditableException();
-    }
-    this.data = data == null ? OBJECT_MAPPER.createObjectNode() : data.deepCopy();
+  public boolean isPendingEvaluation() {
+    return status == EnrollmentApplicationStatus.SUBMITTED;
   }
 
-  public void cancel() {
-    if (!isEditable()) {
-      throw new EnrollmentApplicationNotEditableException();
-    }
-    status = EnrollmentApplicationStatus.CANCELLED;
+  public boolean isApproved() {
+    return status == EnrollmentApplicationStatus.APPROVED;
   }
 
-  public ObjectNode editableData() {
-    if (data instanceof ObjectNode objectNode) {
-      return objectNode;
+  public boolean isResolved() {
+    return status == EnrollmentApplicationStatus.APPROVED
+        || status == EnrollmentApplicationStatus.REJECTED
+        || status == EnrollmentApplicationStatus.CANCELLED;
+  }
+
+  public void approve(final LocalDateTime resolvedAt) {
+    ensurePendingEvaluation();
+    status = EnrollmentApplicationStatus.APPROVED;
+    this.resolvedAt = resolvedAt;
+  }
+
+  public void reject(final String rejectionReason, final LocalDateTime resolvedAt) {
+    ensurePendingEvaluation();
+    if (rejectionReason == null || rejectionReason.isBlank()) {
+      throw new MissingRejectionReasonException();
     }
-    return OBJECT_MAPPER.createObjectNode();
+    status = EnrollmentApplicationStatus.REJECTED;
+    this.rejectionReason = rejectionReason;
+    this.resolvedAt = resolvedAt;
+  }
+
+  private void ensurePendingEvaluation() {
+    if (isResolved()) {
+      throw new InvalidEnrollmentApplicationStateException(
+          EnrollmentMessages.APPLICATION_ALREADY_RESOLVED);
+    }
+    if (!isPendingEvaluation()) {
+      throw new InvalidEnrollmentApplicationStateException(
+          EnrollmentMessages.APPLICATION_NOT_PENDING_EVALUATION);
+    }
   }
 }
