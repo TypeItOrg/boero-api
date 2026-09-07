@@ -15,6 +15,7 @@ public enum SearchEntityType {
   STUDY_PLAN("study-plan"),
   ACADEMIC_SPACE("academic-space"),
   INSTRUMENT("instrument"),
+  SHIFT("shift"),
   COURSE("course");
 
   private final String code;

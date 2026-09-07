@@ -107,6 +107,7 @@ enum SearchDefinition {
       SearchEntityType.INSTRUMENT,
       PermissionCode.INSTRUMENT_READ,
       namedEntity("instruments", "instrument_id")),
+  SHIFT(SearchEntityType.SHIFT, PermissionCode.SHIFT_READ, namedEntity("shifts", "shift_id")),
   COURSE(
       SearchEntityType.COURSE,
       PermissionCode.COURSE_READ,
@@ -124,7 +125,7 @@ enum SearchDefinition {
          AND e.deleted_at IS NULL
          AND p.deleted_at IS NULL
          AND boero_search_vector(e.name || ' ' || p.name) @@ to_tsquery('simple', :query)
-      """);
+       """);
 
   private final SearchEntityType type;
   private final @Nullable PermissionCode permission;
