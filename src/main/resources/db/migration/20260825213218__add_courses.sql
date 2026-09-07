@@ -97,7 +97,7 @@ ALTER TABLE academic_lifecycle_events DROP CONSTRAINT academic_lifecycle_events_
 
 ALTER TABLE academic_lifecycle_events
     ADD CONSTRAINT academic_lifecycle_events_resource_type_check
-    CHECK (resource_type IN ('ACADEMIC_YEAR', 'TRAINING_PATH', 'STUDY_PLAN', 'ACADEMIC_SPACE', 'INSTRUMENT', 'COURSE'));
+    CHECK (resource_type IN ('ACADEMIC_YEAR', 'TRAINING_PATH', 'STUDY_PLAN', 'ACADEMIC_SPACE', 'INSTRUMENT', 'SHIFT', 'COURSE'));
 
 INSERT INTO permissions (created_at, updated_at, permission_id, scope, code, description)
 VALUES

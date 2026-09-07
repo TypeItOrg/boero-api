@@ -6,5 +6,6 @@ public enum AcademicLifecycleResource {
   STUDY_PLAN,
   ACADEMIC_SPACE,
   INSTRUMENT,
+  SHIFT,
   COURSE
 }

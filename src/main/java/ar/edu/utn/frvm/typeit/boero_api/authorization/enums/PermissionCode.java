@@ -236,6 +236,36 @@ public enum PermissionCode {
       PermissionScope.INSTITUTION,
       PermissionGroup.ACADEMIC,
       "Restaurar instrumentos"),
+  SHIFT_READ(
+      "institution:shift:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Ver turnos"),
+  SHIFT_CREATE(
+      "institution:shift:create",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Crear turnos"),
+  SHIFT_UPDATE(
+      "institution:shift:update",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Editar turnos"),
+  SHIFT_STATUS_UPDATE(
+      "institution:shift:update-status",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Activar o desactivar turnos"),
+  SHIFT_DELETE(
+      "institution:shift:delete",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Eliminar turnos"),
+  SHIFT_RESTORE(
+      "institution:shift:restore",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Restaurar turnos"),
   COURSE_READ(
       "institution:course:read",
       PermissionScope.INSTITUTION,
@@ -319,6 +349,8 @@ public enum PermissionCode {
           INSTRUMENT_DELETE,
           INSTRUMENT_RESTORE ->
           Set.of(INSTRUMENT_READ);
+      case SHIFT_CREATE, SHIFT_UPDATE, SHIFT_STATUS_UPDATE, SHIFT_DELETE, SHIFT_RESTORE ->
+          Set.of(SHIFT_READ);
       case COURSE_CREATE, COURSE_UPDATE, COURSE_STATUS_UPDATE, COURSE_DELETE, COURSE_RESTORE ->
           Set.of(COURSE_READ);
       default -> Set.of();

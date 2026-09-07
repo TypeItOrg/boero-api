@@ -54,7 +54,10 @@ class PermissionCodeDependencyTest {
                 PermissionCode.ACADEMIC_SPACE_STATUS_UPDATE,
                 PermissionCode.INSTRUMENT_CREATE,
                 PermissionCode.INSTRUMENT_UPDATE,
-                PermissionCode.INSTRUMENT_STATUS_UPDATE));
+                PermissionCode.INSTRUMENT_STATUS_UPDATE,
+                PermissionCode.SHIFT_CREATE,
+                PermissionCode.SHIFT_UPDATE,
+                PermissionCode.SHIFT_STATUS_UPDATE));
 
     assertThat(expanded)
         .contains(
@@ -62,6 +65,7 @@ class PermissionCodeDependencyTest {
             PermissionCode.TRAINING_PATH_READ,
             PermissionCode.STUDY_PLAN_READ,
             PermissionCode.ACADEMIC_SPACE_READ,
-            PermissionCode.INSTRUMENT_READ);
+            PermissionCode.INSTRUMENT_READ,
+            PermissionCode.SHIFT_READ);
   }
 }

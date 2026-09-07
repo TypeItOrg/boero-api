@@ -11,6 +11,7 @@ public final class AcademicMessages {
   public static final String ACADEMIC_SPACE_NOT_FOUND =
       "El espacio académico especificado no existe.";
   public static final String INSTRUMENT_NOT_FOUND = "El instrumento especificado no existe.";
+  public static final String SHIFT_NOT_FOUND = "El turno especificado no existe.";
   public static final String COURSE_NOT_FOUND = "El curso especificado no existe.";
   public static final String COURSE_ALREADY_EXISTS =
       "Ya existe un curso para ese espacio académico en el ciclo lectivo indicado.";

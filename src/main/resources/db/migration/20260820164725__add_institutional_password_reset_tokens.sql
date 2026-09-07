@@ -9,5 +9,3 @@ CREATE TABLE institutional_password_reset_tokens (
 
 CREATE INDEX institutional_password_reset_tokens_user_id_idx
   ON institutional_password_reset_tokens(user_id);
-
-
