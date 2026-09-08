@@ -21,12 +21,16 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * Access is resolved entirely from the authenticated principal ({@link
+ * EnrollmentAttachmentService#uploadAttachment}) — there is no client-supplied identity header to
+ * spoof.
+ */
 @RestController
 @RequestMapping("/enrollment-applications/{applicationId}/attachments")
 @RequiredArgsConstructor
@@ -43,12 +47,10 @@ public class EnrollmentAttachmentController {
       @PathVariable UUID applicationId,
       @RequestParam("file") MultipartFile file,
       @RequestParam("attachmentType") String attachmentType,
-      @RequestHeader(value = "X-Person-Id", required = false) UUID personId,
       Authentication authentication) {
 
     EnrollmentAttachmentResponse response =
-        attachmentService.uploadAttachment(
-            applicationId, file, attachmentType, personId, authentication);
+        attachmentService.uploadAttachment(applicationId, file, attachmentType, authentication);
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 
@@ -57,12 +59,10 @@ public class EnrollmentAttachmentController {
   public ResponseEntity<Resource> getAttachmentContent(
       @PathVariable UUID applicationId,
       @PathVariable UUID attachmentId,
-      @RequestHeader(value = "X-Person-Id", required = false) UUID personId,
       Authentication authentication) {
 
     AttachmentContentResult result =
-        attachmentService.getAttachmentContent(
-            applicationId, attachmentId, personId, authentication);
+        attachmentService.getAttachmentContent(applicationId, attachmentId, authentication);
 
     MediaType mediaType;
     try {
@@ -89,22 +89,19 @@ public class EnrollmentAttachmentController {
   public ResponseEntity<Void> deleteAttachment(
       @PathVariable UUID applicationId,
       @PathVariable UUID attachmentId,
-      @RequestHeader(value = "X-Person-Id", required = false) UUID personId,
       Authentication authentication) {
 
-    attachmentService.deleteAttachment(applicationId, attachmentId, personId, authentication);
+    attachmentService.deleteAttachment(applicationId, attachmentId, authentication);
     return ResponseEntity.noContent().build();
   }
 
   @GetMapping(version = Version.V1)
   @Operation(summary = "Listar los archivos adjuntos activos de la solicitud de inscripción")
   public ResponseEntity<List<EnrollmentAttachmentResponse>> listAttachments(
-      @PathVariable UUID applicationId,
-      @RequestHeader(value = "X-Person-Id", required = false) UUID personId,
-      Authentication authentication) {
+      @PathVariable UUID applicationId, Authentication authentication) {
 
     List<EnrollmentAttachmentResponse> response =
-        attachmentService.listAttachments(applicationId, personId, authentication);
+        attachmentService.listAttachments(applicationId, authentication);
     return ResponseEntity.ok(response);
   }
 }

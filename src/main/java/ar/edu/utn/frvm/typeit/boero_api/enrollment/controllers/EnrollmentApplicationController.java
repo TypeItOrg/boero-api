@@ -1,5 +1,10 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.controllers;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPermission;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
@@ -15,84 +20,102 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Identity for every endpoint here comes from the authenticated principal, never from
+ * client-supplied headers or parameters — an institutional {@link JwtAuthenticatedUser} always
+ * carries its own {@code personId} and {@code institutionId}, so there is nothing for a caller to
+ * spoof.
+ */
 @RestController
 @RequestMapping("/enrollment-applications")
 @RequiredArgsConstructor
 public class EnrollmentApplicationController {
 
   private final EnrollmentApplicationService applicationService;
+  private final InstitutionalCallerGuard institutionalCallerGuard;
+  private final AuthorizationService authorizationService;
 
   @PostMapping(version = Version.V1)
   public ResponseEntity<EnrollmentApplicationResponse> startOrGetApplication(
-      @RequestHeader("X-Institution-Id") UUID institutionId,
-      @RequestHeader("X-Person-Id") UUID personId,
-      @Valid @RequestBody StartEnrollmentApplicationRequest request) {
+      Authentication authentication, @Valid @RequestBody StartEnrollmentApplicationRequest request) {
+    JwtAuthenticatedUser principal = requireInstitutionalUser(authentication);
     EnrollmentApplicationResponse response =
-        applicationService.startOrGetApplication(institutionId, personId, request);
+        applicationService.startOrGetApplication(
+            principal.institutionId(), principal.personId(), request);
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 
   @GetMapping(value = "/{applicationId}", version = Version.V1)
   public ResponseEntity<EnrollmentApplicationResponse> getApplication(
-      @RequestHeader(value = "X-Institution-Id", required = false) UUID institutionId,
-      @RequestHeader(value = "X-Person-Id", required = false) UUID personId,
-      @PathVariable UUID applicationId) {
+      Authentication authentication, @PathVariable UUID applicationId) {
+    JwtAuthenticatedUser principal = requireInstitutionalUser(authentication);
+    // Only look up by institution when the caller actually has review permission - otherwise
+    // this stays a pure self-service lookup and other applicants' data never matches.
+    UUID institutionId =
+        authorizationService.hasPermission(authentication, PermissionCode.ENROLLMENT_PERIOD_READ)
+            ? principal.institutionId()
+            : null;
     EnrollmentApplicationResponse response =
-        applicationService.getApplicationById(institutionId, personId, applicationId);
+        applicationService.getApplicationById(institutionId, principal.personId(), applicationId);
     return ResponseEntity.ok(response);
   }
 
   @PatchMapping(value = "/{applicationId}/draft", version = Version.V1)
   public ResponseEntity<EnrollmentApplicationResponse> updateDraft(
-      @RequestHeader("X-Person-Id") UUID personId,
+      Authentication authentication,
       @PathVariable UUID applicationId,
       @RequestBody UpdateEnrollmentDraftRequest request) {
+    JwtAuthenticatedUser principal = requireInstitutionalUser(authentication);
     EnrollmentApplicationResponse response =
-        applicationService.updateDraft(personId, applicationId, request);
+        applicationService.updateDraft(principal.personId(), applicationId, request);
     return ResponseEntity.ok(response);
   }
 
   @PostMapping(value = "/{applicationId}/cancel", version = Version.V1)
   public ResponseEntity<EnrollmentApplicationResponse> cancelApplication(
-      @RequestHeader("X-Person-Id") UUID personId, @PathVariable UUID applicationId) {
+      Authentication authentication, @PathVariable UUID applicationId) {
+    JwtAuthenticatedUser principal = requireInstitutionalUser(authentication);
     EnrollmentApplicationResponse response =
-        applicationService.cancelApplication(personId, applicationId);
+        applicationService.cancelApplication(principal.personId(), applicationId);
     return ResponseEntity.ok(response);
   }
 
   @PostMapping(value = "/{applicationId}/submit", version = Version.V1)
   public ResponseEntity<EnrollmentApplicationResponse> submitApplication(
-      @RequestHeader("X-Person-Id") UUID personId, @PathVariable UUID applicationId) {
+      Authentication authentication, @PathVariable UUID applicationId) {
+    JwtAuthenticatedUser principal = requireInstitutionalUser(authentication);
     EnrollmentApplicationResponse response =
-        applicationService.submitApplication(personId, applicationId);
+        applicationService.submitApplication(principal.personId(), applicationId);
     return ResponseEntity.ok(response);
   }
 
   @GetMapping(version = Version.V1)
+  @RequiresPermission(PermissionCode.ENROLLMENT_PERIOD_READ)
   public ResponseEntity<PaginatedResponse<EnrollmentApplicationResponse>> listApplications(
-      @RequestHeader(value = "X-Institution-Id", required = false) UUID headerInstitutionId,
-      @RequestParam(value = "institutionId", required = false) UUID paramInstitutionId,
+      Authentication authentication,
       @RequestParam(required = false) UUID periodId,
       @RequestParam(required = false) EnrollmentApplicationStatus status,
       @RequestParam(required = false) String search,
       @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-    UUID institutionId = headerInstitutionId != null ? headerInstitutionId : paramInstitutionId;
-    if (institutionId == null) {
-      throw new IllegalArgumentException(
-          "X-Institution-Id header or institutionId parameter is required");
-    }
+    JwtAuthenticatedUser principal = requireInstitutionalUser(authentication);
     PaginatedResponse<EnrollmentApplicationResponse> response =
-        applicationService.listApplications(institutionId, periodId, status, search, pageable);
+        applicationService.listApplications(
+            principal.institutionId(), periodId, status, search, pageable);
     return ResponseEntity.ok(response);
+  }
+
+  private JwtAuthenticatedUser requireInstitutionalUser(Authentication authentication) {
+    institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
+    return (JwtAuthenticatedUser) authentication.getPrincipal();
   }
 }

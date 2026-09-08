@@ -46,16 +46,12 @@ public class EnrollmentAttachmentService {
 
   @Transactional
   public EnrollmentAttachmentResponse uploadAttachment(
-      UUID applicationId,
-      MultipartFile file,
-      String attachmentTypeStr,
-      UUID callerPersonId,
-      Authentication authentication) {
+      UUID applicationId, MultipartFile file, String attachmentTypeStr, Authentication authentication) {
 
     EnrollmentAttachmentType attachmentType = parseAttachmentType(attachmentTypeStr);
 
     EnrollmentApplication application = getActiveApplication(applicationId);
-    ensureCanModify(application, callerPersonId, authentication);
+    ensureCanModify(application, authentication);
 
     if (application.getStatus() != EnrollmentApplicationStatus.DRAFT) {
       throw new ApplicationNotEditableException(applicationId);
@@ -97,10 +93,10 @@ public class EnrollmentAttachmentService {
 
   @Transactional(readOnly = true)
   public AttachmentContentResult getAttachmentContent(
-      UUID applicationId, UUID attachmentId, UUID callerPersonId, Authentication authentication) {
+      UUID applicationId, UUID attachmentId, Authentication authentication) {
 
     EnrollmentApplication application = getActiveApplication(applicationId);
-    ensureCanAccess(application, callerPersonId, authentication);
+    ensureCanAccess(application, authentication);
 
     EnrollmentAttachment attachment =
         attachmentRepository
@@ -112,11 +108,10 @@ public class EnrollmentAttachmentService {
   }
 
   @Transactional
-  public void deleteAttachment(
-      UUID applicationId, UUID attachmentId, UUID callerPersonId, Authentication authentication) {
+  public void deleteAttachment(UUID applicationId, UUID attachmentId, Authentication authentication) {
 
     EnrollmentApplication application = getActiveApplication(applicationId);
-    ensureCanModify(application, callerPersonId, authentication);
+    ensureCanModify(application, authentication);
 
     if (application.getStatus() != EnrollmentApplicationStatus.DRAFT) {
       throw new ApplicationNotEditableException(applicationId);
@@ -134,10 +129,10 @@ public class EnrollmentAttachmentService {
 
   @Transactional(readOnly = true)
   public List<EnrollmentAttachmentResponse> listAttachments(
-      UUID applicationId, UUID callerPersonId, Authentication authentication) {
+      UUID applicationId, Authentication authentication) {
 
     EnrollmentApplication application = getActiveApplication(applicationId);
-    ensureCanAccess(application, callerPersonId, authentication);
+    ensureCanAccess(application, authentication);
 
     return attachmentRepository
         .findByEnrollmentApplicationIdAndDeletedAtIsNull(applicationId)
@@ -166,72 +161,40 @@ public class EnrollmentAttachmentService {
     }
   }
 
-  private void ensureCanAccess(
-      EnrollmentApplication application, UUID callerPersonId, Authentication authentication) {
-    if (isAuthorized(application, callerPersonId, authentication)) {
+  private void ensureCanAccess(EnrollmentApplication application, Authentication authentication) {
+    if (isAuthorized(application, authentication)) {
       return;
     }
     throw new AccessDeniedException(
         "No tiene permisos para acceder a los adjuntos de esta solicitud.");
   }
 
-  private void ensureCanModify(
-      EnrollmentApplication application, UUID callerPersonId, Authentication authentication) {
-    if (isAuthorized(application, callerPersonId, authentication)) {
+  private void ensureCanModify(EnrollmentApplication application, Authentication authentication) {
+    if (isAuthorized(application, authentication)) {
       return;
     }
     throw new AccessDeniedException("No tiene permisos para modificar adjuntos de esta solicitud.");
   }
 
-  private boolean isAuthorized(
-      EnrollmentApplication application, UUID callerPersonId, Authentication authentication) {
-    UUID applicantPersonId = application.getApplicantPerson().getId();
-
-    // 1. Direct personId parameter/header match
-    if (callerPersonId != null && callerPersonId.equals(applicantPersonId)) {
-      return true;
+  private boolean isAuthorized(EnrollmentApplication application, Authentication authentication) {
+    if (authentication == null || authentication.getPrincipal() == null) {
+      return false;
     }
 
-    // 2. Authentication principal
-    if (authentication != null && authentication.getPrincipal() != null) {
-      // Platform Account / Admin
-      if (authentication.getPrincipal() instanceof JwtAuthenticatedPlatformAccount) {
-        return true;
-      }
-      if (authorizationService != null
-          && authorizationService.hasPlatformRole(
-              authentication, PlatformRoleCode.PLATFORM_ADMIN)) {
-        return true;
-      }
-
-      // Institutional User
-      if (authentication.getPrincipal() instanceof JwtAuthenticatedUser user) {
-        if (user.personId() != null && user.personId().equals(applicantPersonId)) {
-          return true;
-        }
-        if (authorityResolver != null && application.getInstitution() != null) {
-          InstitutionalAuthoritySnapshot snapshot =
-              authorityResolver.resolvePersonAuthorities(
-                  user.personId(), application.getInstitution().getId());
-          if (isAdministrativeRole(snapshot)) {
-            return true;
-          }
-        }
-      }
+    if (authentication.getPrincipal() instanceof JwtAuthenticatedPlatformAccount) {
+      return authorizationService.hasPlatformRole(authentication, PlatformRoleCode.PLATFORM_ADMIN);
     }
 
-    // 3. Fallback: callerPersonId header checked for administrative role in institution
-    if (callerPersonId != null
-        && authorityResolver != null
-        && application.getInstitution() != null) {
-      try {
+    if (authentication.getPrincipal() instanceof JwtAuthenticatedUser user) {
+      UUID applicantPersonId = application.getApplicantPerson().getId();
+      if (user.personId() != null && user.personId().equals(applicantPersonId)) {
+        return true;
+      }
+      if (application.getInstitution() != null) {
         InstitutionalAuthoritySnapshot snapshot =
             authorityResolver.resolvePersonAuthorities(
-                callerPersonId, application.getInstitution().getId());
-        if (isAdministrativeRole(snapshot)) {
-          return true;
-        }
-      } catch (Exception ignored) {
+                user.personId(), application.getInstitution().getId());
+        return isAdministrativeRole(snapshot);
       }
     }
 

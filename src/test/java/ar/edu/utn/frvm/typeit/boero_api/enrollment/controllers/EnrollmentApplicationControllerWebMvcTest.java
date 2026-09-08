@@ -2,7 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.controllers;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -10,10 +10,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.JwtService;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.TokenBlacklistService;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.security.PermissionAuthorizationAspect;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.GlobalExceptionHandler;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.config.WebConfig;
@@ -33,16 +38,19 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.util.PathMatcher;
 
 @WebMvcTest(EnrollmentApplicationController.class)
-@Import({GlobalExceptionHandler.class, WebConfig.class})
+@Import({PermissionAuthorizationAspect.class, GlobalExceptionHandler.class, WebConfig.class})
+@EnableAspectJAutoProxy
 @AutoConfigureMockMvc(addFilters = false)
 class EnrollmentApplicationControllerWebMvcTest {
 
@@ -56,12 +64,27 @@ class EnrollmentApplicationControllerWebMvcTest {
   private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
   @MockitoBean private EnrollmentApplicationService applicationService;
+  @MockitoBean private InstitutionalCallerGuard institutionalCallerGuard;
+  @MockitoBean private AuthorizationService authorizationService;
   @MockitoBean private PathMatcher pathMatcher;
   @MockitoBean private AuthenticationEntryPoint authenticationEntryPoint;
   @MockitoBean private JwtService jwtService;
   @MockitoBean private TokenBlacklistService tokenBlacklistService;
   @MockitoBean private IsSessionActiveUseCase isSessionActiveUseCase;
   @MockitoBean private IsPlatformSessionActiveUseCase isPlatformSessionActiveUseCase;
+
+  private static TestingAuthenticationToken applicantAuthentication() {
+    JwtAuthenticatedUser principal =
+        JwtAuthenticatedUser.builder()
+            .userId(UUID.randomUUID())
+            .personId(PERSON_ID)
+            .documentNumber("35123456")
+            .institutionId(INSTITUTION_ID)
+            .sessionId(UUID.randomUUID())
+            .tokenId("jti")
+            .build();
+    return new TestingAuthenticationToken(principal, null);
+  }
 
   private EnrollmentApplicationResponse createMockResponse(EnrollmentApplicationStatus status) {
     return EnrollmentApplicationResponse.builder()
@@ -101,8 +124,7 @@ class EnrollmentApplicationControllerWebMvcTest {
     mockMvc
         .perform(
             post("/api/v1/enrollment-applications")
-                .header("X-Institution-Id", INSTITUTION_ID.toString())
-                .header("X-Person-Id", PERSON_ID.toString())
+                .principal(applicantAuthentication())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
@@ -112,41 +134,50 @@ class EnrollmentApplicationControllerWebMvcTest {
   }
 
   @Test
-  @DisplayName("GET /api/v1/enrollment-applications/{id} should get application")
-  void getApplication_success() throws Exception {
+  @DisplayName("GET /api/v1/enrollment-applications/{id} should get own application without review permission")
+  void getApplication_selfServiceSuccess() throws Exception {
     EnrollmentApplicationResponse response = createMockResponse(EnrollmentApplicationStatus.DRAFT);
+    when(authorizationService.hasPermission(any(), eq(PermissionCode.ENROLLMENT_PERIOD_READ)))
+        .thenReturn(false);
+    when(applicationService.getApplicationById(isNull(), eq(PERSON_ID), eq(APPLICATION_ID)))
+        .thenReturn(response);
+
+    mockMvc
+        .perform(get("/api/v1/enrollment-applications/{id}", APPLICATION_ID).principal(applicantAuthentication()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.applicationId").value(APPLICATION_ID.toString()));
+  }
+
+  @Test
+  @DisplayName("GET /api/v1/enrollment-applications/{id} should look up by institution when caller can review")
+  void getApplication_institutionalReviewerSuccess() throws Exception {
+    EnrollmentApplicationResponse response = createMockResponse(EnrollmentApplicationStatus.SUBMITTED);
+    when(authorizationService.hasPermission(any(), eq(PermissionCode.ENROLLMENT_PERIOD_READ)))
+        .thenReturn(true);
     when(applicationService.getApplicationById(eq(INSTITUTION_ID), eq(PERSON_ID), eq(APPLICATION_ID)))
         .thenReturn(response);
 
     mockMvc
-        .perform(
-            get("/api/v1/enrollment-applications/{id}", APPLICATION_ID)
-                .header("X-Institution-Id", INSTITUTION_ID.toString())
-                .header("X-Person-Id", PERSON_ID.toString()))
+        .perform(get("/api/v1/enrollment-applications/{id}", APPLICATION_ID).principal(applicantAuthentication()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.applicationId").value(APPLICATION_ID.toString()))
-        .andExpect(jsonPath("$.status").value("DRAFT"));
+        .andExpect(jsonPath("$.applicationId").value(APPLICATION_ID.toString()));
   }
 
   @Test
   @DisplayName("PATCH /api/v1/enrollment-applications/{id}/draft should update draft")
   void updateDraft_success() throws Exception {
     EnrollmentApplicationResponse response = createMockResponse(EnrollmentApplicationStatus.DRAFT);
-    when(applicationService.updateDraft(eq(PERSON_ID), eq(APPLICATION_ID), any()))
-        .thenReturn(response);
+    when(applicationService.updateDraft(eq(PERSON_ID), eq(APPLICATION_ID), any())).thenReturn(response);
 
     UpdateEnrollmentDraftRequest request =
         UpdateEnrollmentDraftRequest.builder()
-            .data(
-                EnrollmentDraftData.builder()
-                    .personalData(PersonalDataDto.builder().firstName("Lucía Modificada").build())
-                    .build())
+            .data(EnrollmentDraftData.builder().personalData(PersonalDataDto.builder().firstName("Lucía Modificada").build()).build())
             .build();
 
     mockMvc
         .perform(
             patch("/api/v1/enrollment-applications/{id}/draft", APPLICATION_ID)
-                .header("X-Person-Id", PERSON_ID.toString())
+                .principal(applicantAuthentication())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk())
@@ -157,13 +188,10 @@ class EnrollmentApplicationControllerWebMvcTest {
   @DisplayName("POST /api/v1/enrollment-applications/{id}/cancel should cancel draft")
   void cancelApplication_success() throws Exception {
     EnrollmentApplicationResponse response = createMockResponse(EnrollmentApplicationStatus.CANCELLED);
-    when(applicationService.cancelApplication(eq(PERSON_ID), eq(APPLICATION_ID)))
-        .thenReturn(response);
+    when(applicationService.cancelApplication(eq(PERSON_ID), eq(APPLICATION_ID))).thenReturn(response);
 
     mockMvc
-        .perform(
-            post("/api/v1/enrollment-applications/{id}/cancel", APPLICATION_ID)
-                .header("X-Person-Id", PERSON_ID.toString()))
+        .perform(post("/api/v1/enrollment-applications/{id}/cancel", APPLICATION_ID).principal(applicantAuthentication()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("CANCELLED"));
   }
@@ -172,19 +200,16 @@ class EnrollmentApplicationControllerWebMvcTest {
   @DisplayName("POST /api/v1/enrollment-applications/{id}/submit should submit draft")
   void submitApplication_success() throws Exception {
     EnrollmentApplicationResponse response = createMockResponse(EnrollmentApplicationStatus.SUBMITTED);
-    when(applicationService.submitApplication(eq(PERSON_ID), eq(APPLICATION_ID)))
-        .thenReturn(response);
+    when(applicationService.submitApplication(eq(PERSON_ID), eq(APPLICATION_ID))).thenReturn(response);
 
     mockMvc
-        .perform(
-            post("/api/v1/enrollment-applications/{id}/submit", APPLICATION_ID)
-                .header("X-Person-Id", PERSON_ID.toString()))
+        .perform(post("/api/v1/enrollment-applications/{id}/submit", APPLICATION_ID).principal(applicantAuthentication()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("SUBMITTED"));
   }
 
   @Test
-  @DisplayName("GET /api/v1/enrollment-applications should return paginated list")
+  @DisplayName("GET /api/v1/enrollment-applications should return paginated list for an authorized reviewer")
   void listApplications_success() throws Exception {
     EnrollmentApplicationResponse response = createMockResponse(EnrollmentApplicationStatus.SUBMITTED);
     PaginatedResponse<EnrollmentApplicationResponse> page =
@@ -196,15 +221,24 @@ class EnrollmentApplicationControllerWebMvcTest {
             .totalPages(1)
             .build();
 
+    when(authorizationService.hasPermission(any(), eq(PermissionCode.ENROLLMENT_PERIOD_READ))).thenReturn(true);
     when(applicationService.listApplications(eq(INSTITUTION_ID), any(), any(), any(), any(Pageable.class)))
         .thenReturn(page);
 
     mockMvc
-        .perform(
-            get("/api/v1/enrollment-applications")
-                .header("X-Institution-Id", INSTITUTION_ID.toString()))
+        .perform(get("/api/v1/enrollment-applications").principal(applicantAuthentication()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items[0].applicationId").value(APPLICATION_ID.toString()))
         .andExpect(jsonPath("$.totalItems").value(1));
+  }
+
+  @Test
+  @DisplayName("GET /api/v1/enrollment-applications should forbid callers without review permission")
+  void listApplications_forbiddenWithoutPermission() throws Exception {
+    when(authorizationService.hasPermission(any(), eq(PermissionCode.ENROLLMENT_PERIOD_READ))).thenReturn(false);
+
+    mockMvc
+        .perform(get("/api/v1/enrollment-applications").principal(applicantAuthentication()))
+        .andExpect(status().isForbidden());
   }
 }
