@@ -59,7 +59,7 @@ class AssignPersonRoleUseCaseTest {
 
     verify(assignPersonSystemRoleUseCase).execute(person, role, true);
     assertThat(response.technicalCode()).isEqualTo(SystemRoleCode.TEACHER);
-    assertThat(response.displayName()).isEqualTo("Docente");
+    assertThat(response.displayName()).isEqualTo("Profesor");
   }
 
   @Test

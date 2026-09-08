@@ -1,20 +1,28 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicLifecycleEvent;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicLifecycleAction;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicLifecycleResource;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicConflictException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicIntegrityViolationTranslator;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicSpaceNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicYearNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.CourseNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.InstrumentNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.ShiftNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.StudyPlanNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.TrainingPathNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicLifecycleEventRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.InstrumentRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.ShiftRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicLifecycleRequest;
@@ -40,6 +48,8 @@ public class AcademicLifecycleService {
   private final StudyPlanRepository studyPlanRepository;
   private final AcademicSpaceRepository academicSpaceRepository;
   private final InstrumentRepository instrumentRepository;
+  private final ShiftRepository shiftRepository;
+  private final CourseRepository courseRepository;
   private final AcademicLifecycleEventRepository eventRepository;
   private final AcademicLifecycleActorResolver actorResolver;
 
@@ -132,6 +142,17 @@ public class AcademicLifecycleService {
   }
 
   @Transactional
+  public void recordStudyPlanVersionCreated(
+      final Institution institution, final UUID versionId, final UUID previousVersionId) {
+    record(
+        institution,
+        AcademicLifecycleResource.STUDY_PLAN,
+        versionId,
+        AcademicLifecycleAction.CREATE_VERSION,
+        new AcademicLifecycleRequest("Versión creada a partir del plan " + previousVersionId));
+  }
+
+  @Transactional
   public void deleteAcademicSpace(
       final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
     final var space =
@@ -185,6 +206,87 @@ public class AcademicLifecycleService {
     restore(
         instrument, instrument.getInstitution(), AcademicLifecycleResource.INSTRUMENT, id, request);
   }
+
+  @Transactional
+  public void deleteShift(
+      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+    final var shift =
+        shiftRepository
+            .findByIdAndInstitution_IdForLifecycle(id, institutionId)
+            .orElseThrow(ShiftNotFoundException::new);
+    if (shift.delete(LocalDateTime.now())) {
+      record(
+          shift.getInstitution(),
+          AcademicLifecycleResource.SHIFT,
+          id,
+          AcademicLifecycleAction.DELETE,
+          request);
+    }
+  }
+
+  @Transactional
+  public void deleteCourse(
+      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+    lockCourseParents(institutionId, id);
+    final var course =
+        courseRepository
+            .findByIdAndInstitution_IdForLifecycle(id, institutionId)
+            .orElseThrow(CourseNotFoundException::new);
+    if (course.delete(LocalDateTime.now())) {
+      record(
+          course.getInstitution(),
+          AcademicLifecycleResource.COURSE,
+          id,
+          AcademicLifecycleAction.DELETE,
+          request);
+    }
+  }
+
+  @Transactional
+  public void restoreShift(
+      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+    final var shift =
+        shiftRepository
+            .findByIdAndInstitution_IdForLifecycle(id, institutionId)
+            .orElseThrow(ShiftNotFoundException::new);
+    restore(shift, shift.getInstitution(), AcademicLifecycleResource.SHIFT, id, request);
+  }
+
+  @Transactional
+  public void restoreCourse(
+      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+    final var parents = lockCourseParents(institutionId, id);
+    final var course =
+        courseRepository
+            .findByIdAndInstitution_IdForLifecycle(id, institutionId)
+            .orElseThrow(CourseNotFoundException::new);
+    final boolean parentUnavailable =
+        course.isDeleted()
+            && (parents.studyPlan().getStatus() != StudyPlanStatus.ACTIVE
+                || parents.academicYear().getStatus() != AcademicYearStatus.ACTIVE);
+    if (parentUnavailable) {
+      throw new AcademicConflictException(AcademicMessages.RESTORE_PARENT_UNAVAILABLE);
+    }
+    restore(course, course.getInstitution(), AcademicLifecycleResource.COURSE, id, request);
+  }
+
+  private CourseLifecycleParents lockCourseParents(final UUID institutionId, final UUID courseId) {
+    final var context =
+        courseRepository
+            .findAcademicContextByIdAndInstitution_Id(courseId, institutionId)
+            .orElseThrow(CourseNotFoundException::new);
+    final var studyPlan =
+        studyPlanRepository
+            .findByIdAndInstitution_IdForLifecycle(context.getStudyPlanId(), institutionId)
+            .orElseThrow(StudyPlanNotFoundException::new);
+    final var academicYear =
+        academicYearRepository
+            .findByIdAndInstitution_IdForUpdate(context.getAcademicYearId(), institutionId)
+            .orElseThrow(AcademicYearNotFoundException::new);
+    return new CourseLifecycleParents(studyPlan, academicYear);
+  }
+
+  private record CourseLifecycleParents(StudyPlan studyPlan, AcademicYear academicYear) {}
 
   private void restore(
       final SoftDeletable resource,

@@ -11,6 +11,10 @@ public final class AcademicMessages {
   public static final String ACADEMIC_SPACE_NOT_FOUND =
       "El espacio académico especificado no existe.";
   public static final String INSTRUMENT_NOT_FOUND = "El instrumento especificado no existe.";
+  public static final String SHIFT_NOT_FOUND = "El turno especificado no existe.";
+  public static final String COURSE_NOT_FOUND = "El curso especificado no existe.";
+  public static final String COURSE_ALREADY_EXISTS =
+      "Ya existe un curso para ese espacio académico en el ciclo lectivo indicado.";
   public static final String STUDY_PLAN_SPACE_NOT_FOUND =
       "El espacio del plan especificado no existe.";
   public static final String PREREQUISITE_NOT_FOUND = "La correlatividad especificada no existe.";
@@ -30,14 +34,25 @@ public final class AcademicMessages {
       "El nivel no puede eliminarse porque contiene espacios académicos. Quitá esos espacios antes de continuar.";
   public static final String TRAINING_PATH_HAS_ACTIVE_PLANS =
       "El trayecto formativo no puede desactivarse porque tiene planes de estudio activos asociados.";
+  public static final String STUDY_PLAN_HAS_ACTIVE_COURSES =
+      "El plan de estudio no puede desactivarse porque tiene cursos que no están cerrados asociados.";
+  public static final String COURSE_STUDY_PLAN_NOT_ACTIVE =
+      "El plan de estudio seleccionado debe estar activo.";
+  public static final String COURSE_YEAR_NOT_ACTIVE =
+      "El ciclo lectivo seleccionado debe estar activo.";
+  public static final String COURSE_SPACE_NOT_IN_PLAN =
+      "El espacio académico indicado no pertenece al plan de estudio seleccionado.";
+  public static final String COURSE_REQUIRES_CLASS = "El curso debe tener al menos una clase.";
   public static final String ACADEMIC_SPACE_HAS_ACTIVE_OR_DRAFT_PLANS =
       "El espacio académico no puede desactivarse porque está utilizado en un plan de estudio activo o en borrador.";
+  public static final String ACADEMIC_SPACE_FORMAT_HAS_COURSES =
+      "El formato del espacio académico no puede modificarse porque ya tiene cursos asociados.";
   public static final String STUDY_PLAN_ACTIVATION_REQUIRES_START_AND_ACTIVE_PATH =
       "El plan no puede activarse hasta completar la fecha de inicio y tener un trayecto formativo activo.";
   public static final String STUDY_PLAN_ACTIVATION_REQUIRES_SPACES =
       "El plan no puede activarse porque todavía no tiene espacios académicos incorporados.";
   public static final String STUDY_PLAN_STATUS_TRANSITION_INVALID =
-      "El plan de estudio solo puede volver a borrador desde un estado válido.";
+      "La transición de estado solicitada no es válida para el plan de estudio.";
   public static final String INVALID_STATE = "La transición de estado solicitada no es válida.";
   public static final String INVALID_RELATIONSHIP =
       "La relación académica especificada no es válida.";
@@ -58,11 +73,34 @@ public final class AcademicMessages {
       "La fecha final es requerida al inactivar el plan.";
   public static final String STUDY_PLAN_END_DATE_INVALID =
       "La fecha final no puede ser anterior al inicio del plan.";
+  public static final String STUDY_PLAN_END_DATE_CANNOT_BE_FUTURE =
+      "La fecha de finalización no puede ser posterior a la fecha actual.";
+  public static final String STUDY_PLAN_VERSION_REQUIRES_ORDERED_DATES =
+      "La nueva versión necesita una fecha de inicio para ordenar la vigencia.";
+  public static final String STUDY_PLAN_VERSION_DATE_OVERLAP =
+      "La vigencia de la nueva versión se superpone con la versión anterior.";
+  public static final String STUDY_PLAN_VERSION_SOURCE_INVALID =
+      "Solo se puede crear una versión a partir de un plan publicado o retirado.";
+  public static final String STUDY_PLAN_VERSION_ALREADY_EXISTS =
+      "El plan ya tiene una versión posterior vigente o en preparación.";
+  public static final String STUDY_PLAN_VERSION_START_REQUIRED =
+      "Definí la fecha de inicio de la nueva versión.";
   public static final String STUDY_PLAN_DATES_INVALID = "La vigencia del plan no es válida.";
   public static final String STUDY_PLAN_START_DATE_REQUIRED =
       "Completá la fecha de inicio antes de indicar una fecha final.";
   public static final String DATE_PAIR_REQUIRED = "Completá ambas fechas o dejá ambas vacías.";
   public static final String INVALID_VALUE = "El valor indicado no es válido.";
+  public static final String COURSE_DAY_DUPLICATED =
+      "Cada día solo puede configurarse una vez por clase.";
+  public static final String COURSE_SCHEDULE_INVALID = "El horario indicado no es válido.";
+  public static final String COURSE_SCHEDULE_OVERLAP =
+      "Los horarios de un mismo día no pueden superponerse.";
+  public static final String COURSE_PERIOD_DURATION_REQUIRED =
+      "La duración del período es requerida para los espacios académicos individuales.";
+  public static final String COURSE_PERIOD_DURATION_NOT_DIVISIBLE =
+      "La duración total de los horarios de cada día debe ser divisible por la duración del período.";
+  public static final String COURSE_TEACHERS_INVALID =
+      "Alguno de los docentes indicados no tiene el rol de docente en la institución.";
   public static final String INVALID_NAME_FORMAT = "El nombre no tiene un formato válido.";
   public static final String INVALID_DISPLAY_ORDER = "El orden debe ser mayor que cero.";
   public static final String DELETE_REFERENCED_RESOURCE =

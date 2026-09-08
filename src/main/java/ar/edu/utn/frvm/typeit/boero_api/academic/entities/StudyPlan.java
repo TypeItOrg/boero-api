@@ -54,6 +54,14 @@ public class StudyPlan extends SoftDeletable {
   @JoinColumn(name = "training_path_id", nullable = false)
   private TrainingPath trainingPath;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "previous_version_id")
+  private StudyPlan previousVersion;
+
+  @Column(name = "version_number", nullable = false)
+  @Builder.Default
+  private int versionNumber = 1;
+
   @Column(nullable = false, length = 150)
   private String name;
 
@@ -81,6 +89,29 @@ public class StudyPlan extends SoftDeletable {
         .effectiveFrom(effectiveFrom)
         .effectiveTo(effectiveTo)
         .status(StudyPlanStatus.DRAFT)
+        .versionNumber(1)
+        .build();
+  }
+
+  public static StudyPlan createVersion(
+      final StudyPlan source,
+      final String name,
+      final LocalDate effectiveFrom,
+      final LocalDate effectiveTo,
+      final int versionNumber) {
+    validateDates(effectiveFrom, effectiveTo);
+    if (versionNumber <= 1) {
+      throw new IllegalArgumentException("A study plan version must be greater than one.");
+    }
+    return StudyPlan.builder()
+        .institution(source.getInstitution())
+        .trainingPath(source.getTrainingPath())
+        .previousVersion(source)
+        .versionNumber(versionNumber)
+        .name(AcademicNameNormalizer.display(name))
+        .effectiveFrom(effectiveFrom)
+        .effectiveTo(effectiveTo)
+        .status(StudyPlanStatus.DRAFT)
         .build();
   }
 
@@ -104,6 +135,7 @@ public class StudyPlan extends SoftDeletable {
     if (status != StudyPlanStatus.ACTIVE) {
       throw new InvalidAcademicStateException();
     }
+    validateDates(effectiveFrom, effectiveTo);
     this.effectiveTo = effectiveTo;
     status = StudyPlanStatus.INACTIVE;
   }
@@ -115,7 +147,9 @@ public class StudyPlan extends SoftDeletable {
   }
 
   public boolean delete(final LocalDateTime deletedAt) {
-    ensureDraft();
+    if (status != StudyPlanStatus.DRAFT && status != StudyPlanStatus.INACTIVE) {
+      throw new InvalidAcademicStateException();
+    }
     return markDeleted(deletedAt);
   }
 

@@ -35,6 +35,8 @@ public class InstitutionRoleProvisioner {
               PermissionCode.STUDY_PLAN_READ,
               PermissionCode.ACADEMIC_YEAR_READ,
               PermissionCode.ENROLLMENT_PERIOD_READ),
+          SystemRoleCode.TEACHER,
+          Set.of(),
           SystemRoleCode.INSTITUTIONAL_AUTHORITY,
           EnumSet.allOf(PermissionCode.class));
 
@@ -48,6 +50,7 @@ public class InstitutionRoleProvisioner {
         Set.of(
             SystemRoleCode.APPLICANT,
             SystemRoleCode.STUDENT,
+            SystemRoleCode.TEACHER,
             SystemRoleCode.INSTITUTIONAL_AUTHORITY)) {
       var existingRole =
           roleRepository.findByScopeAndCodeAndInstitution_Id(

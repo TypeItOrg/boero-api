@@ -100,6 +100,10 @@ class PermissionRoleSeedTest {
             PermissionCode.ENROLLMENT_PERIOD_CREATE.getCode(),
             PermissionCode.ENROLLMENT_PERIOD_UPDATE.getCode(),
             PermissionCode.ENROLLMENT_PERIOD_STATUS_UPDATE.getCode(),
-            PermissionCode.ENROLLMENT_PERIOD_READ.getCode());
+            PermissionCode.ENROLLMENT_PERIOD_READ.getCode(),
+            PermissionCode.SHIFT_CREATE.getCode(),
+            PermissionCode.SHIFT_UPDATE.getCode(),
+            PermissionCode.SHIFT_STATUS_UPDATE.getCode(),
+            PermissionCode.SHIFT_READ.getCode());
   }
 }

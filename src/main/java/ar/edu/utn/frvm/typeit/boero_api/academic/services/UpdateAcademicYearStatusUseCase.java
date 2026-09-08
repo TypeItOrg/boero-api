@@ -7,6 +7,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicYearNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicYearStatusRequest;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -19,13 +20,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class UpdateAcademicYearStatusUseCase {
 
   private final AcademicYearRepository academicYearRepository;
+  private final CourseRepository courseRepository;
 
   @Transactional
   public void execute(
       final UUID institutionId, final UUID id, final AcademicYearStatusRequest request) {
     final var academicYear =
         academicYearRepository
-            .findByIdAndInstitution_Id(id, institutionId)
+            .findByIdAndInstitution_IdForUpdate(id, institutionId)
             .orElseThrow(AcademicYearNotFoundException::new);
     if (request.status() == AcademicYearStatus.ACTIVE
         && (academicYear.getStartDate() == null || academicYear.getEndDate() == null)) {
@@ -38,8 +40,17 @@ public class UpdateAcademicYearStatusUseCase {
       throw AcademicConflictException.forField(
           "status", AcademicMessages.ACADEMIC_YEAR_ACTIVE_CONFLICT);
     }
+    final boolean closing = request.status() == AcademicYearStatus.CLOSED;
     try {
       academicYear.transitionTo(request.status());
+      if (closing) {
+        final var courses =
+            courseRepository.findByAcademicYear_IdAndInstitution_IdAndDeletedAtIsNull(
+                id, institutionId);
+        for (final var course : courses) {
+          course.close();
+        }
+      }
       academicYearRepository.flush();
     } catch (DataIntegrityViolationException exception) {
       throw AcademicIntegrityViolationTranslator.translate(exception);

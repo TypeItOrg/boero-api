@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 public enum SystemRoleCode {
   INSTITUTIONAL_AUTHORITY("Administrador Institucional"),
   ADMINISTRATIVE("Administrativo"),
-  TEACHER("Docente"),
+  TEACHER("Profesor"),
   GUARDIAN("Tutor"),
   APPLICANT("Postulante"),
   STUDENT("Estudiante");

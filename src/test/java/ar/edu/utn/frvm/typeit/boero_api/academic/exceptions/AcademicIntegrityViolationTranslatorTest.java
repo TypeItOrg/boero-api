@@ -34,6 +34,38 @@ class AcademicIntegrityViolationTranslatorTest {
         .containsEntry("effectiveFrom", AcademicMessages.STUDY_PLAN_START_DATE_REQUIRED);
   }
 
+  @Test
+  @DisplayName("Should map a duplicated shift name to the name field")
+  void mapsDuplicateShiftNameToNameField() {
+    final var translated =
+        AcademicIntegrityViolationTranslator.translate(
+            violation("shifts_current_institution_name_unique"));
+
+    assertThat(translated).isInstanceOf(AcademicConflictException.class);
+    assertThat(((AcademicConflictException) translated).fieldErrors())
+        .containsEntry("name", AcademicMessages.DUPLICATE_NAME);
+  }
+
+  @Test
+  @DisplayName("Should map an invalid shift name format to the name field")
+  void mapsInvalidShiftNameFormatToNameField() {
+    final var translated =
+        AcademicIntegrityViolationTranslator.translate(violation("shifts_name_format_check"));
+
+    assertThat(translated).isInstanceOf(AcademicValidationException.class);
+    assertThat(((AcademicValidationException) translated).fieldErrors())
+        .containsEntry("name", AcademicMessages.INVALID_NAME_FORMAT);
+  }
+
+  @Test
+  @DisplayName("Should map a shift deleted-state constraint to an invalid state exception")
+  void mapsShiftDeletedStateToInvalidState() {
+    final var translated =
+        AcademicIntegrityViolationTranslator.translate(violation("shifts_deleted_state_check"));
+
+    assertThat(translated).isInstanceOf(InvalidAcademicStateException.class);
+  }
+
   private static DataIntegrityViolationException violation(final String constraintName) {
     final var cause =
         new ConstraintViolationException(

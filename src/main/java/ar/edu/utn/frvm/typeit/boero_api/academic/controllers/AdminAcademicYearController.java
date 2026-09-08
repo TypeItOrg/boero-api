@@ -5,6 +5,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicYearResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicYearStatusRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreateAcademicYearRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.UpdateAcademicYearRequest;
+import ar.edu.utn.frvm.typeit.boero_api.academic.services.CountCoursesForYearUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.CreateAcademicYearUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.GetAcademicYearUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListAcademicYearsUseCase;
@@ -17,6 +18,7 @@ import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -48,6 +50,7 @@ public class AdminAcademicYearController {
   private final GetAcademicYearUseCase getAcademicYearUseCase;
   private final UpdateAcademicYearUseCase updateAcademicYearUseCase;
   private final UpdateAcademicYearStatusUseCase updateAcademicYearStatusUseCase;
+  private final CountCoursesForYearUseCase countCoursesForYearUseCase;
 
   @PostMapping(version = Version.V1)
   @ResponseStatus(HttpStatus.CREATED)
@@ -104,5 +107,12 @@ public class AdminAcademicYearController {
       @PathVariable final UUID academicYearId,
       @Valid @RequestBody final AcademicYearStatusRequest request) {
     updateAcademicYearStatusUseCase.execute(institutionId, academicYearId, request);
+  }
+
+  @GetMapping(value = "/{academicYearId}/courses/count", version = Version.V1)
+  public Map<String, Long> countCoursesForYear(
+      @PathVariable final UUID institutionId, @PathVariable final UUID academicYearId) {
+    final long count = countCoursesForYearUseCase.execute(institutionId, academicYearId);
+    return Map.of("count", count);
   }
 }

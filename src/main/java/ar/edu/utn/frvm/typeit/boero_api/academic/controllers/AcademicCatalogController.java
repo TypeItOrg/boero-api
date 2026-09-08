@@ -1,25 +1,34 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.controllers;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicSpaceResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicSpaceUsageResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.ActiveStatusRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreateAcademicSpaceRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreateInstrumentRequest;
+import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreateShiftRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.InstrumentResponse;
+import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.ShiftResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.UpdateAcademicSpaceRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.UpdateInstrumentRequest;
+import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.UpdateShiftRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.CreateAcademicSpaceUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.CreateInstrumentUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.academic.services.CreateShiftUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.GetAcademicSpaceUsageUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.GetAcademicSpaceUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.GetInstrumentUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.academic.services.GetShiftUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListAcademicSpacesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListInstrumentsUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListShiftsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.UpdateAcademicSpaceStatusUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.UpdateAcademicSpaceUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.UpdateInstrumentStatusUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.UpdateInstrumentUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.academic.services.UpdateShiftStatusUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.academic.services.UpdateShiftUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresInstitutionAccess;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPermission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
@@ -63,6 +72,11 @@ public class AcademicCatalogController {
   private final GetInstrumentUseCase getInstrumentUseCase;
   private final UpdateInstrumentUseCase updateInstrumentUseCase;
   private final UpdateInstrumentStatusUseCase updateInstrumentStatusUseCase;
+  private final CreateShiftUseCase createShiftUseCase;
+  private final ListShiftsUseCase listShiftsUseCase;
+  private final GetShiftUseCase getShiftUseCase;
+  private final UpdateShiftUseCase updateShiftUseCase;
+  private final UpdateShiftStatusUseCase updateShiftStatusUseCase;
 
   @PostMapping(value = "/academic-spaces", version = Version.V1)
   @ResponseStatus(HttpStatus.CREATED)
@@ -80,10 +94,11 @@ public class AcademicCatalogController {
       @RequestParam(required = false) @Size(max = 100) final String search,
       @RequestParam(required = false) final Boolean active,
       @RequestParam(required = false) final AcademicSpaceType type,
+      @RequestParam(required = false) final AcademicSpaceFormat format,
       @RequestParam(defaultValue = "false") final boolean deleted,
       @PageableDefault(sort = "name", direction = Sort.Direction.ASC) final Pageable pageable) {
     return listAcademicSpacesUseCase.execute(
-        institutionId, search, active, type, deleted, pageable);
+        institutionId, search, active, type, format, deleted, pageable);
   }
 
   @GetMapping(value = "/academic-spaces/{academicSpaceId}", version = Version.V1)
@@ -165,5 +180,51 @@ public class AcademicCatalogController {
       @PathVariable final UUID instrumentId,
       @Valid @RequestBody final ActiveStatusRequest request) {
     updateInstrumentStatusUseCase.execute(institutionId, instrumentId, request);
+  }
+
+  @PostMapping(value = "/shifts", version = Version.V1)
+  @ResponseStatus(HttpStatus.CREATED)
+  @RequiresPermission(PermissionCode.SHIFT_CREATE)
+  public ShiftResponse createShift(
+      @PathVariable final UUID institutionId,
+      @Valid @RequestBody final CreateShiftRequest request) {
+    return createShiftUseCase.execute(institutionId, request);
+  }
+
+  @GetMapping(value = "/shifts", version = Version.V1)
+  @RequiresPermission(PermissionCode.SHIFT_READ)
+  public PaginatedResponse<ShiftResponse> listShifts(
+      @PathVariable final UUID institutionId,
+      @RequestParam(required = false) @Size(max = 100) final String search,
+      @RequestParam(required = false) final Boolean active,
+      @RequestParam(defaultValue = "false") final boolean deleted,
+      @PageableDefault(sort = "name", direction = Sort.Direction.ASC) final Pageable pageable) {
+    return listShiftsUseCase.execute(institutionId, search, active, deleted, pageable);
+  }
+
+  @GetMapping(value = "/shifts/{shiftId}", version = Version.V1)
+  @RequiresPermission(PermissionCode.SHIFT_READ)
+  public ShiftResponse getShift(
+      @PathVariable final UUID institutionId, @PathVariable final UUID shiftId) {
+    return getShiftUseCase.execute(institutionId, shiftId);
+  }
+
+  @PutMapping(value = "/shifts/{shiftId}", version = Version.V1)
+  @RequiresPermission(PermissionCode.SHIFT_UPDATE)
+  public ShiftResponse updateShift(
+      @PathVariable final UUID institutionId,
+      @PathVariable final UUID shiftId,
+      @Valid @RequestBody final UpdateShiftRequest request) {
+    return updateShiftUseCase.execute(institutionId, shiftId, request);
+  }
+
+  @PatchMapping(value = "/shifts/{shiftId}/status", version = Version.V1)
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @RequiresPermission(PermissionCode.SHIFT_STATUS_UPDATE)
+  public void updateShiftStatus(
+      @PathVariable final UUID institutionId,
+      @PathVariable final UUID shiftId,
+      @Valid @RequestBody final ActiveStatusRequest request) {
+    updateShiftStatusUseCase.execute(institutionId, shiftId, request);
   }
 }

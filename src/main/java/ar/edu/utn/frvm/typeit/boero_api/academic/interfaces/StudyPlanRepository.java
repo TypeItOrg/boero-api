@@ -59,19 +59,40 @@ public interface StudyPlanRepository
   Optional<StudyPlan> findByIdAndInstitution_IdForLifecycle(
       @Param("id") UUID id, @Param("institutionId") UUID institutionId);
 
+  boolean existsByPreviousVersion_IdAndDeletedAtIsNull(UUID previousVersionId);
+
   @Query(
       value =
-          "SELECT EXISTS (SELECT 1 FROM study_plans WHERE training_path_id = :trainingPathId AND deleted_at IS NULL AND lower(translate(name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN')) = lower(translate(:name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN'))) ",
+          "SELECT EXISTS (SELECT 1 FROM study_plans WHERE training_path_id = :trainingPathId AND version_number = 1 AND deleted_at IS NULL AND lower(translate(name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN')) = lower(translate(:name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN'))) ",
       nativeQuery = true)
   boolean existsByNormalizedName(
       @Param("trainingPathId") UUID trainingPathId, @Param("name") String name);
 
   @Query(
       value =
-          "SELECT EXISTS (SELECT 1 FROM study_plans WHERE training_path_id = :trainingPathId AND deleted_at IS NULL AND study_plan_id <> :id AND lower(translate(name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN')) = lower(translate(:name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN'))) ",
+          "SELECT EXISTS (SELECT 1 FROM study_plans WHERE training_path_id = :trainingPathId AND version_number = :versionNumber AND deleted_at IS NULL AND lower(translate(name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN')) = lower(translate(:name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN'))) ",
+      nativeQuery = true)
+  boolean existsByNormalizedNameAndVersion(
+      @Param("trainingPathId") UUID trainingPathId,
+      @Param("name") String name,
+      @Param("versionNumber") int versionNumber);
+
+  @Query(
+      value =
+          "SELECT EXISTS (SELECT 1 FROM study_plans WHERE training_path_id = :trainingPathId AND version_number = 1 AND deleted_at IS NULL AND study_plan_id <> :id AND lower(translate(name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN')) = lower(translate(:name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN'))) ",
       nativeQuery = true)
   boolean existsByNormalizedNameAndIdNot(
       @Param("trainingPathId") UUID trainingPathId,
       @Param("name") String name,
+      @Param("id") UUID id);
+
+  @Query(
+      value =
+          "SELECT EXISTS (SELECT 1 FROM study_plans WHERE training_path_id = :trainingPathId AND version_number = :versionNumber AND deleted_at IS NULL AND study_plan_id <> :id AND lower(translate(name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN')) = lower(translate(:name, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN'))) ",
+      nativeQuery = true)
+  boolean existsByNormalizedNameAndVersionAndIdNot(
+      @Param("trainingPathId") UUID trainingPathId,
+      @Param("name") String name,
+      @Param("versionNumber") int versionNumber,
       @Param("id") UUID id);
 }

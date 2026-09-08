@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicSpaceResponse;
@@ -23,6 +24,7 @@ public class ListAcademicSpacesUseCase {
       final String search,
       final Boolean active,
       final AcademicSpaceType type,
+      final AcademicSpaceFormat format,
       final boolean deleted,
       final Pageable pageable) {
     return PaginatedResponse.from(
@@ -32,6 +34,7 @@ public class ListAcademicSpacesUseCase {
                 AcademicNameNormalizer.search(search),
                 active,
                 type,
+                format,
                 deleted,
                 pageable)
             .map(AcademicSpaceResponse::from));
@@ -43,6 +46,6 @@ public class ListAcademicSpacesUseCase {
       final Boolean active,
       final AcademicSpaceType type,
       final Pageable pageable) {
-    return execute(institutionId, search, active, type, false, pageable);
+    return execute(institutionId, search, active, type, null, false, pageable);
   }
 }

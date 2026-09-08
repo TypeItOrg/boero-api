@@ -27,8 +27,8 @@ public class UpdateStudyPlanUseCase {
             .findByIdAndInstitution_IdForUpdate(id, institutionId)
             .orElseThrow(StudyPlanNotFoundException::new);
     final var name = AcademicNameNormalizer.display(request.name());
-    if (studyPlanRepository.existsByNormalizedNameAndIdNot(
-        plan.getTrainingPath().getId(), name, id)) {
+    if (studyPlanRepository.existsByNormalizedNameAndVersionAndIdNot(
+        plan.getTrainingPath().getId(), name, plan.getVersionNumber(), id)) {
       throw AcademicConflictException.forField("name", AcademicMessages.DUPLICATE_NAME);
     }
     plan.updateDraft(name, request.effectiveFrom(), request.effectiveTo());
