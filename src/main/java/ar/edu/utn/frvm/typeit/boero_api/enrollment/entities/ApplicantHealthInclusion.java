@@ -18,36 +18,27 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "applicant_education_backgrounds")
+@Table(name = "applicant_health_inclusions")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
-public class ApplicantEducationBackground extends SoftDeletable {
+public class ApplicantHealthInclusion extends SoftDeletable {
 
   @Id
   @GeneratedUUIDv7
-  @Column(name = "applicant_education_background_id")
+  @Column(name = "applicant_health_inclusion_id")
   private UUID id;
 
   @OneToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "enrollment_application_id", nullable = false)
   private EnrollmentApplication enrollmentApplication;
 
-  @Column(name = "secondary_school", length = 255)
-  private String secondarySchool;
-
-  @Column(name = "school_origin", length = 150)
-  private String schoolOrigin;
-
-  @Column(name = "current_grade_year", length = 50)
-  private String currentGradeYear;
-
-  @Column(name = "secondary_completed", nullable = false)
+  @Column(name = "receives_reasonable_adjustments", nullable = false)
   @Builder.Default
-  private boolean secondaryCompleted = false;
+  private boolean receivesReasonableAdjustments = false;
 
-  @Column(name = "secondary_degree_title", length = 150)
-  private String secondaryDegreeTitle;
+  @Column(name = "adjustment_details", columnDefinition = "text")
+  private String adjustmentDetails;
 }
