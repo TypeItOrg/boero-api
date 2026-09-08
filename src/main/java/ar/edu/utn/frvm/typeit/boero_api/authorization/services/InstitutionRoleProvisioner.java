@@ -26,11 +26,15 @@ public class InstitutionRoleProvisioner {
   private static final Map<SystemRoleCode, Set<PermissionCode>> DEFAULT_PERMISSIONS =
       Map.of(
           SystemRoleCode.APPLICANT,
-          Set.of(PermissionCode.ACADEMIC_OFFER_READ),
+          EnumSet.of(
+              PermissionCode.STUDY_PLAN_READ,
+              PermissionCode.ACADEMIC_YEAR_READ,
+              PermissionCode.ENROLLMENT_PERIOD_READ),
           SystemRoleCode.STUDENT,
-          Set.of(),
-          SystemRoleCode.TEACHER,
-          Set.of(),
+          EnumSet.of(
+              PermissionCode.STUDY_PLAN_READ,
+              PermissionCode.ACADEMIC_YEAR_READ,
+              PermissionCode.ENROLLMENT_PERIOD_READ),
           SystemRoleCode.INSTITUTIONAL_AUTHORITY,
           EnumSet.allOf(PermissionCode.class));
 
