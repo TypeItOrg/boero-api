@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -207,7 +208,7 @@ class EnrollmentApplicationServiceTest {
   }
 
   @Test
-  @DisplayName("Should successfully update draft payload data")
+  @DisplayName("Should ignore personalData and persist editable applicant sections")
   void updateDraft_success() {
     Person person = org.mockito.Mockito.mock(Person.class);
     when(person.getId()).thenReturn(personId);
@@ -249,7 +250,9 @@ class EnrollmentApplicationServiceTest {
 
     EnrollmentApplicationResponse response = service.updateDraft(personId, applicationId, request);
 
-    verify(person).setFirstName("Mariano");
+    verify(person, never()).setFirstName(any());
+    assertThat(application.getEducationBackground().getSecondarySchool())
+        .isEqualTo("Colegio Nacional");
     verify(applicationRepository).save(application);
   }
 
