@@ -22,7 +22,10 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.ApplicationNotEditableException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentPeriodClosedException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.AcademicBackgroundDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentDraftData;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.PersonalDataDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.StartEnrollmentApplicationRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentDraftRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentApplicationRepository;
@@ -33,7 +36,6 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepositor
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -243,10 +245,14 @@ class EnrollmentApplicationServiceTest {
     when(applicationRepository.save(any(EnrollmentApplication.class))).thenReturn(application);
 
     UpdateEnrollmentDraftRequest request =
-        new UpdateEnrollmentDraftRequest(
-            Map.of(
-                "personalData", Map.of("firstName", "Mariano"),
-                "academicBackground", Map.of("secondarySchool", "Colegio Nacional")));
+        UpdateEnrollmentDraftRequest.builder()
+            .data(
+                EnrollmentDraftData.builder()
+                    .personalData(PersonalDataDto.builder().firstName("Mariano").build())
+                    .academicBackground(
+                        AcademicBackgroundDto.builder().secondarySchool("Colegio Nacional").build())
+                    .build())
+            .build();
 
     EnrollmentApplicationResponse response = service.updateDraft(personId, applicationId, request);
 
@@ -272,7 +278,12 @@ class EnrollmentApplicationServiceTest {
     when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
 
     UpdateEnrollmentDraftRequest request =
-        new UpdateEnrollmentDraftRequest(Map.of("personalData", Map.of("firstName", "Juan")));
+        UpdateEnrollmentDraftRequest.builder()
+            .data(
+                EnrollmentDraftData.builder()
+                    .personalData(PersonalDataDto.builder().firstName("Juan").build())
+                    .build())
+            .build();
 
     assertThatThrownBy(() -> service.updateDraft(personId, applicationId, request))
         .isInstanceOf(ApplicationNotEditableException.class);
@@ -386,11 +397,14 @@ class EnrollmentApplicationServiceTest {
 
   @Test
   @DisplayName(
-      "Should throw EnrollmentValidationException when mandatory fields are missing upon submission")
+      "Should throw EnrollmentValidationException reporting each missing field when mandatory fields are missing upon submission")
   void submitApplication_missingFields() {
     Person person = org.mockito.Mockito.mock(Person.class);
     when(person.getId()).thenReturn(personId);
     when(person.getFirstName()).thenReturn("");
+    when(person.getLastName()).thenReturn(null);
+    when(person.getDocumentNumber()).thenReturn(null);
+    when(person.getEmail()).thenReturn(null);
 
     EnrollmentApplication application =
         EnrollmentApplication.builder()
@@ -402,7 +416,48 @@ class EnrollmentApplicationServiceTest {
     when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
 
     assertThatThrownBy(() -> service.submitApplication(personId, applicationId))
-        .isInstanceOf(EnrollmentValidationException.class);
+        .isInstanceOf(EnrollmentValidationException.class)
+        .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.type(EnrollmentValidationException.class))
+        .extracting(EnrollmentValidationException::fieldErrors)
+        .satisfies(
+            fieldErrors -> {
+              assertThat(fieldErrors).containsKeys("personalData.firstName", "personalData.lastName", "personalData.documentNumber", "personalData.email");
+              assertThat(fieldErrors).containsKeys("academicBackground", "preference.preferredShift");
+            });
+  }
+
+  @Test
+  @DisplayName(
+      "Should throw EnrollmentValidationException when a minor applicant has no responsible/tutor data")
+  void submitApplication_minorWithoutResponsible_reportsError() {
+    Person person = org.mockito.Mockito.mock(Person.class);
+    when(person.getId()).thenReturn(personId);
+    when(person.getFirstName()).thenReturn("Juan");
+    when(person.getLastName()).thenReturn("Pérez");
+    when(person.getDocumentNumber()).thenReturn("12345678");
+    when(person.getEmail()).thenReturn("juan@example.com");
+    when(person.getBirthDate()).thenReturn(LocalDate.now().minusYears(16));
+
+    ApplicantEducationBackground edu =
+        ApplicantEducationBackground.builder().secondarySchool("Colegio San Martín").build();
+    ApplicantPreference pref = ApplicantPreference.builder().preferredShift("TARDE").build();
+
+    EnrollmentApplication application =
+        EnrollmentApplication.builder()
+            .applicantPerson(person)
+            .educationBackground(edu)
+            .preference(pref)
+            .status(EnrollmentApplicationStatus.DRAFT)
+            .build();
+    application.setId(applicationId);
+
+    when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+
+    assertThatThrownBy(() -> service.submitApplication(personId, applicationId))
+        .isInstanceOf(EnrollmentValidationException.class)
+        .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.type(EnrollmentValidationException.class))
+        .extracting(EnrollmentValidationException::fieldErrors)
+        .satisfies(fieldErrors -> assertThat(fieldErrors).containsKey("responsible"));
   }
 
   @Test
@@ -448,5 +503,49 @@ class EnrollmentApplicationServiceTest {
 
     assertThat(response.items()).hasSize(1);
     assertThat(response.items().get(0).getApplicationId()).isEqualTo(applicationId);
+  }
+
+  @Test
+  @DisplayName("Should deny access to an application belonging to a different applicant")
+  void getApplicationById_deniesForeignApplicant() {
+    UUID otherPersonId = UUID.randomUUID();
+    Person owner = org.mockito.Mockito.mock(Person.class);
+    when(owner.getId()).thenReturn(personId);
+
+    EnrollmentApplication application =
+        EnrollmentApplication.builder().applicantPerson(owner).status(EnrollmentApplicationStatus.SUBMITTED).build();
+    application.setId(applicationId);
+
+    when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+
+    assertThatThrownBy(() -> service.getApplicationById(otherPersonId, applicationId))
+        .isInstanceOf(
+            ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException
+                .class);
+  }
+
+  @Test
+  @DisplayName("Should deny institutional access to an application from a different institution")
+  void getApplicationById_deniesForeignInstitution() {
+    UUID otherInstitutionId = UUID.randomUUID();
+    Institution institution = org.mockito.Mockito.mock(Institution.class);
+    when(institution.getId()).thenReturn(institutionId);
+
+    Person owner = org.mockito.Mockito.mock(Person.class);
+
+    EnrollmentApplication application =
+        EnrollmentApplication.builder()
+            .institution(institution)
+            .applicantPerson(owner)
+            .status(EnrollmentApplicationStatus.SUBMITTED)
+            .build();
+    application.setId(applicationId);
+
+    when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+
+    assertThatThrownBy(() -> service.getApplicationById(otherInstitutionId, null, applicationId))
+        .isInstanceOf(
+            ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException
+                .class);
   }
 }
