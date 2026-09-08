@@ -35,16 +35,18 @@ public class ApplicantResponsible extends SoftDeletable {
   @JoinColumn(name = "enrollment_application_id", nullable = false)
   private EnrollmentApplication enrollmentApplication;
 
-  @Column(name = "full_name", nullable = false, length = 200)
+  // Un DRAFT es parcial por definición: submitApplication() exige estos campos
+  // recién al enviar, así que la columna acepta NULL (migración 20260908150000).
+  @Column(name = "full_name", length = 200)
   private String fullName;
 
-  @Column(name = "document_number", nullable = false, length = 20)
+  @Column(name = "document_number", length = 20)
   private String documentNumber;
 
   @Column(name = "occupation", length = 100)
   private String occupation;
 
-  @Column(name = "phone_number", nullable = false, length = 50)
+  @Column(name = "phone_number", length = 50)
   private String phoneNumber;
 
   @Column(name = "email", length = 150)
