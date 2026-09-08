@@ -132,30 +132,9 @@ public class EnrollmentApplicationService {
     if (request.getData() != null) {
       EnrollmentDraftData data = request.getData();
 
-      // 1. Datos personales
-      PersonalDataDto personalData = data.getPersonalData();
-      if (personalData != null) {
-        Person applicant = application.getApplicantPerson();
-        if (personalData.getFirstName() != null) {
-          applicant.setFirstName(personalData.getFirstName());
-        }
-        if (personalData.getLastName() != null) {
-          applicant.setLastName(personalData.getLastName());
-        }
-        if (personalData.getDocumentNumber() != null) {
-          applicant.setDocumentNumber(personalData.getDocumentNumber());
-        }
-        if (personalData.getBirthDate() != null) {
-          applicant.setBirthDate(personalData.getBirthDate());
-        }
-        if (personalData.getPhoneNumber() != null) {
-          applicant.setPhoneNumber(personalData.getPhoneNumber());
-        }
-        if (personalData.getEmail() != null) {
-          applicant.setEmail(personalData.getEmail());
-        }
-        personRepository.save(applicant);
-      }
+      // 1. Los datos personales se leen de Person (padrón institucional) y no
+      // se editan desde el borrador: escribirlos aquí sin validación ni chequeo
+      // de unicidad permitía pisar documentNumber/email del registro institucional.
 
       // 2. Antecedentes académicos
       AcademicBackgroundDto academicBg = data.getAcademicBackground();
