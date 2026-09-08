@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorityResolver;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalAuthoritySnapshot;
@@ -38,6 +39,7 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -83,6 +85,19 @@ class EnrollmentAttachmentServiceTest {
     application.setId(applicationId);
   }
 
+  private TestingAuthenticationToken authenticationFor(UUID personId) {
+    JwtAuthenticatedUser principal =
+        JwtAuthenticatedUser.builder()
+            .userId(UUID.randomUUID())
+            .personId(personId)
+            .documentNumber("12345678")
+            .institutionId(institutionId)
+            .sessionId(UUID.randomUUID())
+            .tokenId("jti")
+            .build();
+    return new TestingAuthenticationToken(principal, null);
+  }
+
   @Test
   @DisplayName("Should successfully upload attachment for draft application")
   void uploadAttachment_success() {
@@ -112,7 +127,8 @@ class EnrollmentAttachmentServiceTest {
     when(attachmentRepository.save(any(EnrollmentAttachment.class))).thenReturn(savedAttachment);
 
     EnrollmentAttachmentResponse response =
-        service.uploadAttachment(applicationId, file, "DNI_FRONT", applicantPersonId, null);
+        service.uploadAttachment(
+            applicationId, file, "DNI_FRONT", authenticationFor(applicantPersonId));
 
     assertThat(response.id()).isEqualTo(attachmentId);
     assertThat(response.attachmentType()).isEqualTo(EnrollmentAttachmentType.DNI_FRONT);
@@ -159,7 +175,7 @@ class EnrollmentAttachmentServiceTest {
     savedAttachment.setId(attachmentId);
     when(attachmentRepository.save(any(EnrollmentAttachment.class))).thenReturn(savedAttachment);
 
-    service.uploadAttachment(applicationId, file, "DNI_FRONT", applicantPersonId, null);
+    service.uploadAttachment(applicationId, file, "DNI_FRONT", authenticationFor(applicantPersonId));
 
     assertThat(existing.isDeleted()).isTrue();
     verify(localStorageService).deletePhysicalFile("old_path.pdf");
@@ -176,7 +192,8 @@ class EnrollmentAttachmentServiceTest {
 
     assertThatThrownBy(
             () ->
-                service.uploadAttachment(applicationId, file, "DNI_FRONT", applicantPersonId, null))
+                service.uploadAttachment(
+                    applicationId, file, "DNI_FRONT", authenticationFor(applicantPersonId)))
         .isInstanceOf(ApplicationNotEditableException.class);
 
     verify(localStorageService, never()).store(any(), any());
@@ -187,12 +204,28 @@ class EnrollmentAttachmentServiceTest {
   void uploadAttachment_unauthorized() {
     when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
     UUID strangerId = UUID.randomUUID();
+    when(authorityResolver.resolvePersonAuthorities(strangerId, institutionId))
+        .thenReturn(new InstitutionalAuthoritySnapshot(Set.of(), List.of()));
 
     MockMultipartFile file =
         new MockMultipartFile("file", "dni.pdf", "application/pdf", "content".getBytes());
 
     assertThatThrownBy(
-            () -> service.uploadAttachment(applicationId, file, "DNI_FRONT", strangerId, null))
+            () ->
+                service.uploadAttachment(
+                    applicationId, file, "DNI_FRONT", authenticationFor(strangerId)))
+        .isInstanceOf(AccessDeniedException.class);
+  }
+
+  @Test
+  @DisplayName("Should reject upload when caller is not authenticated")
+  void uploadAttachment_unauthenticated() {
+    when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+
+    MockMultipartFile file =
+        new MockMultipartFile("file", "dni.pdf", "application/pdf", "content".getBytes());
+
+    assertThatThrownBy(() -> service.uploadAttachment(applicationId, file, "DNI_FRONT", null))
         .isInstanceOf(AccessDeniedException.class);
   }
 
@@ -205,7 +238,7 @@ class EnrollmentAttachmentServiceTest {
     assertThatThrownBy(
             () ->
                 service.uploadAttachment(
-                    applicationId, file, "INVALID_TYPE", applicantPersonId, null))
+                    applicationId, file, "INVALID_TYPE", authenticationFor(applicantPersonId)))
         .isInstanceOf(InvalidFileException.class);
   }
 
@@ -233,7 +266,7 @@ class EnrollmentAttachmentServiceTest {
     when(localStorageService.loadAsResource(attachment.getStoragePath())).thenReturn(mockResource);
 
     EnrollmentAttachmentService.AttachmentContentResult result =
-        service.getAttachmentContent(applicationId, attachmentId, applicantPersonId, null);
+        service.getAttachmentContent(applicationId, attachmentId, authenticationFor(applicantPersonId));
 
     assertThat(result.resource()).isEqualTo(mockResource);
     assertThat(result.attachment()).isEqualTo(attachment);
@@ -267,7 +300,7 @@ class EnrollmentAttachmentServiceTest {
     when(localStorageService.loadAsResource(attachment.getStoragePath())).thenReturn(mockResource);
 
     EnrollmentAttachmentService.AttachmentContentResult result =
-        service.getAttachmentContent(applicationId, attachmentId, adminId, null);
+        service.getAttachmentContent(applicationId, attachmentId, authenticationFor(adminId));
 
     assertThat(result.resource()).isEqualTo(mockResource);
   }
@@ -282,7 +315,8 @@ class EnrollmentAttachmentServiceTest {
 
     assertThatThrownBy(
             () ->
-                service.getAttachmentContent(applicationId, attachmentId, applicantPersonId, null))
+                service.getAttachmentContent(
+                    applicationId, attachmentId, authenticationFor(applicantPersonId)))
         .isInstanceOf(AttachmentNotFoundException.class);
   }
 
@@ -306,7 +340,7 @@ class EnrollmentAttachmentServiceTest {
             attachmentId, applicationId))
         .thenReturn(Optional.of(attachment));
 
-    service.deleteAttachment(applicationId, attachmentId, applicantPersonId, null);
+    service.deleteAttachment(applicationId, attachmentId, authenticationFor(applicantPersonId));
 
     assertThat(attachment.isDeleted()).isTrue();
     verify(attachmentRepository).save(attachment);
@@ -333,7 +367,7 @@ class EnrollmentAttachmentServiceTest {
         .thenReturn(List.of(attachment));
 
     List<EnrollmentAttachmentResponse> result =
-        service.listAttachments(applicationId, applicantPersonId, null);
+        service.listAttachments(applicationId, authenticationFor(applicantPersonId));
 
     assertThat(result).hasSize(1);
     assertThat(result.getFirst().id()).isEqualTo(attachmentId);

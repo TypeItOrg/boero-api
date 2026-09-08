@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.JwtService;
@@ -37,6 +38,7 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -51,6 +53,7 @@ class EnrollmentAttachmentControllerWebMvcTest {
       UUID.fromString("11111111-1111-1111-1111-111111111111");
   private static final UUID ATTACHMENT_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
   private static final UUID PERSON_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
+  private static final UUID INSTITUTION_ID = UUID.fromString("44444444-4444-4444-4444-444444444444");
 
   @Autowired private MockMvc mockMvc;
 
@@ -63,6 +66,19 @@ class EnrollmentAttachmentControllerWebMvcTest {
   @MockitoBean private AuthorizationService authorizationService;
 
   @MockitoBean private EnrollmentAttachmentService attachmentService;
+
+  private static TestingAuthenticationToken applicantAuthentication() {
+    JwtAuthenticatedUser principal =
+        JwtAuthenticatedUser.builder()
+            .userId(UUID.randomUUID())
+            .personId(PERSON_ID)
+            .documentNumber("12345678")
+            .institutionId(INSTITUTION_ID)
+            .sessionId(UUID.randomUUID())
+            .tokenId("jti")
+            .build();
+    return new TestingAuthenticationToken(principal, null);
+  }
 
   @Test
   @DisplayName("POST /attachments should upload file and return CREATED response")
@@ -78,8 +94,7 @@ class EnrollmentAttachmentControllerWebMvcTest {
             13L,
             LocalDateTime.of(2026, 9, 8, 12, 0));
 
-    when(attachmentService.uploadAttachment(
-            eq(APPLICATION_ID), any(), eq("DNI_FRONT"), eq(PERSON_ID), any()))
+    when(attachmentService.uploadAttachment(eq(APPLICATION_ID), any(), eq("DNI_FRONT"), any()))
         .thenReturn(response);
 
     mockMvc
@@ -87,7 +102,7 @@ class EnrollmentAttachmentControllerWebMvcTest {
             multipart("/api/v1/enrollment-applications/{applicationId}/attachments", APPLICATION_ID)
                 .file(file)
                 .param("attachmentType", "DNI_FRONT")
-                .header("X-Person-Id", PERSON_ID.toString()))
+                .principal(applicantAuthentication()))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.id").value(ATTACHMENT_ID.toString()))
         .andExpect(jsonPath("$.attachmentType").value("DNI_FRONT"))
@@ -111,8 +126,7 @@ class EnrollmentAttachmentControllerWebMvcTest {
             .build();
     attachment.setId(ATTACHMENT_ID);
 
-    when(attachmentService.getAttachmentContent(
-            eq(APPLICATION_ID), eq(ATTACHMENT_ID), eq(PERSON_ID), any()))
+    when(attachmentService.getAttachmentContent(eq(APPLICATION_ID), eq(ATTACHMENT_ID), any()))
         .thenReturn(new AttachmentContentResult(resource, attachment));
 
     mockMvc
@@ -121,7 +135,7 @@ class EnrollmentAttachmentControllerWebMvcTest {
                     "/api/v1/enrollment-applications/{applicationId}/attachments/{attachmentId}/content",
                     APPLICATION_ID,
                     ATTACHMENT_ID)
-                .header("X-Person-Id", PERSON_ID.toString()))
+                .principal(applicantAuthentication()))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_PDF))
         .andExpect(header().string(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileBytes.length)))
@@ -138,11 +152,10 @@ class EnrollmentAttachmentControllerWebMvcTest {
                     "/api/v1/enrollment-applications/{applicationId}/attachments/{attachmentId}",
                     APPLICATION_ID,
                     ATTACHMENT_ID)
-                .header("X-Person-Id", PERSON_ID.toString()))
+                .principal(applicantAuthentication()))
         .andExpect(status().isNoContent());
 
-    verify(attachmentService)
-        .deleteAttachment(eq(APPLICATION_ID), eq(ATTACHMENT_ID), eq(PERSON_ID), any());
+    verify(attachmentService).deleteAttachment(eq(APPLICATION_ID), eq(ATTACHMENT_ID), any());
   }
 
   @Test
@@ -156,13 +169,12 @@ class EnrollmentAttachmentControllerWebMvcTest {
             13L,
             LocalDateTime.of(2026, 9, 8, 12, 0));
 
-    when(attachmentService.listAttachments(eq(APPLICATION_ID), eq(PERSON_ID), any()))
-        .thenReturn(List.of(response));
+    when(attachmentService.listAttachments(eq(APPLICATION_ID), any())).thenReturn(List.of(response));
 
     mockMvc
         .perform(
             get("/api/v1/enrollment-applications/{applicationId}/attachments", APPLICATION_ID)
-                .header("X-Person-Id", PERSON_ID.toString()))
+                .principal(applicantAuthentication()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].id").value(ATTACHMENT_ID.toString()))
         .andExpect(jsonPath("$[0].attachmentType").value("DNI_FRONT"));
