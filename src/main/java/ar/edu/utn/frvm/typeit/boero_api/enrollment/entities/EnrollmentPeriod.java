@@ -57,4 +57,8 @@ public class EnrollmentPeriod extends SoftDeletable {
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 20)
   private EnrollmentPeriodStatus status;
+
+  public boolean markDeleted() {
+    return markDeleted(LocalDateTime.now());
+  }
 }

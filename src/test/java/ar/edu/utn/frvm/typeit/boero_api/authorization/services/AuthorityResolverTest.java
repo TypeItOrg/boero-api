@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
@@ -62,7 +63,11 @@ class AuthorityResolverTest {
     var authorities =
         authorityResolver.resolvePersonAuthorities(person.getId(), institution.getId());
 
-    assertThat(authorities.permissions()).isEmpty();
+    assertThat(authorities.permissions())
+        .containsExactlyInAnyOrder(
+            PermissionCode.STUDY_PLAN_READ,
+            PermissionCode.ACADEMIC_YEAR_READ,
+            PermissionCode.ENROLLMENT_PERIOD_READ);
     assertThat(authorities.roles()).containsExactly(SystemRoleCode.APPLICANT.getDisplayName());
   }
 
@@ -93,6 +98,7 @@ class AuthorityResolverTest {
 
     assertThat(authorityResolver.resolvePlatformRoles(account.getId()))
         .containsExactly(PlatformRoleCode.PLATFORM_ADMIN);
-    assertThat(authorityResolver.resolveForPlatformAccount(account.getId())).isEmpty();
+    assertThat(authorityResolver.resolveForPlatformAccount(account.getId()))
+        .hasSize(PermissionCode.values().length);
   }
 }

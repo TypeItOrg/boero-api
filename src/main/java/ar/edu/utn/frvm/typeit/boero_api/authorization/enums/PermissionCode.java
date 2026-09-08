@@ -235,7 +235,32 @@ public enum PermissionCode {
       "institution:instrument:restore",
       PermissionScope.INSTITUTION,
       PermissionGroup.ACADEMIC,
-      "Restaurar instrumentos");
+      "Restaurar instrumentos"),
+  ENROLLMENT_PERIOD_READ(
+      "institution:enrollment-period:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Ver períodos de inscripción"),
+  ENROLLMENT_PERIOD_CREATE(
+      "institution:enrollment-period:create",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Crear períodos de inscripción"),
+  ENROLLMENT_PERIOD_UPDATE(
+      "institution:enrollment-period:update",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Editar períodos de inscripción"),
+  ENROLLMENT_PERIOD_STATUS_UPDATE(
+      "institution:enrollment-period:update-status",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Cambiar estado de períodos de inscripción"),
+  ENROLLMENT_PERIOD_DELETE(
+      "institution:enrollment-period:delete",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Eliminar períodos de inscripción");
 
   private final String code;
   private final PermissionScope scope;
@@ -289,6 +314,11 @@ public enum PermissionCode {
           INSTRUMENT_DELETE,
           INSTRUMENT_RESTORE ->
           Set.of(INSTRUMENT_READ);
+      case ENROLLMENT_PERIOD_CREATE,
+          ENROLLMENT_PERIOD_UPDATE,
+          ENROLLMENT_PERIOD_STATUS_UPDATE,
+          ENROLLMENT_PERIOD_DELETE ->
+          Set.of(ENROLLMENT_PERIOD_READ);
       default -> Set.of();
     };
   }

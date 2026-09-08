@@ -96,6 +96,10 @@ class PermissionRoleSeedTest {
             PermissionCode.INSTRUMENT_CREATE.getCode(),
             PermissionCode.INSTRUMENT_UPDATE.getCode(),
             PermissionCode.INSTRUMENT_STATUS_UPDATE.getCode(),
-            PermissionCode.INSTRUMENT_READ.getCode());
+            PermissionCode.INSTRUMENT_READ.getCode(),
+            PermissionCode.ENROLLMENT_PERIOD_CREATE.getCode(),
+            PermissionCode.ENROLLMENT_PERIOD_UPDATE.getCode(),
+            PermissionCode.ENROLLMENT_PERIOD_STATUS_UPDATE.getCode(),
+            PermissionCode.ENROLLMENT_PERIOD_READ.getCode());
   }
 }
