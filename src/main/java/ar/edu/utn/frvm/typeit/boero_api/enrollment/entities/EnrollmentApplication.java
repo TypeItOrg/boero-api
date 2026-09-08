@@ -70,4 +70,66 @@ public class EnrollmentApplication extends SoftDeletable {
       fetch = FetchType.LAZY,
       orphanRemoval = true)
   private ApplicantEducationBackground educationBackground;
+
+  @OneToOne(
+      mappedBy = "enrollmentApplication",
+      cascade = CascadeType.ALL,
+      fetch = FetchType.LAZY,
+      orphanRemoval = true)
+  private ApplicantHealthInclusion healthInclusion;
+
+  @OneToOne(
+      mappedBy = "enrollmentApplication",
+      cascade = CascadeType.ALL,
+      fetch = FetchType.LAZY,
+      orphanRemoval = true)
+  private ApplicantResponsible responsible;
+
+  @OneToOne(
+      mappedBy = "enrollmentApplication",
+      cascade = CascadeType.ALL,
+      fetch = FetchType.LAZY,
+      orphanRemoval = true)
+  private ApplicantPreference preference;
+
+  @jakarta.persistence.OneToMany(
+      mappedBy = "enrollmentApplication",
+      cascade = CascadeType.ALL,
+      fetch = FetchType.LAZY,
+      orphanRemoval = true)
+  @Builder.Default
+  private java.util.List<EnrollmentAttachment> attachments = new java.util.ArrayList<>();
+
+  public void setEducationBackground(ApplicantEducationBackground educationBackground) {
+    this.educationBackground = educationBackground;
+    if (educationBackground != null) {
+      educationBackground.setEnrollmentApplication(this);
+    }
+  }
+
+  public void setHealthInclusion(ApplicantHealthInclusion healthInclusion) {
+    this.healthInclusion = healthInclusion;
+    if (healthInclusion != null) {
+      healthInclusion.setEnrollmentApplication(this);
+    }
+  }
+
+  public void setResponsible(ApplicantResponsible responsible) {
+    this.responsible = responsible;
+    if (responsible != null) {
+      responsible.setEnrollmentApplication(this);
+    }
+  }
+
+  public void setPreference(ApplicantPreference preference) {
+    this.preference = preference;
+    if (preference != null) {
+      preference.setEnrollmentApplication(this);
+    }
+  }
+
+  public void addAttachment(EnrollmentAttachment attachment) {
+    attachments.add(attachment);
+    attachment.setEnrollmentApplication(this);
+  }
 }

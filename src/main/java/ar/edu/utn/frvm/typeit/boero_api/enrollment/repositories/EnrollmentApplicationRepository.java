@@ -5,9 +5,11 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationSt
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 public interface EnrollmentApplicationRepository
-    extends JpaRepository<EnrollmentApplication, UUID> {
+    extends JpaRepository<EnrollmentApplication, UUID>,
+        JpaSpecificationExecutor<EnrollmentApplication> {
 
   Optional<EnrollmentApplication>
       findByApplicantPersonIdAndStudyPlanIdAndAcademicYearIdAndStatusAndDeletedAtIsNull(

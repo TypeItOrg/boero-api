@@ -61,8 +61,8 @@ class DatabaseMigrationIntegrationTest {
   @Test
   @DisplayName("Should migrate an empty PostgreSQL database and validate the JPA model")
   void shouldMigrateSchemaAndDevelopmentData() {
-    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260822233706");
-    assertThat(tableCount()).isEqualTo(30);
+    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260908140000");
+    assertThat(tableCount()).isEqualTo(37);
     assertThat(institutionCount()).isPositive();
     assertThat(tenantRelationshipConstraintCount()).isEqualTo(7);
     assertThat(activePersonDocumentIndexCount()).isEqualTo(1);

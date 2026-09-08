@@ -18,36 +18,38 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "applicant_education_backgrounds")
+@Table(name = "applicant_preferences")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
-public class ApplicantEducationBackground extends SoftDeletable {
+public class ApplicantPreference extends SoftDeletable {
 
   @Id
   @GeneratedUUIDv7
-  @Column(name = "applicant_education_background_id")
+  @Column(name = "applicant_preference_id")
   private UUID id;
 
   @OneToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "enrollment_application_id", nullable = false)
   private EnrollmentApplication enrollmentApplication;
 
-  @Column(name = "secondary_school", length = 255)
-  private String secondarySchool;
+  @Column(name = "preferred_shift", nullable = false, length = 30)
+  private String preferredShift;
 
-  @Column(name = "school_origin", length = 150)
-  private String schoolOrigin;
-
-  @Column(name = "current_grade_year", length = 50)
-  private String currentGradeYear;
-
-  @Column(name = "secondary_completed", nullable = false)
+  @Column(name = "allows_image_use", nullable = false)
   @Builder.Default
-  private boolean secondaryCompleted = false;
+  private boolean allowsImageUse = false;
 
-  @Column(name = "secondary_degree_title", length = 150)
-  private String secondaryDegreeTitle;
+  @Column(name = "is_reenrolling", nullable = false)
+  @Builder.Default
+  private boolean isReenrolling = false;
+
+  @Column(name = "previous_teacher", length = 150)
+  private String previousTeacher;
+
+  public void setIsReenrolling(boolean isReenrolling) {
+    this.isReenrolling = isReenrolling;
+  }
 }

@@ -18,36 +18,38 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "applicant_education_backgrounds")
+@Table(name = "applicant_responsibles")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
-public class ApplicantEducationBackground extends SoftDeletable {
+public class ApplicantResponsible extends SoftDeletable {
 
   @Id
   @GeneratedUUIDv7
-  @Column(name = "applicant_education_background_id")
+  @Column(name = "applicant_responsible_id")
   private UUID id;
 
   @OneToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "enrollment_application_id", nullable = false)
   private EnrollmentApplication enrollmentApplication;
 
-  @Column(name = "secondary_school", length = 255)
-  private String secondarySchool;
+  @Column(name = "full_name", nullable = false, length = 200)
+  private String fullName;
 
-  @Column(name = "school_origin", length = 150)
-  private String schoolOrigin;
+  @Column(name = "document_number", nullable = false, length = 20)
+  private String documentNumber;
 
-  @Column(name = "current_grade_year", length = 50)
-  private String currentGradeYear;
+  @Column(name = "occupation", length = 100)
+  private String occupation;
 
-  @Column(name = "secondary_completed", nullable = false)
-  @Builder.Default
-  private boolean secondaryCompleted = false;
+  @Column(name = "phone_number", nullable = false, length = 50)
+  private String phoneNumber;
 
-  @Column(name = "secondary_degree_title", length = 150)
-  private String secondaryDegreeTitle;
+  @Column(name = "email", length = 150)
+  private String email;
+
+  @Column(name = "education_level", length = 50)
+  private String educationLevel;
 }
