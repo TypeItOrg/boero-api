@@ -176,6 +176,11 @@ public enum PermissionCode {
       PermissionScope.INSTITUTION,
       PermissionGroup.ACADEMIC,
       "Restaurar planes de estudio"),
+  ACADEMIC_OFFER_READ(
+      "institution:academic-offer:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Consultar oferta académica disponible"),
   ACADEMIC_SPACE_READ(
       "institution:academic-space:read",
       PermissionScope.INSTITUTION,
