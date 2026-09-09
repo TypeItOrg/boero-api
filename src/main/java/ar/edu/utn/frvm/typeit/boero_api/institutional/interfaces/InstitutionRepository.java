@@ -2,7 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces;
 
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import jakarta.persistence.LockModeType;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -91,7 +91,7 @@ public interface InstitutionRepository extends JpaRepository<Institution, UUID> 
       ORDER BY YEAR(institution.createdAt), MONTH(institution.createdAt)
       """)
   List<MonthlyInstitutionCount> countCreatedByMonth(
-      @Param("from") LocalDateTime from, @Param("until") LocalDateTime until);
+      @Param("from") Instant from, @Param("until") Instant until);
 
   @EntityGraph(attributePaths = {"city", "city.province"})
   List<Institution> findTop5ByOrderByCreatedAtDesc();

@@ -9,7 +9,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -50,10 +50,10 @@ public class UserSession {
 
   @CreatedDate
   @Column(name = "started_at", nullable = false, updatable = false)
-  private LocalDateTime startedAt;
+  private Instant startedAt;
 
   @Column(name = "ended_at")
-  private LocalDateTime endedAt;
+  private Instant endedAt;
 
   @Column(nullable = false)
   @Builder.Default
@@ -63,7 +63,7 @@ public class UserSession {
   @Builder.Default
   private boolean rememberMe = false;
 
-  public boolean end(final LocalDateTime endedAt) {
+  public boolean end(final Instant endedAt) {
     if (!active) {
       return false;
     }

@@ -9,7 +9,10 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.AccountType;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,11 +20,14 @@ import org.junit.jupiter.api.Test;
 
 class JwtServiceTest {
 
+  private static final Clock CLOCK =
+      Clock.fixed(Instant.parse("2026-09-09T12:00:00Z"), ZoneOffset.UTC);
+
   private JwtService jwtService;
 
   @BeforeEach
   void setUp() {
-    jwtService = new JwtService(jwtProperties());
+    jwtService = new JwtService(jwtProperties(), CLOCK);
   }
 
   @Test
@@ -74,12 +80,17 @@ class JwtServiceTest {
   void parseAccessToken_returnsExpired_whenTokenIsExpired() {
     JwtProperties expiredProps =
         new JwtProperties(
-            jwtProperties().secret(), Duration.ofNanos(1), Duration.ofDays(7), Duration.ofDays(30));
-    JwtService shortLivedService = new JwtService(expiredProps);
+            jwtProperties().secret(),
+            Duration.ofSeconds(1),
+            Duration.ofDays(7),
+            Duration.ofDays(30));
+    JwtService shortLivedService = new JwtService(expiredProps, CLOCK);
 
     String token = shortLivedService.generateAccessToken(testInput());
 
-    assertThat(shortLivedService.parseAccessToken(token))
+    final JwtService laterService =
+        new JwtService(expiredProps, Clock.offset(CLOCK, Duration.ofSeconds(2)));
+    assertThat(laterService.parseAccessToken(token))
         .isInstanceOf(AccessTokenParseResult.Expired.class);
   }
 

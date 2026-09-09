@@ -9,7 +9,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.support.JpaAuditingTestConfig;
 import jakarta.persistence.EntityManager;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +47,7 @@ class InstitutionalPasswordResetTokenRepositoryTest {
     return InstitutionalPasswordResetToken.builder()
         .user(user)
         .tokenHash(tokenHash)
-        .expiresAt(LocalDateTime.now().plusMinutes(30))
+        .expiresAt(Instant.now().plus(java.time.Duration.ofMinutes(30)))
         .build();
   }
 }

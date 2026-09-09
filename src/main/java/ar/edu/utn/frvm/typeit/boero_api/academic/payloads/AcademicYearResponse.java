@@ -3,8 +3,8 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.payloads;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Schema(
@@ -26,7 +26,7 @@ public record AcademicYearResponse(
     @Schema(nullable = true) LocalDate startDate,
     @Schema(nullable = true) LocalDate endDate,
     AcademicYearStatus status,
-    @Schema(nullable = true) LocalDateTime deletedAt) {
+    @Schema(nullable = true) Instant deletedAt) {
 
   public static AcademicYearResponse from(final AcademicYear year) {
     return new AcademicYearResponse(

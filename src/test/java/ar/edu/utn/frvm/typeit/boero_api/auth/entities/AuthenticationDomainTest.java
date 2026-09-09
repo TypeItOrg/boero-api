@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,10 +37,11 @@ class AuthenticationDomainTest {
   @DisplayName("Should end an active session only once")
   void sessionEndsOnlyOnce() {
     final UserSession session = UserSession.builder().userId(UUID.randomUUID()).build();
-    final LocalDateTime endedAt = LocalDateTime.of(2026, 7, 24, 2, 0);
+    final Instant endedAt =
+        java.time.LocalDateTime.of(2026, 7, 24, 2, 0).toInstant(java.time.ZoneOffset.UTC);
 
     assertThat(session.end(endedAt)).isTrue();
-    assertThat(session.end(endedAt.plusMinutes(1))).isFalse();
+    assertThat(session.end(endedAt.plus(java.time.Duration.ofMinutes(1)))).isFalse();
     assertThat(session.isActive()).isFalse();
     assertThat(session.getEndedAt()).isEqualTo(endedAt);
   }
@@ -48,7 +49,8 @@ class AuthenticationDomainTest {
   @Test
   @DisplayName("Should revoke a refresh token irreversibly and evaluate its expiry")
   void refreshTokenControlsItsLifecycle() {
-    final LocalDateTime expiresAt = LocalDateTime.of(2026, 7, 24, 3, 0);
+    final Instant expiresAt =
+        java.time.LocalDateTime.of(2026, 7, 24, 3, 0).toInstant(java.time.ZoneOffset.UTC);
     final RefreshToken token = RefreshToken.builder().expiresAt(expiresAt).build();
 
     assertThat(token.isExpiredAt(expiresAt.minusSeconds(1))).isFalse();

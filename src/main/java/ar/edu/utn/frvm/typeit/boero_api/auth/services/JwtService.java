@@ -14,6 +14,7 @@ import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
@@ -34,15 +35,17 @@ public class JwtService {
 
   private final JwtProperties jwtProperties;
   private final SecretKey secretKey;
+  private final Clock clock;
 
-  public JwtService(JwtProperties jwtProperties) {
+  public JwtService(final JwtProperties jwtProperties, final Clock clock) {
+    this.clock = clock;
     this.jwtProperties = jwtProperties;
     this.secretKey = Keys.hmacShaKeyFor(jwtProperties.secret().getBytes(StandardCharsets.UTF_8));
   }
 
   public String generateAccessToken(InstitutionalAccessTokenInput input) {
     UUID tokenId = UUID.randomUUID();
-    return signedBuilder(Instant.now(), tokenId, input.userId().toString())
+    return signedBuilder(clock.instant(), tokenId, input.userId().toString())
         .claim(CLAIM_ACCOUNT_TYPE, AccountType.INSTITUTION.name())
         .claim(CLAIM_DOCUMENT_NUMBER, input.documentNumber())
         .claim(CLAIM_INSTITUTION_ID, input.institutionId().toString())
@@ -53,7 +56,7 @@ public class JwtService {
 
   public String generatePlatformAccessToken(PlatformAccessTokenInput input) {
     UUID tokenId = UUID.randomUUID();
-    return signedBuilder(Instant.now(), tokenId, input.platformAccountId().toString())
+    return signedBuilder(clock.instant(), tokenId, input.platformAccountId().toString())
         .claim(CLAIM_ACCOUNT_TYPE, AccountType.PLATFORM.name())
         .claim(CLAIM_EMAIL, input.email())
         .claim(CLAIM_SESSION_ID, input.sessionId().toString())
@@ -63,7 +66,12 @@ public class JwtService {
   public AccessTokenParseResult parseAccessToken(String token) {
     try {
       Claims claims =
-          Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload();
+          Jwts.parser()
+              .clock(() -> Date.from(clock.instant()))
+              .verifyWith(secretKey)
+              .build()
+              .parseSignedClaims(token)
+              .getPayload();
       return new AccessTokenParseResult.Ok(claims);
     } catch (ExpiredJwtException e) {
       return new AccessTokenParseResult.Expired();

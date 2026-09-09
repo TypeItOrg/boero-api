@@ -25,7 +25,9 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.AuthResponse;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorityResolver;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
-import java.time.LocalDateTime;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
@@ -58,6 +60,7 @@ class RefreshTokenUseCaseTest {
     jwtProperties = jwtProperties();
     refreshTokenUseCase =
         new RefreshTokenUseCase(
+            Clock.systemUTC(),
             refreshTokenRepository,
             userSessionRepository,
             userRepository,
@@ -184,7 +187,7 @@ class RefreshTokenUseCaseTest {
             .sessionId(sessionId)
             .tokenHash(tokenHash)
             .familyId("family-1")
-            .expiresAt(LocalDateTime.now().minusDays(1))
+            .expiresAt(Instant.now().minus(Duration.ofDays(1)))
             .build();
 
     when(refreshTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(expired));
@@ -205,7 +208,7 @@ class RefreshTokenUseCaseTest {
 
     RefreshToken token = activeToken(tokenHash, "family-1", sessionId);
     UserSession inactiveSession = activeSession(sessionId, userId, false);
-    inactiveSession.end(LocalDateTime.now());
+    inactiveSession.end(Instant.now());
 
     when(refreshTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(token));
     when(userSessionRepository.findById(sessionId)).thenReturn(Optional.of(inactiveSession));
@@ -280,8 +283,7 @@ class RefreshTokenUseCaseTest {
     verify(refreshTokenRepository, times(2)).save(captor.capture());
     RefreshToken newToken = savedNewToken(captor, current);
 
-    LocalDateTime expectedExpiry =
-        LocalDateTime.now().plus(jwtProperties.rememberMeTokenExpiration());
+    Instant expectedExpiry = Instant.now().plus(jwtProperties.rememberMeTokenExpiration());
     assertThat(newToken.getExpiresAt()).isCloseTo(expectedExpiry, within(5, ChronoUnit.SECONDS));
   }
 
@@ -295,7 +297,7 @@ class RefreshTokenUseCaseTest {
         .sessionId(sessionId)
         .tokenHash(hash)
         .familyId(familyId)
-        .expiresAt(LocalDateTime.now().plusDays(7))
+        .expiresAt(Instant.now().plus(Duration.ofDays(7)))
         .build();
   }
 

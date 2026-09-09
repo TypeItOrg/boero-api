@@ -8,8 +8,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicOfferDetailRes
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicOfferLevelResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicOfferSpaceResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicOfferSummaryResponse;
-import java.time.LocalDate;
-import java.time.ZoneId;
+import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -21,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class GetAcademicOfferUseCase {
-  private static final ZoneId ARGENTINA_TIME_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
+  private final BusinessDateProvider businessDateProvider;
 
   private final StudyPlanRepository studyPlanRepository;
   private final AcademicLevelRepository academicLevelRepository;
@@ -31,7 +30,7 @@ public class GetAcademicOfferUseCase {
   public AcademicOfferDetailResponse execute(final UUID institutionId, final UUID studyPlanId) {
     final var plan =
         studyPlanRepository
-            .findAvailableOfferById(institutionId, studyPlanId, LocalDate.now(ARGENTINA_TIME_ZONE))
+            .findAvailableOfferById(institutionId, studyPlanId, businessDateProvider.today())
             .orElseThrow(StudyPlanNotFoundException::new);
     final var spaces =
         studyPlanSpaceRepository.findActiveByStudyPlanIdWithDetails(studyPlanId).stream()

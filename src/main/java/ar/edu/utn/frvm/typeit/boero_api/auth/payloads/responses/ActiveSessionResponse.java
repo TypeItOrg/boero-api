@@ -1,6 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.Builder;
 
@@ -9,5 +9,5 @@ public record ActiveSessionResponse(
     UUID sessionId,
     String ipAddress,
     String userAgent,
-    LocalDateTime startedAt,
+    Instant startedAt,
     boolean currentSession) {}

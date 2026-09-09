@@ -1,7 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicLevel;
@@ -16,7 +15,11 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequirementType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicLevelRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
+import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,6 +31,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class GetAcademicOfferUseCaseTest {
+
+  private static final Clock CLOCK =
+      Clock.fixed(Instant.parse("2026-09-09T02:00:00Z"), ZoneOffset.UTC);
 
   private static final UUID INSTITUTION_ID = UUID.randomUUID();
   private static final UUID STUDY_PLAN_ID = UUID.randomUUID();
@@ -68,11 +74,16 @@ class GetAcademicOfferUseCaseTest {
 
   private GetAcademicOfferUseCase useCase() {
     return new GetAcademicOfferUseCase(
-        studyPlanRepository, academicLevelRepository, studyPlanSpaceRepository);
+        new BusinessDateProvider(CLOCK),
+        studyPlanRepository,
+        academicLevelRepository,
+        studyPlanSpaceRepository);
   }
 
   private void stubOffer() {
-    given(studyPlanRepository.findAvailableOfferById(any(), any(), any()))
+    given(
+            studyPlanRepository.findAvailableOfferById(
+                INSTITUTION_ID, STUDY_PLAN_ID, LocalDate.of(2026, 9, 8)))
         .willReturn(Optional.of(studyPlan));
     given(studyPlanSpaceRepository.findActiveByStudyPlanIdWithDetails(STUDY_PLAN_ID))
         .willReturn(List.of(assignedPlanSpace, unassignedPlanSpace));

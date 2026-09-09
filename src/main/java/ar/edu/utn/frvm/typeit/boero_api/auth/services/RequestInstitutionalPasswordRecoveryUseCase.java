@@ -13,7 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.time.LocalDateTime;
+import java.time.Clock;
 import java.util.Base64;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class RequestInstitutionalPasswordRecoveryUseCase {
+  private final Clock clock;
 
   private static final int TOKEN_BYTES = 32;
 
@@ -54,7 +55,7 @@ public class RequestInstitutionalPasswordRecoveryUseCase {
         InstitutionalPasswordResetToken.builder()
             .user(user)
             .tokenHash(hash(token))
-            .expiresAt(LocalDateTime.now().plus(passwordRecoveryProperties.tokenExpiration()))
+            .expiresAt(clock.instant().plus(passwordRecoveryProperties.tokenExpiration()))
             .build());
 
     eventPublisher.publishEvent(InstitutionalPasswordRecoveryRequested.from(user, token));

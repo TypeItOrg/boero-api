@@ -23,7 +23,6 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.PlatformDashboard
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.PlatformDashboardSummaryResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.RecentInstitutionResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.GetPlatformDashboardUseCase;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -125,7 +124,9 @@ class PlatformDashboardControllerWebMvcTest {
                     .city("Villa María")
                     .province("Córdoba")
                     .active(true)
-                    .createdAt(LocalDateTime.of(2026, 7, 10, 12, 0))
+                    .createdAt(
+                        java.time.LocalDateTime.of(2026, 7, 10, 12, 0)
+                            .toInstant(java.time.ZoneOffset.UTC))
                     .build()))
         .build();
   }

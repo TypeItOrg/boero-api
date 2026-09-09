@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.PasswordConfirmationMismatchException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.InstitutionalPasswordResetTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.ResetPasswordRequest;
+import java.time.Clock;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -24,7 +25,10 @@ class ResetInstitutionalPasswordUseCaseTest {
         Mockito.mock(SessionRevocationService.class);
     final ResetInstitutionalPasswordUseCase useCase =
         new ResetInstitutionalPasswordUseCase(
-            passwordResetTokenRepository, passwordEncoder, sessionRevocationService);
+            Clock.systemUTC(),
+            passwordResetTokenRepository,
+            passwordEncoder,
+            sessionRevocationService);
     final ResetPasswordRequest request =
         new ResetPasswordRequest("token", "password123", "different-password");
 

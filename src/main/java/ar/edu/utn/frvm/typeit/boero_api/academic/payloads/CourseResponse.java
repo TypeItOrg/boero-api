@@ -2,7 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.payloads;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Course;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,7 +43,7 @@ public record CourseResponse(
     String status,
     boolean active,
     List<CourseClassResponse> classes,
-    @Schema(nullable = true) LocalDateTime deletedAt) {
+    @Schema(nullable = true) Instant deletedAt) {
 
   public static CourseResponse from(final Course course) {
     return from(course, List.of());

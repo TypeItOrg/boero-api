@@ -28,7 +28,6 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationServ
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.GlobalExceptionHandler;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.config.WebConfig;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -188,7 +187,8 @@ class PlatformAccountAdminControllerWebMvcTest {
         .lastName("González")
         .email("maria@boero.edu.ar")
         .enabled(true)
-        .createdAt(LocalDateTime.of(2026, 7, 13, 20, 0))
+        .createdAt(
+            java.time.LocalDateTime.of(2026, 7, 13, 20, 0).toInstant(java.time.ZoneOffset.UTC))
         .roleCode(PlatformRoleCode.PLATFORM_ADMIN)
         .roleName(PlatformRoleCode.PLATFORM_ADMIN.getDisplayName())
         .build();

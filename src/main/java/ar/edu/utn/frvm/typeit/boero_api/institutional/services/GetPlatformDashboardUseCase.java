@@ -6,7 +6,9 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.MonthlyInstitutio
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.PlatformDashboardResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.PlatformDashboardSummaryResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.RecentInstitutionResponse;
+import java.time.Clock;
 import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -21,10 +23,11 @@ public class GetPlatformDashboardUseCase {
   private static final int TREND_MONTHS = 12;
 
   private final InstitutionRepository institutionRepository;
+  private final Clock clock;
 
   @Transactional(readOnly = true)
   public PlatformDashboardResponse execute() {
-    return execute(YearMonth.now());
+    return execute(YearMonth.now(clock.withZone(ZoneOffset.UTC)));
   }
 
   PlatformDashboardResponse execute(final YearMonth currentMonth) {
@@ -36,8 +39,8 @@ public class GetPlatformDashboardUseCase {
     final Map<YearMonth, Long> registrationsByMonth =
         institutionRepository
             .countCreatedByMonth(
-                firstMonth.atDay(1).atStartOfDay(),
-                currentMonth.plusMonths(1).atDay(1).atStartOfDay())
+                firstMonth.atDay(1).atStartOfDay().toInstant(ZoneOffset.UTC),
+                currentMonth.plusMonths(1).atDay(1).atStartOfDay().toInstant(ZoneOffset.UTC))
             .stream()
             .collect(
                 Collectors.toMap(

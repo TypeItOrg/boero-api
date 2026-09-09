@@ -2,7 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.Builder;
 
@@ -13,7 +13,7 @@ public record PlatformAccountAdminResponse(
     String lastName,
     String email,
     boolean enabled,
-    LocalDateTime createdAt,
+    Instant createdAt,
     PlatformRoleCode roleCode,
     String roleName) {
 

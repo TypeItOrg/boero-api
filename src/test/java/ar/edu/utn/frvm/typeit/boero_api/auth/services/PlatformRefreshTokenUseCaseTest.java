@@ -18,7 +18,9 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformAccountRepositor
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformRefreshTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformSessionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RefreshTokenRequest;
-import java.time.LocalDateTime;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,6 +48,7 @@ class PlatformRefreshTokenUseCaseTest {
   void setUp() {
     useCase =
         new PlatformRefreshTokenUseCase(
+            Clock.systemUTC(),
             refreshTokenRepository,
             sessionRepository,
             accountRepository,
@@ -181,7 +184,7 @@ class PlatformRefreshTokenUseCaseTest {
         .platformAccountId(accountId)
         .tokenHash(hash)
         .familyId(familyId)
-        .expiresAt(LocalDateTime.now().plusDays(7))
+        .expiresAt(Instant.now().plus(Duration.ofDays(7)))
         .build();
   }
 }

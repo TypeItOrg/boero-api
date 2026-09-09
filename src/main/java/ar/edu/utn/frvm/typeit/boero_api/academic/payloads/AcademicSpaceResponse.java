@@ -4,7 +4,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Schema(
@@ -28,7 +28,7 @@ public record AcademicSpaceResponse(
     AcademicSpaceType type,
     AcademicSpaceFormat format,
     boolean active,
-    @Schema(nullable = true) LocalDateTime deletedAt) {
+    @Schema(nullable = true) Instant deletedAt) {
 
   public static AcademicSpaceResponse from(final AcademicSpace space) {
     return new AcademicSpaceResponse(

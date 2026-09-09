@@ -9,7 +9,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -56,11 +56,11 @@ public class RefreshToken {
   private boolean revoked = false;
 
   @Column(name = "expires_at", nullable = false)
-  private LocalDateTime expiresAt;
+  private Instant expiresAt;
 
   @CreatedDate
   @Column(name = "created_at", nullable = false, updatable = false)
-  private LocalDateTime createdAt;
+  private Instant createdAt;
 
   public boolean revoke() {
     if (revoked) {
@@ -71,7 +71,7 @@ public class RefreshToken {
     return true;
   }
 
-  public boolean isExpiredAt(final LocalDateTime dateTime) {
+  public boolean isExpiredAt(final Instant dateTime) {
     return expiresAt.isBefore(dateTime);
   }
 }

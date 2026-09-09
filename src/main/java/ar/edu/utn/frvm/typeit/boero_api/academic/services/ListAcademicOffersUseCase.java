@@ -4,9 +4,8 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicOfferSummaryResponse;
+import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -21,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ListAcademicOffersUseCase {
-  private static final ZoneId ARGENTINA_TIME_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
   private static final Map<String, String> SORT_FIELDS =
       Map.of(
           "trainingPathName", "trainingPath.name",
@@ -29,6 +27,7 @@ public class ListAcademicOffersUseCase {
           "studyPlanVersion", "versionNumber",
           "effectiveFrom", "effectiveFrom",
           "effectiveTo", "effectiveTo");
+  private final BusinessDateProvider businessDateProvider;
 
   private final StudyPlanRepository studyPlanRepository;
 
@@ -37,8 +36,7 @@ public class ListAcademicOffersUseCase {
       final UUID institutionId, final Pageable pageable) {
     return PaginatedResponse.from(
         studyPlanRepository
-            .findAvailableOffers(
-                institutionId, LocalDate.now(ARGENTINA_TIME_ZONE), mapSort(pageable))
+            .findAvailableOffers(institutionId, businessDateProvider.today(), mapSort(pageable))
             .map(AcademicOfferSummaryResponse::from));
   }
 

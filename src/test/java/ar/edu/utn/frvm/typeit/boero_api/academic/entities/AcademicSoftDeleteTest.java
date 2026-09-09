@@ -7,21 +7,28 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.InvalidAcademicStateException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class AcademicSoftDeleteTest {
 
   private final Institution institution = Institution.builder().id(UUID.randomUUID()).build();
-  private final LocalDateTime deletedAt = LocalDateTime.of(2026, 8, 16, 12, 0);
+  private final Instant deletedAt = LocalDateTime.of(2026, 8, 16, 12, 0).toInstant(ZoneOffset.UTC);
 
   @Test
   void preservesOperationalStateAcrossDeleteAndRestore() {
     final var year =
         AcademicYear.create(
-            institution, 2027, LocalDate.of(2027, 3, 1), LocalDate.of(2027, 12, 15));
+            institution,
+            2027,
+            LocalDate.of(2027, 3, 1),
+            LocalDate.of(2027, 12, 15),
+            LocalDate.now(ZoneId.of("America/Argentina/Buenos_Aires")));
     final var path = TrainingPath.create(institution, "Tecnicatura", null);
     final var plan = StudyPlan.create(institution, path, "Plan 2027", null, null);
     final var space =

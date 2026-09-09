@@ -2,7 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.payloads;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Schema(
@@ -22,7 +22,7 @@ public record TrainingPathResponse(
     String name,
     @Schema(nullable = true) String description,
     boolean active,
-    @Schema(nullable = true) LocalDateTime deletedAt) {
+    @Schema(nullable = true) Instant deletedAt) {
 
   public static TrainingPathResponse from(final TrainingPath path) {
     return new TrainingPathResponse(

@@ -1,8 +1,17 @@
 package ar.edu.utn.frvm.typeit.boero_api.support;
 
+import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
+import ar.edu.utn.frvm.typeit.boero_api.config.JpaAuditingConfig;
+import ar.edu.utn.frvm.typeit.boero_api.config.TimeConfig;
+import ar.edu.utn.frvm.typeit.boero_api.config.ValidationConfig;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.context.annotation.Import;
 
 @TestConfiguration
-@EnableJpaAuditing
+@Import({
+  TimeConfig.class,
+  JpaAuditingConfig.class,
+  BusinessDateProvider.class,
+  ValidationConfig.class
+})
 public class JpaAuditingTestConfig {}

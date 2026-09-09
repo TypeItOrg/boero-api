@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.UserSession;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.RefreshTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
+import java.time.Clock;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +33,10 @@ class LogoutUseCaseTest {
   void setUp() {
     logoutUseCase =
         new LogoutUseCase(
-            accessTokenRevocationService, refreshTokenRepository, userSessionRepository);
+            Clock.systemUTC(),
+            accessTokenRevocationService,
+            refreshTokenRepository,
+            userSessionRepository);
   }
 
   @Test
