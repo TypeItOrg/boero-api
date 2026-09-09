@@ -61,7 +61,9 @@ class DatabaseMigrationIntegrationTest {
   @Test
   @DisplayName("Should migrate an empty PostgreSQL database and validate the JPA model")
   void shouldMigrateSchemaAndDevelopmentData() {
-    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260908150011");
+    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260909174839");
+    assertThat(nonUtcEventTimestampColumnCount()).isZero();
+    assertThat(utcEventTimestampColumnCount()).isPositive();
     assertThat(tableCount()).isEqualTo(36);
     assertThat(institutionCount()).isPositive();
     assertThat(tenantRelationshipConstraintCount()).isEqualTo(8);
@@ -867,6 +869,36 @@ class DatabaseMigrationIntegrationTest {
   private Integer pgTrgmExtensionCount() {
     return jdbcTemplate.queryForObject(
         "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'", Integer.class);
+  }
+
+  private Integer utcEventTimestampColumnCount() {
+    return jdbcTemplate.queryForObject(
+        """
+        SELECT COUNT(*)
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND column_name IN (
+            'created_at', 'updated_at', 'deleted_at',
+            'started_at', 'ended_at', 'expires_at', 'used_at'
+          )
+          AND data_type = 'timestamp with time zone'
+        """,
+        Integer.class);
+  }
+
+  private Integer nonUtcEventTimestampColumnCount() {
+    return jdbcTemplate.queryForObject(
+        """
+        SELECT COUNT(*)
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND column_name IN (
+            'created_at', 'updated_at', 'deleted_at',
+            'started_at', 'ended_at', 'expires_at', 'used_at'
+          )
+          AND data_type <> 'timestamp with time zone'
+        """,
+        Integer.class);
   }
 
   private Integer searchTrigramIndexCount() {

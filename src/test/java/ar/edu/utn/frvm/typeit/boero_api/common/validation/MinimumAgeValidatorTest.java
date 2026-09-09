@@ -4,32 +4,43 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 class MinimumAgeValidatorTest {
 
   private static final ZoneId ARGENTINA_TIME_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
+  private static final Clock CLOCK =
+      Clock.fixed(Instant.parse("2026-09-09T02:00:00Z"), ZoneOffset.UTC);
 
   private static Validator validator;
 
   @BeforeAll
   static void setUpValidator() {
-    validator = Validation.buildDefaultValidatorFactory().getValidator();
+    validator =
+        Validation.byDefaultProvider()
+            .configure()
+            .clockProvider(() -> CLOCK)
+            .buildValidatorFactory()
+            .getValidator();
   }
 
   @Test
   void acceptsExactMinimumAge() {
-    final LocalDate birthDate = LocalDate.now(ARGENTINA_TIME_ZONE).minusYears(3);
+    final LocalDate birthDate = LocalDate.now(CLOCK.withZone(ARGENTINA_TIME_ZONE)).minusYears(3);
 
     assertThat(validator.validate(new BirthDateValue(birthDate))).isEmpty();
   }
 
   @Test
   void rejectsOneDayBeforeMinimumAge() {
-    final LocalDate birthDate = LocalDate.now(ARGENTINA_TIME_ZONE).minusYears(3).plusDays(1);
+    final LocalDate birthDate =
+        LocalDate.now(CLOCK.withZone(ARGENTINA_TIME_ZONE)).minusYears(3).plusDays(1);
 
     assertThat(validator.validate(new BirthDateValue(birthDate)))
         .singleElement()

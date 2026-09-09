@@ -3,8 +3,8 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.payloads;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Schema(
@@ -34,7 +34,7 @@ public record StudyPlanResponse(
     StudyPlanStatus status,
     @Schema(nullable = true) UUID previousVersionId,
     int versionNumber,
-    @Schema(nullable = true) LocalDateTime deletedAt) {
+    @Schema(nullable = true) Instant deletedAt) {
 
   public static StudyPlanResponse from(final StudyPlan plan) {
     return new StudyPlanResponse(

@@ -8,6 +8,7 @@ import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.ins
 import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.persist;
 import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.province;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.City;
@@ -16,7 +17,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Province;
 import ar.edu.utn.frvm.typeit.boero_api.support.JpaAuditingTestConfig;
 import jakarta.persistence.EntityManager;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -156,13 +157,16 @@ class InstitutionRepositoryTest {
     Institution first = createInstitution(entityManager, "boero-first");
     Institution second = createInstitution(entityManager, "boero-second");
     entityManager.flush();
-    updateCreatedAt(first, LocalDateTime.of(2026, 6, 4, 10, 0));
-    updateCreatedAt(second, LocalDateTime.of(2026, 6, 20, 15, 0));
+    updateCreatedAt(
+        first, java.time.LocalDateTime.of(2026, 6, 4, 10, 0).toInstant(java.time.ZoneOffset.UTC));
+    updateCreatedAt(
+        second, java.time.LocalDateTime.of(2026, 6, 20, 15, 0).toInstant(java.time.ZoneOffset.UTC));
     entityManager.clear();
 
     var counts =
         institutionRepository.countCreatedByMonth(
-            LocalDateTime.of(2026, 5, 1, 0, 0), LocalDateTime.of(2026, 8, 1, 0, 0));
+            java.time.LocalDateTime.of(2026, 5, 1, 0, 0).toInstant(java.time.ZoneOffset.UTC),
+            java.time.LocalDateTime.of(2026, 8, 1, 0, 0).toInstant(java.time.ZoneOffset.UTC));
 
     assertThat(counts).hasSize(1);
     assertThat(counts.getFirst().getYear()).isEqualTo(2026);
@@ -171,12 +175,37 @@ class InstitutionRepositoryTest {
   }
 
   @Test
+  @DisplayName("Should group institution creation counts by UTC month")
+  void countCreatedByMonth_groupsInstitutionsByUtcMonth() {
+    Institution june = createInstitution(entityManager, "boero-june");
+    Institution july = createInstitution(entityManager, "boero-july");
+    entityManager.flush();
+    updateCreatedAt(june, Instant.parse("2026-06-30T23:30:00Z"));
+    updateCreatedAt(july, Instant.parse("2026-07-01T00:30:00Z"));
+    entityManager.clear();
+
+    var counts =
+        institutionRepository.countCreatedByMonth(
+            Instant.parse("2026-06-01T00:00:00Z"), Instant.parse("2026-08-01T00:00:00Z"));
+
+    assertThat(counts)
+        .extracting(MonthlyInstitutionCount::getYear, MonthlyInstitutionCount::getMonth)
+        .containsExactly(tuple(2026, 6), tuple(2026, 7));
+    assertThat(counts)
+        .extracting(MonthlyInstitutionCount::getInstitutionCount)
+        .containsExactly(1L, 1L);
+  }
+
+  @Test
   @DisplayName("Should return the five most recently created institutions with location")
   void findTop5ByOrderByCreatedAtDesc_returnsRecentInstitutions() {
     for (int index = 0; index < 6; index++) {
       Institution institution = createInstitution(entityManager, "boero-" + index);
       entityManager.flush();
-      updateCreatedAt(institution, LocalDateTime.of(2026, 7, index + 1, 10, 0));
+      updateCreatedAt(
+          institution,
+          java.time.LocalDateTime.of(2026, 7, index + 1, 10, 0)
+              .toInstant(java.time.ZoneOffset.UTC));
     }
     entityManager.clear();
 
@@ -193,7 +222,7 @@ class InstitutionRepositoryTest {
             });
   }
 
-  private void updateCreatedAt(final Institution institution, final LocalDateTime createdAt) {
+  private void updateCreatedAt(final Institution institution, final Instant createdAt) {
     entityManager
         .createQuery(
             "UPDATE Institution institution SET institution.createdAt = :createdAt WHERE institution.id = :id")

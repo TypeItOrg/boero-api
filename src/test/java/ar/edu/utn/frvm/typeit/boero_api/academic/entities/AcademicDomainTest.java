@@ -75,7 +75,8 @@ class AcademicDomainTest {
             institution,
             currentYear(),
             LocalDate.of(currentYear(), 3, 1),
-            LocalDate.of(currentYear(), 12, 15));
+            LocalDate.of(currentYear(), 12, 15),
+            LocalDate.now(ZoneId.of("America/Argentina/Buenos_Aires")));
     academicYear.transitionTo(AcademicYearStatus.ACTIVE);
     final var academicSpace =
         AcademicSpace.create(
@@ -98,7 +99,11 @@ class AcademicDomainTest {
     assertThatThrownBy(
             () ->
                 AcademicYear.create(
-                    institution(), currentYear, LocalDate.of(currentYear, 3, 1), null))
+                    institution(),
+                    currentYear,
+                    LocalDate.of(currentYear, 3, 1),
+                    null,
+                    LocalDate.now(ZoneId.of("America/Argentina/Buenos_Aires"))))
         .isInstanceOf(AcademicValidationException.class)
         .satisfies(
             exception ->
@@ -116,7 +121,8 @@ class AcademicDomainTest {
             institution(),
             currentYear,
             LocalDate.of(currentYear, 8, 1),
-            LocalDate.of(currentYear + 1, 7, 31));
+            LocalDate.of(currentYear + 1, 7, 31),
+            LocalDate.now(ZoneId.of("America/Argentina/Buenos_Aires")));
 
     assertThat(academicYear.getEndDate()).isEqualTo(LocalDate.of(currentYear + 1, 7, 31));
   }
@@ -132,7 +138,8 @@ class AcademicDomainTest {
                     institution(),
                     currentYear,
                     LocalDate.of(currentYear - 1, 12, 1),
-                    LocalDate.of(currentYear, 12, 15)))
+                    LocalDate.of(currentYear, 12, 15),
+                    LocalDate.now(ZoneId.of("America/Argentina/Buenos_Aires"))))
         .isInstanceOf(AcademicValidationException.class)
         .satisfies(
             exception ->
@@ -151,7 +158,8 @@ class AcademicDomainTest {
                     institution(),
                     currentYear,
                     LocalDate.of(currentYear, 3, 1),
-                    LocalDate.of(currentYear + 2, 3, 1)))
+                    LocalDate.of(currentYear + 2, 3, 1),
+                    LocalDate.now(ZoneId.of("America/Argentina/Buenos_Aires"))))
         .isInstanceOf(AcademicValidationException.class)
         .satisfies(
             exception ->
@@ -162,7 +170,14 @@ class AcademicDomainTest {
   @Test
   @DisplayName("Should reject an academic year outside the supported range")
   void academicYearRejectsUnsupportedYear() {
-    assertThatThrownBy(() -> AcademicYear.create(institution(), 1999, null, null))
+    assertThatThrownBy(
+            () ->
+                AcademicYear.create(
+                    institution(),
+                    1999,
+                    null,
+                    null,
+                    LocalDate.now(ZoneId.of("America/Argentina/Buenos_Aires"))))
         .isInstanceOf(AcademicValidationException.class)
         .satisfies(
             exception ->
@@ -209,7 +224,8 @@ class AcademicDomainTest {
         institution(),
         currentYear,
         LocalDate.of(currentYear, 3, 1),
-        LocalDate.of(currentYear, 12, 15));
+        LocalDate.of(currentYear, 12, 15),
+        LocalDate.now(ZoneId.of("America/Argentina/Buenos_Aires")));
   }
 
   private static int currentYear() {

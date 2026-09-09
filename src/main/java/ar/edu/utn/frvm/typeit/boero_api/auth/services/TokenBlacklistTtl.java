@@ -9,8 +9,8 @@ final class TokenBlacklistTtl {
 
   private TokenBlacklistTtl() {}
 
-  static Duration remaining(Instant expiration) {
-    Duration ttl = Duration.between(Instant.now(), expiration);
+  static Duration remaining(final Instant now, final Instant expiration) {
+    Duration ttl = Duration.between(now, expiration);
     return ttl.isNegative() || ttl.isZero() ? MIN_TTL : ttl;
   }
 }

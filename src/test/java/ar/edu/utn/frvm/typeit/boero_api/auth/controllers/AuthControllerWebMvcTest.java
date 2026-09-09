@@ -32,7 +32,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.services.RequestInstitutionalPasswo
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.ResetInstitutionalPasswordUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.TokenBlacklistService;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -196,7 +196,7 @@ class AuthControllerWebMvcTest {
             .sessionId(SESSION_ID)
             .ipAddress("192.0.2.10")
             .userAgent("Mozilla/5.0")
-            .startedAt(LocalDateTime.now())
+            .startedAt(Instant.now())
             .currentSession(true)
             .build();
     PaginatedResponse<ActiveSessionResponse> response =

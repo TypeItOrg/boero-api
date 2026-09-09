@@ -17,10 +17,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.Year;
-import java.time.ZoneId;
 import java.util.Map;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -46,7 +44,6 @@ public class AcademicYear extends SoftDeletable {
   public static final int MIN_YEAR = 2000;
 
   private static final int MAX_YEAR_OFFSET = 1;
-  private static final ZoneId ARGENTINA_TIME_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
 
   @Id
   @GeneratedUUIDv7
@@ -74,8 +71,9 @@ public class AcademicYear extends SoftDeletable {
       final Institution institution,
       final int year,
       final LocalDate startDate,
-      final LocalDate endDate) {
-    validate(year, startDate, endDate);
+      final LocalDate endDate,
+      final LocalDate today) {
+    validate(year, startDate, endDate, today);
     return AcademicYear.builder()
         .institution(institution)
         .year(year)
@@ -85,11 +83,12 @@ public class AcademicYear extends SoftDeletable {
         .build();
   }
 
-  public void update(final int year, final LocalDate startDate, final LocalDate endDate) {
+  public void update(
+      final int year, final LocalDate startDate, final LocalDate endDate, final LocalDate today) {
     if (status != AcademicYearStatus.PLANNED) {
       throw new InvalidAcademicStateException();
     }
-    validate(year, startDate, endDate);
+    validate(year, startDate, endDate, today);
     this.year = year;
     this.startDate = startDate;
     this.endDate = endDate;
@@ -108,15 +107,16 @@ public class AcademicYear extends SoftDeletable {
     status = target;
   }
 
-  public boolean delete(final LocalDateTime deletedAt) {
+  public boolean delete(final Instant deletedAt) {
     if (status != AcademicYearStatus.PLANNED) {
       throw new InvalidAcademicStateException();
     }
     return markDeleted(deletedAt);
   }
 
-  private static void validate(final int year, final LocalDate startDate, final LocalDate endDate) {
-    validateYear(year);
+  private static void validate(
+      final int year, final LocalDate startDate, final LocalDate endDate, final LocalDate today) {
+    validateYear(year, today);
 
     final boolean onlyOneDate = (startDate == null) != (endDate == null);
     if (onlyOneDate) {
@@ -137,8 +137,8 @@ public class AcademicYear extends SoftDeletable {
     }
   }
 
-  private static void validateYear(final int year) {
-    final int maxYear = Year.now(ARGENTINA_TIME_ZONE).getValue() + MAX_YEAR_OFFSET;
+  private static void validateYear(final int year, final LocalDate today) {
+    final int maxYear = today.getYear() + MAX_YEAR_OFFSET;
     if (year < MIN_YEAR || year > maxYear) {
       throw new AcademicValidationException(
           AcademicMessages.ACADEMIC_YEAR_OUT_OF_RANGE,

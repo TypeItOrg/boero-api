@@ -12,7 +12,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RefreshTokenRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.AuthResponse;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorityResolver;
-import java.time.LocalDateTime;
+import java.time.Clock;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenUseCase {
+  private final Clock clock;
 
   private final RefreshTokenRepository refreshTokenRepository;
   private final UserSessionRepository userSessionRepository;
@@ -44,7 +45,7 @@ public class RefreshTokenUseCase {
     final Optional<RefreshReplay> replay = replayCache.get(AuthRealm.INSTITUTIONAL, hash);
     final RefreshRotationDecision decision =
         RefreshRotationPolicy.decide(
-            current.isRevoked(), current.isExpiredAt(LocalDateTime.now()), replay);
+            current.isRevoked(), current.isExpiredAt(clock.instant()), replay);
     return switch (decision) {
       case RefreshRotationDecision.Replay(var tokens) -> {
         final UserSession session = findActiveSession(current);
@@ -74,7 +75,7 @@ public class RefreshTokenUseCase {
             .tokenHash(generatedRefreshToken.tokenHash())
             .familyId(current.getFamilyId())
             .expiresAt(
-                LocalDateTime.now().plus(jwtProperties.refreshExpiration(session.isRememberMe())))
+                clock.instant().plus(jwtProperties.refreshExpiration(session.isRememberMe())))
             .build();
     refreshTokenRepository.save(next);
 

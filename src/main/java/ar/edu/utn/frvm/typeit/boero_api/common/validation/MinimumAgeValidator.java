@@ -1,13 +1,12 @@
 package ar.edu.utn.frvm.typeit.boero_api.common.validation;
 
+import static ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider.BUSINESS_ZONE;
+
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import java.time.LocalDate;
-import java.time.ZoneId;
 
 public class MinimumAgeValidator implements ConstraintValidator<MinimumAge, LocalDate> {
-
-  private static final ZoneId ARGENTINA_TIME_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
 
   private int minimumAge;
 
@@ -23,7 +22,8 @@ public class MinimumAgeValidator implements ConstraintValidator<MinimumAge, Loca
     }
 
     final LocalDate latestAllowedBirthDate =
-        LocalDate.now(ARGENTINA_TIME_ZONE).minusYears(minimumAge);
+        LocalDate.now(context.getClockProvider().getClock().withZone(BUSINESS_ZONE))
+            .minusYears(minimumAge);
     return !value.isAfter(latestAllowedBirthDate);
   }
 }

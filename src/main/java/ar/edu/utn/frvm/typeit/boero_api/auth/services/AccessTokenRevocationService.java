@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.AccessTokenParseResult;
+import java.time.Clock;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class AccessTokenRevocationService {
+  private final Clock clock;
 
   private final TokenBlacklistService tokenBlacklistService;
   private final JwtService jwtService;
@@ -20,6 +22,7 @@ public class AccessTokenRevocationService {
 
     final String tokenId = jwtService.extractTokenId(claims);
     final Instant expiresAt = claims.getExpiration().toInstant();
-    tokenBlacklistService.blacklist(tokenId, TokenBlacklistTtl.remaining(expiresAt));
+    tokenBlacklistService.blacklist(
+        tokenId, TokenBlacklistTtl.remaining(clock.instant(), expiresAt));
   }
 }

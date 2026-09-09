@@ -11,7 +11,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformRefreshTokenRepo
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformSessionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RefreshTokenRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PlatformAuthResponse;
-import java.time.LocalDateTime;
+import java.time.Clock;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class PlatformRefreshTokenUseCase {
+  private final Clock clock;
 
   private final PlatformRefreshTokenRepository platformRefreshTokenRepository;
   private final PlatformSessionRepository platformSessionRepository;
@@ -44,7 +45,7 @@ public class PlatformRefreshTokenUseCase {
     final Optional<RefreshReplay> replay = replayCache.get(AuthRealm.PLATFORM, hash);
     final RefreshRotationDecision decision =
         RefreshRotationPolicy.decide(
-            current.isRevoked(), current.isExpiredAt(LocalDateTime.now()), replay);
+            current.isRevoked(), current.isExpiredAt(clock.instant()), replay);
     return switch (decision) {
       case RefreshRotationDecision.Replay(var tokens) -> {
         findActiveSession(current);
@@ -76,7 +77,7 @@ public class PlatformRefreshTokenUseCase {
             .tokenHash(generatedRefreshToken.tokenHash())
             .familyId(current.getFamilyId())
             .expiresAt(
-                LocalDateTime.now().plus(jwtProperties.refreshExpiration(session.isRememberMe())))
+                clock.instant().plus(jwtProperties.refreshExpiration(session.isRememberMe())))
             .build();
     platformRefreshTokenRepository.save(next);
 

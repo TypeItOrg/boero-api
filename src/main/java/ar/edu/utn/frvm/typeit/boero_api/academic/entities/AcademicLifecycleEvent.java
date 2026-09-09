@@ -14,7 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -64,7 +64,7 @@ public class AcademicLifecycleEvent {
   private String requestId;
 
   @Column(name = "created_at", nullable = false, updatable = false)
-  private LocalDateTime createdAt;
+  private Instant createdAt;
 
   public static AcademicLifecycleEvent create(
       final Institution institution,
@@ -75,7 +75,7 @@ public class AcademicLifecycleEvent {
       final UUID actorId,
       final String reason,
       final String requestId,
-      final LocalDateTime createdAt) {
+      final Instant createdAt) {
     return AcademicLifecycleEvent.builder()
         .institution(institution)
         .resourceType(resourceType)

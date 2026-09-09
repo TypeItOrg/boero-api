@@ -9,7 +9,11 @@ import static org.mockito.Mockito.when;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
+import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,6 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +34,10 @@ class ListAcademicOffersUseCaseTest {
   private static final UUID INSTITUTION_ID = UUID.randomUUID();
 
   @Mock private StudyPlanRepository studyPlanRepository;
+
+  @Spy
+  private BusinessDateProvider businessDateProvider =
+      new BusinessDateProvider(Clock.fixed(Instant.parse("2026-09-09T02:00:00Z"), ZoneOffset.UTC));
 
   @InjectMocks private ListAcademicOffersUseCase useCase;
 

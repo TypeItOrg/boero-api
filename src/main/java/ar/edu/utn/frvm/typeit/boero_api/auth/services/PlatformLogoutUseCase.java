@@ -3,7 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedPlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformRefreshTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformSessionRepository;
-import java.time.LocalDateTime;
+import java.time.Clock;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class PlatformLogoutUseCase {
+  private final Clock clock;
 
   private final AccessTokenRevocationService accessTokenRevocationService;
   private final PlatformRefreshTokenRepository platformRefreshTokenRepository;
@@ -28,7 +29,7 @@ public class PlatformLogoutUseCase {
         .findById(principal.sessionId())
         .ifPresent(
             session -> {
-              session.end(LocalDateTime.now());
+              session.end(clock.instant());
               platformSessionRepository.save(session);
             });
   }

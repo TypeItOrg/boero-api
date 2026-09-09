@@ -10,7 +10,8 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.entities.RefreshToken;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.UserSession;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.RefreshTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
-import java.time.LocalDateTime;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +33,7 @@ class LoginSessionPersistenceServiceTest {
   void setUp() {
     service =
         new LoginSessionPersistenceService(
+            Clock.systemUTC(),
             userSessionRepository,
             refreshTokenRepository,
             jwtProperties(),
@@ -72,7 +74,7 @@ class LoginSessionPersistenceServiceTest {
         .isEqualTo(JwtService.hashToken(result.refreshToken()));
     assertThat(tokenCaptor.getValue().getExpiresAt())
         .isCloseTo(
-            LocalDateTime.now().plus(jwtProperties().rememberMeTokenExpiration()),
+            Instant.now().plus(jwtProperties().rememberMeTokenExpiration()),
             within(5, ChronoUnit.SECONDS));
   }
 }

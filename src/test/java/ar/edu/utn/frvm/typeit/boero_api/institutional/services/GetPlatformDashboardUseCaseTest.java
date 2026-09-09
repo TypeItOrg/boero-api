@@ -10,8 +10,11 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Province;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.MonthlyInstitutionCount;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PlatformDashboardSummaryCounts;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +29,7 @@ class GetPlatformDashboardUseCaseTest {
   @BeforeEach
   void setUp() {
     institutionRepository = mock(InstitutionRepository.class);
-    useCase = new GetPlatformDashboardUseCase(institutionRepository);
+    useCase = new GetPlatformDashboardUseCase(institutionRepository, Clock.systemUTC());
   }
 
   @Test
@@ -38,7 +41,8 @@ class GetPlatformDashboardUseCaseTest {
     final PlatformDashboardSummaryCounts summaryCounts = summaryCounts(9, 7, 41, 28);
     when(institutionRepository.getPlatformDashboardSummaryCounts()).thenReturn(summaryCounts);
     when(institutionRepository.countCreatedByMonth(
-            LocalDateTime.of(2025, 8, 1, 0, 0), LocalDateTime.of(2026, 8, 1, 0, 0)))
+            LocalDateTime.of(2025, 8, 1, 0, 0).toInstant(ZoneOffset.UTC),
+            LocalDateTime.of(2026, 8, 1, 0, 0).toInstant(ZoneOffset.UTC)))
         .thenReturn(List.of(novemberCount));
     when(institutionRepository.findTop5ByOrderByCreatedAtDesc())
         .thenReturn(List.of(recentInstitution));
@@ -67,7 +71,8 @@ class GetPlatformDashboardUseCaseTest {
     final PlatformDashboardSummaryCounts summaryCounts = summaryCounts(0, 0, 0, 0);
     when(institutionRepository.getPlatformDashboardSummaryCounts()).thenReturn(summaryCounts);
     when(institutionRepository.countCreatedByMonth(
-            LocalDateTime.of(2025, 8, 1, 0, 0), LocalDateTime.of(2026, 8, 1, 0, 0)))
+            LocalDateTime.of(2025, 8, 1, 0, 0).toInstant(ZoneOffset.UTC),
+            LocalDateTime.of(2026, 8, 1, 0, 0).toInstant(ZoneOffset.UTC)))
         .thenReturn(List.of());
     when(institutionRepository.findTop5ByOrderByCreatedAtDesc()).thenReturn(List.of());
 
@@ -77,6 +82,28 @@ class GetPlatformDashboardUseCaseTest {
     assertThat(response.institutionRegistrations())
         .allSatisfy(registration -> assertThat(registration.count()).isZero());
     assertThat(response.recentInstitutions()).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should bucket the dashboard trend by UTC month")
+  void execute_usesUtcMonthForTrendWindow() {
+    final Clock clock = Clock.fixed(Instant.parse("2026-08-01T02:00:00Z"), ZoneOffset.UTC);
+    useCase = new GetPlatformDashboardUseCase(institutionRepository, clock);
+    final PlatformDashboardSummaryCounts summaryCounts = summaryCounts(0, 0, 0, 0);
+    when(institutionRepository.getPlatformDashboardSummaryCounts()).thenReturn(summaryCounts);
+    when(institutionRepository.countCreatedByMonth(
+            LocalDateTime.of(2025, 9, 1, 0, 0).toInstant(ZoneOffset.UTC),
+            LocalDateTime.of(2026, 9, 1, 0, 0).toInstant(ZoneOffset.UTC)))
+        .thenReturn(List.of());
+    when(institutionRepository.findTop5ByOrderByCreatedAtDesc()).thenReturn(List.of());
+
+    final var response = useCase.execute();
+
+    assertThat(response.institutionRegistrations()).hasSize(12);
+    assertThat(response.institutionRegistrations().getFirst().year()).isEqualTo(2025);
+    assertThat(response.institutionRegistrations().getFirst().month()).isEqualTo(9);
+    assertThat(response.institutionRegistrations().getLast().year()).isEqualTo(2026);
+    assertThat(response.institutionRegistrations().getLast().month()).isEqualTo(8);
   }
 
   private static PlatformDashboardSummaryCounts summaryCounts(
@@ -109,7 +136,8 @@ class GetPlatformDashboardUseCaseTest {
     when(institution.getName()).thenReturn("Instituto Boero");
     when(institution.getCity()).thenReturn(city);
     when(institution.isActive()).thenReturn(true);
-    when(institution.getCreatedAt()).thenReturn(LocalDateTime.of(2026, 7, 10, 12, 0));
+    when(institution.getCreatedAt())
+        .thenReturn(LocalDateTime.of(2026, 7, 10, 12, 0).toInstant(ZoneOffset.UTC));
     return institution;
   }
 }

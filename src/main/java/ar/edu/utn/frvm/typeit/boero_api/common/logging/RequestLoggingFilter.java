@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
@@ -35,7 +36,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     MDC.put(MDC_REQUEST_ID_KEY, requestId);
     response.setHeader(REQUEST_ID_HEADER, requestId);
 
-    final long startTime = System.currentTimeMillis();
+    final long startTime = System.nanoTime();
     Throwable chainException = null;
 
     try {
@@ -44,7 +45,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
       chainException = ex;
       throw ex;
     } finally {
-      final long durationMs = System.currentTimeMillis() - startTime;
+      final long durationMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
       int status = response.getStatus();
       if (chainException != null && status < 500) {
         status = 500;

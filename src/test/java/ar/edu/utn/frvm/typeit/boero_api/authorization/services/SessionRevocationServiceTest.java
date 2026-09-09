@@ -11,7 +11,8 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.RefreshTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
-import java.time.LocalDateTime;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,10 +23,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SessionRevocationServiceTest {
+  @Spy private Clock clock = Clock.systemUTC();
 
   @Mock private UserRepository userRepository;
   @Mock private UserSessionRepository userSessionRepository;
@@ -35,7 +38,7 @@ class SessionRevocationServiceTest {
   @Mock private org.springframework.cache.CacheManager cacheManager;
 
   @Captor private ArgumentCaptor<List<UUID>> sessionIdsCaptor;
-  @Captor private ArgumentCaptor<LocalDateTime> endedAtCaptor;
+  @Captor private ArgumentCaptor<Instant> endedAtCaptor;
 
   @InjectMocks private SessionRevocationService sessionRevocationService;
 

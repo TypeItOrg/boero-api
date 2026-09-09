@@ -7,7 +7,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformSessionRepositor
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.RefreshTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
-import java.time.LocalDateTime;
+import java.time.Clock;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class SessionRevocationService {
+  private final Clock clock;
 
   private final UserRepository userRepository;
   private final UserSessionRepository userSessionRepository;
@@ -55,7 +56,7 @@ public class SessionRevocationService {
     if (sessionIds.isEmpty()) return;
 
     refreshTokenRepository.revokeBySessionIds(sessionIds);
-    userSessionRepository.deactivateByIds(sessionIds, LocalDateTime.now());
+    userSessionRepository.deactivateByIds(sessionIds, clock.instant());
     evictSessions(AuthRealm.INSTITUTIONAL, sessionIds);
   }
 
@@ -64,7 +65,7 @@ public class SessionRevocationService {
     if (sessionIds.isEmpty()) return;
 
     platformRefreshTokenRepository.revokeByPlatformSessionIds(sessionIds);
-    platformSessionRepository.deactivateByIds(sessionIds, LocalDateTime.now());
+    platformSessionRepository.deactivateByIds(sessionIds, clock.instant());
     evictSessions(AuthRealm.PLATFORM, sessionIds);
   }
 

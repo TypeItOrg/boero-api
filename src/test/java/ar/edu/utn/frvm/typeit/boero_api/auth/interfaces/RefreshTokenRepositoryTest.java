@@ -8,7 +8,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData;
 import ar.edu.utn.frvm.typeit.boero_api.support.JpaAuditingTestConfig;
 import jakarta.persistence.EntityManager;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -89,7 +89,7 @@ class RefreshTokenRepositoryTest {
         .sessionId(sessionId)
         .tokenHash(hash)
         .familyId(familyId)
-        .expiresAt(LocalDateTime.now().plusDays(7))
+        .expiresAt(Instant.now().plus(java.time.Duration.ofDays(7)))
         .build();
   }
 

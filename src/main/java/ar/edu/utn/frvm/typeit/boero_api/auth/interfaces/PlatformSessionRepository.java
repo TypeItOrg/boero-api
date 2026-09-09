@@ -1,7 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.interfaces;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformSession;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -24,5 +24,5 @@ public interface PlatformSessionRepository extends JpaRepository<PlatformSession
       WHERE s.id IN :sessionIds
       """)
   void deactivateByIds(
-      @Param("sessionIds") Collection<UUID> sessionIds, @Param("endedAt") LocalDateTime endedAt);
+      @Param("sessionIds") Collection<UUID> sessionIds, @Param("endedAt") Instant endedAt);
 }

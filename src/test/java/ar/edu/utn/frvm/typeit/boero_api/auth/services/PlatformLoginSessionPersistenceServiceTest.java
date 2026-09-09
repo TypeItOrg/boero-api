@@ -9,6 +9,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformRefreshToken;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformSession;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformRefreshTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformSessionRepository;
+import java.time.Clock;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,7 @@ class PlatformLoginSessionPersistenceServiceTest {
   void setUp() {
     service =
         new PlatformLoginSessionPersistenceService(
+            Clock.systemUTC(),
             platformSessionRepository,
             platformRefreshTokenRepository,
             jwtProperties(),
