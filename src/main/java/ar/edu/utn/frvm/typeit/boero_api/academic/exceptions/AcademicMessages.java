@@ -90,6 +90,7 @@ public final class AcademicMessages {
       "Completá la fecha de inicio antes de indicar una fecha final.";
   public static final String DATE_PAIR_REQUIRED = "Completá ambas fechas o dejá ambas vacías.";
   public static final String INVALID_VALUE = "El valor indicado no es válido.";
+  public static final String INVALID_SORT_FIELD = "El campo de ordenamiento indicado no es válido.";
   public static final String COURSE_DAY_DUPLICATED =
       "Cada día solo puede configurarse una vez por clase.";
   public static final String COURSE_SCHEDULE_INVALID = "El horario indicado no es válido.";
