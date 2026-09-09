@@ -5,7 +5,6 @@ CREATE TABLE enrollment_application_spaces (
     instrument_id uuid,
     created_at timestamp(6) NOT NULL,
     updated_at timestamp(6) NOT NULL,
-    deleted_at timestamp(6),
     CONSTRAINT enrollment_app_spaces_pkey PRIMARY KEY (enrollment_application_space_id),
     CONSTRAINT enrollment_app_spaces_app_fk FOREIGN KEY (enrollment_application_id)
         REFERENCES enrollment_applications (enrollment_application_id),

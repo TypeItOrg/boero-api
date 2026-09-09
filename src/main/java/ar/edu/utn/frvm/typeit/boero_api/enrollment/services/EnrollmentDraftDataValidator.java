@@ -1,7 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.TrainingPathNotFoundException;
-import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceInstrumentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
@@ -24,16 +24,22 @@ import org.springframework.stereotype.Component;
 public class EnrollmentDraftDataValidator {
 
   private final TrainingPathRepository trainingPathRepository;
-  private final StudyPlanRepository studyPlanRepository;
   private final StudyPlanSpaceRepository studyPlanSpaceRepository;
   private final StudyPlanSpaceInstrumentRepository studyPlanSpaceInstrumentRepository;
+  private final EnrollmentEffectiveStudyPlanResolver enrollmentEffectiveStudyPlanResolver;
 
-  public void validate(
+  /**
+   * Validates the draft payload and resolves the study plan the application should effectively
+   * be working against. The caller is responsible for reassigning {@code
+   * application.setStudyPlan(...)} when the returned plan differs from the current one — this
+   * method never mutates the application.
+   */
+  public StudyPlan validate(
       final UUID institutionId,
       final EnrollmentApplication application,
       final EnrollmentDraftData data) {
     if (data == null) {
-      return;
+      return application.getStudyPlan();
     }
 
     UUID trainingPathId = null;
@@ -44,8 +50,9 @@ public class EnrollmentDraftDataValidator {
           .orElseThrow(TrainingPathNotFoundException::new);
     }
 
-    final UUID effectiveStudyPlanId =
-        resolveEffectiveStudyPlanId(institutionId, application, trainingPathId);
+    final StudyPlan effectiveStudyPlan =
+        enrollmentEffectiveStudyPlanResolver.resolveForTrainingPath(
+            institutionId, application, trainingPathId);
 
     Set<UUID> selectedSpaceIds = Set.of();
     if (data.getAcademicSpaceSelection() != null
@@ -53,7 +60,7 @@ public class EnrollmentDraftDataValidator {
       selectedSpaceIds =
           validateStudyPlanSpaces(
               institutionId,
-              effectiveStudyPlanId,
+              effectiveStudyPlan.getId(),
               data.getAcademicSpaceSelection().getStudyPlanSpaceIds());
     }
 
@@ -64,6 +71,8 @@ public class EnrollmentDraftDataValidator {
           selectedSpaceIds,
           data.getInstrumentSelection().getStudyPlanSpaceInstrumentIds());
     }
+
+    return effectiveStudyPlan;
   }
 
   private Set<UUID> validateStudyPlanSpaces(
@@ -141,31 +150,5 @@ public class EnrollmentDraftDataValidator {
         Map.of(
             "instrumentSelection.studyPlanSpaceInstrumentIds",
             EnrollmentMessages.ENROLLMENT_APPLICATION_INSTRUMENT_SELECTION_INVALID));
-  }
-
-  private UUID resolveEffectiveStudyPlanId(
-      final UUID institutionId,
-      final EnrollmentApplication application,
-      final UUID trainingPathId) {
-    if (trainingPathId == null) {
-      return application.getStudyPlan().getId();
-    }
-
-    final var validOn =
-        application.getAcademicYear().getStartDate() != null
-            ? application.getAcademicYear().getStartDate()
-            : java.time.LocalDate.now();
-
-    return studyPlanRepository
-        .findActiveByTrainingPathIdAndInstitutionIdValidOn(
-            trainingPathId,
-            institutionId,
-            ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus.ACTIVE,
-            validOn)
-        .stream()
-        .findFirst()
-        .orElseThrow(
-            ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.StudyPlanNotFoundException::new)
-        .getId();
   }
 }

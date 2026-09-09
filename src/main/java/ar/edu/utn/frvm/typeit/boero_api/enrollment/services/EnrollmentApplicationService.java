@@ -23,6 +23,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentAttachmentTyp
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.ApplicationNotEditableException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentPeriodClosedException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.AcademicBackgroundDto;
@@ -251,8 +252,16 @@ public class EnrollmentApplicationService {
         }
       }
 
-      // 6. Validación y Persistencia de Espacios Curriculares e Instrumentos
-      enrollmentDraftDataValidator.validate(application.getInstitution().getId(), application, data);
+      // 6. Validación de carrera/espacios/instrumentos. Si el trainingPath elegido
+      // resuelve a un plan de estudio distinto del actual, ese pasa a ser el plan
+      // efectivo de la solicitud y los espacios ya elegidos (que pertenecen al plan
+      // viejo) se descartan.
+      StudyPlan effectiveStudyPlan =
+          enrollmentDraftDataValidator.validate(application.getInstitution().getId(), application, data);
+      if (!effectiveStudyPlan.getId().equals(application.getStudyPlan().getId())) {
+        application.setStudyPlan(effectiveStudyPlan);
+        application.clearSelectedSpaces();
+      }
 
       if (data.getAcademicSpaceSelection() != null
           && data.getAcademicSpaceSelection().getStudyPlanSpaceIds() != null) {
@@ -399,7 +408,14 @@ public class EnrollmentApplicationService {
       }
     }
 
-    // 4. Validar preferencias
+    // 4. Validar selección de espacios académicos
+    if (application.getSelectedSpaces() == null || application.getSelectedSpaces().isEmpty()) {
+      errors.put(
+          "academicSpaceSelection.studyPlanSpaceIds",
+          EnrollmentMessages.ENROLLMENT_APPLICATION_SPACES_REQUIRED);
+    }
+
+    // 5. Validar preferencias
     ApplicantPreference pref = application.getPreference();
     if (pref == null || pref.getPreferredShift() == null || pref.getPreferredShift().isBlank()) {
       errors.put("preference.preferredShift", "El turno preferido es obligatorio");
@@ -567,15 +583,12 @@ public class EnrollmentApplicationService {
     InstrumentSelectionDto instrumentSelectionDto = null;
     if (entity.getSelectedSpaces() != null && !entity.getSelectedSpaces().isEmpty()) {
       List<UUID> spaceIds =
-          entity.getSelectedSpaces().stream()
-              .filter(s -> s.getDeletedAt() == null)
-              .map(s -> s.getStudyPlanSpace().getId())
-              .toList();
+          entity.getSelectedSpaces().stream().map(s -> s.getStudyPlanSpace().getId()).toList();
       spaceSelectionDto = new AcademicSpaceSelectionDto(spaceIds);
 
       Map<UUID, UUID> instMap =
           entity.getSelectedSpaces().stream()
-              .filter(s -> s.getDeletedAt() == null && s.getInstrument() != null)
+              .filter(s -> s.getInstrument() != null)
               .collect(
                   Collectors.toMap(
                       s -> s.getStudyPlanSpace().getId(), s -> s.getInstrument().getId()));

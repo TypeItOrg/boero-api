@@ -9,13 +9,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Instrument;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantEducationBackground;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantPreference;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplicationSpace;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
@@ -23,8 +26,10 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.ApplicationNotEdit
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentPeriodClosedException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.AcademicBackgroundDto;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.AcademicSpaceSelectionDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentDraftData;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.InstrumentSelectionDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.PersonalDataDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.StartEnrollmentApplicationRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentDraftRequest;
@@ -36,6 +41,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepositor
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -249,6 +255,8 @@ class EnrollmentApplicationServiceTest {
 
     when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
     when(applicationRepository.save(any(EnrollmentApplication.class))).thenReturn(application);
+    when(enrollmentDraftDataValidator.validate(eq(institutionId), any(), any()))
+        .thenReturn(studyPlan);
 
     UpdateEnrollmentDraftRequest request =
         UpdateEnrollmentDraftRequest.builder()
@@ -266,6 +274,127 @@ class EnrollmentApplicationServiceTest {
     assertThat(application.getEducationBackground().getSecondarySchool())
         .isEqualTo("Colegio Nacional");
     verify(applicationRepository).save(application);
+  }
+
+  @Test
+  @DisplayName("Should persist selected study plan spaces and their instruments")
+  void updateDraft_persistsSelectedSpacesAndInstruments() {
+    Person person = org.mockito.Mockito.mock(Person.class);
+    when(person.getId()).thenReturn(personId);
+
+    Institution institution = org.mockito.Mockito.mock(Institution.class);
+    when(institution.getId()).thenReturn(institutionId);
+
+    StudyPlan studyPlan = org.mockito.Mockito.mock(StudyPlan.class);
+    when(studyPlan.getId()).thenReturn(studyPlanId);
+
+    AcademicYear academicYear = org.mockito.Mockito.mock(AcademicYear.class);
+    when(academicYear.getId()).thenReturn(academicYearId);
+
+    EnrollmentPeriod period = org.mockito.Mockito.mock(EnrollmentPeriod.class);
+    when(period.getId()).thenReturn(periodId);
+
+    EnrollmentApplication application =
+        EnrollmentApplication.builder()
+            .institution(institution)
+            .applicantPerson(person)
+            .studyPlan(studyPlan)
+            .academicYear(academicYear)
+            .enrollmentPeriod(period)
+            .status(EnrollmentApplicationStatus.DRAFT)
+            .build();
+    application.setId(applicationId);
+
+    UUID spaceId = UUID.randomUUID();
+    UUID instrumentId = UUID.randomUUID();
+    StudyPlanSpace space = org.mockito.Mockito.mock(StudyPlanSpace.class);
+    when(space.getId()).thenReturn(spaceId);
+    Instrument instrument = org.mockito.Mockito.mock(Instrument.class);
+    when(instrument.getId()).thenReturn(instrumentId);
+
+    when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+    when(applicationRepository.save(any(EnrollmentApplication.class))).thenReturn(application);
+    when(enrollmentDraftDataValidator.validate(eq(institutionId), any(), any()))
+        .thenReturn(studyPlan);
+    when(studyPlanSpaceRepository.findById(spaceId)).thenReturn(Optional.of(space));
+    when(instrumentRepository.findById(instrumentId)).thenReturn(Optional.of(instrument));
+
+    UpdateEnrollmentDraftRequest request =
+        UpdateEnrollmentDraftRequest.builder()
+            .data(
+                EnrollmentDraftData.builder()
+                    .academicSpaceSelection(new AcademicSpaceSelectionDto(List.of(spaceId)))
+                    .instrumentSelection(
+                        new InstrumentSelectionDto(Map.of(spaceId, instrumentId)))
+                    .build())
+            .build();
+
+    service.updateDraft(personId, applicationId, request);
+
+    assertThat(application.getSelectedSpaces()).hasSize(1);
+    EnrollmentApplicationSpace persisted = application.getSelectedSpaces().getFirst();
+    assertThat(persisted.getStudyPlanSpace().getId()).isEqualTo(spaceId);
+    assertThat(persisted.getInstrument().getId()).isEqualTo(instrumentId);
+  }
+
+  @Test
+  @DisplayName(
+      "Should reassign the study plan and discard previously selected spaces when the career changes")
+  void updateDraft_careerChangeReassignsStudyPlanAndClearsSpaces() {
+    Person person = org.mockito.Mockito.mock(Person.class);
+    when(person.getId()).thenReturn(personId);
+
+    Institution institution = org.mockito.Mockito.mock(Institution.class);
+    when(institution.getId()).thenReturn(institutionId);
+
+    StudyPlan oldStudyPlan = org.mockito.Mockito.mock(StudyPlan.class);
+    when(oldStudyPlan.getId()).thenReturn(studyPlanId);
+
+    UUID newStudyPlanId = UUID.randomUUID();
+    StudyPlan newStudyPlan = org.mockito.Mockito.mock(StudyPlan.class);
+    when(newStudyPlan.getId()).thenReturn(newStudyPlanId);
+
+    AcademicYear academicYear = org.mockito.Mockito.mock(AcademicYear.class);
+    when(academicYear.getId()).thenReturn(academicYearId);
+
+    EnrollmentPeriod period = org.mockito.Mockito.mock(EnrollmentPeriod.class);
+    when(period.getId()).thenReturn(periodId);
+
+    StudyPlanSpace oldSpace = org.mockito.Mockito.mock(StudyPlanSpace.class);
+    EnrollmentApplicationSpace previouslySelected =
+        EnrollmentApplicationSpace.builder().studyPlanSpace(oldSpace).build();
+
+    EnrollmentApplication application =
+        EnrollmentApplication.builder()
+            .institution(institution)
+            .applicantPerson(person)
+            .studyPlan(oldStudyPlan)
+            .academicYear(academicYear)
+            .enrollmentPeriod(period)
+            .status(EnrollmentApplicationStatus.DRAFT)
+            .build();
+    application.setId(applicationId);
+    application.addSelectedSpace(previouslySelected);
+
+    when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+    when(applicationRepository.save(any(EnrollmentApplication.class))).thenReturn(application);
+    when(enrollmentDraftDataValidator.validate(eq(institutionId), any(), any()))
+        .thenReturn(newStudyPlan);
+
+    UpdateEnrollmentDraftRequest request =
+        UpdateEnrollmentDraftRequest.builder()
+            .data(
+                EnrollmentDraftData.builder()
+                    .careerSelection(
+                        new ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CareerSelectionDto(
+                            UUID.randomUUID()))
+                    .build())
+            .build();
+
+    service.updateDraft(personId, applicationId, request);
+
+    assertThat(application.getStudyPlan()).isEqualTo(newStudyPlan);
+    assertThat(application.getSelectedSpaces()).isEmpty();
   }
 
   @Test
@@ -392,6 +521,10 @@ class EnrollmentApplicationServiceTest {
             .status(EnrollmentApplicationStatus.DRAFT)
             .build();
     application.setId(applicationId);
+    application.addSelectedSpace(
+        EnrollmentApplicationSpace.builder()
+            .studyPlanSpace(org.mockito.Mockito.mock(StudyPlanSpace.class))
+            .build());
 
     when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
     when(applicationRepository.save(any(EnrollmentApplication.class))).thenReturn(application);
@@ -399,6 +532,40 @@ class EnrollmentApplicationServiceTest {
     EnrollmentApplicationResponse response = service.submitApplication(personId, applicationId);
 
     assertThat(response.getStatus()).isEqualTo(EnrollmentApplicationStatus.SUBMITTED);
+  }
+
+  @Test
+  @DisplayName("Should require at least one selected study plan space to submit")
+  void submitApplication_requiresSelectedSpaces() {
+    Person person = org.mockito.Mockito.mock(Person.class);
+    when(person.getId()).thenReturn(personId);
+    when(person.getFirstName()).thenReturn("Juan");
+    when(person.getLastName()).thenReturn("Pérez");
+    when(person.getDocumentNumber()).thenReturn("12345678");
+    when(person.getEmail()).thenReturn("juan@example.com");
+
+    ApplicantEducationBackground edu =
+        ApplicantEducationBackground.builder().secondarySchool("Colegio San Martín").build();
+    ApplicantPreference pref = ApplicantPreference.builder().preferredShift("TARDE").build();
+
+    EnrollmentApplication application =
+        EnrollmentApplication.builder()
+            .applicantPerson(person)
+            .educationBackground(edu)
+            .preference(pref)
+            .status(EnrollmentApplicationStatus.DRAFT)
+            .build();
+    application.setId(applicationId);
+
+    when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+
+    assertThatThrownBy(() -> service.submitApplication(personId, applicationId))
+        .isInstanceOf(EnrollmentValidationException.class)
+        .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.type(EnrollmentValidationException.class))
+        .extracting(EnrollmentValidationException::fieldErrors)
+        .satisfies(
+            fieldErrors ->
+                assertThat(fieldErrors).containsKey("academicSpaceSelection.studyPlanSpaceIds"));
   }
 
   @Test

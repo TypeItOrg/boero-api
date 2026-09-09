@@ -12,6 +12,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.ApprovalMode;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequirementType;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceInstrumentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
@@ -38,6 +39,7 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
   @Mock private PersonRepository personRepository;
   @Mock private PersonRoleAssignmentRepository personRoleAssignmentRepository;
   @Mock private EnrollmentApplicationRepository enrollmentApplicationRepository;
+  @Mock private StudyPlanRepository studyPlanRepository;
   @Mock private StudyPlanSpaceRepository studyPlanSpaceRepository;
   @Mock private StudyPlanSpaceInstrumentRepository studyPlanSpaceInstrumentRepository;
 
@@ -76,7 +78,7 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
         new ListEnrollmentApplicationStudyPlanSpacesUseCase(
             new ApplicantEnrollmentGuard(personRepository, personRoleAssignmentRepository),
             enrollmentApplicationRepository,
-            new EnrollmentEffectiveStudyPlanResolver(),
+            new EnrollmentEffectiveStudyPlanResolver(studyPlanRepository),
             studyPlanSpaceRepository,
             studyPlanSpaceInstrumentRepository);
     givenApplicant(principal, application.getApplicantPerson());

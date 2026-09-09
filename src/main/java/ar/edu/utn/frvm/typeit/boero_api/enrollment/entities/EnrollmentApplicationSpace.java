@@ -2,8 +2,8 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.entities;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Instrument;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
+import ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
-import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -26,7 +26,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
-public class EnrollmentApplicationSpace extends SoftDeletable {
+public class EnrollmentApplicationSpace extends Auditable {
 
   @Id
   @GeneratedUUIDv7

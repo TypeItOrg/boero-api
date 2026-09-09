@@ -1,15 +1,25 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.ApprovalMode;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequirementType;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplicationSpace;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.AcademicSpaceSelectionDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentDraftData;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.ResponsibleDto;
@@ -21,6 +31,7 @@ import ar.edu.utn.frvm.typeit.boero_api.support.IntegrationTest;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -111,6 +122,119 @@ class EnrollmentApplicationPostgresIntegrationTest {
         .extracting(EnrollmentApplicationResponse::getApplicationId)
         .containsExactly(applicationA.getId())
         .doesNotContain(applicationB.getId());
+  }
+
+  @Test
+  @Transactional
+  @DisplayName(
+      "Should enforce the unique constraint on (enrollment_application_id, study_plan_space_id)")
+  void enrollmentApplicationSpace_rejectsDuplicatePairAtDatabaseLevel() {
+    EnrollmentApplication application = createDraftApplication();
+    StudyPlanSpace studyPlanSpace =
+        createStudyPlanSpace(application.getInstitution(), application.getStudyPlan(), 1);
+
+    entityManager.persist(
+        EnrollmentApplicationSpace.builder()
+            .enrollmentApplication(application)
+            .studyPlanSpace(studyPlanSpace)
+            .build());
+    entityManager.flush();
+
+    entityManager.persist(
+        EnrollmentApplicationSpace.builder()
+            .enrollmentApplication(application)
+            .studyPlanSpace(studyPlanSpace)
+            .build());
+
+    assertThatThrownBy(entityManager::flush).isInstanceOf(RuntimeException.class);
+  }
+
+  @Test
+  @Transactional
+  @DisplayName("Should physically delete a discarded selected space, not just detach it")
+  void updateDraft_replacingSelection_deletesDiscardedSpaceRow() {
+    EnrollmentApplication application = createDraftApplication();
+    StudyPlanSpace firstSpace =
+        createStudyPlanSpace(application.getInstitution(), application.getStudyPlan(), 1);
+    StudyPlanSpace secondSpace =
+        createStudyPlanSpace(application.getInstitution(), application.getStudyPlan(), 2);
+
+    service.updateDraft(
+        application.getApplicantPerson().getId(),
+        application.getId(),
+        UpdateEnrollmentDraftRequest.builder()
+            .data(
+                EnrollmentDraftData.builder()
+                    .academicSpaceSelection(
+                        new AcademicSpaceSelectionDto(List.of(firstSpace.getId())))
+                    .build())
+            .build());
+    entityManager.flush();
+
+    service.updateDraft(
+        application.getApplicantPerson().getId(),
+        application.getId(),
+        UpdateEnrollmentDraftRequest.builder()
+            .data(
+                EnrollmentDraftData.builder()
+                    .academicSpaceSelection(
+                        new AcademicSpaceSelectionDto(List.of(secondSpace.getId())))
+                    .build())
+            .build());
+    entityManager.flush();
+    entityManager.clear();
+
+    Long remainingForFirstSpace =
+        entityManager
+            .createQuery(
+                "SELECT COUNT(s) FROM EnrollmentApplicationSpace s "
+                    + "WHERE s.enrollmentApplication.id = :applicationId "
+                    + "AND s.studyPlanSpace.id = :spaceId",
+                Long.class)
+            .setParameter("applicationId", application.getId())
+            .setParameter("spaceId", firstSpace.getId())
+            .getSingleResult();
+
+    assertThat(remainingForFirstSpace).isZero();
+  }
+
+  @Test
+  @Transactional
+  @DisplayName("Should reject submission when no study plan space was selected")
+  void submitApplication_withoutSelectedSpaces_throwsValidationException() {
+    EnrollmentApplication application = createDraftApplication();
+
+    assertThatThrownBy(
+            () ->
+                service.submitApplication(application.getApplicantPerson().getId(), application.getId()))
+        .isInstanceOf(EnrollmentValidationException.class);
+  }
+
+  private StudyPlanSpace createStudyPlanSpace(
+      Institution institution, StudyPlan studyPlan, int displayOrder) {
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+    AcademicSpace academicSpace =
+        InstitutionalTestData.persist(
+            entityManager,
+            AcademicSpace.create(
+                institution,
+                "Espacio " + suffix,
+                "",
+                AcademicSpaceType.SUBJECT,
+                AcademicSpaceFormat.INDIVIDUAL));
+    StudyPlanSpace studyPlanSpace =
+        InstitutionalTestData.persist(
+            entityManager,
+            StudyPlanSpace.create(
+                institution,
+                studyPlan,
+                academicSpace,
+                null,
+                RequirementType.REQUIRED,
+                displayOrder,
+                ApprovalMode.FINAL_EXAM));
+    entityManager.flush();
+    return studyPlanSpace;
   }
 
   private EnrollmentApplication createDraftApplication() {
