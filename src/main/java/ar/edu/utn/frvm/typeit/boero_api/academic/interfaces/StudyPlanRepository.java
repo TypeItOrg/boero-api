@@ -1,7 +1,9 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.interfaces;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus;
 import jakarta.persistence.LockModeType;
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -22,6 +24,24 @@ public interface StudyPlanRepository
   @EntityGraph(attributePaths = {"institution", "trainingPath"})
   Page<StudyPlan> findByTrainingPath_IdAndInstitution_IdAndDeletedAtIsNull(
       UUID trainingPathId, UUID institutionId, Pageable pageable);
+
+  @EntityGraph(attributePaths = {"institution", "trainingPath"})
+  @Query(
+      """
+      SELECT plan FROM StudyPlan plan
+      WHERE plan.trainingPath.id = :trainingPathId
+        AND plan.institution.id = :institutionId
+        AND plan.status = :status
+        AND plan.deletedAt IS NULL
+        AND (plan.effectiveFrom IS NULL OR plan.effectiveFrom <= :validOn)
+        AND (plan.effectiveTo IS NULL OR plan.effectiveTo >= :validOn)
+      ORDER BY plan.effectiveFrom DESC, plan.createdAt DESC
+      """)
+  java.util.List<StudyPlan> findActiveByTrainingPathIdAndInstitutionIdValidOn(
+      @Param("trainingPathId") UUID trainingPathId,
+      @Param("institutionId") UUID institutionId,
+      @Param("status") StudyPlanStatus status,
+      @Param("validOn") LocalDate validOn);
 
   @EntityGraph(attributePaths = {"institution", "trainingPath"})
   @Query(

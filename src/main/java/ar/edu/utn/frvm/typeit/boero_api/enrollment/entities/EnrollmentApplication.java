@@ -16,8 +16,11 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -92,13 +95,21 @@ public class EnrollmentApplication extends SoftDeletable {
       orphanRemoval = true)
   private ApplicantPreference preference;
 
-  @jakarta.persistence.OneToMany(
+  @OneToMany(
       mappedBy = "enrollmentApplication",
       cascade = CascadeType.ALL,
       fetch = FetchType.LAZY,
       orphanRemoval = true)
   @Builder.Default
-  private java.util.List<EnrollmentAttachment> attachments = new java.util.ArrayList<>();
+  private List<EnrollmentAttachment> attachments = new ArrayList<>();
+
+  @OneToMany(
+      mappedBy = "enrollmentApplication",
+      cascade = CascadeType.ALL,
+      fetch = FetchType.LAZY,
+      orphanRemoval = true)
+  @Builder.Default
+  private List<EnrollmentApplicationSpace> selectedSpaces = new ArrayList<>();
 
   public void setEducationBackground(ApplicantEducationBackground educationBackground) {
     this.educationBackground = educationBackground;
@@ -131,5 +142,18 @@ public class EnrollmentApplication extends SoftDeletable {
   public void addAttachment(EnrollmentAttachment attachment) {
     attachments.add(attachment);
     attachment.setEnrollmentApplication(this);
+  }
+
+  public void addSelectedSpace(EnrollmentApplicationSpace selectedSpace) {
+    selectedSpaces.add(selectedSpace);
+    selectedSpace.setEnrollmentApplication(this);
+  }
+
+  public void clearSelectedSpaces() {
+    selectedSpaces.clear();
+  }
+
+  public boolean isEditable() {
+    return status == EnrollmentApplicationStatus.DRAFT && getDeletedAt() == null;
   }
 }

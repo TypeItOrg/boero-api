@@ -17,5 +17,8 @@ public class EnrollmentDraftData {
   private HealthInclusionDto healthInclusion;
   private ResponsibleDto responsible;
   private PreferenceDto preference;
+  private CareerSelectionDto careerSelection;
+  private AcademicSpaceSelectionDto academicSpaceSelection;
+  private InstrumentSelectionDto instrumentSelection;
   @Builder.Default private List<AttachmentDto> attachments = new ArrayList<>();
 }

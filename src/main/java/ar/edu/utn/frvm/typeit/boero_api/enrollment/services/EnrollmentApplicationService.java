@@ -1,9 +1,13 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Instrument;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.InstrumentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantEducationBackground;
@@ -11,6 +15,8 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantHealthInclu
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantPreference;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantResponsible;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplicationSpace;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentAttachment;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentAttachmentType;
@@ -20,10 +26,13 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicat
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentPeriodClosedException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.AcademicBackgroundDto;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.AcademicSpaceSelectionDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.AttachmentDto;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CareerSelectionDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentDraftData;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.HealthInclusionDto;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.InstrumentSelectionDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.PersonalDataDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.PreferenceDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.ResponsibleDto;
@@ -43,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
@@ -60,6 +70,9 @@ public class EnrollmentApplicationService {
   private final PersonRepository personRepository;
   private final StudyPlanRepository studyPlanRepository;
   private final AcademicYearRepository academicYearRepository;
+  private final StudyPlanSpaceRepository studyPlanSpaceRepository;
+  private final InstrumentRepository instrumentRepository;
+  private final EnrollmentDraftDataValidator enrollmentDraftDataValidator;
 
   @Transactional
   public EnrollmentApplicationResponse startOrGetApplication(
@@ -78,36 +91,47 @@ public class EnrollmentApplicationService {
       return toResponse(existingDraft.get());
     }
 
-    // 2. Si no existe, validar período de inscripción activo
-    LocalDateTime now = LocalDateTime.now();
-    EnrollmentPeriod activePeriod =
+    // 2. Validar período de inscripción abierto
+    EnrollmentPeriod period =
         periodRepository
             .findActivePeriod(
-                institutionId, request.getAcademicYearId(), EnrollmentPeriodStatus.OPEN, now)
+                institutionId,
+                request.getAcademicYearId(),
+                EnrollmentPeriodStatus.OPEN,
+                LocalDateTime.now())
             .orElseThrow(EnrollmentPeriodClosedException::new);
 
-    // 3. Obtener referencias de dominio
-    Person applicant =
+    Person person =
         personRepository
             .findById(personId)
-            .orElseThrow(() -> new IllegalArgumentException("Persona no encontrada"));
+            .orElseThrow(
+                () ->
+                    new EnrollmentValidationException(
+                        "No se encontró la persona postulante con ID " + personId));
+
     StudyPlan studyPlan =
         studyPlanRepository
             .findById(request.getStudyPlanId())
-            .orElseThrow(() -> new IllegalArgumentException("Plan de estudio no encontrado"));
+            .orElseThrow(
+                () ->
+                    new EnrollmentValidationException(
+                        "No se encontró el plan de estudio con ID " + request.getStudyPlanId()));
+
     AcademicYear academicYear =
         academicYearRepository
             .findById(request.getAcademicYearId())
-            .orElseThrow(() -> new IllegalArgumentException("Ciclo lectivo no encontrado"));
+            .orElseThrow(
+                () ->
+                    new EnrollmentValidationException(
+                        "No se encontró el ciclo lectivo con ID " + request.getAcademicYearId()));
 
-    // 4. Crear nuevo borrador
     EnrollmentApplication newApplication =
         EnrollmentApplication.builder()
-            .institution(activePeriod.getInstitution())
-            .applicantPerson(applicant)
+            .institution(period.getInstitution())
+            .applicantPerson(person)
             .studyPlan(studyPlan)
             .academicYear(academicYear)
-            .enrollmentPeriod(activePeriod)
+            .enrollmentPeriod(period)
             .status(EnrollmentApplicationStatus.DRAFT)
             .build();
 
@@ -224,6 +248,49 @@ public class EnrollmentApplicationService {
         }
         if (pref.getPreviousTeacher() != null) {
           preference.setPreviousTeacher(pref.getPreviousTeacher());
+        }
+      }
+
+      // 6. Validación y Persistencia de Espacios Curriculares e Instrumentos
+      enrollmentDraftDataValidator.validate(application.getInstitution().getId(), application, data);
+
+      if (data.getAcademicSpaceSelection() != null
+          && data.getAcademicSpaceSelection().getStudyPlanSpaceIds() != null) {
+        application.clearSelectedSpaces();
+        Map<UUID, UUID> instrumentsMap =
+            data.getInstrumentSelection() != null
+                    && data.getInstrumentSelection().getStudyPlanSpaceInstrumentIds() != null
+                ? data.getInstrumentSelection().getStudyPlanSpaceInstrumentIds()
+                : Map.of();
+
+        for (UUID spaceId : data.getAcademicSpaceSelection().getStudyPlanSpaceIds()) {
+          StudyPlanSpace space =
+              studyPlanSpaceRepository
+                  .findById(spaceId)
+                  .orElseThrow(
+                      () ->
+                          new EnrollmentValidationException(
+                              "Espacio de plan de estudio no encontrado: " + spaceId));
+
+          Instrument instrument = null;
+          UUID instrumentId = instrumentsMap.get(spaceId);
+          if (instrumentId != null) {
+            instrument =
+                instrumentRepository
+                    .findById(instrumentId)
+                    .orElseThrow(
+                        () ->
+                            new EnrollmentValidationException(
+                                "Instrumento no encontrado: " + instrumentId));
+          }
+
+          EnrollmentApplicationSpace selectedSpace =
+              EnrollmentApplicationSpace.builder()
+                  .enrollmentApplication(application)
+                  .studyPlanSpace(space)
+                  .instrument(instrument)
+                  .build();
+          application.addSelectedSpace(selectedSpace);
         }
       }
     }
@@ -496,6 +563,30 @@ public class EnrollmentApplicationService {
               .build();
     }
 
+    AcademicSpaceSelectionDto spaceSelectionDto = null;
+    InstrumentSelectionDto instrumentSelectionDto = null;
+    if (entity.getSelectedSpaces() != null && !entity.getSelectedSpaces().isEmpty()) {
+      List<UUID> spaceIds =
+          entity.getSelectedSpaces().stream()
+              .filter(s -> s.getDeletedAt() == null)
+              .map(s -> s.getStudyPlanSpace().getId())
+              .toList();
+      spaceSelectionDto = new AcademicSpaceSelectionDto(spaceIds);
+
+      Map<UUID, UUID> instMap =
+          entity.getSelectedSpaces().stream()
+              .filter(s -> s.getDeletedAt() == null && s.getInstrument() != null)
+              .collect(
+                  Collectors.toMap(
+                      s -> s.getStudyPlanSpace().getId(), s -> s.getInstrument().getId()));
+      instrumentSelectionDto = new InstrumentSelectionDto(instMap);
+    }
+
+    CareerSelectionDto careerDto = null;
+    if (entity.getStudyPlan() != null && entity.getStudyPlan().getTrainingPath() != null) {
+      careerDto = new CareerSelectionDto(entity.getStudyPlan().getTrainingPath().getId());
+    }
+
     List<AttachmentDto> attachmentsList = new ArrayList<>();
     if (entity.getAttachments() != null) {
       attachmentsList =
@@ -525,6 +616,13 @@ public class EnrollmentApplicationService {
             .healthInclusion(healthDto != null ? healthDto : new HealthInclusionDto())
             .responsible(responsibleDto != null ? responsibleDto : new ResponsibleDto())
             .preference(preferenceDto != null ? preferenceDto : new PreferenceDto())
+            .careerSelection(careerDto != null ? careerDto : new CareerSelectionDto())
+            .academicSpaceSelection(
+                spaceSelectionDto != null ? spaceSelectionDto : new AcademicSpaceSelectionDto())
+            .instrumentSelection(
+                instrumentSelectionDto != null
+                    ? instrumentSelectionDto
+                    : new InstrumentSelectionDto())
             .attachments(attachmentsList)
             .build();
 

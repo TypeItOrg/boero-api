@@ -6,11 +6,12 @@ import java.util.Map;
 
 public class EnrollmentValidationException extends ApplicationException {
 
-  public EnrollmentValidationException(String message) {
+  public EnrollmentValidationException(final String message) {
     super(ErrorCategory.INVALID_INPUT, message);
   }
 
-  public EnrollmentValidationException(String message, Map<String, String> fieldErrors) {
+  public EnrollmentValidationException(
+      final String message, final Map<String, String> fieldErrors) {
     super(ErrorCategory.INVALID_INPUT, message, fieldErrors);
   }
 }

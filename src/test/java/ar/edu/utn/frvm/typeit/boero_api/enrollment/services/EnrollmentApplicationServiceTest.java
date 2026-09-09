@@ -57,6 +57,9 @@ class EnrollmentApplicationServiceTest {
   @Mock private PersonRepository personRepository;
   @Mock private StudyPlanRepository studyPlanRepository;
   @Mock private AcademicYearRepository academicYearRepository;
+  @Mock private ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository studyPlanSpaceRepository;
+  @Mock private ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.InstrumentRepository instrumentRepository;
+  @Mock private EnrollmentDraftDataValidator enrollmentDraftDataValidator;
 
   private EnrollmentApplicationService service;
 
@@ -75,7 +78,10 @@ class EnrollmentApplicationServiceTest {
             periodRepository,
             personRepository,
             studyPlanRepository,
-            academicYearRepository);
+            academicYearRepository,
+            studyPlanSpaceRepository,
+            instrumentRepository,
+            enrollmentDraftDataValidator);
   }
 
   @Test
