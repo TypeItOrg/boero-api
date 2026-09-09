@@ -32,7 +32,7 @@ public class AcademicOfferController {
   @RequiresPermission(PermissionCode.ACADEMIC_OFFER_READ)
   public PaginatedResponse<AcademicOfferSummaryResponse> list(
       @PathVariable final UUID institutionId,
-      @PageableDefault(sort = "trainingPath.name", direction = Sort.Direction.ASC)
+      @PageableDefault(sort = "trainingPathName", direction = Sort.Direction.ASC)
           final Pageable pageable) {
     return listAcademicOffersUseCase.execute(institutionId, pageable);
   }
