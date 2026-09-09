@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.interfaces;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import jakarta.persistence.LockModeType;
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -18,6 +19,41 @@ public interface StudyPlanRepository
     extends JpaRepository<StudyPlan, UUID>, JpaSpecificationExecutor<StudyPlan> {
   @EntityGraph(attributePaths = {"institution", "trainingPath"})
   Page<StudyPlan> findAll(Specification<StudyPlan> specification, Pageable pageable);
+
+  @EntityGraph(attributePaths = {"institution", "trainingPath"})
+  @Query(
+      """
+      SELECT plan FROM StudyPlan plan
+      WHERE plan.institution.id = :institutionId
+        AND plan.deletedAt IS NULL
+        AND plan.status = ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus.ACTIVE
+        AND plan.trainingPath.active = true
+        AND plan.trainingPath.deletedAt IS NULL
+        AND plan.effectiveFrom <= :validOn
+        AND (plan.effectiveTo IS NULL OR plan.effectiveTo >= :validOn)
+      """)
+  Page<StudyPlan> findAvailableOffers(
+      @Param("institutionId") UUID institutionId,
+      @Param("validOn") LocalDate validOn,
+      Pageable pageable);
+
+  @EntityGraph(attributePaths = {"institution", "trainingPath"})
+  @Query(
+      """
+      SELECT plan FROM StudyPlan plan
+      WHERE plan.id = :studyPlanId
+        AND plan.institution.id = :institutionId
+        AND plan.deletedAt IS NULL
+        AND plan.status = ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus.ACTIVE
+        AND plan.trainingPath.active = true
+        AND plan.trainingPath.deletedAt IS NULL
+        AND plan.effectiveFrom <= :validOn
+        AND (plan.effectiveTo IS NULL OR plan.effectiveTo >= :validOn)
+      """)
+  Optional<StudyPlan> findAvailableOfferById(
+      @Param("institutionId") UUID institutionId,
+      @Param("studyPlanId") UUID studyPlanId,
+      @Param("validOn") LocalDate validOn);
 
   @EntityGraph(attributePaths = {"institution", "trainingPath"})
   Page<StudyPlan> findByTrainingPath_IdAndInstitution_IdAndDeletedAtIsNull(

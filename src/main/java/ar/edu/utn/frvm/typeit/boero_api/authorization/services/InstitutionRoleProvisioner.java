@@ -26,7 +26,7 @@ public class InstitutionRoleProvisioner {
   private static final Map<SystemRoleCode, Set<PermissionCode>> DEFAULT_PERMISSIONS =
       Map.of(
           SystemRoleCode.APPLICANT,
-          Set.of(),
+          Set.of(PermissionCode.ACADEMIC_OFFER_READ),
           SystemRoleCode.STUDENT,
           Set.of(),
           SystemRoleCode.TEACHER,

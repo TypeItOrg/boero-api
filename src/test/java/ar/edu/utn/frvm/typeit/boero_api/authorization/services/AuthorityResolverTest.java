@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
@@ -62,7 +63,7 @@ class AuthorityResolverTest {
     var authorities =
         authorityResolver.resolvePersonAuthorities(person.getId(), institution.getId());
 
-    assertThat(authorities.permissions()).isEmpty();
+    assertThat(authorities.permissions()).containsExactly(PermissionCode.ACADEMIC_OFFER_READ);
     assertThat(authorities.roles()).containsExactly(SystemRoleCode.APPLICANT.getDisplayName());
   }
 
