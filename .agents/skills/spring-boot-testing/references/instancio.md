@@ -1,24 +1,17 @@
 # Instancio
 
-Generate complex test objects automatically. Use when entities/DTOs have 3+ properties.
+Optional fixture generation for tasks already using Instancio or explicitly adding it. Prefer the repository's existing deterministic factories; field count alone is not a reason to introduce a dependency.
 
 ## When to Use
 
-- Objects with **3 or more properties**
+- Repetitive fixture setup for which existing factories are insufficient and generation is part of the requested scope
 - Setting up test data for repositories
 - Creating DTOs for controller tests
 - Avoiding repetitive builder/setter calls
 
 ## Dependency
 
-```xml
-<dependency>
-  <groupId>org.instancio</groupId>
-  <artifactId>instancio-junit</artifactId>
-  <version>5.5.1</version>
-  <scope>test</scope>
-</dependency>
-```
+If adding Instancio is explicitly in scope, declare the agreed version as a Gradle test dependency in `build.gradle`. The following examples assume that dependency already exists. Do not run an installation merely to read this reference.
 
 ## Basic Usage
 
@@ -218,7 +211,7 @@ String phone = Instancio.gen().text().pattern("+1-###-###-####");
 
 ## Best Practices
 
-1. **Use for 3+ property objects** - Not worth it for simple objects
+1. **Use deliberately** - Reuse existing factories first; do not choose a generator by property count
 2. **Set only what's relevant** - Let Instancio fill the rest
 3. **Use with Testcontainers** - Great for database seeding
 4. **Set IDs explicitly** - When testing specific scenarios

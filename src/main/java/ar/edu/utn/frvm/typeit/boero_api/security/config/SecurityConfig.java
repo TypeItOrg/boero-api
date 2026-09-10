@@ -46,7 +46,6 @@ public class SecurityConfig {
   @Bean
   SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-    // Disable some security features that we don't need
     http.csrf(AbstractHttpConfigurer::disable);
     http.formLogin(AbstractHttpConfigurer::disable);
     http.httpBasic(AbstractHttpConfigurer::disable);
