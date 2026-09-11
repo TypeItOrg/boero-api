@@ -3,13 +3,10 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.controllers;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.TrainingPathResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPermission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
-import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentStudyPlanSpaceInstrumentOptionsResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.StartEnrollmentApplicationRequest;
@@ -22,9 +19,6 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -34,7 +28,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -76,7 +69,8 @@ public class EnrollmentApplicationController {
     // Only look up by institution when the caller actually has review permission - otherwise
     // this stays a pure self-service lookup and other applicants' data never matches.
     UUID institutionId =
-        authorizationService.hasPermission(authentication, PermissionCode.ENROLLMENT_PERIOD_READ)
+        authorizationService.hasPermission(
+                authentication, PermissionCode.ENROLLMENT_APPLICATION_READ)
             ? principal.institutionId()
             : null;
     EnrollmentApplicationResponse response =
@@ -110,21 +104,6 @@ public class EnrollmentApplicationController {
     JwtAuthenticatedUser principal = requireInstitutionalUser(authentication);
     EnrollmentApplicationResponse response =
         applicationService.submitApplication(principal.personId(), applicationId);
-    return ResponseEntity.ok(response);
-  }
-
-  @GetMapping(version = Version.V1)
-  @RequiresPermission(PermissionCode.ENROLLMENT_PERIOD_READ)
-  public ResponseEntity<PaginatedResponse<EnrollmentApplicationResponse>> listApplications(
-      Authentication authentication,
-      @RequestParam(required = false) UUID periodId,
-      @RequestParam(required = false) EnrollmentApplicationStatus status,
-      @RequestParam(required = false) String search,
-      @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-    JwtAuthenticatedUser principal = requireInstitutionalUser(authentication);
-    PaginatedResponse<EnrollmentApplicationResponse> response =
-        applicationService.listApplications(
-            principal.institutionId(), periodId, status, search, pageable);
     return ResponseEntity.ok(response);
   }
 

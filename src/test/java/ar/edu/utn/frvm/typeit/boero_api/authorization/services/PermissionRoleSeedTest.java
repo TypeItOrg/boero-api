@@ -106,4 +106,26 @@ class PermissionRoleSeedTest {
             PermissionCode.SHIFT_STATUS_UPDATE.getCode(),
             PermissionCode.SHIFT_READ.getCode());
   }
+
+  @Test
+  @DisplayName("Should assign enrollment application resolution permissions to administrative role")
+  void run_assignsEnrollmentApplicationPermissionsToAdministrative() {
+    permissionRoleSeed.run(null);
+
+    var administrativeRole =
+        roleRepository
+            .findByScopeAndCodeAndInstitutionIsNull(
+                RoleScope.INSTITUTION, SystemRoleCode.ADMINISTRATIVE.name())
+            .orElseThrow();
+    Set<String> permissionCodes =
+        rolePermissionRepository.findByRole_Id(administrativeRole.getId()).stream()
+            .map(rp -> rp.getPermission().getCode())
+            .collect(Collectors.toSet());
+
+    assertThat(permissionCodes)
+        .contains(
+            PermissionCode.ENROLLMENT_APPLICATION_READ.getCode(),
+            PermissionCode.ENROLLMENT_APPLICATION_APPROVE.getCode(),
+            PermissionCode.ENROLLMENT_APPLICATION_REJECT.getCode());
+  }
 }

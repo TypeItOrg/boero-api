@@ -25,7 +25,6 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.security.PermissionAuthori
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.GlobalExceptionHandler;
-import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.config.WebConfig;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
@@ -49,7 +48,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -152,7 +150,7 @@ class EnrollmentApplicationControllerWebMvcTest {
   @DisplayName("GET /api/v1/enrollment-applications/{id} should get own application without review permission")
   void getApplication_selfServiceSuccess() throws Exception {
     EnrollmentApplicationResponse response = createMockResponse(EnrollmentApplicationStatus.DRAFT);
-    when(authorizationService.hasPermission(any(), eq(PermissionCode.ENROLLMENT_PERIOD_READ)))
+    when(authorizationService.hasPermission(any(), eq(PermissionCode.ENROLLMENT_APPLICATION_READ)))
         .thenReturn(false);
     when(applicationService.getApplicationById(isNull(), eq(PERSON_ID), eq(APPLICATION_ID)))
         .thenReturn(response);
@@ -167,7 +165,7 @@ class EnrollmentApplicationControllerWebMvcTest {
   @DisplayName("GET /api/v1/enrollment-applications/{id} should look up by institution when caller can review")
   void getApplication_institutionalReviewerSuccess() throws Exception {
     EnrollmentApplicationResponse response = createMockResponse(EnrollmentApplicationStatus.SUBMITTED);
-    when(authorizationService.hasPermission(any(), eq(PermissionCode.ENROLLMENT_PERIOD_READ)))
+    when(authorizationService.hasPermission(any(), eq(PermissionCode.ENROLLMENT_APPLICATION_READ)))
         .thenReturn(true);
     when(applicationService.getApplicationById(eq(INSTITUTION_ID), eq(PERSON_ID), eq(APPLICATION_ID)))
         .thenReturn(response);
@@ -221,40 +219,6 @@ class EnrollmentApplicationControllerWebMvcTest {
         .perform(post("/api/v1/enrollment-applications/{id}/submit", APPLICATION_ID).principal(applicantAuthentication()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("SUBMITTED"));
-  }
-
-  @Test
-  @DisplayName("GET /api/v1/enrollment-applications should return paginated list for an authorized reviewer")
-  void listApplications_success() throws Exception {
-    EnrollmentApplicationResponse response = createMockResponse(EnrollmentApplicationStatus.SUBMITTED);
-    PaginatedResponse<EnrollmentApplicationResponse> page =
-        PaginatedResponse.<EnrollmentApplicationResponse>builder()
-            .items(List.of(response))
-            .page(0)
-            .size(10)
-            .totalItems(1)
-            .totalPages(1)
-            .build();
-
-    when(authorizationService.hasPermission(any(), eq(PermissionCode.ENROLLMENT_PERIOD_READ))).thenReturn(true);
-    when(applicationService.listApplications(eq(INSTITUTION_ID), any(), any(), any(), any(Pageable.class)))
-        .thenReturn(page);
-
-    mockMvc
-        .perform(get("/api/v1/enrollment-applications").principal(applicantAuthentication()))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.items[0].applicationId").value(APPLICATION_ID.toString()))
-        .andExpect(jsonPath("$.totalItems").value(1));
-  }
-
-  @Test
-  @DisplayName("GET /api/v1/enrollment-applications should forbid callers without review permission")
-  void listApplications_forbiddenWithoutPermission() throws Exception {
-    when(authorizationService.hasPermission(any(), eq(PermissionCode.ENROLLMENT_PERIOD_READ))).thenReturn(false);
-
-    mockMvc
-        .perform(get("/api/v1/enrollment-applications").principal(applicantAuthentication()))
-        .andExpect(status().isForbidden());
   }
 
   @Test

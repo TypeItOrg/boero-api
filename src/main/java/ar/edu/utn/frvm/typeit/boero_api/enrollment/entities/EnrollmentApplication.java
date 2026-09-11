@@ -5,6 +5,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.ApplicationNotEditableException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidEnrollmentApplicationStateException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.MissingRejectionReasonException;
@@ -192,6 +193,13 @@ public class EnrollmentApplication extends SoftDeletable {
     }
     throw new InvalidEnrollmentApplicationStateException(
         EnrollmentMessages.APPLICATION_CANNOT_SUBMIT);
+  }
+
+  public void cancel() {
+    if (!isEditable()) {
+      throw new ApplicationNotEditableException(id);
+    }
+    status = EnrollmentApplicationStatus.CANCELLED;
   }
 
   public void updateEducationBackground(final String secondarySchool) {

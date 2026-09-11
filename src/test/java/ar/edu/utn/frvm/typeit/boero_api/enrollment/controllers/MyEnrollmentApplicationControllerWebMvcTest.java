@@ -3,13 +3,9 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.controllers;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -28,9 +24,6 @@ import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.GlobalExceptionHandler
 import ar.edu.utn.frvm.typeit.boero_api.config.WebConfig;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.StartEnrollmentApplicationRequest;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentDraftRequest;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentApplicationService;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.GetMyEnrollmentApplicationUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListMyEnrollmentApplicationsUseCase;
 import java.time.LocalDateTime;
@@ -74,7 +67,6 @@ class MyEnrollmentApplicationControllerWebMvcTest {
   @MockitoBean private InstitutionalCallerGuard institutionalCallerGuard;
   @MockitoBean private InitialRoleAssignmentGuard initialRoleAssignmentGuard;
   @MockitoBean private AuthorizationService authorizationService;
-  @MockitoBean private EnrollmentApplicationService enrollmentApplicationService;
   @MockitoBean private ListMyEnrollmentApplicationsUseCase listMyEnrollmentApplicationsUseCase;
   @MockitoBean private GetMyEnrollmentApplicationUseCase getMyEnrollmentApplicationUseCase;
 
@@ -90,36 +82,6 @@ class MyEnrollmentApplicationControllerWebMvcTest {
   @AfterEach
   void clearSecurityContext() {
     SecurityContextHolder.clearContext();
-  }
-
-  @Test
-  @DisplayName("Should start an enrollment application for authenticated applicant")
-  void start_returnsCreatedForApplicant() throws Exception {
-    final var auth = authentication();
-    when(enrollmentApplicationService.startOrGetApplication(
-            eq(INSTITUTION_ID), eq(PERSON_ID), any(StartEnrollmentApplicationRequest.class)))
-        .thenReturn(response(EnrollmentApplicationStatus.DRAFT));
-
-    mockMvc
-        .perform(
-            post("/api/v1/institutions/{institutionId}/my-enrollment-applications", INSTITUTION_ID)
-                .principal(auth)
-                .contentType(APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                      "studyPlanId": "%s",
-                      "academicYearId": "%s"
-                    }
-                    """
-                        .formatted(STUDY_PLAN_ID, ACADEMIC_YEAR_ID)))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.applicationId").value(APPLICATION_ID.toString()))
-        .andExpect(jsonPath("$.status").value("DRAFT"));
-
-    verify(enrollmentApplicationService)
-        .startOrGetApplication(
-            eq(INSTITUTION_ID), eq(PERSON_ID), any(StartEnrollmentApplicationRequest.class));
   }
 
   @Test
@@ -165,50 +127,6 @@ class MyEnrollmentApplicationControllerWebMvcTest {
 
     verify(getMyEnrollmentApplicationUseCase)
         .execute(INSTITUTION_ID, PERSON_ID, APPLICATION_ID);
-  }
-
-  @Test
-  @DisplayName("Should update my enrollment application draft")
-  void updateDraft_returnsUpdatedApplication() throws Exception {
-    final var auth = authentication();
-    when(enrollmentApplicationService.updateDraft(
-            eq(PERSON_ID), eq(APPLICATION_ID), any(UpdateEnrollmentDraftRequest.class)))
-        .thenReturn(response(EnrollmentApplicationStatus.DRAFT));
-
-    mockMvc
-        .perform(
-            patch(
-                    "/api/v1/institutions/{institutionId}/my-enrollment-applications/{applicationId}",
-                    INSTITUTION_ID,
-                    APPLICATION_ID)
-                .principal(auth)
-                .contentType(APPLICATION_JSON)
-                .content("{}"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.status").value("DRAFT"));
-
-    verify(enrollmentApplicationService)
-        .updateDraft(eq(PERSON_ID), eq(APPLICATION_ID), any(UpdateEnrollmentDraftRequest.class));
-  }
-
-  @Test
-  @DisplayName("Should submit my enrollment application")
-  void submit_returnsSubmittedApplication() throws Exception {
-    final var auth = authentication();
-    when(enrollmentApplicationService.submitApplication(PERSON_ID, APPLICATION_ID))
-        .thenReturn(response(EnrollmentApplicationStatus.SUBMITTED));
-
-    mockMvc
-        .perform(
-            post(
-                    "/api/v1/institutions/{institutionId}/my-enrollment-applications/{applicationId}/submit",
-                    INSTITUTION_ID,
-                    APPLICATION_ID)
-                .principal(auth))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.status").value("SUBMITTED"));
-
-    verify(enrollmentApplicationService).submitApplication(PERSON_ID, APPLICATION_ID);
   }
 
   private TestingAuthenticationToken authentication() {

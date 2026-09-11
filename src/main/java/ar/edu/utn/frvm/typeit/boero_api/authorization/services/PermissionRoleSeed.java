@@ -55,6 +55,11 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.STUDY_PLAN_READ,
               PermissionCode.ACADEMIC_YEAR_READ,
               PermissionCode.ENROLLMENT_PERIOD_READ),
+          SystemRoleCode.ADMINISTRATIVE,
+          EnumSet.of(
+              PermissionCode.ENROLLMENT_APPLICATION_READ,
+              PermissionCode.ENROLLMENT_APPLICATION_APPROVE,
+              PermissionCode.ENROLLMENT_APPLICATION_REJECT),
           SystemRoleCode.INSTITUTIONAL_AUTHORITY,
           EnumSet.of(
               PermissionCode.INSTITUTION_ROLE_ASSIGN,
