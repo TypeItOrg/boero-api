@@ -4,6 +4,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidCredentialsExcept
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -18,7 +19,7 @@ public class CredentialsAuthenticator {
     try {
       return authenticationManager.authenticate(
           UsernamePasswordAuthenticationToken.unauthenticated(principal, password));
-    } catch (BadCredentialsException exception) {
+    } catch (BadCredentialsException | DisabledException exception) {
       throw new InvalidCredentialsException();
     }
   }

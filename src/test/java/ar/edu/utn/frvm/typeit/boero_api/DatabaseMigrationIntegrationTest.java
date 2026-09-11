@@ -61,16 +61,48 @@ class DatabaseMigrationIntegrationTest {
   @Test
   @DisplayName("Should migrate an empty PostgreSQL database and validate the JPA model")
   void shouldMigrateSchemaAndDevelopmentData() {
-    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260909174839");
+    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20260911143423");
     assertThat(nonUtcEventTimestampColumnCount()).isZero();
     assertThat(utcEventTimestampColumnCount()).isPositive();
-    assertThat(tableCount()).isEqualTo(36);
+    assertThat(tableCount()).isEqualTo(37);
     assertThat(institutionCount()).isPositive();
     assertThat(tenantRelationshipConstraintCount()).isEqualTo(8);
     assertThat(activePersonDocumentIndexCount()).isEqualTo(1);
     assertThat(passwordResetTokenUserUniqueIndexCount()).isEqualTo(1);
     assertThat(pgTrgmExtensionCount()).isEqualTo(1);
     assertThat(searchTrigramIndexCount()).isEqualTo(17);
+  }
+
+  @Test
+  @DisplayName("Should store WebAuthn credential ids as text and cascade passkeys on user delete")
+  void shouldStoreCredentialIdsAsTextAndCascadePasskeys() {
+    assertThat(
+            jdbcTemplate.queryForObject(
+                """
+                SELECT data_type
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'passkey_credentials'
+                  AND column_name = 'credential_id'
+                """,
+                String.class))
+        .isEqualTo("text");
+    assertThat(
+            jdbcTemplate.queryForObject(
+                """
+                SELECT delete_rule
+                FROM information_schema.referential_constraints
+                WHERE constraint_schema = 'public'
+                  AND constraint_name IN (
+                    SELECT constraint_name
+                    FROM information_schema.key_column_usage
+                    WHERE table_schema = 'public'
+                      AND table_name = 'passkey_credentials'
+                      AND column_name = 'user_id'
+                  )
+                """,
+                String.class))
+        .isEqualTo("CASCADE");
   }
 
   @Test

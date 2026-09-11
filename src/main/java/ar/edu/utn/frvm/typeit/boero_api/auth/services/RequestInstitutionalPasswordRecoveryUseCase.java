@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
 import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.SHA_256_UNAVAILABLE;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.config.AuthRateLimitProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.config.PasswordRecoveryProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.InstitutionalPasswordResetToken;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
@@ -9,6 +10,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.events.InstitutionalPasswordRecover
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.InstitutionalPasswordResetTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PasswordRecoveryRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -31,10 +33,24 @@ public class RequestInstitutionalPasswordRecoveryUseCase {
   private final InstitutionalPasswordResetTokenRepository passwordResetTokenRepository;
   private final ApplicationEventPublisher eventPublisher;
   private final PasswordRecoveryProperties passwordRecoveryProperties;
+  private final AuthRateLimitService rateLimitService;
+  private final AuthRateLimitProperties rateLimitProperties;
   private final SecureRandom secureRandom = new SecureRandom();
 
   @Transactional
-  public void execute(final PasswordRecoveryRequest request) {
+  public void execute(final PasswordRecoveryRequest request, final HttpServletRequest httpRequest) {
+    final String normalizedDocument =
+        AuthRateLimitService.normalizeDocument(request.documentNumber());
+    rateLimitService.checkAllowed(
+        "recovery-request-ip",
+        rateLimitService.hashKey(AuthRequestMetadata.clientIp(httpRequest)),
+        rateLimitProperties.recoveryRequestIpMax(),
+        rateLimitProperties.recoveryRequestIpWindow());
+    rateLimitService.checkAllowed(
+        "recovery-request-account",
+        rateLimitService.hashKey(request.institutionId() + "|" + normalizedDocument),
+        rateLimitProperties.recoveryRequestAccountMax(),
+        rateLimitProperties.recoveryRequestAccountWindow());
     userRepository
         .findWithPersonAndInstitutionForPasswordRecovery(
             request.documentNumber(), request.institutionId())

@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.config.AuthRateLimitProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.InstitutionalPasswordResetToken;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidPasswordRecoveryTokenException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.PasswordConfirmationMismatchException;
@@ -7,6 +8,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.InstitutionalPasswordRes
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.ResetPasswordRequest;
 import java.time.Clock;
 import java.time.Instant;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,9 +22,16 @@ public class ResetInstitutionalPasswordUseCase {
   private final InstitutionalPasswordResetTokenRepository passwordResetTokenRepository;
   private final PasswordEncoder passwordEncoder;
   private final SessionRevocationService sessionRevocationService;
+  private final AuthRateLimitService rateLimitService;
+  private final AuthRateLimitProperties rateLimitProperties;
 
   @Transactional
-  public void execute(final ResetPasswordRequest request) {
+  public void execute(final ResetPasswordRequest request, final HttpServletRequest httpRequest) {
+    rateLimitService.checkAllowed(
+        "password-reset-ip",
+        rateLimitService.hashKey(AuthRequestMetadata.clientIp(httpRequest)),
+        rateLimitProperties.passwordResetIpMax(),
+        rateLimitProperties.passwordResetIpWindow());
     if (!request.password().equals(request.confirmPassword())) {
       throw new PasswordConfirmationMismatchException();
     }

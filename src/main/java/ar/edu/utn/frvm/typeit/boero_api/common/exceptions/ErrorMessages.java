@@ -7,6 +7,7 @@ public final class ErrorMessages {
   public static final String VALIDATION_ERROR_MESSAGE = "Se encontraron errores de validación.";
   public static final String MALFORMED_REQUEST_BODY =
       "El formato del cuerpo de la solicitud es inválido.";
+  public static final String RESOURCE_NOT_FOUND_MESSAGE = "El recurso solicitado no existe.";
 
   public static final String UNHANDLED_EXCEPTION_MESSAGE =
       "[Exception] Ocurrió un error inesperado: {}";

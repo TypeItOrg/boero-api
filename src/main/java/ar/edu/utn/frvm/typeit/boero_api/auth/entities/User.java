@@ -63,6 +63,9 @@ public class User extends Auditable implements UserDetails {
   @Builder.Default
   private boolean enabled = true;
 
+  @Column(name = "webauthn_user_handle")
+  private @org.jspecify.annotations.Nullable byte[] webauthnUserHandle;
+
   @Override
   public String getUsername() {
     return getDocumentNumber();
@@ -109,6 +112,20 @@ public class User extends Auditable implements UserDetails {
 
   public void changePassword(final String password) {
     this.password = password;
+  }
+
+  public byte[] ensureWebAuthnUserHandle(final java.security.SecureRandom secureRandom) {
+    if (webauthnUserHandle != null) {
+      return webauthnUserHandle.clone();
+    }
+    final byte[] handle = new byte[32];
+    secureRandom.nextBytes(handle);
+    this.webauthnUserHandle = handle.clone();
+    return handle.clone();
+  }
+
+  public boolean hasWebAuthnUserHandle() {
+    return webauthnUserHandle != null;
   }
 
   @PrePersist

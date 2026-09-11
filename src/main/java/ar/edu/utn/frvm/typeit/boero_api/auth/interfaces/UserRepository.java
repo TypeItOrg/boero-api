@@ -64,6 +64,23 @@ public interface UserRepository extends JpaRepository<User, UUID> {
   @EntityGraph(attributePaths = {"person", "institution"})
   Optional<User> findWithPersonAndInstitutionById(UUID id);
 
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("SELECT user FROM User user WHERE user.id = :id")
+  Optional<User> findWithLockById(@Param("id") UUID id);
+
+  @EntityGraph(attributePaths = {"person", "institution"})
+  @Query(
+      """
+      SELECT user FROM User user
+      WHERE user.person.documentNumber = :documentNumber
+        AND user.institution.id = :institutionId
+        AND user.person.deleted = false
+      """)
+  List<User> findAllByPersonDocumentNumberAndInstitution_Id(
+      @Param("documentNumber") String documentNumber, @Param("institutionId") UUID institutionId);
+
+  Optional<User> findByWebauthnUserHandle(byte[] webauthnUserHandle);
+
   @Query(
       """
       select u.institution.id as institutionId, count(u) as userCount

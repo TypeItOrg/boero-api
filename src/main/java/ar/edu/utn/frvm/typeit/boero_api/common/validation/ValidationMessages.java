@@ -6,6 +6,7 @@ public final class ValidationMessages {
   public static final String APARTMENT_MAX_LENGTH =
       "El departamento debe tener menos de 50 caracteres.";
   public static final String BIRTH_DATE_REQUIRED = "La fecha de nacimiento es requerida.";
+  public static final String CEREMONY_REQUIRED = "La ceremonia es requerida.";
   public static final String CITY_REQUIRED = "La ciudad es requerida.";
   public static final String CONFIRMATION_PASSWORD_RANGE =
       "La confirmación de la contraseña debe tener entre 8 y 255 caracteres.";
@@ -36,6 +37,8 @@ public final class ValidationMessages {
   public static final String LAST_NAME_MIN_LENGTH = "El apellido debe tener al menos 3 caracteres.";
   public static final String LAST_NAME_RANGE = "El apellido debe tener entre 3 y 255 caracteres.";
   public static final String LAST_NAME_REQUIRED = "El apellido es requerido.";
+  public static final String LOGIN_ATTEMPT_REQUIRED =
+      "El intento de inicio de sesión es requerido.";
   public static final String MINIMUM_AGE = "La persona debe tener al menos {value} años.";
   public static final String ORDER_POSITIVE = "El orden debe ser positivo.";
   public static final String PASSWORD_MAX_LENGTH =

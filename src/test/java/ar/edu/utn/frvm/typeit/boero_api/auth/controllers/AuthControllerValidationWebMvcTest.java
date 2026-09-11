@@ -9,13 +9,13 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.services.GetActiveSessionsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.GetCurrentUserUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.JwtService;
-import ar.edu.utn.frvm.typeit.boero_api.auth.services.LoginUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.LogoutUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RefreshTokenUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RegisterUserUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RequestInstitutionalPasswordRecoveryUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.ResetInstitutionalPasswordUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.TokenBlacklistService;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,8 +36,14 @@ class AuthControllerValidationWebMvcTest {
   @MockitoBean private PathMatcher pathMatcher;
   @MockitoBean private AuthenticationEntryPoint authenticationEntryPoint;
   @MockitoBean private RegisterUserUseCase registerUserUseCase;
-  @MockitoBean private LoginUseCase loginUseCase;
   @MockitoBean private RefreshTokenUseCase refreshTokenUseCase;
+
+  @MockitoBean
+  private ar.edu.utn.frvm.typeit.boero_api.auth.services.IdentifyLoginUseCase identifyLoginUseCase;
+
+  @MockitoBean
+  private ar.edu.utn.frvm.typeit.boero_api.auth.services.PasswordLoginWithAttemptUseCase
+      passwordLoginWithAttemptUseCase;
 
   @MockitoBean
   private RequestInstitutionalPasswordRecoveryUseCase requestInstitutionalPasswordRecoveryUseCase;
@@ -47,6 +53,7 @@ class AuthControllerValidationWebMvcTest {
   @MockitoBean private GetActiveSessionsUseCase getActiveSessionsUseCase;
   @MockitoBean private GetCurrentUserUseCase getCurrentUserUseCase;
   @MockitoBean private JwtService jwtService;
+  @MockitoBean private InstitutionalCallerGuard institutionalCallerGuard;
   @MockitoBean private TokenBlacklistService tokenBlacklistService;
   @MockitoBean private IsSessionActiveUseCase isSessionActiveUseCase;
 
@@ -183,8 +190,8 @@ class AuthControllerValidationWebMvcTest {
   }
 
   @Test
-  @DisplayName("Should reject login when document number is invalid")
-  void shouldRejectLoginWhenDocumentNumberIsInvalid() throws Exception {
+  @DisplayName("Should return not found for the removed legacy direct login endpoint")
+  void shouldReturnNotFoundForRemovedLegacyDirectLoginEndpoint() throws Exception {
     mockMvc
         .perform(
             post("/api/v1/auth/login")
@@ -197,36 +204,8 @@ class AuthControllerValidationWebMvcTest {
                       "institutionId": "22222222-2222-2222-2222-222222222222"
                     }
                     """))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.status").value(400))
-        .andExpect(jsonPath("$.message").value("Se encontraron errores de validación."))
-        .andExpect(
-            jsonPath("$.fieldErrors.documentNumber")
-                .value("El número de documento debe tener exactamente 8 dígitos numéricos."));
-
-    verifyNoInteractions(loginUseCase);
-  }
-
-  @Test
-  @DisplayName("Should reject login when password is missing")
-  void shouldRejectLoginWhenPasswordIsMissing() throws Exception {
-    mockMvc
-        .perform(
-            post("/api/v1/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                      "documentNumber": "12345678",
-                      "institutionId": "22222222-2222-2222-2222-222222222222"
-                    }
-                    """))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.status").value(400))
-        .andExpect(jsonPath("$.message").value("Se encontraron errores de validación."))
-        .andExpect(jsonPath("$.fieldErrors.password").value("La contraseña es requerida."));
-
-    verifyNoInteractions(loginUseCase);
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.status").value(404));
   }
 
   @Test

@@ -2,19 +2,25 @@
 
 ## Login institucional
 
-Endpoint: `POST /api/v1/auth/login`
+Flujo identifier-first en dos pasos:
 
-El flujo (`LoginUseCase`, `src/main/java/.../auth/services/LoginUseCase.java`):
+1. `POST /api/v1/auth/login/identify` (`IdentifyLoginUseCase`): resuelve institución + DNI y emite un `loginAttemptId` de un solo uso con TTL corto.
+2. `POST /api/v1/auth/login/password` (`PasswordLoginWithAttemptUseCase`) o passkey (`POST /api/v1/auth/passkeys/authentication/verify`): verifica la credencial, reclama el attempt atómicamente y recién entonces emite la sesión.
 
-1. Construye el principal compuesto: `institutionId:documentNumber`
-2. `AuthenticationManager` autentica con ese principal + password
-3. Si las credenciales son inválidas, lanza `InvalidCredentialsException`
-4. Si ok, extrae el `User` autenticado
-5. Crea una `UserSession` con IP, user-agent y flag `rememberMe`
-6. Genera un `familyId` UUID y un raw refresh token UUID
-7. Guarda el refresh token como hash SHA-256
-8. Genera el access token JWT
-9. Devuelve `AuthResponse` con access token + raw refresh token
+El flujo (`PasswordLoginWithAttemptUseCase`, `src/main/java/.../auth/services/PasswordLoginWithAttemptUseCase.java`):
+
+1. Resuelve el `loginAttemptId` (inexistente/expirado/consumido → error)
+2. Construye el principal compuesto: `institutionId:documentNumber`
+3. `AuthenticationManager` autentica con ese principal + password
+4. Si las credenciales son inválidas, lanza `InvalidCredentialsException` (el attempt NO se consume: reintentos permitidos)
+5. Si ok, reclama el attempt y extrae el `User` autenticado
+6. Crea una `UserSession` con IP, user-agent y flag `rememberMe`
+7. Genera un `familyId` UUID y un raw refresh token UUID
+8. Guarda el refresh token como hash SHA-256
+9. Genera el access token JWT
+10. Devuelve `AuthResponse` con access token + raw refresh token
+
+El endpoint legacy de login directo (`POST /api/v1/auth/login`, `LoginUseCase`) fue eliminado: todo password login pasa por identifier-first con rate limiting.
 
 ## Login plataforma
 

@@ -13,6 +13,7 @@ public class ApplicationExceptionHttpMapper {
                 .status(status.value())
                 .message(exception.getMessage())
                 .fieldErrors(exception.fieldErrors())
+                .code(exception.code())
                 .build());
   }
 
@@ -23,6 +24,8 @@ public class ApplicationExceptionHttpMapper {
       case AUTHORIZATION -> HttpStatus.FORBIDDEN;
       case NOT_FOUND -> HttpStatus.NOT_FOUND;
       case CONFLICT -> HttpStatus.CONFLICT;
+      case RATE_LIMITED -> HttpStatus.TOO_MANY_REQUESTS;
+      case SERVICE_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
     };
   }
 }

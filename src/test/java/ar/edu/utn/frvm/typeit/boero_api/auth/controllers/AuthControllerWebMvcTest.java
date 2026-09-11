@@ -11,7 +11,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
-import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.LoginRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RefreshTokenRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RegisterRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.ActiveSessionResponse;
@@ -24,13 +23,13 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.services.GetActiveSessionsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.GetCurrentUserUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.JwtService;
-import ar.edu.utn.frvm.typeit.boero_api.auth.services.LoginUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.LogoutUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RefreshTokenUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RegisterUserUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RequestInstitutionalPasswordRecoveryUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.ResetInstitutionalPasswordUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.TokenBlacklistService;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import java.time.Instant;
 import java.util.List;
@@ -64,8 +63,14 @@ class AuthControllerWebMvcTest {
   @MockitoBean private PathMatcher pathMatcher;
   @MockitoBean private AuthenticationEntryPoint authenticationEntryPoint;
   @MockitoBean private RegisterUserUseCase registerUserUseCase;
-  @MockitoBean private LoginUseCase loginUseCase;
   @MockitoBean private RefreshTokenUseCase refreshTokenUseCase;
+
+  @MockitoBean
+  private ar.edu.utn.frvm.typeit.boero_api.auth.services.IdentifyLoginUseCase identifyLoginUseCase;
+
+  @MockitoBean
+  private ar.edu.utn.frvm.typeit.boero_api.auth.services.PasswordLoginWithAttemptUseCase
+      passwordLoginWithAttemptUseCase;
 
   @MockitoBean
   private RequestInstitutionalPasswordRecoveryUseCase requestInstitutionalPasswordRecoveryUseCase;
@@ -75,6 +80,7 @@ class AuthControllerWebMvcTest {
   @MockitoBean private GetActiveSessionsUseCase getActiveSessionsUseCase;
   @MockitoBean private GetCurrentUserUseCase getCurrentUserUseCase;
   @MockitoBean private JwtService jwtService;
+  @MockitoBean private InstitutionalCallerGuard institutionalCallerGuard;
   @MockitoBean private TokenBlacklistService tokenBlacklistService;
   @MockitoBean private IsSessionActiveUseCase isSessionActiveUseCase;
 
@@ -116,10 +122,8 @@ class AuthControllerWebMvcTest {
   }
 
   @Test
-  @DisplayName("Should login and return auth response")
-  void shouldLoginAndReturnAuthResponse() throws Exception {
-    when(loginUseCase.execute(any(LoginRequest.class), any())).thenReturn(authResponse());
-
+  @DisplayName("Should not expose the removed legacy direct login endpoint")
+  void shouldNotExposeRemovedLegacyDirectLoginEndpoint() throws Exception {
     mockMvc
         .perform(
             post("/api/v1/auth/login")
@@ -133,11 +137,8 @@ class AuthControllerWebMvcTest {
                       "rememberMe": true
                     }
                     """))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.user.userId").value(USER_ID.toString()))
-        .andExpect(jsonPath("$.user.personId").value(PERSON_ID.toString()))
-        .andExpect(jsonPath("$.tokens.accessToken").value("access-token"))
-        .andExpect(jsonPath("$.tokens.refreshToken").value("refresh-token"));
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.status").value(404));
   }
 
   @Test
