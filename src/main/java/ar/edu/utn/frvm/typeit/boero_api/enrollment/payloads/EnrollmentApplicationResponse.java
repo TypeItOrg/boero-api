@@ -42,6 +42,7 @@ public class EnrollmentApplicationResponse {
   @Schema(nullable = true) private String secondarySchool;
   @Schema(nullable = true) private String rejectionReason;
   @Schema(nullable = true) private LocalDateTime resolvedAt;
+  @Schema(nullable = true) private UUID resolvedByPersonId;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 
@@ -103,6 +104,7 @@ public class EnrollmentApplicationResponse {
                 : null)
         .rejectionReason(application.getRejectionReason())
         .resolvedAt(application.getResolvedAt())
+        .resolvedByPersonId(application.getResolvedByPersonId())
         .createdAt(application.getCreatedAt())
         .updatedAt(application.getUpdatedAt())
         .build();

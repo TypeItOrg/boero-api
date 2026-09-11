@@ -84,6 +84,9 @@ public class EnrollmentApplication extends SoftDeletable {
   @Column(name = "resolved_at")
   private LocalDateTime resolvedAt;
 
+  @Column(name = "resolved_by_person_id")
+  private UUID resolvedByPersonId;
+
   @OneToOne(
       mappedBy = "enrollmentApplication",
       cascade = CascadeType.ALL,
@@ -236,13 +239,15 @@ public class EnrollmentApplication extends SoftDeletable {
         || status == EnrollmentApplicationStatus.CANCELLED;
   }
 
-  public void approve(final LocalDateTime resolvedAt) {
+  public void approve(final LocalDateTime resolvedAt, final UUID resolvedByPersonId) {
     ensurePendingEvaluation();
     status = EnrollmentApplicationStatus.APPROVED;
     this.resolvedAt = resolvedAt;
+    this.resolvedByPersonId = resolvedByPersonId;
   }
 
-  public void reject(final String rejectionReason, final LocalDateTime resolvedAt) {
+  public void reject(
+      final String rejectionReason, final LocalDateTime resolvedAt, final UUID resolvedByPersonId) {
     ensurePendingEvaluation();
     if (rejectionReason == null || rejectionReason.isBlank()) {
       throw new MissingRejectionReasonException();
@@ -250,6 +255,7 @@ public class EnrollmentApplication extends SoftDeletable {
     status = EnrollmentApplicationStatus.REJECTED;
     this.rejectionReason = rejectionReason;
     this.resolvedAt = resolvedAt;
+    this.resolvedByPersonId = resolvedByPersonId;
   }
 
   private void ensurePendingEvaluation() {

@@ -8,11 +8,13 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.ApplicationNotEdit
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidEnrollmentApplicationStateException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.MissingRejectionReasonException;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class EnrollmentApplicationTest {
 
   private static final LocalDateTime RESOLVED_AT = LocalDateTime.of(2026, 9, 6, 10, 0);
+  private static final UUID RESOLVER_PERSON_ID = UUID.randomUUID();
 
   @Test
   void submit_transitionsDraftToSubmitted() {
@@ -51,27 +53,28 @@ class EnrollmentApplicationTest {
   void approve_transitionsSubmittedToApproved() {
     final var application = submitted();
 
-    application.approve(RESOLVED_AT);
+    application.approve(RESOLVED_AT, RESOLVER_PERSON_ID);
 
     assertThat(application.isApproved()).isTrue();
     assertThat(application.getStatus()).isEqualTo(EnrollmentApplicationStatus.APPROVED);
     assertThat(application.getResolvedAt()).isEqualTo(RESOLVED_AT);
+    assertThat(application.getResolvedByPersonId()).isEqualTo(RESOLVER_PERSON_ID);
   }
 
   @Test
   void approve_rejectsDraftApplication() {
     final var application = draft();
 
-    assertThatThrownBy(() -> application.approve(RESOLVED_AT))
+    assertThatThrownBy(() -> application.approve(RESOLVED_AT, RESOLVER_PERSON_ID))
         .isInstanceOf(InvalidEnrollmentApplicationStateException.class);
   }
 
   @Test
   void approve_rejectsAlreadyResolvedApplication() {
     final var application = submitted();
-    application.approve(RESOLVED_AT);
+    application.approve(RESOLVED_AT, RESOLVER_PERSON_ID);
 
-    assertThatThrownBy(() -> application.approve(RESOLVED_AT.plusHours(1)))
+    assertThatThrownBy(() -> application.approve(RESOLVED_AT.plusHours(1), RESOLVER_PERSON_ID))
         .isInstanceOf(InvalidEnrollmentApplicationStateException.class);
   }
 
@@ -79,20 +82,21 @@ class EnrollmentApplicationTest {
   void reject_transitionsSubmittedToRejectedStoringReason() {
     final var application = submitted();
 
-    application.reject("Documentación incompleta", RESOLVED_AT);
+    application.reject("Documentación incompleta", RESOLVED_AT, RESOLVER_PERSON_ID);
 
     assertThat(application.getStatus()).isEqualTo(EnrollmentApplicationStatus.REJECTED);
     assertThat(application.getRejectionReason()).isEqualTo("Documentación incompleta");
     assertThat(application.getResolvedAt()).isEqualTo(RESOLVED_AT);
+    assertThat(application.getResolvedByPersonId()).isEqualTo(RESOLVER_PERSON_ID);
   }
 
   @Test
   void reject_requiresNonBlankReason() {
     final var application = submitted();
 
-    assertThatThrownBy(() -> application.reject("   ", RESOLVED_AT))
+    assertThatThrownBy(() -> application.reject("   ", RESOLVED_AT, RESOLVER_PERSON_ID))
         .isInstanceOf(MissingRejectionReasonException.class);
-    assertThatThrownBy(() -> application.reject(null, RESOLVED_AT))
+    assertThatThrownBy(() -> application.reject(null, RESOLVED_AT, RESOLVER_PERSON_ID))
         .isInstanceOf(MissingRejectionReasonException.class);
     assertThat(application.getStatus()).isEqualTo(EnrollmentApplicationStatus.SUBMITTED);
   }
@@ -100,9 +104,12 @@ class EnrollmentApplicationTest {
   @Test
   void reject_rejectsAlreadyResolvedApplication() {
     final var application = submitted();
-    application.reject("Documentación incompleta", RESOLVED_AT);
+    application.reject("Documentación incompleta", RESOLVED_AT, RESOLVER_PERSON_ID);
 
-    assertThatThrownBy(() -> application.reject("Otro motivo", RESOLVED_AT.plusHours(1)))
+    assertThatThrownBy(
+            () ->
+                application.reject(
+                    "Otro motivo", RESOLVED_AT.plusHours(1), RESOLVER_PERSON_ID))
         .isInstanceOf(InvalidEnrollmentApplicationStateException.class);
   }
 
@@ -127,7 +134,7 @@ class EnrollmentApplicationTest {
   @Test
   void resolvedApplicationIsNotEditable() {
     final var application = submitted();
-    application.approve(RESOLVED_AT);
+    application.approve(RESOLVED_AT, RESOLVER_PERSON_ID);
 
     assertThat(application.isEditable()).isFalse();
     assertThat(application.isPendingEvaluation()).isFalse();

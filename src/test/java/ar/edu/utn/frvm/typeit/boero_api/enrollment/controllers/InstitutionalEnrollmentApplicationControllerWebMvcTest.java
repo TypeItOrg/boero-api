@@ -1,6 +1,5 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.controllers;
 
-import static ar.edu.utn.frvm.typeit.boero_api.support.AuthTestData.institutionalPrincipal;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -73,6 +72,7 @@ class InstitutionalEnrollmentApplicationControllerWebMvcTest {
   private static final UUID STUDY_PLAN_ID = UUID.randomUUID();
   private static final UUID ACADEMIC_YEAR_ID = UUID.randomUUID();
   private static final UUID PERIOD_ID = UUID.randomUUID();
+  private static final UUID RESOLVER_PERSON_ID = UUID.randomUUID();
 
   @MockitoBean private InstitutionalCallerGuard institutionalCallerGuard;
   @MockitoBean private InitialRoleAssignmentGuard initialRoleAssignmentGuard;
@@ -160,7 +160,8 @@ class InstitutionalEnrollmentApplicationControllerWebMvcTest {
   void approve_returnsOkForInstitutionAuthority() throws Exception {
     final var authentication = authentication();
     stubPermission(PermissionCode.ENROLLMENT_APPLICATION_APPROVE, true);
-    when(approveEnrollmentApplicationUseCase.execute(INSTITUTION_ID, APPLICATION_ID))
+    when(approveEnrollmentApplicationUseCase.execute(
+            INSTITUTION_ID, APPLICATION_ID, RESOLVER_PERSON_ID))
         .thenReturn(response(EnrollmentApplicationStatus.APPROVED));
 
     mockMvc
@@ -173,7 +174,8 @@ class InstitutionalEnrollmentApplicationControllerWebMvcTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("APPROVED"));
 
-    verify(approveEnrollmentApplicationUseCase).execute(INSTITUTION_ID, APPLICATION_ID);
+    verify(approveEnrollmentApplicationUseCase)
+        .execute(INSTITUTION_ID, APPLICATION_ID, RESOLVER_PERSON_ID);
   }
 
   @Test
@@ -191,7 +193,7 @@ class InstitutionalEnrollmentApplicationControllerWebMvcTest {
                 .principal(authentication))
         .andExpect(status().isForbidden());
 
-    verify(approveEnrollmentApplicationUseCase, never()).execute(any(), any());
+    verify(approveEnrollmentApplicationUseCase, never()).execute(any(), any(), any());
   }
 
   @Test
@@ -199,7 +201,8 @@ class InstitutionalEnrollmentApplicationControllerWebMvcTest {
   void reject_returnsOkForInstitutionAuthority() throws Exception {
     final var authentication = authentication();
     stubPermission(PermissionCode.ENROLLMENT_APPLICATION_REJECT, true);
-    when(rejectEnrollmentApplicationUseCase.execute(eq(INSTITUTION_ID), eq(APPLICATION_ID), any()))
+    when(rejectEnrollmentApplicationUseCase.execute(
+            eq(INSTITUTION_ID), eq(APPLICATION_ID), any(), eq(RESOLVER_PERSON_ID)))
         .thenReturn(response(EnrollmentApplicationStatus.REJECTED, "Documentación incompleta"));
 
     mockMvc
@@ -217,7 +220,10 @@ class InstitutionalEnrollmentApplicationControllerWebMvcTest {
 
     verify(rejectEnrollmentApplicationUseCase)
         .execute(
-            eq(INSTITUTION_ID), eq(APPLICATION_ID), any(RejectEnrollmentApplicationRequest.class));
+            eq(INSTITUTION_ID),
+            eq(APPLICATION_ID),
+            any(RejectEnrollmentApplicationRequest.class),
+            eq(RESOLVER_PERSON_ID));
   }
 
   @Test
@@ -239,7 +245,15 @@ class InstitutionalEnrollmentApplicationControllerWebMvcTest {
   }
 
   private Authentication authentication() {
-    final var principal = institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID);
+    final var principal =
+        JwtAuthenticatedUser.builder()
+            .userId(UUID.randomUUID())
+            .personId(RESOLVER_PERSON_ID)
+            .documentNumber("12345678")
+            .institutionId(INSTITUTION_ID)
+            .sessionId(UUID.randomUUID())
+            .tokenId("token-id")
+            .build();
     final var auth = new TestingAuthenticationToken(principal, null);
     auth.setAuthenticated(true);
     SecurityContextHolder.getContext().setAuthentication(auth);

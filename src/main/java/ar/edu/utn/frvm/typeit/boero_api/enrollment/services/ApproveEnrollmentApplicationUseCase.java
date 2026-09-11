@@ -20,13 +20,14 @@ public class ApproveEnrollmentApplicationUseCase {
   private final StudentRepository studentRepository;
 
   @Transactional
-  public EnrollmentApplicationResponse execute(final UUID institutionId, final UUID applicationId) {
+  public EnrollmentApplicationResponse execute(
+      final UUID institutionId, final UUID applicationId, final UUID resolvedByPersonId) {
     final var application =
         enrollmentApplicationRepository
             .findByIdAndInstitutionIdForUpdate(institutionId, applicationId)
             .orElseThrow(EnrollmentApplicationNotFoundException::new);
 
-    application.approve(LocalDateTime.now());
+    application.approve(LocalDateTime.now(), resolvedByPersonId);
 
     if (!studentRepository.existsByInstitution_IdAndPerson_Id(
         institutionId, application.getApplicantPerson().getId())) {
@@ -34,15 +35,15 @@ public class ApproveEnrollmentApplicationUseCase {
           Student.builder()
               .institution(application.getInstitution())
               .person(application.getApplicantPerson())
-              .fileNumber(generateFileNumber(institutionId))
+              .fileNumber(generateFileNumber())
               .build());
     }
     return EnrollmentApplicationResponse.from(application);
   }
 
-  private String generateFileNumber(final UUID institutionId) {
+  private String generateFileNumber() {
     final int year = Year.now().getValue();
-    final long count = studentRepository.countByInstitution_Id(institutionId);
-    return String.format("%d-%05d", year, count + 1);
+    final long sequence = studentRepository.nextFileNumberSequenceValue();
+    return String.format("%d-%05d", year, sequence);
   }
 }

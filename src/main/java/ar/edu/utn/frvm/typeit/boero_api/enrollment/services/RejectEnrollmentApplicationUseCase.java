@@ -20,12 +20,13 @@ public class RejectEnrollmentApplicationUseCase {
   public EnrollmentApplicationResponse execute(
       final UUID institutionId,
       final UUID applicationId,
-      final RejectEnrollmentApplicationRequest request) {
+      final RejectEnrollmentApplicationRequest request,
+      final UUID resolvedByPersonId) {
     final var application =
         enrollmentApplicationRepository
             .findByIdAndInstitutionIdForUpdate(institutionId, applicationId)
             .orElseThrow(EnrollmentApplicationNotFoundException::new);
-    application.reject(request.rejectionReason(), LocalDateTime.now());
+    application.reject(request.rejectionReason(), LocalDateTime.now(), resolvedByPersonId);
     return EnrollmentApplicationResponse.from(application);
   }
 }

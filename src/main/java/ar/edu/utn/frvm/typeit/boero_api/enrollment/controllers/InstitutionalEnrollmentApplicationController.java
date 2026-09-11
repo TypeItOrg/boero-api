@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.controllers;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresInstitutionAccess;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPermission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
@@ -18,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -60,8 +62,11 @@ public class InstitutionalEnrollmentApplicationController {
   @PostMapping(value = "/{applicationId}/approve", version = Version.V1)
   @RequiresPermission(PermissionCode.ENROLLMENT_APPLICATION_APPROVE)
   public EnrollmentApplicationResponse approve(
-      @PathVariable final UUID institutionId, @PathVariable final UUID applicationId) {
-    return approveEnrollmentApplicationUseCase.execute(institutionId, applicationId);
+      @PathVariable final UUID institutionId,
+      @PathVariable final UUID applicationId,
+      final Authentication authentication) {
+    return approveEnrollmentApplicationUseCase.execute(
+        institutionId, applicationId, currentPersonId(authentication));
   }
 
   @PostMapping(value = "/{applicationId}/reject", version = Version.V1)
@@ -69,7 +74,13 @@ public class InstitutionalEnrollmentApplicationController {
   public EnrollmentApplicationResponse reject(
       @PathVariable final UUID institutionId,
       @PathVariable final UUID applicationId,
-      @Valid @RequestBody final RejectEnrollmentApplicationRequest request) {
-    return rejectEnrollmentApplicationUseCase.execute(institutionId, applicationId, request);
+      @Valid @RequestBody final RejectEnrollmentApplicationRequest request,
+      final Authentication authentication) {
+    return rejectEnrollmentApplicationUseCase.execute(
+        institutionId, applicationId, request, currentPersonId(authentication));
+  }
+
+  private UUID currentPersonId(final Authentication authentication) {
+    return ((JwtAuthenticatedUser) authentication.getPrincipal()).personId();
   }
 }

@@ -74,6 +74,7 @@ class EnrollmentResolutionPostgresIntegrationTest {
   private UUID studyPlanId;
   private UUID academicYearId;
   private EnrollmentPeriod enrollmentPeriod;
+  private UUID resolverPersonId;
 
   @DynamicPropertySource
   static void databaseProperties(final DynamicPropertyRegistry registry) {
@@ -88,6 +89,10 @@ class EnrollmentResolutionPostgresIntegrationTest {
     institution = InstitutionalTestData.createInstitution(entityManager, "cons-enrollment");
     person = InstitutionalTestData.person(institution, "30000001");
     InstitutionalTestData.persist(entityManager, person);
+
+    final var resolver = InstitutionalTestData.person(institution, "20000001");
+    InstitutionalTestData.persist(entityManager, resolver);
+    resolverPersonId = resolver.getId();
 
     final var trainingPath =
         TrainingPath.create(institution, "Formación Básica", "Programa de ingreso");
@@ -130,7 +135,8 @@ class EnrollmentResolutionPostgresIntegrationTest {
   void approve_createsStudentAndCannotResolveTwice() {
     final var applicationId = startAndSubmit();
 
-    final var approved = approveUseCase.execute(institution.getId(), applicationId);
+    final var approved =
+        approveUseCase.execute(institution.getId(), applicationId, resolverPersonId);
 
     assertThat(approved.status()).isEqualTo(EnrollmentApplicationStatus.APPROVED);
     entityManager.flush();
@@ -141,12 +147,14 @@ class EnrollmentResolutionPostgresIntegrationTest {
         .isTrue();
     assertThat(studentRepository.countByInstitution_Id(institution.getId())).isEqualTo(1);
 
-    assertThatThrownBy(() -> approveUseCase.execute(institution.getId(), applicationId))
+    assertThatThrownBy(
+            () -> approveUseCase.execute(institution.getId(), applicationId, resolverPersonId))
         .isInstanceOf(InvalidEnrollmentApplicationStateException.class);
 
     final var reloaded = enrollmentApplicationRepository.findById(applicationId).orElseThrow();
     assertThat(reloaded.getStatus()).isEqualTo(EnrollmentApplicationStatus.APPROVED);
     assertThat(reloaded.getResolvedAt()).isNotNull();
+    assertThat(reloaded.getResolvedByPersonId()).isEqualTo(resolverPersonId);
     assertThat(studentRepository.countByInstitution_Id(institution.getId())).isEqualTo(1);
   }
 
@@ -160,7 +168,8 @@ class EnrollmentResolutionPostgresIntegrationTest {
         rejectUseCase.execute(
             institution.getId(),
             applicationId,
-            new RejectEnrollmentApplicationRequest("Documentación incompleta"));
+            new RejectEnrollmentApplicationRequest("Documentación incompleta"),
+            resolverPersonId);
 
     assertThat(rejected.status()).isEqualTo(EnrollmentApplicationStatus.REJECTED);
     assertThat(rejected.rejectionReason()).isEqualTo("Documentación incompleta");
@@ -171,13 +180,15 @@ class EnrollmentResolutionPostgresIntegrationTest {
                 rejectUseCase.execute(
                     institution.getId(),
                     applicationId,
-                    new RejectEnrollmentApplicationRequest("Otro motivo")))
+                    new RejectEnrollmentApplicationRequest("Otro motivo"),
+                    resolverPersonId))
         .isInstanceOf(InvalidEnrollmentApplicationStateException.class);
 
     final var reloaded = enrollmentApplicationRepository.findById(applicationId).orElseThrow();
     assertThat(reloaded.getStatus()).isEqualTo(EnrollmentApplicationStatus.REJECTED);
     assertThat(reloaded.getRejectionReason()).isEqualTo("Documentación incompleta");
     assertThat(reloaded.getResolvedAt()).isNotNull();
+    assertThat(reloaded.getResolvedByPersonId()).isEqualTo(resolverPersonId);
   }
 
   @Test
@@ -190,7 +201,8 @@ class EnrollmentResolutionPostgresIntegrationTest {
                 rejectUseCase.execute(
                     institution.getId(),
                     applicationId,
-                    new RejectEnrollmentApplicationRequest(" ")))
+                    new RejectEnrollmentApplicationRequest(" "),
+                    resolverPersonId))
         .isInstanceOf(MissingRejectionReasonException.class);
   }
 
