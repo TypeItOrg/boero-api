@@ -3,6 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.lenient;
 import static org.mockito.BDDMockito.willThrow;
@@ -33,6 +34,7 @@ class ApproveEnrollmentApplicationUseCaseTest {
 
   private static final UUID INSTITUTION_ID = UUID.randomUUID();
   private static final UUID APPLICATION_ID = UUID.randomUUID();
+  private static final UUID RESOLVER_PERSON_ID = UUID.randomUUID();
   private static final Person PERSON =
       Person.builder()
           .id(UUID.randomUUID())
@@ -54,12 +56,12 @@ class ApproveEnrollmentApplicationUseCaseTest {
     given(application.getApplicantPerson()).willReturn(PERSON);
     given(studentRepository.existsByInstitution_IdAndPerson_Id(INSTITUTION_ID, PERSON.getId()))
         .willReturn(false);
-    given(studentRepository.countByInstitution_Id(INSTITUTION_ID)).willReturn(0L);
+    given(studentRepository.nextFileNumberSequenceValue()).willReturn(1L);
 
-    assertThatCode(() -> useCase().execute(INSTITUTION_ID, APPLICATION_ID))
+    assertThatCode(() -> useCase().execute(INSTITUTION_ID, APPLICATION_ID, RESOLVER_PERSON_ID))
         .doesNotThrowAnyException();
 
-    verify(application).approve(any());
+    verify(application).approve(any(), eq(RESOLVER_PERSON_ID));
     verify(studentRepository).save(any(Student.class));
   }
 
@@ -70,10 +72,10 @@ class ApproveEnrollmentApplicationUseCaseTest {
     given(studentRepository.existsByInstitution_IdAndPerson_Id(INSTITUTION_ID, PERSON.getId()))
         .willReturn(true);
 
-    useCase().execute(INSTITUTION_ID, APPLICATION_ID);
+    useCase().execute(INSTITUTION_ID, APPLICATION_ID, RESOLVER_PERSON_ID);
 
     verify(studentRepository, never()).save(any(Student.class));
-    verify(studentRepository, never()).countByInstitution_Id(INSTITUTION_ID);
+    verify(studentRepository, never()).nextFileNumberSequenceValue();
   }
 
   @Test
@@ -81,12 +83,13 @@ class ApproveEnrollmentApplicationUseCaseTest {
     stubApplication();
     willThrow(new InvalidEnrollmentApplicationStateException("already resolved"))
         .given(application)
-        .approve(any());
+        .approve(any(), any());
 
-    assertThatThrownBy(() -> useCase().execute(INSTITUTION_ID, APPLICATION_ID))
+    assertThatThrownBy(
+            () -> useCase().execute(INSTITUTION_ID, APPLICATION_ID, RESOLVER_PERSON_ID))
         .isInstanceOf(InvalidEnrollmentApplicationStateException.class);
 
-    verify(studentRepository, never()).countByInstitution_Id(INSTITUTION_ID);
+    verify(studentRepository, never()).nextFileNumberSequenceValue();
   }
 
   @Test
@@ -96,7 +99,8 @@ class ApproveEnrollmentApplicationUseCaseTest {
                 INSTITUTION_ID, APPLICATION_ID))
         .willReturn(Optional.empty());
 
-    assertThatThrownBy(() -> useCase().execute(INSTITUTION_ID, APPLICATION_ID))
+    assertThatThrownBy(
+            () -> useCase().execute(INSTITUTION_ID, APPLICATION_ID, RESOLVER_PERSON_ID))
         .isInstanceOf(EnrollmentApplicationNotFoundException.class);
 
     verify(studentRepository, never()).save(any(Student.class));

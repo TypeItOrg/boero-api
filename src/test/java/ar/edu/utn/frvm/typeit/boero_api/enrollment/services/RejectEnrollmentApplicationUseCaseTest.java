@@ -33,6 +33,7 @@ class RejectEnrollmentApplicationUseCaseTest {
 
   private static final UUID INSTITUTION_ID = UUID.randomUUID();
   private static final UUID APPLICATION_ID = UUID.randomUUID();
+  private static final UUID RESOLVER_PERSON_ID = UUID.randomUUID();
 
   @Mock private EnrollmentApplicationRepository enrollmentApplicationRepository;
   @Mock private EnrollmentApplication application;
@@ -50,16 +51,19 @@ class RejectEnrollmentApplicationUseCaseTest {
                     .execute(
                         INSTITUTION_ID,
                         APPLICATION_ID,
-                        new RejectEnrollmentApplicationRequest("Documentación incompleta")))
+                        new RejectEnrollmentApplicationRequest("Documentación incompleta"),
+                        RESOLVER_PERSON_ID))
         .doesNotThrowAnyException();
 
-    verify(application).reject(eq("Documentación incompleta"), any());
+    verify(application).reject(eq("Documentación incompleta"), any(), eq(RESOLVER_PERSON_ID));
   }
 
   @Test
   void reject_propagatesMissingReason() {
     stubApplication();
-    willThrow(new MissingRejectionReasonException()).given(application).reject(any(), any());
+    willThrow(new MissingRejectionReasonException())
+        .given(application)
+        .reject(any(), any(), any());
 
     assertThatThrownBy(
             () ->
@@ -67,7 +71,8 @@ class RejectEnrollmentApplicationUseCaseTest {
                     .execute(
                         INSTITUTION_ID,
                         APPLICATION_ID,
-                        new RejectEnrollmentApplicationRequest(" ")))
+                        new RejectEnrollmentApplicationRequest(" "),
+                        RESOLVER_PERSON_ID))
         .isInstanceOf(MissingRejectionReasonException.class);
   }
 
@@ -76,7 +81,7 @@ class RejectEnrollmentApplicationUseCaseTest {
     stubApplication();
     willThrow(new InvalidEnrollmentApplicationStateException("already resolved"))
         .given(application)
-        .reject(any(), any());
+        .reject(any(), any(), any());
 
     assertThatThrownBy(
             () ->
@@ -84,7 +89,8 @@ class RejectEnrollmentApplicationUseCaseTest {
                     .execute(
                         INSTITUTION_ID,
                         APPLICATION_ID,
-                        new RejectEnrollmentApplicationRequest("Documentación incompleta")))
+                        new RejectEnrollmentApplicationRequest("Documentación incompleta"),
+                        RESOLVER_PERSON_ID))
         .isInstanceOf(InvalidEnrollmentApplicationStateException.class);
   }
 
@@ -101,7 +107,8 @@ class RejectEnrollmentApplicationUseCaseTest {
                     .execute(
                         INSTITUTION_ID,
                         APPLICATION_ID,
-                        new RejectEnrollmentApplicationRequest("Documentación incompleta")))
+                        new RejectEnrollmentApplicationRequest("Documentación incompleta"),
+                        RESOLVER_PERSON_ID))
         .isInstanceOf(EnrollmentApplicationNotFoundException.class);
   }
 
