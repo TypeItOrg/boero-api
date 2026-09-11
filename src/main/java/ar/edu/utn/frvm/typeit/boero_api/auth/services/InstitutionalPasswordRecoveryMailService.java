@@ -19,7 +19,7 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 @NullMarked
 public class InstitutionalPasswordRecoveryMailService {
 
-  private static final String LOGO_URL = "https://i.ibb.co/LX4NcHQM/boero-logo.webp";
+  private static final String LOGO_URL = "https://i.ibb.co/RGwrB7B8/boero-logo.png";
   private static final String TEMPLATE_NAME = "mail/institutional-password-recovery";
 
   private final MailSender mailSender;
