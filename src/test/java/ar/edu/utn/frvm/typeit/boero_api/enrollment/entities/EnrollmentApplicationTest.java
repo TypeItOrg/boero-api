@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.ApplicationNotEditableException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidEnrollmentApplicationStateException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.MissingRejectionReasonException;
 import java.time.LocalDateTime;
@@ -28,6 +29,22 @@ class EnrollmentApplicationTest {
 
     assertThatThrownBy(application::submit)
         .isInstanceOf(InvalidEnrollmentApplicationStateException.class);
+  }
+
+  @Test
+  void cancel_transitionsDraftToCancelled() {
+    final var application = draft();
+
+    application.cancel();
+
+    assertThat(application.getStatus()).isEqualTo(EnrollmentApplicationStatus.CANCELLED);
+  }
+
+  @Test
+  void cancel_rejectsNonDraftApplication() {
+    final var application = submitted();
+
+    assertThatThrownBy(application::cancel).isInstanceOf(ApplicationNotEditableException.class);
   }
 
   @Test

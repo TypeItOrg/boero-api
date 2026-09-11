@@ -2,9 +2,10 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.controllers;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CreateEnrollmentApplicationRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentStudyPlanSpaceInstrumentOptionsResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentApplicationDraftRequest;
@@ -27,7 +28,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -48,34 +48,59 @@ public class EnrollmentApplicationController {
       listEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase;
 
   @PostMapping(version = Version.V1)
-  @ResponseStatus(HttpStatus.CREATED)
-  public EnrollmentApplicationResponse create(
-      final Authentication authentication,
-      @Valid @RequestBody final CreateEnrollmentApplicationRequest request) {
-    final var principal = principal(authentication);
-    return createEnrollmentApplicationUseCase.execute(principal, request);
-  }
-
-  @GetMapping(version = Version.V1)
-  public List<EnrollmentApplicationResponse> list(final Authentication authentication) {
-    final var principal = principal(authentication);
-    return listEnrollmentApplicationsUseCase.execute(principal);
+  public ResponseEntity<EnrollmentApplicationResponse> startOrGetApplication(
+      Authentication authentication,
+      @Valid @RequestBody StartEnrollmentApplicationRequest request) {
+    JwtAuthenticatedUser principal = requireInstitutionalUser(authentication);
+    EnrollmentApplicationResponse response =
+        applicationService.startOrGetApplication(
+            principal.institutionId(), principal.personId(), request);
+    return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 
   @GetMapping(value = "/{applicationId}", version = Version.V1)
-  public EnrollmentApplicationResponse get(
-      final Authentication authentication, @PathVariable final UUID applicationId) {
-    final var principal = principal(authentication);
-    return getEnrollmentApplicationUseCase.execute(principal, applicationId);
+  public ResponseEntity<EnrollmentApplicationResponse> getApplication(
+      Authentication authentication, @PathVariable UUID applicationId) {
+    JwtAuthenticatedUser principal = requireInstitutionalUser(authentication);
+    // Only look up by institution when the caller actually has review permission - otherwise
+    // this stays a pure self-service lookup and other applicants' data never matches.
+    UUID institutionId =
+        authorizationService.hasPermission(
+                authentication, PermissionCode.ENROLLMENT_APPLICATION_READ)
+            ? principal.institutionId()
+            : null;
+    EnrollmentApplicationResponse response =
+        applicationService.getApplicationById(institutionId, principal.personId(), applicationId);
+    return ResponseEntity.ok(response);
   }
 
   @PatchMapping(value = "/{applicationId}/draft", version = Version.V1)
-  public EnrollmentApplicationResponse updateDraft(
-      final Authentication authentication,
-      @PathVariable final UUID applicationId,
-      @Valid @RequestBody final UpdateEnrollmentApplicationDraftRequest request) {
-    final var principal = principal(authentication);
-    return updateEnrollmentApplicationDraftUseCase.execute(principal, applicationId, request);
+  public ResponseEntity<EnrollmentApplicationResponse> updateDraft(
+      Authentication authentication,
+      @PathVariable UUID applicationId,
+      @RequestBody UpdateEnrollmentDraftRequest request) {
+    JwtAuthenticatedUser principal = requireInstitutionalUser(authentication);
+    EnrollmentApplicationResponse response =
+        applicationService.updateDraft(principal.personId(), applicationId, request);
+    return ResponseEntity.ok(response);
+  }
+
+  @PostMapping(value = "/{applicationId}/cancel", version = Version.V1)
+  public ResponseEntity<EnrollmentApplicationResponse> cancelApplication(
+      Authentication authentication, @PathVariable UUID applicationId) {
+    JwtAuthenticatedUser principal = requireInstitutionalUser(authentication);
+    EnrollmentApplicationResponse response =
+        applicationService.cancelApplication(principal.personId(), applicationId);
+    return ResponseEntity.ok(response);
+  }
+
+  @PostMapping(value = "/{applicationId}/submit", version = Version.V1)
+  public ResponseEntity<EnrollmentApplicationResponse> submitApplication(
+      Authentication authentication, @PathVariable UUID applicationId) {
+    JwtAuthenticatedUser principal = requireInstitutionalUser(authentication);
+    EnrollmentApplicationResponse response =
+        applicationService.submitApplication(principal.personId(), applicationId);
+    return ResponseEntity.ok(response);
   }
 
   @GetMapping(value = "/{applicationId}/training-paths", version = Version.V1)

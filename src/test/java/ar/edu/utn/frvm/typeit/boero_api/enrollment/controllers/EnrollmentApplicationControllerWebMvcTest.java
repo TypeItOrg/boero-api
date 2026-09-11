@@ -47,6 +47,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -134,12 +135,13 @@ class EnrollmentApplicationControllerWebMvcTest {
   }
 
   @Test
-  @DisplayName("Should list the applicant enrollment applications")
-  void listsApplications() throws Exception {
-    final var authentication =
-        new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
-    when(listEnrollmentApplicationsUseCase.execute(any())).thenReturn(List.of(response(data())));
+  @DisplayName("GET /api/v1/enrollment-applications/{id} should get own application without review permission")
+  void getApplication_selfServiceSuccess() throws Exception {
+    EnrollmentApplicationResponse response = createMockResponse(EnrollmentApplicationStatus.DRAFT);
+    when(authorizationService.hasPermission(any(), eq(PermissionCode.ENROLLMENT_APPLICATION_READ)))
+        .thenReturn(false);
+    when(applicationService.getApplicationById(isNull(), eq(PERSON_ID), eq(APPLICATION_ID)))
+        .thenReturn(response);
 
     mockMvc
         .perform(get("/api/v1/enrollment-applications").principal(authentication))
@@ -149,15 +151,30 @@ class EnrollmentApplicationControllerWebMvcTest {
   }
 
   @Test
-  @DisplayName("Should replace the draft data including the selected training path")
-  void updatesDraft() throws Exception {
-    final var authentication =
-        new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
-    final ObjectNode data = data();
-    when(updateEnrollmentApplicationDraftUseCase.execute(
-            any(), eq(APPLICATION_ID), any(UpdateEnrollmentApplicationDraftRequest.class)))
-        .thenReturn(response(data));
+  @DisplayName("GET /api/v1/enrollment-applications/{id} should look up by institution when caller can review")
+  void getApplication_institutionalReviewerSuccess() throws Exception {
+    EnrollmentApplicationResponse response = createMockResponse(EnrollmentApplicationStatus.SUBMITTED);
+    when(authorizationService.hasPermission(any(), eq(PermissionCode.ENROLLMENT_APPLICATION_READ)))
+        .thenReturn(true);
+    when(applicationService.getApplicationById(eq(INSTITUTION_ID), eq(PERSON_ID), eq(APPLICATION_ID)))
+        .thenReturn(response);
+
+    mockMvc
+        .perform(get("/api/v1/enrollment-applications/{id}", APPLICATION_ID).principal(applicantAuthentication()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.applicationId").value(APPLICATION_ID.toString()));
+  }
+
+  @Test
+  @DisplayName("PATCH /api/v1/enrollment-applications/{id}/draft should update draft")
+  void updateDraft_success() throws Exception {
+    EnrollmentApplicationResponse response = createMockResponse(EnrollmentApplicationStatus.DRAFT);
+    when(applicationService.updateDraft(eq(PERSON_ID), eq(APPLICATION_ID), any())).thenReturn(response);
+
+    UpdateEnrollmentDraftRequest request =
+        UpdateEnrollmentDraftRequest.builder()
+            .data(EnrollmentDraftData.builder().personalData(PersonalDataDto.builder().firstName("Lucía Modificada").build()).build())
+            .build();
 
     mockMvc
         .perform(
@@ -176,8 +193,31 @@ class EnrollmentApplicationControllerWebMvcTest {
                     """
                         .formatted(TRAINING_PATH_ID)))
         .andExpect(status().isOk())
-        .andExpect(
-            jsonPath("$.data.careerSelection.trainingPathId").value(TRAINING_PATH_ID.toString()));
+        .andExpect(jsonPath("$.applicationId").value(APPLICATION_ID.toString()));
+  }
+
+  @Test
+  @DisplayName("POST /api/v1/enrollment-applications/{id}/cancel should cancel draft")
+  void cancelApplication_success() throws Exception {
+    EnrollmentApplicationResponse response = createMockResponse(EnrollmentApplicationStatus.CANCELLED);
+    when(applicationService.cancelApplication(eq(PERSON_ID), eq(APPLICATION_ID))).thenReturn(response);
+
+    mockMvc
+        .perform(post("/api/v1/enrollment-applications/{id}/cancel", APPLICATION_ID).principal(applicantAuthentication()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("CANCELLED"));
+  }
+
+  @Test
+  @DisplayName("POST /api/v1/enrollment-applications/{id}/submit should submit draft")
+  void submitApplication_success() throws Exception {
+    EnrollmentApplicationResponse response = createMockResponse(EnrollmentApplicationStatus.SUBMITTED);
+    when(applicationService.submitApplication(eq(PERSON_ID), eq(APPLICATION_ID))).thenReturn(response);
+
+    mockMvc
+        .perform(post("/api/v1/enrollment-applications/{id}/submit", APPLICATION_ID).principal(applicantAuthentication()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("SUBMITTED"));
   }
 
   @Test

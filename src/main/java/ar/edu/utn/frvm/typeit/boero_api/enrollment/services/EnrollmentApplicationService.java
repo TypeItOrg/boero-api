@@ -11,9 +11,9 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantHealthInclu
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantPreference;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantResponsible;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplicationSpace;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentAttachmentType;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.ApplicationNotEditableException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
@@ -21,11 +21,9 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentPeriodClosedException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.AcademicBackgroundDto;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.AttachmentDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentDraftData;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.HealthInclusionDto;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.PersonalDataDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.PreferenceDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.ResponsibleDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.StartEnrollmentApplicationRequest;
@@ -76,7 +74,7 @@ public class EnrollmentApplicationService {
                 EnrollmentApplicationStatus.DRAFT);
 
     if (existingDraft.isPresent()) {
-      return toResponse(existingDraft.get());
+      return EnrollmentApplicationResponse.from(existingDraft.get());
     }
 
     // 2. Si no existe, validar período de inscripción activo
@@ -113,7 +111,7 @@ public class EnrollmentApplicationService {
             .build();
 
     EnrollmentApplication saved = applicationRepository.save(newApplication);
-    return toResponse(saved);
+    return EnrollmentApplicationResponse.from(saved);
   }
 
   @Transactional
@@ -281,7 +279,7 @@ public class EnrollmentApplicationService {
     }
 
     EnrollmentApplication saved = applicationRepository.save(application);
-    return toResponse(saved);
+    return EnrollmentApplicationResponse.from(saved);
   }
 
   @Transactional
@@ -293,13 +291,9 @@ public class EnrollmentApplicationService {
             .filter(app -> app.getDeletedAt() == null)
             .orElseThrow(() -> new EnrollmentApplicationNotFoundException(applicationId));
 
-    if (application.getStatus() != EnrollmentApplicationStatus.DRAFT) {
-      throw new ApplicationNotEditableException(applicationId);
-    }
-
-    application.setStatus(EnrollmentApplicationStatus.CANCELLED);
+    application.cancel();
     EnrollmentApplication saved = applicationRepository.save(application);
-    return toResponse(saved);
+    return EnrollmentApplicationResponse.from(saved);
   }
 
   @Transactional
@@ -367,31 +361,14 @@ public class EnrollmentApplicationService {
       errors.put("academicBackground", "Los antecedentes educativos son obligatorios");
     }
 
-    // 3. Validar salud e inclusión
-    ApplicantHealthInclusion health = application.getHealthInclusion();
-    if (health != null && health.isReceivesReasonableAdjustments()) {
-      boolean hasHealthDoc =
-          application.getAttachments() != null
-              && application.getAttachments().stream()
-                  .anyMatch(
-                      att ->
-                          att.getDeletedAt() == null
-                              && att.getAttachmentType() == EnrollmentAttachmentType.HEALTH_REPORT);
-      if (!hasHealthDoc) {
-        errors.put(
-            "healthInclusion.report",
-            "Es obligatorio adjuntar el informe profesional si se requieren ajustes razonables");
-      }
-    }
-
-    // 4. Validar selección de espacios académicos
+    // 3. Validar selección de espacios académicos
     if (application.getSelectedSpaces() == null || application.getSelectedSpaces().isEmpty()) {
       errors.put(
           "academicSpaceSelection.studyPlanSpaceIds",
           EnrollmentMessages.ENROLLMENT_APPLICATION_SPACES_REQUIRED);
     }
 
-    // 5. Validar preferencias
+    // 4. Validar preferencias
     ApplicantPreference pref = application.getPreference();
     if (pref == null || pref.getPreferredShift() == null || pref.getPreferredShift().isBlank()) {
       errors.put("preference.preferredShift", "El turno preferido es obligatorio");
@@ -407,9 +384,9 @@ public class EnrollmentApplicationService {
           "Existen campos obligatorios sin completar para enviar la inscripción", errors);
     }
 
-    application.setStatus(EnrollmentApplicationStatus.SUBMITTED);
+    application.submit();
     EnrollmentApplication saved = applicationRepository.save(application);
-    return toResponse(saved);
+    return EnrollmentApplicationResponse.from(saved);
   }
 
   @Transactional(readOnly = true)
@@ -424,7 +401,7 @@ public class EnrollmentApplicationService {
         applicationRepository.findAll(
             byListFilters(institutionId, periodId, status, search), pageable);
 
-    return PaginatedResponse.from(page.map(this::toResponse));
+    return PaginatedResponse.from(page.map(EnrollmentApplicationResponse::from));
   }
 
   @Transactional(readOnly = true)
@@ -446,7 +423,7 @@ public class EnrollmentApplicationService {
                             && app.getInstitution().getId().equals(institutionId)))
             .orElseThrow(() -> new EnrollmentApplicationNotFoundException(applicationId));
 
-    return toResponse(application);
+    return EnrollmentApplicationResponse.from(application);
   }
 
   private Specification<EnrollmentApplication> byListFilters(
@@ -489,140 +466,5 @@ public class EnrollmentApplicationService {
 
       return cb.and(predicates.toArray(Predicate[]::new));
     };
-  }
-
-  private EnrollmentApplicationResponse toResponse(EnrollmentApplication entity) {
-    PersonalDataDto personalDataDto = null;
-    Person applicant = entity.getApplicantPerson();
-    if (applicant != null) {
-      personalDataDto =
-          PersonalDataDto.builder()
-              .firstName(applicant.getFirstName())
-              .lastName(applicant.getLastName())
-              .documentNumber(applicant.getDocumentNumber())
-              .birthDate(applicant.getBirthDate())
-              .phoneNumber(applicant.getPhoneNumber())
-              .email(applicant.getEmail())
-              .build();
-    }
-
-    AcademicBackgroundDto academicBgDto = null;
-    ApplicantEducationBackground bg = entity.getEducationBackground();
-    if (bg != null) {
-      academicBgDto =
-          AcademicBackgroundDto.builder()
-              .secondarySchool(bg.getSecondarySchool())
-              .schoolOrigin(bg.getSchoolOrigin())
-              .currentGradeYear(bg.getCurrentGradeYear())
-              .secondaryCompleted(bg.isSecondaryCompleted())
-              .secondaryDegreeTitle(bg.getSecondaryDegreeTitle())
-              .build();
-    }
-
-    HealthInclusionDto healthDto = null;
-    ApplicantHealthInclusion health = entity.getHealthInclusion();
-    if (health != null) {
-      healthDto =
-          HealthInclusionDto.builder()
-              .receivesReasonableAdjustments(health.isReceivesReasonableAdjustments())
-              .adjustmentDetails(health.getAdjustmentDetails())
-              .build();
-    }
-
-    ResponsibleDto responsibleDto = null;
-    ApplicantResponsible resp = entity.getResponsible();
-    if (resp != null) {
-      responsibleDto =
-          ResponsibleDto.builder()
-              .fullName(resp.getFullName())
-              .documentNumber(resp.getDocumentNumber())
-              .occupation(resp.getOccupation())
-              .phoneNumber(resp.getPhoneNumber())
-              .email(resp.getEmail())
-              .educationLevel(resp.getEducationLevel())
-              .build();
-    }
-
-    PreferenceDto preferenceDto = null;
-    ApplicantPreference pref = entity.getPreference();
-    if (pref != null) {
-      preferenceDto =
-          PreferenceDto.builder()
-              .preferredShift(pref.getPreferredShift())
-              .allowsImageUse(pref.isAllowsImageUse())
-              .isReenrolling(pref.isReenrolling())
-              .previousTeacher(pref.getPreviousTeacher())
-              .build();
-    }
-
-    AcademicSpaceSelectionDto spaceSelectionDto = null;
-    InstrumentSelectionDto instrumentSelectionDto = null;
-    if (entity.getSelectedSpaces() != null && !entity.getSelectedSpaces().isEmpty()) {
-      List<UUID> spaceIds =
-          entity.getSelectedSpaces().stream().map(s -> s.getStudyPlanSpace().getId()).toList();
-      spaceSelectionDto = new AcademicSpaceSelectionDto(spaceIds);
-
-      Map<UUID, UUID> instMap =
-          entity.getSelectedSpaces().stream()
-              .filter(s -> s.getInstrument() != null)
-              .collect(
-                  Collectors.toMap(
-                      s -> s.getStudyPlanSpace().getId(), s -> s.getInstrument().getId()));
-      instrumentSelectionDto = new InstrumentSelectionDto(instMap);
-    }
-
-    CareerSelectionDto careerDto = null;
-    if (entity.getStudyPlan() != null && entity.getStudyPlan().getTrainingPath() != null) {
-      careerDto = new CareerSelectionDto(entity.getStudyPlan().getTrainingPath().getId());
-    }
-
-    List<AttachmentDto> attachmentsList = new ArrayList<>();
-    if (entity.getAttachments() != null) {
-      attachmentsList =
-          entity.getAttachments().stream()
-              .filter(att -> att.getDeletedAt() == null)
-              .map(
-                  att ->
-                      AttachmentDto.builder()
-                          .id(att.getId())
-                          .attachmentType(
-                              att.getAttachmentType() != null
-                                  ? att.getAttachmentType().name()
-                                  : null)
-                          .originalFileName(att.getOriginalFileName())
-                          .storagePath(att.getStoragePath())
-                          .contentType(att.getContentType())
-                          .fileSize(att.getFileSize())
-                          .createdAt(att.getCreatedAt())
-                          .build())
-              .toList();
-    }
-
-    EnrollmentDraftData draftData =
-        EnrollmentDraftData.builder()
-            .personalData(personalDataDto != null ? personalDataDto : new PersonalDataDto())
-            .academicBackground(academicBgDto != null ? academicBgDto : new AcademicBackgroundDto())
-            .healthInclusion(healthDto != null ? healthDto : new HealthInclusionDto())
-            .responsible(responsibleDto != null ? responsibleDto : new ResponsibleDto())
-            .preference(preferenceDto != null ? preferenceDto : new PreferenceDto())
-            .attachments(attachmentsList)
-            .build();
-
-    boolean editable =
-        entity.getStatus() == EnrollmentApplicationStatus.DRAFT && entity.getDeletedAt() == null;
-
-    return EnrollmentApplicationResponse.builder()
-        .applicationId(entity.getId())
-        .institutionId(entity.getInstitution().getId())
-        .personId(entity.getApplicantPerson().getId())
-        .studyPlanId(entity.getStudyPlan().getId())
-        .academicYearId(entity.getAcademicYear().getId())
-        .enrollmentPeriodId(entity.getEnrollmentPeriod().getId())
-        .status(entity.getStatus())
-        .isEditable(editable)
-        .data(draftData)
-        .createdAt(entity.getCreatedAt())
-        .updatedAt(entity.getUpdatedAt())
-        .build();
   }
 }
