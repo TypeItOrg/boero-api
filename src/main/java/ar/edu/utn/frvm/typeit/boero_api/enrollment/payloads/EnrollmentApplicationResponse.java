@@ -7,6 +7,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantResponsible
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ public class EnrollmentApplicationResponse {
   private Integer academicYear;
   private UUID enrollmentPeriodId;
   private EnrollmentApplicationStatus status;
+  @JsonProperty("isEditable")
   private boolean isEditable;
   private EnrollmentDraftData data;
   @Schema(nullable = true) private String secondarySchool;

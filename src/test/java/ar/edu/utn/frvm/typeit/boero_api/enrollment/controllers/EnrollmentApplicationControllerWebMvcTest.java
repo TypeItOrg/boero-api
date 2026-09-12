@@ -143,6 +143,7 @@ class EnrollmentApplicationControllerWebMvcTest {
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.applicationId").value(APPLICATION_ID.toString()))
         .andExpect(jsonPath("$.status").value("DRAFT"))
+        .andExpect(jsonPath("$.isEditable").value(true))
         .andExpect(jsonPath("$.data.personalData.firstName").value("Lucía"));
   }
 
@@ -158,7 +159,8 @@ class EnrollmentApplicationControllerWebMvcTest {
     mockMvc
         .perform(get("/api/v1/enrollment-applications/{id}", APPLICATION_ID).principal(applicantAuthentication()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.applicationId").value(APPLICATION_ID.toString()));
+        .andExpect(jsonPath("$.applicationId").value(APPLICATION_ID.toString()))
+        .andExpect(jsonPath("$.isEditable").value(true));
   }
 
   @Test
@@ -173,7 +175,8 @@ class EnrollmentApplicationControllerWebMvcTest {
     mockMvc
         .perform(get("/api/v1/enrollment-applications/{id}", APPLICATION_ID).principal(applicantAuthentication()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.applicationId").value(APPLICATION_ID.toString()));
+        .andExpect(jsonPath("$.applicationId").value(APPLICATION_ID.toString()))
+        .andExpect(jsonPath("$.isEditable").value(false));
   }
 
   @Test
@@ -194,7 +197,8 @@ class EnrollmentApplicationControllerWebMvcTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.applicationId").value(APPLICATION_ID.toString()));
+        .andExpect(jsonPath("$.applicationId").value(APPLICATION_ID.toString()))
+        .andExpect(jsonPath("$.isEditable").value(true));
   }
 
   @Test
