@@ -4,7 +4,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicat
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentApplicationRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.RejectEnrollmentApplicationRequest;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,7 +26,7 @@ public class RejectEnrollmentApplicationUseCase {
         enrollmentApplicationRepository
             .findByIdAndInstitutionIdForUpdate(institutionId, applicationId)
             .orElseThrow(EnrollmentApplicationNotFoundException::new);
-    application.reject(request.rejectionReason(), LocalDateTime.now(), resolvedByPersonId);
+    application.reject(request.rejectionReason(), Instant.now(), resolvedByPersonId);
     return EnrollmentApplicationResponse.from(application);
   }
 }

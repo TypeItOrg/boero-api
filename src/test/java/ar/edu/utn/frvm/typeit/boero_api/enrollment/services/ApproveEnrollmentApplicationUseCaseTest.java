@@ -21,6 +21,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Student;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.StudentRepository;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -127,7 +128,7 @@ class ApproveEnrollmentApplicationUseCaseTest {
     lenient().when(academicYear.getYear()).thenReturn(2026);
     lenient().when(application.getEnrollmentPeriod()).thenReturn(enrollmentPeriod);
     lenient().when(enrollmentPeriod.getId()).thenReturn(UUID.randomUUID());
-    lenient().when(application.getCreatedAt()).thenReturn(LocalDateTime.of(2026, 9, 5, 9, 0));
-    lenient().when(application.getUpdatedAt()).thenReturn(LocalDateTime.of(2026, 9, 5, 9, 0));
+    lenient().when(application.getCreatedAt()).thenReturn(Instant.parse("2026-09-05T09:00:00Z"));
+    lenient().when(application.getUpdatedAt()).thenReturn(Instant.parse("2026-09-05T09:00:00Z"));
   }
 }

@@ -3,6 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -26,7 +27,7 @@ public record EnrollmentPeriodResponse(
     LocalDateTime startDate,
     LocalDateTime endDate,
     EnrollmentPeriodStatus status,
-    @Schema(nullable = true) LocalDateTime deletedAt) {
+    @Schema(nullable = true) Instant deletedAt) {
 
   public static EnrollmentPeriodResponse from(final EnrollmentPeriod period) {
     return new EnrollmentPeriodResponse(

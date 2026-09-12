@@ -254,7 +254,7 @@ class EnrollmentApplicationPostgresIntegrationTest {
             StudyPlan.create(institution, trainingPath, "Piano " + suffix, LocalDate.now(), null));
     AcademicYear academicYear =
         InstitutionalTestData.persist(
-            entityManager, AcademicYear.create(institution, 2026, null, null));
+            entityManager, AcademicYear.create(institution, 2026, null, null, LocalDate.of(2026, 1, 1)));
 
     EnrollmentPeriod period =
         InstitutionalTestData.persist(

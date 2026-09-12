@@ -112,7 +112,7 @@ class ListEnrollmentApplicationTrainingPathsUseCaseTest {
     final var plan = StudyPlan.create(institution, path, "Plan", LocalDate.of(2026, 3, 1), null);
     final var year =
         ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear.create(
-            institution, 2026, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 12, 1));
+            institution, 2026, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 12, 1), LocalDate.of(2026, 1, 1));
     return EnrollmentApplication.builder()
         .id(UUID.randomUUID())
         .institution(institution)

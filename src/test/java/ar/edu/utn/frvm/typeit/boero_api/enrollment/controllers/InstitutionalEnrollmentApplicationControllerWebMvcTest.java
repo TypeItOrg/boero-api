@@ -34,6 +34,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ApproveEnrollmentApp
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.GetEnrollmentApplicationUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.RejectEnrollmentApplicationUseCase;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -289,9 +290,9 @@ class InstitutionalEnrollmentApplicationControllerWebMvcTest {
         .isEditable(status == EnrollmentApplicationStatus.DRAFT)
         .secondarySchool("Colegio Secundario 1")
         .rejectionReason(rejectionReason)
-        .resolvedAt(status == EnrollmentApplicationStatus.SUBMITTED ? null : LocalDateTime.now())
-        .createdAt(LocalDateTime.now())
-        .updatedAt(LocalDateTime.now())
+        .resolvedAt(status == EnrollmentApplicationStatus.SUBMITTED ? null : Instant.now())
+        .createdAt(Instant.now())
+        .updatedAt(Instant.now())
         .build();
   }
 }

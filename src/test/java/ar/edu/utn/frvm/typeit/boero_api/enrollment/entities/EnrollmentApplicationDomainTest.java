@@ -52,7 +52,13 @@ class EnrollmentApplicationDomainTest {
     final StudyPlan plan =
         StudyPlan.create(institution, path, "Plan", LocalDate.of(2026, 3, 1), null);
     final AcademicYear year =
-        AcademicYear.create(institution, 2026, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 12, 1));
-    return EnrollmentApplication.create(applicant, institution, plan, year, null);
+        AcademicYear.create(institution, 2026, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 12, 1), LocalDate.of(2026, 1, 1));
+    return EnrollmentApplication.builder()
+        .institution(institution)
+        .applicantPerson(applicant)
+        .studyPlan(plan)
+        .academicYear(year)
+        .status(EnrollmentApplicationStatus.DRAFT)
+        .build();
   }
 }

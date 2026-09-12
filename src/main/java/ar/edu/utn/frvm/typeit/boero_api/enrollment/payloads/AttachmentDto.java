@@ -1,6 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,5 +18,5 @@ public class AttachmentDto {
   private String storagePath;
   private String contentType;
   private Long fileSize;
-  private LocalDateTime createdAt;
+  private Instant createdAt;
 }

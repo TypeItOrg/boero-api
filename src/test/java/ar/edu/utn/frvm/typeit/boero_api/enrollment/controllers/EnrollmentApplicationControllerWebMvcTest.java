@@ -35,8 +35,8 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.GetEnrollmentApplica
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationStudyPlanSpacesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationTrainingPathsUseCase;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationsUseCase;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.UpdateEnrollmentApplicationDraftUseCase;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -94,17 +94,30 @@ class EnrollmentApplicationControllerWebMvcTest {
   @MockitoBean
   private UpdateEnrollmentApplicationDraftUseCase updateEnrollmentApplicationDraftUseCase;
 
-  @MockitoBean
-  private ListEnrollmentApplicationTrainingPathsUseCase
-      listEnrollmentApplicationTrainingPathsUseCase;
-
-  @MockitoBean
-  private ListEnrollmentApplicationStudyPlanSpacesUseCase
-      listEnrollmentApplicationStudyPlanSpacesUseCase;
-
-  @MockitoBean
-  private ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase
-      listEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase;
+  private EnrollmentApplicationResponse createMockResponse(EnrollmentApplicationStatus status) {
+    return EnrollmentApplicationResponse.builder()
+        .applicationId(APPLICATION_ID)
+        .institutionId(INSTITUTION_ID)
+        .personId(PERSON_ID)
+        .studyPlanId(STUDY_PLAN_ID)
+        .academicYearId(ACADEMIC_YEAR_ID)
+        .enrollmentPeriodId(UUID.randomUUID())
+        .status(status)
+        .isEditable(status == EnrollmentApplicationStatus.DRAFT)
+        .data(
+            EnrollmentDraftData.builder()
+                .personalData(
+                    PersonalDataDto.builder()
+                        .firstName("Lucía")
+                        .lastName("Gómez")
+                        .documentNumber("35123456")
+                        .email("lucia@example.com")
+                        .build())
+                .build())
+        .createdAt(Instant.now())
+        .updatedAt(Instant.now())
+        .build();
+  }
 
   @Test
   @DisplayName("Should create an enrollment application")

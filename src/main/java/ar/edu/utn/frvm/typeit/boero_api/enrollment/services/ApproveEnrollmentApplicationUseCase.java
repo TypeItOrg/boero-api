@@ -5,7 +5,8 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentApplic
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Student;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.StudentRepository;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.Year;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,7 @@ public class ApproveEnrollmentApplicationUseCase {
             .findByIdAndInstitutionIdForUpdate(institutionId, applicationId)
             .orElseThrow(EnrollmentApplicationNotFoundException::new);
 
-    application.approve(LocalDateTime.now(), resolvedByPersonId);
+    application.approve(Instant.now(), resolvedByPersonId);
 
     if (!studentRepository.existsByInstitution_IdAndPerson_Id(
         institutionId, application.getApplicantPerson().getId())) {
@@ -36,6 +37,7 @@ public class ApproveEnrollmentApplicationUseCase {
               .institution(application.getInstitution())
               .person(application.getApplicantPerson())
               .fileNumber(generateFileNumber())
+              .enrollmentDate(LocalDate.now())
               .build());
     }
     return EnrollmentApplicationResponse.from(application);
