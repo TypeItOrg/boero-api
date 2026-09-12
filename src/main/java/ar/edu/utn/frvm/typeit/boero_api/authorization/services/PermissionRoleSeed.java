@@ -46,7 +46,21 @@ public class PermissionRoleSeed implements ApplicationRunner {
   private static final Map<SystemRoleCode, Set<PermissionCode>> INSTITUTIONAL_ROLE_PERMISSIONS =
       Map.of(
           SystemRoleCode.APPLICANT,
-          Set.of(PermissionCode.ACADEMIC_OFFER_READ),
+          EnumSet.of(
+              PermissionCode.STUDY_PLAN_READ,
+              PermissionCode.ACADEMIC_YEAR_READ,
+              PermissionCode.ENROLLMENT_PERIOD_READ,
+              PermissionCode.ACADEMIC_OFFER_READ),
+          SystemRoleCode.STUDENT,
+          EnumSet.of(
+              PermissionCode.STUDY_PLAN_READ,
+              PermissionCode.ACADEMIC_YEAR_READ,
+              PermissionCode.ENROLLMENT_PERIOD_READ),
+          SystemRoleCode.ADMINISTRATIVE,
+          EnumSet.of(
+              PermissionCode.ENROLLMENT_APPLICATION_READ,
+              PermissionCode.ENROLLMENT_APPLICATION_APPROVE,
+              PermissionCode.ENROLLMENT_APPLICATION_REJECT),
           SystemRoleCode.INSTITUTIONAL_AUTHORITY,
           EnumSet.of(
               PermissionCode.INSTITUTION_ROLE_ASSIGN,
@@ -84,6 +98,11 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.INSTRUMENT_STATUS_UPDATE,
               PermissionCode.INSTRUMENT_DELETE,
               PermissionCode.INSTRUMENT_RESTORE,
+              PermissionCode.ENROLLMENT_PERIOD_READ,
+              PermissionCode.ENROLLMENT_PERIOD_CREATE,
+              PermissionCode.ENROLLMENT_PERIOD_UPDATE,
+              PermissionCode.ENROLLMENT_PERIOD_STATUS_UPDATE,
+              PermissionCode.ENROLLMENT_PERIOD_DELETE,
               PermissionCode.SHIFT_CREATE,
               PermissionCode.SHIFT_UPDATE,
               PermissionCode.SHIFT_STATUS_UPDATE,
@@ -94,7 +113,10 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.COURSE_UPDATE,
               PermissionCode.COURSE_STATUS_UPDATE,
               PermissionCode.COURSE_DELETE,
-              PermissionCode.COURSE_RESTORE));
+              PermissionCode.COURSE_RESTORE,
+              PermissionCode.ENROLLMENT_APPLICATION_READ,
+              PermissionCode.ENROLLMENT_APPLICATION_APPROVE,
+              PermissionCode.ENROLLMENT_APPLICATION_REJECT));
 
   private final PermissionRepository permissionRepository;
   private final RoleRepository roleRepository;
@@ -173,8 +195,14 @@ public class PermissionRoleSeed implements ApplicationRunner {
 
   private void syncPlatformRoles(Map<PermissionCode, Permission> permissions) {
     for (PlatformRoleCode roleCode : PlatformRoleCode.values()) {
+      Set<PermissionCode> rolePermissionCodes =
+          roleCode == PlatformRoleCode.PLATFORM_ADMIN ? Set.of(PermissionCode.values()) : Set.of();
       syncScopedRole(
-          RoleScope.PLATFORM, roleCode.name(), roleCode.getDisplayName(), Set.of(), permissions);
+          RoleScope.PLATFORM,
+          roleCode.name(),
+          roleCode.getDisplayName(),
+          rolePermissionCodes,
+          permissions);
     }
   }
 

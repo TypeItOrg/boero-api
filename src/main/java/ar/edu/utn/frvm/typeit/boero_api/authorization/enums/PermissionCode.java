@@ -241,6 +241,31 @@ public enum PermissionCode {
       PermissionScope.INSTITUTION,
       PermissionGroup.ACADEMIC,
       "Restaurar instrumentos"),
+  ENROLLMENT_PERIOD_READ(
+      "institution:enrollment-period:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Ver períodos de inscripción"),
+  ENROLLMENT_PERIOD_CREATE(
+      "institution:enrollment-period:create",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Crear períodos de inscripción"),
+  ENROLLMENT_PERIOD_UPDATE(
+      "institution:enrollment-period:update",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Editar períodos de inscripción"),
+  ENROLLMENT_PERIOD_STATUS_UPDATE(
+      "institution:enrollment-period:update-status",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Cambiar estado de períodos de inscripción"),
+  ENROLLMENT_PERIOD_DELETE(
+      "institution:enrollment-period:delete",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Eliminar períodos de inscripción"),
   SHIFT_READ(
       "institution:shift:read",
       PermissionScope.INSTITUTION,
@@ -300,7 +325,22 @@ public enum PermissionCode {
       "institution:course:restore",
       PermissionScope.INSTITUTION,
       PermissionGroup.ACADEMIC,
-      "Restaurar cursos");
+      "Restaurar cursos"),
+  ENROLLMENT_APPLICATION_READ(
+      "institution:enrollment-application:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Ver solicitudes de inscripción"),
+  ENROLLMENT_APPLICATION_APPROVE(
+      "institution:enrollment-application:approve",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Aprobar solicitudes de inscripción"),
+  ENROLLMENT_APPLICATION_REJECT(
+      "institution:enrollment-application:reject",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Rechazar solicitudes de inscripción");
 
   private final String code;
   private final PermissionScope scope;
@@ -354,10 +394,17 @@ public enum PermissionCode {
           INSTRUMENT_DELETE,
           INSTRUMENT_RESTORE ->
           Set.of(INSTRUMENT_READ);
+      case ENROLLMENT_PERIOD_CREATE,
+          ENROLLMENT_PERIOD_UPDATE,
+          ENROLLMENT_PERIOD_STATUS_UPDATE,
+          ENROLLMENT_PERIOD_DELETE ->
+          Set.of(ENROLLMENT_PERIOD_READ);
       case SHIFT_CREATE, SHIFT_UPDATE, SHIFT_STATUS_UPDATE, SHIFT_DELETE, SHIFT_RESTORE ->
           Set.of(SHIFT_READ);
       case COURSE_CREATE, COURSE_UPDATE, COURSE_STATUS_UPDATE, COURSE_DELETE, COURSE_RESTORE ->
           Set.of(COURSE_READ);
+      case ENROLLMENT_APPLICATION_APPROVE, ENROLLMENT_APPLICATION_REJECT ->
+          Set.of(ENROLLMENT_APPLICATION_READ);
       default -> Set.of();
     };
   }

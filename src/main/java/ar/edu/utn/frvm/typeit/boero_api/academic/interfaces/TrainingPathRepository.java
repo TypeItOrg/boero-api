@@ -39,6 +39,9 @@ public interface TrainingPathRepository extends JpaRepository<TrainingPath, UUID
   Optional<TrainingPath> findByIdAndInstitution_IdAndActiveTrueAndDeletedAtIsNull(
       UUID id, UUID institutionId);
 
+  java.util.List<TrainingPath> findByInstitution_IdAndActiveTrueAndDeletedAtIsNullOrderByNameAsc(
+      UUID institutionId);
+
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query(
       "SELECT path FROM TrainingPath path WHERE path.id = :id AND path.institution.id = :institutionId")

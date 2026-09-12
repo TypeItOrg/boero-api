@@ -63,7 +63,12 @@ class AuthorityResolverTest {
     var authorities =
         authorityResolver.resolvePersonAuthorities(person.getId(), institution.getId());
 
-    assertThat(authorities.permissions()).containsExactly(PermissionCode.ACADEMIC_OFFER_READ);
+    assertThat(authorities.permissions())
+        .containsExactlyInAnyOrder(
+            PermissionCode.STUDY_PLAN_READ,
+            PermissionCode.ACADEMIC_YEAR_READ,
+            PermissionCode.ENROLLMENT_PERIOD_READ,
+            PermissionCode.ACADEMIC_OFFER_READ);
     assertThat(authorities.roles()).containsExactly(SystemRoleCode.APPLICANT.getDisplayName());
   }
 
@@ -94,6 +99,7 @@ class AuthorityResolverTest {
 
     assertThat(authorityResolver.resolvePlatformRoles(account.getId()))
         .containsExactly(PlatformRoleCode.PLATFORM_ADMIN);
-    assertThat(authorityResolver.resolveForPlatformAccount(account.getId())).isEmpty();
+    assertThat(authorityResolver.resolveForPlatformAccount(account.getId()))
+        .hasSize(PermissionCode.values().length);
   }
 }

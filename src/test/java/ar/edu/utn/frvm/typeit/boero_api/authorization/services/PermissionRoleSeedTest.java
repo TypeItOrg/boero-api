@@ -97,6 +97,10 @@ class PermissionRoleSeedTest {
             PermissionCode.INSTRUMENT_UPDATE.getCode(),
             PermissionCode.INSTRUMENT_STATUS_UPDATE.getCode(),
             PermissionCode.INSTRUMENT_READ.getCode(),
+            PermissionCode.ENROLLMENT_PERIOD_CREATE.getCode(),
+            PermissionCode.ENROLLMENT_PERIOD_UPDATE.getCode(),
+            PermissionCode.ENROLLMENT_PERIOD_STATUS_UPDATE.getCode(),
+            PermissionCode.ENROLLMENT_PERIOD_READ.getCode(),
             PermissionCode.SHIFT_CREATE.getCode(),
             PermissionCode.SHIFT_UPDATE.getCode(),
             PermissionCode.SHIFT_STATUS_UPDATE.getCode(),
@@ -117,6 +121,32 @@ class PermissionRoleSeedTest {
 
     assertThat(rolePermissionRepository.findByRole_Id(applicantRole.getId()))
         .extracting(rolePermission -> rolePermission.getPermission().getCode())
-        .containsExactly(PermissionCode.ACADEMIC_OFFER_READ.getCode());
+        .containsExactlyInAnyOrder(
+            PermissionCode.ACADEMIC_OFFER_READ.getCode(),
+            PermissionCode.STUDY_PLAN_READ.getCode(),
+            PermissionCode.ACADEMIC_YEAR_READ.getCode(),
+            PermissionCode.ENROLLMENT_PERIOD_READ.getCode());
+  }
+
+  @Test
+  @DisplayName("Should assign enrollment application resolution permissions to administrative role")
+  void run_assignsEnrollmentApplicationPermissionsToAdministrative() {
+    permissionRoleSeed.run(null);
+
+    var administrativeRole =
+        roleRepository
+            .findByScopeAndCodeAndInstitutionIsNull(
+                RoleScope.INSTITUTION, SystemRoleCode.ADMINISTRATIVE.name())
+            .orElseThrow();
+    Set<String> permissionCodes =
+        rolePermissionRepository.findByRole_Id(administrativeRole.getId()).stream()
+            .map(rp -> rp.getPermission().getCode())
+            .collect(Collectors.toSet());
+
+    assertThat(permissionCodes)
+        .contains(
+            PermissionCode.ENROLLMENT_APPLICATION_READ.getCode(),
+            PermissionCode.ENROLLMENT_APPLICATION_APPROVE.getCode(),
+            PermissionCode.ENROLLMENT_APPLICATION_REJECT.getCode());
   }
 }
