@@ -144,6 +144,25 @@ class RequestInstitutionalPasswordRecoveryUseCaseTest {
     verifyNoInteractions(passwordResetTokenRepository, eventPublisher);
   }
 
+  @Test
+  void pendingUserCanRequestRecoveryWithoutBeingVerified() {
+    final User user =
+        User.builder()
+            .id(USER_ID)
+            .institution(activeInstitution())
+            .person(personWithEmail())
+            .emailVerificationStatus(
+                ar.edu.utn.frvm.typeit.boero_api.auth.enums.EmailVerificationStatus.PENDING)
+            .build();
+    when(userRepository.findWithPersonAndInstitutionForPasswordRecovery(
+            DOCUMENT_NUMBER, INSTITUTION_ID))
+        .thenReturn(Optional.of(user));
+    useCase.execute(new PasswordRecoveryRequest(DOCUMENT_NUMBER, INSTITUTION_ID));
+    verify(passwordResetTokenRepository).save(org.mockito.ArgumentMatchers.any());
+    assertThat(user.requiresEmailVerification()).isTrue();
+    assertThat(user.isEnabled()).isFalse();
+  }
+
   private User recoverableUser() {
     return User.builder()
         .id(USER_ID)

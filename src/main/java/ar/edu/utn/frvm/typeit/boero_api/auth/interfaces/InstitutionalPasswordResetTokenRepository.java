@@ -13,6 +13,10 @@ import org.springframework.data.repository.query.Param;
 public interface InstitutionalPasswordResetTokenRepository
     extends JpaRepository<InstitutionalPasswordResetToken, UUID> {
 
+  @Query(
+      "select token.user.id from InstitutionalPasswordResetToken token where token.tokenHash = :hash")
+  Optional<UUID> findUserIdByTokenHash(@Param("hash") String hash);
+
   @Modifying(flushAutomatically = true)
   @Query("delete from InstitutionalPasswordResetToken token where token.user.id = :userId")
   void deleteByUserId(@Param("userId") UUID userId);

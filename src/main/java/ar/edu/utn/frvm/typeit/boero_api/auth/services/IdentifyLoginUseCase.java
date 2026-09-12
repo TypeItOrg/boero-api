@@ -45,6 +45,9 @@ public class IdentifyLoginUseCase {
       throw new LoginStateInconsistentException();
     }
     final User user = users.get(0);
+    if (user.requiresEmailVerification() && user.isAccountActive()) {
+      return new IdentifyLoginResponse(null, LoginNextStep.EMAIL_VERIFICATION);
+    }
     final boolean hasActivePasskeys =
         passkeyCredentialRepository.existsActiveByUserId(user.getId());
     final LoginAttempt attempt =

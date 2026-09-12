@@ -2,6 +2,8 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.entities;
 
 import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.USER_PERSON_INSTITUTION_MISMATCH;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.enums.EmailVerificationStatus;
+import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidEmailVerificationTokenException;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints;
@@ -9,6 +11,8 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -18,6 +22,7 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -65,6 +70,14 @@ public class User extends Auditable implements UserDetails {
   @Builder.Default
   private boolean enabled = true;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "email_verification_status", nullable = false, length = 24)
+  @Builder.Default
+  private EmailVerificationStatus emailVerificationStatus = EmailVerificationStatus.NOT_REQUIRED;
+
+  @Column(name = "email_verified_at")
+  private @Nullable Instant emailVerifiedAt;
+
   @Column(name = "webauthn_user_handle")
   private @Nullable byte[] webauthnUserHandle;
 
@@ -96,7 +109,23 @@ public class User extends Auditable implements UserDetails {
 
   @Override
   public boolean isEnabled() {
+    return isAccountActive() && !requiresEmailVerification();
+  }
+
+  public boolean isAccountActive() {
     return enabled && institution.isActive() && !person.isDeleted();
+  }
+
+  public boolean requiresEmailVerification() {
+    return emailVerificationStatus == EmailVerificationStatus.PENDING;
+  }
+
+  public void verifyEmail(final Instant now) {
+    if (!isAccountActive() || !requiresEmailVerification()) {
+      throw new InvalidEmailVerificationTokenException();
+    }
+    emailVerificationStatus = EmailVerificationStatus.VERIFIED;
+    emailVerifiedAt = now;
   }
 
   public boolean isAccessEnabled() {

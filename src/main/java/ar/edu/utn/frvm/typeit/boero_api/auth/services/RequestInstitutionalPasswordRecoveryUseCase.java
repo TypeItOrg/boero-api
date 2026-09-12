@@ -43,7 +43,7 @@ public class RequestInstitutionalPasswordRecoveryUseCase {
   }
 
   private boolean canRecoverPassword(final User user) {
-    return user.isEnabled()
+    return user.isAccountActive()
         && user.getPerson().getEmail() != null
         && !user.getPerson().getEmail().isBlank();
   }

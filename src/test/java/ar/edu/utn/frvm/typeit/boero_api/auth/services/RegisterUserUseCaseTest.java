@@ -48,12 +48,14 @@ class RegisterUserUseCaseTest {
   @Mock private Validator validator;
   @Mock private AssignPersonSystemRoleUseCase assignPersonSystemRoleUseCase;
 
+  @Mock private InstitutionalEmailVerificationUseCase emailVerification;
   private RegisterUserUseCase registerUserUseCase;
 
   @BeforeEach
   void setUp() {
     registerUserUseCase =
         new RegisterUserUseCase(
+            emailVerification,
             userRepository,
             institutionRepository,
             personRepository,
@@ -80,6 +82,9 @@ class RegisterUserUseCaseTest {
 
     UserRegisteredResponse response = registerUserUseCase.execute(request);
 
+    assertThat(response.emailVerificationRequired()).isTrue();
+    verify(emailVerification)
+        .sendInitial(org.mockito.ArgumentMatchers.argThat(User::requiresEmailVerification));
     assertThat(response.userId()).isNotNull();
     assertThat(response.documentNumber()).isEqualTo("12345678");
     assertThat(response.institutionId()).isEqualTo(institutionId);
@@ -276,6 +281,7 @@ class RegisterUserUseCaseTest {
         .institution(user.getInstitution())
         .person(user.getPerson())
         .password(user.getPassword())
+        .emailVerificationStatus(user.getEmailVerificationStatus())
         .enabled(user.isAccessEnabled())
         .build();
   }

@@ -15,6 +15,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.config.JwtProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.RefreshToken;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.UserSession;
+import ar.edu.utn.frvm.typeit.boero_api.auth.enums.EmailVerificationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidRefreshTokenException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.RefreshTokenReuseException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.RefreshTokenRepository;
@@ -36,6 +37,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -70,6 +73,37 @@ class RefreshTokenUseCaseTest {
             replayCache,
             refreshTokenGenerator,
             sessionRevocationService);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void pendingEmailCannotRotateOrReplayRefresh(final boolean replay) {
+    final String raw = "pending-refresh";
+    final String hash = JwtService.hashToken(raw);
+    final UUID sessionId = UUID.randomUUID();
+    final UUID userId = UUID.randomUUID();
+    final User existing = userWith(userId);
+    final User pending =
+        User.builder()
+            .id(userId)
+            .institution(existing.getInstitution())
+            .person(existing.getPerson())
+            .emailVerificationStatus(EmailVerificationStatus.PENDING)
+            .build();
+    final RefreshToken token = activeToken(hash, "pending-family", sessionId);
+    if (replay) {
+      token.revoke();
+      when(replayCache.get(AuthRealm.INSTITUTIONAL, hash))
+          .thenReturn(Optional.of(new RefreshReplay("access", "refresh")));
+    }
+    when(refreshTokenRepository.findByTokenHash(hash)).thenReturn(Optional.of(token));
+    when(userSessionRepository.findById(sessionId))
+        .thenReturn(Optional.of(activeSession(sessionId, userId, false)));
+    when(userRepository.findWithPersonAndInstitutionById(userId)).thenReturn(Optional.of(pending));
+    assertThatThrownBy(() -> refreshTokenUseCase.execute(new RefreshTokenRequest(raw)))
+        .isInstanceOf(InvalidRefreshTokenException.class);
+    verify(refreshTokenRepository, never()).save(any());
+    verify(jwtService, never()).generateAccessToken(any(InstitutionalAccessTokenInput.class));
   }
 
   @Test

@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
+import ar.edu.utn.frvm.typeit.boero_api.auth.enums.EmailVerificationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.UserAlreadyExistsException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RegisterRequest;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RegisterUserUseCase {
 
+  private final InstitutionalEmailVerificationUseCase emailVerification;
   private final UserRepository userRepository;
   private final InstitutionRepository institutionRepository;
   private final PersonRepository personRepository;
@@ -71,11 +73,14 @@ public class RegisterUserUseCase {
         User.builder()
             .institution(institution)
             .person(person)
+            .emailVerificationStatus(EmailVerificationStatus.PENDING)
             .password(passwordEncoder.encode(request.password()))
             .build();
     user = userRepository.save(user);
     assignPersonSystemRoleUseCase.execute(person, SystemRoleCode.APPLICANT, false);
+    emailVerification.sendInitial(user);
     return UserRegisteredResponse.builder()
+        .emailVerificationRequired(true)
         .userId(user.getId())
         .documentNumber(user.getDocumentNumber())
         .institutionId(user.getInstitutionId())

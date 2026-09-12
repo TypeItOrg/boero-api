@@ -97,3 +97,14 @@ En `JwtProperties` (`src/main/java/.../auth/config/JwtProperties.java`):
 | `access-token-expiration` | 15 minutos |
 | `refresh-token-expiration` | 7 días |
 | `remember-me-token-expiration` | 30 días |
+
+
+## Verificación de email al registrarse
+
+El autorregistro institucional crea la persona, el usuario y el rol aspirante con verificación pendiente. No se emiten sesiones hasta confirmar el correo. Las cuentas existentes y las altas administrativas quedan exentas; la verificación no modifica la habilitación administrativa.
+
+El enlace se confirma desde la página pública del frontend mediante una acción explícita. Vence a las 24 horas y es de un solo uso. El reenvío tiene un intervalo mínimo de 60 segundos e invalida el enlace anterior. Una respuesta de reenvío no revela la existencia de la cuenta ni garantiza entrega SMTP.
+
+Antes de verificar, se puede corregir el email indicando institución, documento y contraseña. La corrección invalida los enlaces anteriores de verificación y recuperación de contraseña. Recuperar la contraseña no verifica el email. Los tokens se guardan como hashes SHA-256 y los cambios se serializan bloqueando el usuario antes de consultar o consumir el token.
+
+La URL pública usa `EMAIL_VERIFICATION_FRONTEND_URL`, con fallback a `PASSWORD_RECOVERY_FRONTEND_URL`. `EMAIL_VERIFICATION_TOKEN_EXPIRATION` y `EMAIL_VERIFICATION_RESEND_INTERVAL` permiten configurar los tiempos. Se conserva el envío SMTP asíncrono posterior al commit; ante fallos, la cuenta continúa pendiente y puede solicitar otro envío.

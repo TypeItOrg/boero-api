@@ -74,5 +74,18 @@ public final class AuthMessages {
   public static final String WEBAUTHN_VERIFICATION_FAILED =
       "No pudimos usar una passkey. Podés reintentar o ingresar con tu contraseña.";
 
+  public static final String EMAIL_VERIFICATION_DURATION_INVALID =
+      "Los intervalos de verificación de email deben ser positivos.";
+  public static final String EMAIL_VERIFICATION_TOKEN_INVALID =
+      "El enlace de verificación es inválido o venció. Solicitá uno nuevo.";
+  public static final String EMAIL_VERIFICATION_COOLDOWN =
+      "Esperá un minuto entre envíos antes de corregir el email.";
+  public static final String EMAIL_VERIFICATION_CONFLICT =
+      "No se pudo generar el enlace. Intentá nuevamente.";
+  public static final String EMAIL_VERIFICATION_TOKEN_REQUIRED =
+      "El enlace de verificación es obligatorio.";
+  public static final String EMAIL_VERIFICATION_TOKEN_FORMAT =
+      "El enlace de verificación es inválido.";
+
   private AuthMessages() {}
 }

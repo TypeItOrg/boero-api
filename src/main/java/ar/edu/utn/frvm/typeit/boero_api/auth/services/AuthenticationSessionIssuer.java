@@ -56,6 +56,7 @@ public class AuthenticationSessionIssuer {
       final String userAgent,
       final boolean rememberMe,
       final String method) {
+    if (!user.isEnabled()) throw new InvalidCredentialsException();
     final var authorities =
         authorityResolver.resolveForPerson(user.getPerson().getId(), user.getInstitutionId());
     final LoginSessionPersistenceService.Result session =

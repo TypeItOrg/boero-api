@@ -20,6 +20,7 @@ class AuthPayloadJsonTest {
   private static final UUID INSTITUTION_ID =
       UUID.fromString("22222222-2222-2222-2222-222222222222");
 
+  @Autowired private JacksonTester<IdentifyLoginResponse> identifyLoginResponseJson;
   @Autowired private JacksonTester<AuthResponse> authResponseJson;
   @Autowired private JacksonTester<UserResponse> userResponseJson;
   @Autowired private JacksonTester<UserRegisteredResponse> userRegisteredResponseJson;
@@ -78,6 +79,7 @@ class AuthPayloadJsonTest {
   void shouldSerializeRegisteredUserIdAsUserId() throws IOException {
     UserRegisteredResponse response =
         UserRegisteredResponse.builder()
+            .emailVerificationRequired(true)
             .userId(USER_ID)
             .documentNumber("12345678")
             .institutionId(INSTITUTION_ID)
@@ -87,6 +89,7 @@ class AuthPayloadJsonTest {
 
     assertThat(json).extractingJsonPathStringValue("$.userId").isEqualTo(USER_ID.toString());
     assertThat(json).doesNotHaveJsonPath("$.id");
+    assertThat(json).extractingJsonPathBooleanValue("$.emailVerificationRequired").isTrue();
   }
 
   @Test
@@ -99,6 +102,16 @@ class AuthPayloadJsonTest {
 
     assertThat(json).extractingJsonPathStringValue("$.accessToken").isEqualTo("access-token");
     assertThat(json).extractingJsonPathStringValue("$.refreshToken").isEqualTo("refresh-token");
+  }
+
+  @Test
+  void pendingIdentificationIncludesNullAttempt() throws IOException {
+    final var json =
+        identifyLoginResponseJson.write(
+            new IdentifyLoginResponse(
+                null, IdentifyLoginResponse.LoginNextStep.EMAIL_VERIFICATION));
+    assertThat(json.getJson()).contains("\"loginAttemptId\":null");
+    assertThat(json).extractingJsonPathStringValue("$.nextStep").isEqualTo("EMAIL_VERIFICATION");
   }
 
   private static UserPayload userPayload() {
