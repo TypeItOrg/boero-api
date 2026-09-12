@@ -34,18 +34,32 @@ public class EnrollmentApplicationResponse {
   private String applicantDocumentNumber;
   private UUID studyPlanId;
   private String studyPlanName;
-  @Schema(nullable = true) private String trainingPathName;
+
+  @Schema(nullable = true)
+  private String trainingPathName;
+
   private UUID academicYearId;
   private Integer academicYear;
   private UUID enrollmentPeriodId;
   private EnrollmentApplicationStatus status;
+
   @JsonProperty("isEditable")
   private boolean isEditable;
+
   private EnrollmentDraftData data;
-  @Schema(nullable = true) private String secondarySchool;
-  @Schema(nullable = true) private String rejectionReason;
-  @Schema(nullable = true) private Instant resolvedAt;
-  @Schema(nullable = true) private UUID resolvedByPersonId;
+
+  @Schema(nullable = true)
+  private String secondarySchool;
+
+  @Schema(nullable = true)
+  private String rejectionReason;
+
+  @Schema(nullable = true)
+  private Instant resolvedAt;
+
+  @Schema(nullable = true)
+  private UUID resolvedByPersonId;
+
   private Instant createdAt;
   private Instant updatedAt;
   @Builder.Default private List<EnrollmentApplicationSpaceResponse> spaces = new ArrayList<>();
@@ -87,12 +101,12 @@ public class EnrollmentApplicationResponse {
             application.getApplicantPerson() != null
                 ? application.getApplicantPerson().getDocumentNumber()
                 : null)
-        .studyPlanId(
-            application.getStudyPlan() != null ? application.getStudyPlan().getId() : null)
+        .studyPlanId(application.getStudyPlan() != null ? application.getStudyPlan().getId() : null)
         .studyPlanName(
             application.getStudyPlan() != null ? application.getStudyPlan().getName() : null)
         .trainingPathName(
-            application.getStudyPlan() != null && application.getStudyPlan().getTrainingPath() != null
+            application.getStudyPlan() != null
+                    && application.getStudyPlan().getTrainingPath() != null
                 ? application.getStudyPlan().getTrainingPath().getName()
                 : null)
         .academicYearId(

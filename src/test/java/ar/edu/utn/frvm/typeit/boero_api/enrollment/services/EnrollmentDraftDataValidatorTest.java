@@ -77,7 +77,8 @@ class EnrollmentDraftDataValidatorTest {
   }
 
   @Test
-  @DisplayName("Should return the application's current study plan and skip validation when data is null")
+  @DisplayName(
+      "Should return the application's current study plan and skip validation when data is null")
   void validate_nullData_returnsCurrentStudyPlan() {
     StudyPlan result = validator.validate(institutionId, application, null);
 
@@ -86,7 +87,8 @@ class EnrollmentDraftDataValidatorTest {
   }
 
   @Test
-  @DisplayName("Should throw TrainingPathNotFoundException when the selected training path is not active for the institution")
+  @DisplayName(
+      "Should throw TrainingPathNotFoundException when the selected training path is not active for the institution")
   void validate_inactiveTrainingPath_throws() {
     UUID trainingPathId = UUID.randomUUID();
     when(trainingPathRepository.findByIdAndInstitution_IdAndActiveTrueAndDeletedAtIsNull(
@@ -94,7 +96,9 @@ class EnrollmentDraftDataValidatorTest {
         .thenReturn(Optional.empty());
 
     EnrollmentDraftData data =
-        EnrollmentDraftData.builder().careerSelection(new CareerSelectionDto(trainingPathId)).build();
+        EnrollmentDraftData.builder()
+            .careerSelection(new CareerSelectionDto(trainingPathId))
+            .build();
 
     assertThatThrownBy(() -> validator.validate(institutionId, application, data))
         .isInstanceOf(TrainingPathNotFoundException.class);
@@ -104,7 +108,8 @@ class EnrollmentDraftDataValidatorTest {
   @DisplayName("Should reject a study plan space selection with duplicate ids")
   void validate_duplicateSpaceIds_throws() {
     UUID spaceId = UUID.randomUUID();
-    when(enrollmentEffectiveStudyPlanResolver.resolveForTrainingPath(institutionId, application, null))
+    when(enrollmentEffectiveStudyPlanResolver.resolveForTrainingPath(
+            institutionId, application, null))
         .thenReturn(studyPlan);
 
     EnrollmentDraftData data =
@@ -115,17 +120,21 @@ class EnrollmentDraftDataValidatorTest {
     assertThatThrownBy(() -> validator.validate(institutionId, application, data))
         .isInstanceOf(EnrollmentValidationException.class)
         .extracting(
-            ex -> ((EnrollmentValidationException) ex).fieldErrors().containsKey(
-                "academicSpaceSelection.studyPlanSpaceIds"))
+            ex ->
+                ((EnrollmentValidationException) ex)
+                    .fieldErrors()
+                    .containsKey("academicSpaceSelection.studyPlanSpaceIds"))
         .isEqualTo(true);
-    verify(studyPlanSpaceRepository, never()).findEligibleByIdInAndStudyPlanId(any(), any(), anyList());
+    verify(studyPlanSpaceRepository, never())
+        .findEligibleByIdInAndStudyPlanId(any(), any(), anyList());
   }
 
   @Test
   @DisplayName("Should reject a study plan space that does not belong to the effective study plan")
   void validate_spaceNotEligibleForEffectivePlan_throws() {
     UUID spaceId = UUID.randomUUID();
-    when(enrollmentEffectiveStudyPlanResolver.resolveForTrainingPath(institutionId, application, null))
+    when(enrollmentEffectiveStudyPlanResolver.resolveForTrainingPath(
+            institutionId, application, null))
         .thenReturn(studyPlan);
     when(studyPlanSpaceRepository.findEligibleByIdInAndStudyPlanId(
             institutionId, studyPlanId, List.of(spaceId)))
@@ -139,13 +148,16 @@ class EnrollmentDraftDataValidatorTest {
     assertThatThrownBy(() -> validator.validate(institutionId, application, data))
         .isInstanceOf(EnrollmentValidationException.class)
         .extracting(
-            ex -> ((EnrollmentValidationException) ex).fieldErrors().containsKey(
-                "academicSpaceSelection.studyPlanSpaceIds"))
+            ex ->
+                ((EnrollmentValidationException) ex)
+                    .fieldErrors()
+                    .containsKey("academicSpaceSelection.studyPlanSpaceIds"))
         .isEqualTo(true);
   }
 
   @Test
-  @DisplayName("Should validate spaces against the plan resolved from the candidate training path, not the application's current plan")
+  @DisplayName(
+      "Should validate spaces against the plan resolved from the candidate training path, not the application's current plan")
   void validate_careerChange_validatesSpacesAgainstNewPlan() {
     UUID trainingPathId = UUID.randomUUID();
     UUID newStudyPlanId = UUID.randomUUID();
@@ -182,7 +194,8 @@ class EnrollmentDraftDataValidatorTest {
     UUID selectedSpaceId = UUID.randomUUID();
     UUID otherSpaceId = UUID.randomUUID();
     UUID instrumentId = UUID.randomUUID();
-    when(enrollmentEffectiveStudyPlanResolver.resolveForTrainingPath(institutionId, application, null))
+    when(enrollmentEffectiveStudyPlanResolver.resolveForTrainingPath(
+            institutionId, application, null))
         .thenReturn(studyPlan);
     when(studyPlanSpaceRepository.findEligibleByIdInAndStudyPlanId(
             institutionId, studyPlanId, List.of(selectedSpaceId)))
@@ -191,15 +204,16 @@ class EnrollmentDraftDataValidatorTest {
     EnrollmentDraftData data =
         EnrollmentDraftData.builder()
             .academicSpaceSelection(new AcademicSpaceSelectionDto(List.of(selectedSpaceId)))
-            .instrumentSelection(
-                new InstrumentSelectionDto(Map.of(otherSpaceId, instrumentId)))
+            .instrumentSelection(new InstrumentSelectionDto(Map.of(otherSpaceId, instrumentId)))
             .build();
 
     assertThatThrownBy(() -> validator.validate(institutionId, application, data))
         .isInstanceOf(EnrollmentValidationException.class)
         .extracting(
-            ex -> ((EnrollmentValidationException) ex).fieldErrors().containsKey(
-                "instrumentSelection.studyPlanSpaceInstrumentIds"))
+            ex ->
+                ((EnrollmentValidationException) ex)
+                    .fieldErrors()
+                    .containsKey("instrumentSelection.studyPlanSpaceInstrumentIds"))
         .isEqualTo(true);
   }
 
@@ -208,7 +222,8 @@ class EnrollmentDraftDataValidatorTest {
   void validate_instrumentNotAllowedForSpace_throws() {
     UUID spaceId = UUID.randomUUID();
     UUID instrumentId = UUID.randomUUID();
-    when(enrollmentEffectiveStudyPlanResolver.resolveForTrainingPath(institutionId, application, null))
+    when(enrollmentEffectiveStudyPlanResolver.resolveForTrainingPath(
+            institutionId, application, null))
         .thenReturn(studyPlan);
     when(studyPlanSpaceRepository.findEligibleByIdInAndStudyPlanId(
             institutionId, studyPlanId, List.of(spaceId)))
@@ -226,8 +241,10 @@ class EnrollmentDraftDataValidatorTest {
     assertThatThrownBy(() -> validator.validate(institutionId, application, data))
         .isInstanceOf(EnrollmentValidationException.class)
         .extracting(
-            ex -> ((EnrollmentValidationException) ex).fieldErrors().containsKey(
-                "instrumentSelection.studyPlanSpaceInstrumentIds"))
+            ex ->
+                ((EnrollmentValidationException) ex)
+                    .fieldErrors()
+                    .containsKey("instrumentSelection.studyPlanSpaceInstrumentIds"))
         .isEqualTo(true);
   }
 
@@ -236,7 +253,8 @@ class EnrollmentDraftDataValidatorTest {
   void validate_instrumentAllowedForSpace_succeeds() {
     UUID spaceId = UUID.randomUUID();
     UUID instrumentId = UUID.randomUUID();
-    when(enrollmentEffectiveStudyPlanResolver.resolveForTrainingPath(institutionId, application, null))
+    when(enrollmentEffectiveStudyPlanResolver.resolveForTrainingPath(
+            institutionId, application, null))
         .thenReturn(studyPlan);
     when(studyPlanSpaceRepository.findEligibleByIdInAndStudyPlanId(
             institutionId, studyPlanId, List.of(spaceId)))
@@ -266,7 +284,8 @@ class EnrollmentDraftDataValidatorTest {
   private void verifyNoValidationSideEffects() {
     verify(trainingPathRepository, never())
         .findByIdAndInstitution_IdAndActiveTrueAndDeletedAtIsNull(any(), any());
-    verify(studyPlanSpaceRepository, never()).findEligibleByIdInAndStudyPlanId(any(), any(), anyList());
+    verify(studyPlanSpaceRepository, never())
+        .findEligibleByIdInAndStudyPlanId(any(), any(), anyList());
     verify(studyPlanSpaceInstrumentRepository, never())
         .findActiveByStudyPlanSpaceIds(any(), anyList());
   }

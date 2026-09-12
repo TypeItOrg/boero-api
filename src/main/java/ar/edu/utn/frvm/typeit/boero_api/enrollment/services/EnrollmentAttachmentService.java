@@ -46,7 +46,10 @@ public class EnrollmentAttachmentService {
 
   @Transactional
   public EnrollmentAttachmentResponse uploadAttachment(
-      UUID applicationId, MultipartFile file, String attachmentTypeStr, Authentication authentication) {
+      UUID applicationId,
+      MultipartFile file,
+      String attachmentTypeStr,
+      Authentication authentication) {
 
     EnrollmentAttachmentType attachmentType = parseAttachmentType(attachmentTypeStr);
 
@@ -108,7 +111,8 @@ public class EnrollmentAttachmentService {
   }
 
   @Transactional
-  public void deleteAttachment(UUID applicationId, UUID attachmentId, Authentication authentication) {
+  public void deleteAttachment(
+      UUID applicationId, UUID attachmentId, Authentication authentication) {
 
     EnrollmentApplication application = getActiveApplication(applicationId);
     ensureCanModify(application, authentication);

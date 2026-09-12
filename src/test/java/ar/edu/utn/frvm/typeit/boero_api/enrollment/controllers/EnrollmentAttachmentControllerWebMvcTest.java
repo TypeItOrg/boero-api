@@ -53,7 +53,8 @@ class EnrollmentAttachmentControllerWebMvcTest {
       UUID.fromString("11111111-1111-1111-1111-111111111111");
   private static final UUID ATTACHMENT_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
   private static final UUID PERSON_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
-  private static final UUID INSTITUTION_ID = UUID.fromString("44444444-4444-4444-4444-444444444444");
+  private static final UUID INSTITUTION_ID =
+      UUID.fromString("44444444-4444-4444-4444-444444444444");
 
   @Autowired private MockMvc mockMvc;
 
@@ -169,7 +170,8 @@ class EnrollmentAttachmentControllerWebMvcTest {
             13L,
             Instant.parse("2026-09-08T12:00:00Z"));
 
-    when(attachmentService.listAttachments(eq(APPLICATION_ID), any())).thenReturn(List.of(response));
+    when(attachmentService.listAttachments(eq(APPLICATION_ID), any()))
+        .thenReturn(List.of(response));
 
     mockMvc
         .perform(

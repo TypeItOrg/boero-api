@@ -29,8 +29,8 @@ public class EnrollmentDraftDataValidator {
   private final EnrollmentEffectiveStudyPlanResolver enrollmentEffectiveStudyPlanResolver;
 
   /**
-   * Validates the draft payload and resolves the study plan the application should effectively
-   * be working against. The caller is responsible for reassigning {@code
+   * Validates the draft payload and resolves the study plan the application should effectively be
+   * working against. The caller is responsible for reassigning {@code
    * application.setStudyPlan(...)} when the returned plan differs from the current one — this
    * method never mutates the application.
    */
@@ -43,7 +43,8 @@ public class EnrollmentDraftDataValidator {
     }
 
     UUID trainingPathId = null;
-    if (data.getCareerSelection() != null && data.getCareerSelection().getTrainingPathId() != null) {
+    if (data.getCareerSelection() != null
+        && data.getCareerSelection().getTrainingPathId() != null) {
       trainingPathId = data.getCareerSelection().getTrainingPathId();
       trainingPathRepository
           .findByIdAndInstitution_IdAndActiveTrueAndDeletedAtIsNull(trainingPathId, institutionId)

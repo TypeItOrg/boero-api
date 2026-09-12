@@ -35,7 +35,6 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.GetEnrollmentApplica
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.RejectEnrollmentApplicationUseCase;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;

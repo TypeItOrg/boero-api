@@ -22,7 +22,6 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Student;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.StudentRepository;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -86,8 +85,7 @@ class ApproveEnrollmentApplicationUseCaseTest {
         .given(application)
         .approve(any(), any());
 
-    assertThatThrownBy(
-            () -> useCase().execute(INSTITUTION_ID, APPLICATION_ID, RESOLVER_PERSON_ID))
+    assertThatThrownBy(() -> useCase().execute(INSTITUTION_ID, APPLICATION_ID, RESOLVER_PERSON_ID))
         .isInstanceOf(InvalidEnrollmentApplicationStateException.class);
 
     verify(studentRepository, never()).nextFileNumberSequenceValue();
@@ -100,8 +98,7 @@ class ApproveEnrollmentApplicationUseCaseTest {
                 INSTITUTION_ID, APPLICATION_ID))
         .willReturn(Optional.empty());
 
-    assertThatThrownBy(
-            () -> useCase().execute(INSTITUTION_ID, APPLICATION_ID, RESOLVER_PERSON_ID))
+    assertThatThrownBy(() -> useCase().execute(INSTITUTION_ID, APPLICATION_ID, RESOLVER_PERSON_ID))
         .isInstanceOf(EnrollmentApplicationNotFoundException.class);
 
     verify(studentRepository, never()).save(any(Student.class));

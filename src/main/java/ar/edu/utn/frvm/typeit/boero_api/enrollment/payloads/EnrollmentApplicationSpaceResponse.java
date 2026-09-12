@@ -14,7 +14,13 @@ import lombok.NoArgsConstructor;
 public class EnrollmentApplicationSpaceResponse {
   private UUID studyPlanSpaceId;
   private String spaceName;
-  @Schema(nullable = true) private String academicLevelName;
-  @Schema(nullable = true) private UUID instrumentId;
-  @Schema(nullable = true) private String instrumentName;
+
+  @Schema(nullable = true)
+  private String academicLevelName;
+
+  @Schema(nullable = true)
+  private UUID instrumentId;
+
+  @Schema(nullable = true)
+  private String instrumentName;
 }

@@ -110,7 +110,11 @@ class EnrollmentResolutionPostgresIntegrationTest {
     final int year = Year.now().getValue() + 1;
     final var academicYear =
         AcademicYear.create(
-            institution, year, LocalDate.of(year, 2, 1), LocalDate.of(year, 12, 15), LocalDate.of(year, 1, 1));
+            institution,
+            year,
+            LocalDate.of(year, 2, 1),
+            LocalDate.of(year, 12, 15),
+            LocalDate.of(year, 1, 1));
     InstitutionalTestData.persist(entityManager, academicYear);
     academicYearId = academicYear.getId();
 

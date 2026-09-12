@@ -27,7 +27,6 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicatio
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.GetMyEnrollmentApplicationUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListMyEnrollmentApplicationsUseCase;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -126,8 +125,7 @@ class MyEnrollmentApplicationControllerWebMvcTest {
         .andExpect(jsonPath("$.status").value("REJECTED"))
         .andExpect(jsonPath("$.rejectionReason").value("Motivo de prueba"));
 
-    verify(getMyEnrollmentApplicationUseCase)
-        .execute(INSTITUTION_ID, PERSON_ID, APPLICATION_ID);
+    verify(getMyEnrollmentApplicationUseCase).execute(INSTITUTION_ID, PERSON_ID, APPLICATION_ID);
   }
 
   private TestingAuthenticationToken authentication() {
