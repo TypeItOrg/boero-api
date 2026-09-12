@@ -45,8 +45,9 @@ class ListEnrollmentApplicationTrainingPathsUseCaseTest {
     given(enrollmentApplicationRepository.findById(application.getId()))
         .willReturn(Optional.of(application));
     given(
-            trainingPathRepository.findByInstitution_IdAndActiveTrueAndDeletedAtIsNullOrderByNameAsc(
-                principal.institutionId()))
+            trainingPathRepository
+                .findByInstitution_IdAndActiveTrueAndDeletedAtIsNullOrderByNameAsc(
+                    principal.institutionId()))
         .willReturn(List.of(trainingPath));
 
     final var response = useCase.execute(principal, application.getId());
@@ -98,7 +99,8 @@ class ListEnrollmentApplicationTrainingPathsUseCaseTest {
   }
 
   private static EnrollmentApplication application() {
-    final var institution = Institution.builder().id(UUID.randomUUID()).name("Conservatorio").build();
+    final var institution =
+        Institution.builder().id(UUID.randomUUID()).name("Conservatorio").build();
     final var person =
         Person.builder()
             .id(UUID.randomUUID())
@@ -112,7 +114,11 @@ class ListEnrollmentApplicationTrainingPathsUseCaseTest {
     final var plan = StudyPlan.create(institution, path, "Plan", LocalDate.of(2026, 3, 1), null);
     final var year =
         ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear.create(
-            institution, 2026, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 12, 1), LocalDate.of(2026, 1, 1));
+            institution,
+            2026,
+            LocalDate.of(2026, 3, 1),
+            LocalDate.of(2026, 12, 1),
+            LocalDate.of(2026, 1, 1));
     return EnrollmentApplication.builder()
         .id(UUID.randomUUID())
         .institution(institution)

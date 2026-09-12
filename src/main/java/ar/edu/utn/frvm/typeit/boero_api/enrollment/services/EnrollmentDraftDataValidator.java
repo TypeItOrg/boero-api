@@ -29,8 +29,8 @@ public class EnrollmentDraftDataValidator {
   private final EnrollmentEffectiveStudyPlanResolver enrollmentEffectiveStudyPlanResolver;
 
   /**
-   * Validates the draft payload and resolves the study plan the application should effectively
-   * be working against. The caller is responsible for reassigning {@code
+   * Validates the draft payload and resolves the study plan the application should effectively be
+   * working against. The caller is responsible for reassigning {@code
    * application.setStudyPlan(...)} when the returned plan differs from the current one — this
    * method never mutates the application.
    */
@@ -41,15 +41,14 @@ public class EnrollmentDraftDataValidator {
     if (data == null) {
       return application.getStudyPlan();
     }
-    final UUID trainingPathId;
-    try {
-      trainingPathId = UUID.fromString(trainingPathNode.asText());
-    } catch (IllegalArgumentException exception) {
-      throw new EnrollmentValidationException(
-          EnrollmentMessages.ENROLLMENT_APPLICATION_TRAINING_PATH_INVALID,
-          Map.of(
-              "data.careerSelection.trainingPathId",
-              EnrollmentMessages.ENROLLMENT_APPLICATION_TRAINING_PATH_INVALID));
+
+    UUID trainingPathId = null;
+    if (data.getCareerSelection() != null
+        && data.getCareerSelection().getTrainingPathId() != null) {
+      trainingPathId = data.getCareerSelection().getTrainingPathId();
+      trainingPathRepository
+          .findByIdAndInstitution_IdAndActiveTrueAndDeletedAtIsNull(trainingPathId, institutionId)
+          .orElseThrow(TrainingPathNotFoundException::new);
     }
     trainingPathRepository
         .findByIdAndInstitution_IdAndActiveTrueAndDeletedAtIsNull(trainingPathId, institutionId)

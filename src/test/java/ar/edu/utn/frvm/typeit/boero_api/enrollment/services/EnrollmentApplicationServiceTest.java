@@ -66,6 +66,16 @@ class EnrollmentApplicationServiceTest {
   @Mock private StudyPlanRepository studyPlanRepository;
   @Mock private AcademicYearRepository academicYearRepository;
 
+  @Mock
+  private ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository
+      studyPlanSpaceRepository;
+
+  @Mock
+  private ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.InstrumentRepository
+      instrumentRepository;
+
+  @Mock private EnrollmentDraftDataValidator enrollmentDraftDataValidator;
+
   private EnrollmentApplicationService service;
 
   private final UUID institutionId = UUID.randomUUID();
@@ -354,7 +364,8 @@ class EnrollmentApplicationServiceTest {
     StudyPlanSpace space = org.mockito.Mockito.mock(StudyPlanSpace.class);
     when(space.getId()).thenReturn(spaceId);
     ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace spaceAcademicSpace =
-        org.mockito.Mockito.mock(ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace.class);
+        org.mockito.Mockito.mock(
+            ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace.class);
     when(spaceAcademicSpace.getName()).thenReturn("Espacio académico");
     when(space.getAcademicSpace()).thenReturn(spaceAcademicSpace);
     Instrument instrument = org.mockito.Mockito.mock(Instrument.class);
@@ -372,8 +383,7 @@ class EnrollmentApplicationServiceTest {
             .data(
                 EnrollmentDraftData.builder()
                     .academicSpaceSelection(new AcademicSpaceSelectionDto(List.of(spaceId)))
-                    .instrumentSelection(
-                        new InstrumentSelectionDto(Map.of(spaceId, instrumentId)))
+                    .instrumentSelection(new InstrumentSelectionDto(Map.of(spaceId, instrumentId)))
                     .build())
             .build();
 
@@ -571,7 +581,8 @@ class EnrollmentApplicationServiceTest {
     application.setId(applicationId);
     StudyPlanSpace selectedStudyPlanSpace = org.mockito.Mockito.mock(StudyPlanSpace.class);
     ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace selectedAcademicSpace =
-        org.mockito.Mockito.mock(ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace.class);
+        org.mockito.Mockito.mock(
+            ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace.class);
     when(selectedAcademicSpace.getName()).thenReturn("Espacio académico");
     when(selectedStudyPlanSpace.getAcademicSpace()).thenReturn(selectedAcademicSpace);
     application.addSelectedSpace(
@@ -612,7 +623,9 @@ class EnrollmentApplicationServiceTest {
 
     assertThatThrownBy(() -> service.submitApplication(personId, applicationId))
         .isInstanceOf(EnrollmentValidationException.class)
-        .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.type(EnrollmentValidationException.class))
+        .asInstanceOf(
+            org.assertj.core.api.InstanceOfAssertFactories.type(
+                EnrollmentValidationException.class))
         .extracting(EnrollmentValidationException::fieldErrors)
         .satisfies(
             fieldErrors ->
@@ -641,12 +654,20 @@ class EnrollmentApplicationServiceTest {
 
     assertThatThrownBy(() -> service.submitApplication(personId, applicationId))
         .isInstanceOf(EnrollmentValidationException.class)
-        .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.type(EnrollmentValidationException.class))
+        .asInstanceOf(
+            org.assertj.core.api.InstanceOfAssertFactories.type(
+                EnrollmentValidationException.class))
         .extracting(EnrollmentValidationException::fieldErrors)
         .satisfies(
             fieldErrors -> {
-              assertThat(fieldErrors).containsKeys("personalData.firstName", "personalData.lastName", "personalData.documentNumber", "personalData.email");
-              assertThat(fieldErrors).containsKeys("academicBackground", "preference.preferredShift");
+              assertThat(fieldErrors)
+                  .containsKeys(
+                      "personalData.firstName",
+                      "personalData.lastName",
+                      "personalData.documentNumber",
+                      "personalData.email");
+              assertThat(fieldErrors)
+                  .containsKeys("academicBackground", "preference.preferredShift");
             });
   }
 
@@ -679,7 +700,9 @@ class EnrollmentApplicationServiceTest {
 
     assertThatThrownBy(() -> service.submitApplication(personId, applicationId))
         .isInstanceOf(EnrollmentValidationException.class)
-        .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.type(EnrollmentValidationException.class))
+        .asInstanceOf(
+            org.assertj.core.api.InstanceOfAssertFactories.type(
+                EnrollmentValidationException.class))
         .extracting(EnrollmentValidationException::fieldErrors)
         .satisfies(fieldErrors -> assertThat(fieldErrors).containsKey("responsible"));
   }
@@ -737,15 +760,18 @@ class EnrollmentApplicationServiceTest {
     when(owner.getId()).thenReturn(personId);
 
     EnrollmentApplication application =
-        EnrollmentApplication.builder().applicantPerson(owner).status(EnrollmentApplicationStatus.SUBMITTED).build();
+        EnrollmentApplication.builder()
+            .applicantPerson(owner)
+            .status(EnrollmentApplicationStatus.SUBMITTED)
+            .build();
     application.setId(applicationId);
 
     when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
 
     assertThatThrownBy(() -> service.getApplicationById(otherPersonId, applicationId))
         .isInstanceOf(
-            ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException
-                .class);
+            ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions
+                .EnrollmentApplicationNotFoundException.class);
   }
 
   @Test
@@ -769,7 +795,7 @@ class EnrollmentApplicationServiceTest {
 
     assertThatThrownBy(() -> service.getApplicationById(otherInstitutionId, null, applicationId))
         .isInstanceOf(
-            ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException
-                .class);
+            ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions
+                .EnrollmentApplicationNotFoundException.class);
   }
 }

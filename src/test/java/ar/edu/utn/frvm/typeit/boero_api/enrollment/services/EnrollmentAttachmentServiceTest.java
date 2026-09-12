@@ -175,7 +175,8 @@ class EnrollmentAttachmentServiceTest {
     savedAttachment.setId(attachmentId);
     when(attachmentRepository.save(any(EnrollmentAttachment.class))).thenReturn(savedAttachment);
 
-    service.uploadAttachment(applicationId, file, "DNI_FRONT", authenticationFor(applicantPersonId));
+    service.uploadAttachment(
+        applicationId, file, "DNI_FRONT", authenticationFor(applicantPersonId));
 
     assertThat(existing.isDeleted()).isTrue();
     verify(localStorageService).deletePhysicalFile("old_path.pdf");
@@ -266,7 +267,8 @@ class EnrollmentAttachmentServiceTest {
     when(localStorageService.loadAsResource(attachment.getStoragePath())).thenReturn(mockResource);
 
     EnrollmentAttachmentService.AttachmentContentResult result =
-        service.getAttachmentContent(applicationId, attachmentId, authenticationFor(applicantPersonId));
+        service.getAttachmentContent(
+            applicationId, attachmentId, authenticationFor(applicantPersonId));
 
     assertThat(result.resource()).isEqualTo(mockResource);
     assertThat(result.attachment()).isEqualTo(attachment);

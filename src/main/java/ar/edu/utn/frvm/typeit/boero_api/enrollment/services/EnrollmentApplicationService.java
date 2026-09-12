@@ -257,7 +257,8 @@ public class EnrollmentApplicationService {
       // efectivo de la solicitud y los espacios ya elegidos (que pertenecen al plan
       // viejo) se descartan.
       StudyPlan effectiveStudyPlan =
-          enrollmentDraftDataValidator.validate(application.getInstitution().getId(), application, data);
+          enrollmentDraftDataValidator.validate(
+              application.getInstitution().getId(), application, data);
       if (!effectiveStudyPlan.getId().equals(application.getStudyPlan().getId())) {
         application.setStudyPlan(effectiveStudyPlan);
         application.clearSelectedSpaces();
@@ -280,7 +281,9 @@ public class EnrollmentApplicationService {
         // (enrollment_application_id, study_plan_space_id) unique constraint on
         // every autosave, since the "old" row hasn't been deleted yet when the
         // "new" identical row is inserted.
-        application.getSelectedSpaces().removeIf(s -> !desiredSpaceIds.contains(s.getStudyPlanSpace().getId()));
+        application
+            .getSelectedSpaces()
+            .removeIf(s -> !desiredSpaceIds.contains(s.getStudyPlanSpace().getId()));
 
         Map<UUID, EnrollmentApplicationSpace> existingByStudyPlanSpaceId =
             application.getSelectedSpaces().stream()

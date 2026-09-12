@@ -99,8 +99,7 @@ class EnrollmentApplicationPostgresIntegrationTest {
             .build();
 
     EnrollmentApplicationResponse response =
-        service.updateDraft(
-            application.getApplicantPerson().getId(), application.getId(), request);
+        service.updateDraft(application.getApplicantPerson().getId(), application.getId(), request);
     entityManager.flush();
 
     assertThat(response.getData().getResponsible().getFullName()).isEqualTo("Tutor Incompleto");
@@ -206,7 +205,8 @@ class EnrollmentApplicationPostgresIntegrationTest {
 
     assertThatThrownBy(
             () ->
-                service.submitApplication(application.getApplicantPerson().getId(), application.getId()))
+                service.submitApplication(
+                    application.getApplicantPerson().getId(), application.getId()))
         .isInstanceOf(EnrollmentValidationException.class);
   }
 
@@ -254,7 +254,8 @@ class EnrollmentApplicationPostgresIntegrationTest {
             StudyPlan.create(institution, trainingPath, "Piano " + suffix, LocalDate.now(), null));
     AcademicYear academicYear =
         InstitutionalTestData.persist(
-            entityManager, AcademicYear.create(institution, 2026, null, null, LocalDate.of(2026, 1, 1)));
+            entityManager,
+            AcademicYear.create(institution, 2026, null, null, LocalDate.of(2026, 1, 1)));
 
     EnrollmentPeriod period =
         InstitutionalTestData.persist(

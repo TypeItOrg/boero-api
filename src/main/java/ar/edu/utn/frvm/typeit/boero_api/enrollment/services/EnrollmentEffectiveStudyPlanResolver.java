@@ -14,8 +14,8 @@ import org.springframework.stereotype.Component;
 /**
  * Single source of truth for which {@link StudyPlan} an enrollment application is effectively
  * working against. Read flows (listing spaces/instruments) resolve against the application's
- * current plan; the draft validator resolves against a candidate {@code trainingPathId} before
- * the applicant's career selection is actually persisted.
+ * current plan; the draft validator resolves against a candidate {@code trainingPathId} before the
+ * applicant's career selection is actually persisted.
  */
 @Component
 @RequiredArgsConstructor

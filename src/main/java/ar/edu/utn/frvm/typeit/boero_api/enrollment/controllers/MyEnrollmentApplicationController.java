@@ -22,11 +22,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Read-only self-service views over the applicant's own enrollment applications. Starting,
- * editing, submitting, and cancelling a draft all happen through {@link
- * EnrollmentApplicationController} (base path {@code /enrollment-applications}), which is the
- * only surface the wizard calls — keeping a single write path avoids two controllers drifting
- * apart on the same resource.
+ * Read-only self-service views over the applicant's own enrollment applications. Starting, editing,
+ * submitting, and cancelling a draft all happen through {@link EnrollmentApplicationController}
+ * (base path {@code /enrollment-applications}), which is the only surface the wizard calls —
+ * keeping a single write path avoids two controllers drifting apart on the same resource.
  */
 @RestController
 @RequestMapping("/institutions/{institutionId}")
