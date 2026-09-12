@@ -18,8 +18,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -146,7 +146,7 @@ public class StudyPlan extends SoftDeletable {
     }
   }
 
-  public boolean delete(final LocalDateTime deletedAt) {
+  public boolean delete(final Instant deletedAt) {
     if (status != StudyPlanStatus.DRAFT && status != StudyPlanStatus.INACTIVE) {
       throw new InvalidAcademicStateException();
     }

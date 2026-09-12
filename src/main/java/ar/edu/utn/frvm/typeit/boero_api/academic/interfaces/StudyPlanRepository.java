@@ -22,6 +22,41 @@ public interface StudyPlanRepository
   Page<StudyPlan> findAll(Specification<StudyPlan> specification, Pageable pageable);
 
   @EntityGraph(attributePaths = {"institution", "trainingPath"})
+  @Query(
+      """
+      SELECT plan FROM StudyPlan plan
+      WHERE plan.institution.id = :institutionId
+        AND plan.deletedAt IS NULL
+        AND plan.status = ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus.ACTIVE
+        AND plan.trainingPath.active = true
+        AND plan.trainingPath.deletedAt IS NULL
+        AND plan.effectiveFrom <= :validOn
+        AND (plan.effectiveTo IS NULL OR plan.effectiveTo >= :validOn)
+      """)
+  Page<StudyPlan> findAvailableOffers(
+      @Param("institutionId") UUID institutionId,
+      @Param("validOn") LocalDate validOn,
+      Pageable pageable);
+
+  @EntityGraph(attributePaths = {"institution", "trainingPath"})
+  @Query(
+      """
+      SELECT plan FROM StudyPlan plan
+      WHERE plan.id = :studyPlanId
+        AND plan.institution.id = :institutionId
+        AND plan.deletedAt IS NULL
+        AND plan.status = ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus.ACTIVE
+        AND plan.trainingPath.active = true
+        AND plan.trainingPath.deletedAt IS NULL
+        AND plan.effectiveFrom <= :validOn
+        AND (plan.effectiveTo IS NULL OR plan.effectiveTo >= :validOn)
+      """)
+  Optional<StudyPlan> findAvailableOfferById(
+      @Param("institutionId") UUID institutionId,
+      @Param("studyPlanId") UUID studyPlanId,
+      @Param("validOn") LocalDate validOn);
+
+  @EntityGraph(attributePaths = {"institution", "trainingPath"})
   Page<StudyPlan> findByTrainingPath_IdAndInstitution_IdAndDeletedAtIsNull(
       UUID trainingPathId, UUID institutionId, Pageable pageable);
 

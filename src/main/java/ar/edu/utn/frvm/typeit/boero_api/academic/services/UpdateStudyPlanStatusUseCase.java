@@ -10,8 +10,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanStatusRequest;
-import java.time.LocalDate;
-import java.time.ZoneId;
+import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class UpdateStudyPlanStatusUseCase {
-  private static final ZoneId ARGENTINA_TIME_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
+  private final BusinessDateProvider businessDateProvider;
 
   private final StudyPlanRepository studyPlanRepository;
   private final StudyPlanSpaceRepository studyPlanSpaceRepository;
@@ -50,7 +49,7 @@ public class UpdateStudyPlanStatusUseCase {
       if (request.effectiveTo() == null) {
         throw new AcademicValidationException(AcademicMessages.STUDY_PLAN_END_DATE_REQUIRED);
       }
-      if (request.effectiveTo().isAfter(LocalDate.now(ARGENTINA_TIME_ZONE))) {
+      if (request.effectiveTo().isAfter(businessDateProvider.today())) {
         throw new AcademicValidationException(
             AcademicMessages.STUDY_PLAN_END_DATE_CANNOT_BE_FUTURE);
       }

@@ -30,7 +30,7 @@ La autenticación se apoya en `User`, `UserSession` y `RefreshToken`.
 
 El registro (`POST /auth/register`) busca la institución, valida que no exista una persona con el mismo documento dentro de esa institución, crea la `Person`, crea el `User` con contraseña codificada y responde `userId`, `documentNumber` e `institutionId`.
 
-El login (`POST /auth/login`) busca el usuario por documento e institución, valida la contraseña y el estado del usuario, crea una `UserSession`, genera un refresh token inicial y emite un access token JWT. Si `rememberMe` está activo, la expiración del refresh token usa la duración extendida configurada.
+El login es identifier-first: `POST /auth/login/identify` busca el usuario por documento e institución y emite un `loginAttemptId` de un solo uso; `POST /auth/login/password` (o la verificación de passkey) valida la credencial y el estado del usuario, reclama el attempt, crea una `UserSession`, genera un refresh token inicial y emite un access token JWT. Si `rememberMe` está activo, la expiración del refresh token usa la duración extendida configurada.
 
 El refresh (`POST /auth/refresh`) implementa rotación. El servidor busca el hash del refresh token recibido, valida expiración y sesión activa, revoca el token actual, genera uno nuevo dentro de la misma familia y emite un nuevo access token. Si se recibe un refresh token ya revocado, se interpreta como reutilización y se revoca toda la familia junto con sus sesiones asociadas.
 

@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.common.exceptions;
 
 import static ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorMessages.INTERNAL_SERVER_ERROR_MESSAGE;
 import static ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorMessages.MALFORMED_REQUEST_BODY;
+import static ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorMessages.RESOURCE_NOT_FOUND_MESSAGE;
 import static ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorMessages.UNHANDLED_EXCEPTION_MESSAGE;
 import static ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorMessages.VALIDATION_ERROR_MESSAGE;
 import static ar.edu.utn.frvm.typeit.boero_api.security.handlers.SecurityErrorMessages.DEFAULT_FORBIDDEN_MESSAGE;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Slf4j
 @RestControllerAdvice
@@ -65,6 +67,15 @@ public class GlobalExceptionHandler {
     return ExceptionPayload.builder()
         .status(HttpStatus.BAD_REQUEST.value())
         .message(MALFORMED_REQUEST_BODY)
+        .build();
+  }
+
+  @ExceptionHandler(NoResourceFoundException.class)
+  @ResponseStatus(HttpStatus.NOT_FOUND)
+  public ExceptionPayload handleNoResourceFound(NoResourceFoundException ex) {
+    return ExceptionPayload.builder()
+        .status(HttpStatus.NOT_FOUND.value())
+        .message(RESOURCE_NOT_FOUND_MESSAGE)
         .build();
   }
 

@@ -1,74 +1,21 @@
 ---
 name: conventional-commit
-description: 'Prompt and workflow for generating conventional commit messages using a structured XML format. Guides users to create standardized, descriptive commit messages in line with the Conventional Commits specification, including instructions, examples, and validation.'
+description: Draft Conventional Commit messages or create requested commits from selected changes.
 ---
 
-### Instructions
+# Conventional commits
 
-```xml
-	<description>This file contains a prompt template for generating conventional commit messages. It provides instructions, examples, and formatting guidelines to help users write standardized, descriptive commit messages in accordance with the Conventional Commits specification.</description>
-```
+Use the user's request to distinguish message drafting from committing.
 
-### Workflow
+- For a message or review request, inspect the relevant diff and return the message. Do not stage or commit.
+- For an authorized commit, inspect the branch, worktree and index; group only the requested changes by logical intent. Preserve unrelated files and existing staged work. Use exact paths or hunks; an existing staged change is not automatically in scope.
+- Complete authorized commits without repeated confirmation. Push only when requested or already authorized separately. Do not switch branches, amend history or expand the commit scope to resolve an unrelated problem.
+- If a required hook fails, fix failures caused by the selected changes. Report unrelated failures without bypassing hooks or including unrelated fixes.
 
-**Follow these steps:**
+Use `type(scope): description`, with a lowercase imperative subject and a scope that identifies the affected area. Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert. Separate commits when the requested changes have independent purposes.
 
-1. Run `git status` to review changed files.
-2. Run `git diff` or `git diff --cached` to inspect changes.
-3. Group changes by logical intent (feature, fix, refactor, docs, infra, etc.). Each group must represent one cohesive purpose.
-4. For each group:
-   - Select only the files/hunks that belong to that intent.
-   - Stage them with `git add <file>` (or partial staging if needed).
-   - Construct one Conventional Commit message using the XML structure below.
-5. Generate one message per group (not a single message for all changes).
-6. After generating each commit message, run the following command in your integrated terminal (no confirmation needed):
+Add a body or footer when it clarifies a substantive change, records an issue, or explains a breaking change; honor a user request for a subject-only message. Do not wrap messages in XML.
 
-```bash
-git commit -m "type(scope): description"
-```
+Before committing, verify that the staged content of the selected paths matches the intended diff. If unrelated staging shares a selected file, isolate the approved hunks without discarding the user's index state.
 
-7. Repeat until all groups are committed.
-
-### Commit Message Structure
-
-```xml
-<commit-message>
-	<type>feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert</type>
-	<scope>()</scope>
-	<description>A short, imperative summary of the change in all lowercase</description>
-	<footer>(optional: e.g. breaking change: details, or issue references)</footer>
-</commit-message>
-```
-
-### Examples
-
-```xml
-<examples>
-	<example>feat(parser): add support for array parsing</example>
-	<example>fix(ui): adjust main button alignment</example>
-	<example>docs(auth): document admin namespace and security boundary</example>
-	<example>refactor(db): optimize user queries for performance</example>
-	<example>chore(dev): add staging and log targets to makefile</example>
-	<example>feat(auth): isolate platform admin actions to admin namespace</example>
-</examples>
-```
-
-### Validation
-
-```xml
-<validation>
-	<type>Must be one of the allowed types. See <reference>https://www.conventionalcommits.org/en/v1.0.0/#specification</reference></type>
-	<scope>Optional, but recommended for clarity. Must be in lowercase.</scope>
-	<description>Required. Use the imperative mood, all lowercase, and balanced specificity. Do not be overly specific (e.g., listing filenames, classes, or parameter details) but avoid being too generic (e.g., "update docs", "fix bug", "update file").</description>
-	<footer>Use for breaking changes or issue references.</footer>
-</validation>
-```
-
-### Final Step
-
-```xml
-<final-step>
-	<cmd>git commit -m "type(scope): description"</cmd>
-	<note>Replace with the constructed message for each logical group. Do not use commit body. Make sure type, scope, and description are all lowercase.</note>
-</final-step>
-```
+Return the created commit identifiers and a concise description of their scope, or the drafted message when no commit was requested.

@@ -6,6 +6,8 @@ Este repositorio es dueño del `Dockerfile`, el entorno local y la publicación 
 
 `compose.yaml` se usa exclusivamente para desarrollo local. No deben agregarse aquí Compose de staging o producción.
 
+Staging y producción conservan sus configuraciones, pero actualmente ninguno tiene una VPS provisionada. La configuración preparada no implica que el ambiente esté operativo.
+
 ## Desarrollo
 
 ```bash
@@ -24,13 +26,15 @@ El target `prod` del `Dockerfile`:
 - ejecuta con un JRE y un usuario sin privilegios;
 - incluye el healthcheck de readiness utilizado por infraestructura.
 
-Los pushes a `staging` publican una etiqueta inmutable:
+Los pushes a `staging` y `main` mantienen sus validaciones de CI y publican una etiqueta inmutable:
 
 ```text
 ghcr.io/typeitorg/boero-api:sha-<commit>
 ```
 
-Después de publicarla, CI ejecuta en la VPS:
+El job `deploy-staging` está desactivado mediante `if: ${{ false }}`. La publicación continúa, pero CI no intenta conectarse por SSH.
+
+Cuando exista una VPS y se complete `boero-infra/docs/STAGING.md`, se podrá restaurar la condición `github.event_name == 'push' && github.ref_name == 'staging'`. El job ejecutará entonces:
 
 ```bash
 make deploy-api ENV=staging VERSION=sha-<commit>
@@ -65,6 +69,8 @@ Una migración aplicada no se modifica ni se renombra. Las versiones anteriores 
 El bootstrap de la VPS, variables reales, Nginx, logs, despliegue manual y rollback están documentados en el README de `boero-infra`.
 
 ## Producción
+
+Producción nunca tuvo una VPS provisionada. Conservar su preparación y no ejecutar despliegues hasta disponer de infraestructura.
 
 `.github/workflows/deploy-production.yaml` permite un despliegue manual futuro. Requiere un SHA completo perteneciente a `main` y el GitHub Environment protegido `production`; no se ejecuta por push.
 

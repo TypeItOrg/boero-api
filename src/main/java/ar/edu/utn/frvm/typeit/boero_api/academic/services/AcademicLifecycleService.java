@@ -29,7 +29,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicLifecycleReque
 import ar.edu.utn.frvm.typeit.boero_api.common.logging.RequestLoggingFilter;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
-import java.time.LocalDateTime;
+import java.time.Clock;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class AcademicLifecycleService {
+  private final Clock clock;
 
   private final AcademicYearRepository academicYearRepository;
   private final TrainingPathRepository trainingPathRepository;
@@ -60,7 +61,7 @@ public class AcademicLifecycleService {
         academicYearRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
             .orElseThrow(AcademicYearNotFoundException::new);
-    if (year.delete(LocalDateTime.now())) {
+    if (year.delete(clock.instant())) {
       record(
           year.getInstitution(),
           AcademicLifecycleResource.ACADEMIC_YEAR,
@@ -90,7 +91,7 @@ public class AcademicLifecycleService {
     if (!path.isDeleted() && trainingPathRepository.existsCurrentStudyPlan(id)) {
       throw new AcademicConflictException(AcademicMessages.DELETE_REFERENCED_RESOURCE);
     }
-    if (path.delete(LocalDateTime.now())) {
+    if (path.delete(clock.instant())) {
       record(
           path.getInstitution(),
           AcademicLifecycleResource.TRAINING_PATH,
@@ -117,7 +118,7 @@ public class AcademicLifecycleService {
         studyPlanRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
             .orElseThrow(StudyPlanNotFoundException::new);
-    if (plan.delete(LocalDateTime.now())) {
+    if (plan.delete(clock.instant())) {
       record(
           plan.getInstitution(),
           AcademicLifecycleResource.STUDY_PLAN,
@@ -159,7 +160,7 @@ public class AcademicLifecycleService {
         academicSpaceRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
             .orElseThrow(AcademicSpaceNotFoundException::new);
-    if (space.delete(LocalDateTime.now())) {
+    if (space.delete(clock.instant())) {
       record(
           space.getInstitution(),
           AcademicLifecycleResource.ACADEMIC_SPACE,
@@ -186,7 +187,7 @@ public class AcademicLifecycleService {
         instrumentRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
             .orElseThrow(InstrumentNotFoundException::new);
-    if (instrument.delete(LocalDateTime.now())) {
+    if (instrument.delete(clock.instant())) {
       record(
           instrument.getInstitution(),
           AcademicLifecycleResource.INSTRUMENT,
@@ -214,7 +215,7 @@ public class AcademicLifecycleService {
         shiftRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
             .orElseThrow(ShiftNotFoundException::new);
-    if (shift.delete(LocalDateTime.now())) {
+    if (shift.delete(clock.instant())) {
       record(
           shift.getInstitution(),
           AcademicLifecycleResource.SHIFT,
@@ -232,7 +233,7 @@ public class AcademicLifecycleService {
         courseRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
             .orElseThrow(CourseNotFoundException::new);
-    if (course.delete(LocalDateTime.now())) {
+    if (course.delete(clock.instant())) {
       record(
           course.getInstitution(),
           AcademicLifecycleResource.COURSE,
@@ -307,7 +308,7 @@ public class AcademicLifecycleService {
       final AcademicLifecycleAction action,
       final AcademicLifecycleRequest request) {
     final var actor = actorResolver.resolve();
-    final var now = LocalDateTime.now();
+    final var now = clock.instant();
     try {
       eventRepository.save(
           AcademicLifecycleEvent.create(

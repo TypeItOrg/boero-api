@@ -33,8 +33,10 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicLifecycleReque
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicYearStatusRequest;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.AccountType;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -43,10 +45,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AcademicLifecycleServiceTest {
+  @Spy private Clock clock = Clock.systemUTC();
 
   @Mock private AcademicYearRepository academicYearRepository;
   @Mock private TrainingPathRepository trainingPathRepository;
@@ -159,7 +163,7 @@ class AcademicLifecycleServiceTest {
     final var institution = Institution.builder().id(institutionId).build();
     final var shift = Shift.create(institution, "Turno mañana", null);
     shift.updateStatus(false);
-    shift.delete(java.time.LocalDateTime.now());
+    shift.delete(java.time.Instant.now());
     given(shiftRepository.findByIdAndInstitution_IdForLifecycle(resourceId, institutionId))
         .willReturn(Optional.of(shift));
     given(actorResolver.resolve())
@@ -184,7 +188,11 @@ class AcademicLifecycleServiceTest {
     final var institution = Institution.builder().id(institutionId).build();
     final var academicYear =
         AcademicYear.create(
-            institution, 2027, LocalDate.of(2027, 3, 1), LocalDate.of(2027, 12, 15));
+            institution,
+            2027,
+            LocalDate.of(2027, 3, 1),
+            LocalDate.of(2027, 12, 15),
+            LocalDate.now(ZoneId.of("America/Argentina/Buenos_Aires")));
     academicYear.transitionTo(AcademicYearStatus.ACTIVE);
     final var trainingPath = TrainingPath.create(institution, "Tecnicatura", null);
     final var studyPlan =
@@ -248,7 +256,11 @@ class AcademicLifecycleServiceTest {
     final var institution = Institution.builder().id(institutionId).build();
     final var academicYear =
         AcademicYear.create(
-            institution, 2027, LocalDate.of(2027, 3, 1), LocalDate.of(2027, 12, 15));
+            institution,
+            2027,
+            LocalDate.of(2027, 3, 1),
+            LocalDate.of(2027, 12, 15),
+            LocalDate.now(ZoneId.of("America/Argentina/Buenos_Aires")));
     academicYear.transitionTo(AcademicYearStatus.ACTIVE);
     final var trainingPath = TrainingPath.create(institution, "Tecnicatura", null);
     final var studyPlan =
@@ -269,7 +281,7 @@ class AcademicLifecycleServiceTest {
             AcademicSpaceFormat.INDIVIDUAL);
     final var course = Course.create(institution, studyPlan, academicSpace, academicYear);
     course.deactivate();
-    course.delete(LocalDateTime.now());
+    course.delete(Instant.now());
     final var context = mock(CourseRepository.CourseAcademicContext.class);
     given(context.getAcademicYearId()).willReturn(academicYearId);
     given(context.getStudyPlanId()).willReturn(studyPlanId);

@@ -64,6 +64,5 @@ public class Student extends Auditable {
   private StudentStatus status = StudentStatus.ACTIVE;
 
   @Column(name = "enrollment_date", nullable = false)
-  @Builder.Default
-  private LocalDate enrollmentDate = LocalDate.now();
+  private LocalDate enrollmentDate;
 }

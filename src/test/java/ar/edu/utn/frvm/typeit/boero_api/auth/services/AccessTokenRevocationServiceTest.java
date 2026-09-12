@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.AccessTokenParseResult;
 import io.jsonwebtoken.Claims;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +28,8 @@ class AccessTokenRevocationServiceTest {
 
   @BeforeEach
   void setUp() {
-    service = new AccessTokenRevocationService(tokenBlacklistService, jwtService);
+    service =
+        new AccessTokenRevocationService(Clock.systemUTC(), tokenBlacklistService, jwtService);
   }
 
   @Test

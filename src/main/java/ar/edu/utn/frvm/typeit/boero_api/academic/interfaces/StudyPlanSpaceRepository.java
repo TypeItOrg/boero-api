@@ -24,6 +24,18 @@ public interface StudyPlanSpaceRepository extends JpaRepository<StudyPlanSpace, 
   @Query(
       """
       SELECT space FROM StudyPlanSpace space
+      LEFT JOIN FETCH space.academicLevel level
+      JOIN FETCH space.academicSpace academicSpace
+      WHERE space.studyPlan.id = :studyPlanId
+        AND academicSpace.active = true
+        AND academicSpace.deletedAt IS NULL
+      ORDER BY level.displayOrder NULLS LAST, space.displayOrder
+      """)
+  List<StudyPlanSpace> findActiveByStudyPlanIdWithDetails(@Param("studyPlanId") UUID studyPlanId);
+
+  @Query(
+      """
+      SELECT space FROM StudyPlanSpace space
       LEFT JOIN FETCH space.academicLevel
       JOIN FETCH space.academicSpace
       WHERE space.id = :id

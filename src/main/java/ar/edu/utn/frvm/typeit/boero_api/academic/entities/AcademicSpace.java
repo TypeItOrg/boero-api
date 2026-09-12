@@ -17,7 +17,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -95,7 +95,7 @@ public class AcademicSpace extends SoftDeletable {
     this.active = active;
   }
 
-  public boolean delete(final LocalDateTime deletedAt) {
+  public boolean delete(final Instant deletedAt) {
     if (active) {
       throw new InvalidAcademicStateException();
     }

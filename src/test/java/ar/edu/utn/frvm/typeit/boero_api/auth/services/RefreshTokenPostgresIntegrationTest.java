@@ -20,7 +20,7 @@ import ar.edu.utn.frvm.typeit.boero_api.support.IntegrationTest;
 import ar.edu.utn.frvm.typeit.boero_api.support.JpaAuditingTestConfig;
 import jakarta.persistence.EntityManager;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -79,6 +79,8 @@ class RefreshTokenPostgresIntegrationTest {
     registry.add("spring.datasource.password", POSTGRES::getPassword);
     registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
     registry.add("spring.jpa.hibernate.ddl-auto", () -> "create");
+    registry.add("spring.jpa.properties.hibernate.jdbc.time_zone", () -> "UTC");
+    registry.add("spring.datasource.hikari.connection-init-sql", () -> "SET TIME ZONE 'UTC'");
   }
 
   @Test
@@ -142,7 +144,29 @@ class RefreshTokenPostgresIntegrationTest {
         });
   }
 
+  @Test
+  @DisplayName("Should round-trip Instant values through PostgreSQL timestamptz")
+  void persist_roundTripsInstantThroughTimestamptz() {
+    final Instant expiresAt = Instant.parse("2026-12-01T18:45:30.123456Z");
+    final Fixture fixture = persistFixture(false, expiresAt);
+
+    inTransaction(
+        () -> {
+          entityManager.clear();
+          final RefreshToken found =
+              refreshTokenRepository
+                  .findByTokenHash(JwtService.hashToken(fixture.rawRefreshToken()))
+                  .orElseThrow();
+          assertThat(found.getExpiresAt()).isEqualTo(expiresAt);
+          return null;
+        });
+  }
+
   private Fixture createFixture(final boolean revoked) {
+    return persistFixture(revoked, Instant.now().plus(Duration.ofDays(7)));
+  }
+
+  private Fixture persistFixture(final boolean revoked, final Instant expiresAt) {
     return inTransaction(
         () -> {
           final String suffix = UUID.randomUUID().toString().substring(0, 8);
@@ -162,15 +186,14 @@ class RefreshTokenPostgresIntegrationTest {
           entityManager.persist(session);
           final String rawToken = "refresh-" + UUID.randomUUID();
           final String familyId = UUID.randomUUID().toString();
-          final RefreshToken refreshToken =
+          entityManager.persist(
               RefreshToken.builder()
                   .sessionId(session.getId())
                   .tokenHash(JwtService.hashToken(rawToken))
                   .familyId(familyId)
-                  .expiresAt(LocalDateTime.now().plusDays(7))
+                  .expiresAt(expiresAt)
                   .revoked(revoked)
-                  .build();
-          entityManager.persist(refreshToken);
+                  .build());
           return new Fixture(rawToken, familyId, session.getId());
         });
   }

@@ -44,6 +44,7 @@ import ar.edu.utn.frvm.typeit.boero_api.support.IntegrationTest;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -473,7 +474,8 @@ class AcademicQueryPerformanceIntegrationTest {
                     institution,
                     2000 + index,
                     LocalDate.of(2000 + index, 3, 1),
-                    LocalDate.of(2000 + index, 12, 1)))
+                    LocalDate.of(2000 + index, 12, 1),
+                    LocalDate.now(ZoneId.of("America/Argentina/Buenos_Aires"))))
         .forEach(academicYearRepository::save);
   }
 

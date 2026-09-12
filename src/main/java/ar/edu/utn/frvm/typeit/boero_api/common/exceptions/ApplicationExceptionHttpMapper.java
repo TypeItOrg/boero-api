@@ -13,6 +13,7 @@ public class ApplicationExceptionHttpMapper {
                 .status(status.value())
                 .message(exception.getMessage())
                 .fieldErrors(exception.fieldErrors())
+                .code(exception.code())
                 .build());
   }
 

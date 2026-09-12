@@ -1,23 +1,27 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.controllers;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
-import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.LoginRequest;
+import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.IdentifyLoginRequest;
+import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PasswordLoginRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PasswordRecoveryRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RefreshTokenRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.RegisterRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.ResetPasswordRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.ActiveSessionResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.AuthResponse;
+import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.IdentifyLoginResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.UserRegisteredResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.UserResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.GetActiveSessionsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.GetCurrentUserUseCase;
-import ar.edu.utn.frvm.typeit.boero_api.auth.services.LoginUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.IdentifyLoginUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.LogoutUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.PasswordLoginWithAttemptUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RefreshTokenUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RegisterUserUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RequestInstitutionalPasswordRecoveryUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.ResetInstitutionalPasswordUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.utils.HeaderUtils;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
@@ -45,13 +49,15 @@ public class AuthController {
 
   private final GetActiveSessionsUseCase getActiveSessionsUseCase;
   private final GetCurrentUserUseCase getCurrentUserUseCase;
-  private final LoginUseCase loginUseCase;
+  private final IdentifyLoginUseCase identifyLoginUseCase;
   private final LogoutUseCase logoutUseCase;
+  private final PasswordLoginWithAttemptUseCase passwordLoginWithAttemptUseCase;
   private final RefreshTokenUseCase refreshTokenUseCase;
   private final RegisterUserUseCase registerUserUseCase;
   private final RequestInstitutionalPasswordRecoveryUseCase
       requestInstitutionalPasswordRecoveryUseCase;
   private final ResetInstitutionalPasswordUseCase resetInstitutionalPasswordUseCase;
+  private final InstitutionalCallerGuard institutionalCallerGuard;
 
   @PostMapping(version = Version.V1, path = "/register")
   @ResponseStatus(HttpStatus.CREATED)
@@ -59,10 +65,15 @@ public class AuthController {
     return registerUserUseCase.execute(request);
   }
 
-  @PostMapping(version = Version.V1, path = "/login")
-  public AuthResponse login(
-      @Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
-    return loginUseCase.execute(request, httpRequest);
+  @PostMapping(version = Version.V1, path = "/login/identify")
+  public IdentifyLoginResponse identify(@Valid @RequestBody IdentifyLoginRequest request) {
+    return identifyLoginUseCase.execute(request);
+  }
+
+  @PostMapping(version = Version.V1, path = "/login/password")
+  public AuthResponse loginWithPassword(
+      @Valid @RequestBody PasswordLoginRequest request, HttpServletRequest httpRequest) {
+    return passwordLoginWithAttemptUseCase.execute(request, httpRequest);
   }
 
   @PostMapping(version = Version.V1, path = "/refresh")
@@ -87,6 +98,7 @@ public class AuthController {
   public void logout(
       @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
       Authentication authentication) {
+    institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
     JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
     String token = HeaderUtils.bearerValue(authorization);
     logoutUseCase.execute(principal, token);
@@ -97,12 +109,14 @@ public class AuthController {
       Authentication authentication,
       @PageableDefault(size = 20, sort = "startedAt", direction = Sort.Direction.DESC)
           Pageable pageable) {
+    institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
     JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
     return getActiveSessionsUseCase.execute(principal, pageable);
   }
 
   @GetMapping(version = Version.V1, path = "/me")
   public UserResponse me(Authentication authentication) {
+    institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
     JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
     return getCurrentUserUseCase.execute(principal);
   }

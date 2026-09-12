@@ -1,7 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -15,9 +14,10 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PasswordRecoveryRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
+import java.time.Clock;
 import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +36,8 @@ class RequestInstitutionalPasswordRecoveryUseCaseTest {
   private static final UUID INSTITUTION_ID = UUID.randomUUID();
   private static final UUID USER_ID = UUID.randomUUID();
   private static final Duration TOKEN_EXPIRATION = Duration.ofMinutes(30);
+  private static final Clock CLOCK =
+      Clock.fixed(Instant.parse("2026-09-09T12:00:00Z"), ZoneOffset.UTC);
 
   @Mock private UserRepository userRepository;
 
@@ -49,6 +51,7 @@ class RequestInstitutionalPasswordRecoveryUseCaseTest {
   void setUp() {
     useCase =
         new RequestInstitutionalPasswordRecoveryUseCase(
+            CLOCK,
             userRepository,
             passwordResetTokenRepository,
             eventPublisher,
@@ -88,7 +91,7 @@ class RequestInstitutionalPasswordRecoveryUseCaseTest {
     assertThat(tokenCaptor.getValue().getTokenHash())
         .isEqualTo(RequestInstitutionalPasswordRecoveryUseCase.hash(event.token()));
     assertThat(tokenCaptor.getValue().getExpiresAt())
-        .isCloseTo(LocalDateTime.now().plus(TOKEN_EXPIRATION), within(5, ChronoUnit.SECONDS));
+        .isEqualTo(CLOCK.instant().plus(TOKEN_EXPIRATION));
   }
 
   @Test

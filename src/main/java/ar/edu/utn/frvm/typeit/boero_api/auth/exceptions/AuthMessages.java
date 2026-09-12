@@ -54,6 +54,25 @@ public final class AuthMessages {
       "La propiedad app.auth.refresh-replay.encryption-key debe contener una clave Base64 válida.";
   public static final String REFRESH_REPLAY_ENCRYPTION_KEY_INVALID_SIZE =
       "La propiedad app.auth.refresh-replay.encryption-key debe decodificar a 32 bytes.";
+  public static final String LOGIN_ACCOUNT_NOT_FOUND =
+      "No encontramos una cuenta asociada a ese DNI en esta institución.";
+  public static final String LOGIN_ATTEMPT_INVALID =
+      "El intento de inicio de sesión es inválido o ha expirado.";
+  public static final String LOGIN_STATE_INCONSISTENT =
+      "No pudimos completar el inicio de sesión. Intentá nuevamente.";
+  public static final String PASSKEY_NOT_FOUND = "La passkey especificada no existe.";
+  public static final String PASSKEY_ALREADY_REGISTERED = "Esta passkey ya está registrada.";
+  public static final String PASSKEY_LIMIT_EXCEEDED =
+      "Alcanzaste el máximo de passkeys activas permitidas.";
+  public static final String PASSKEY_LABEL_REQUIRED = "El nombre de la passkey es requerido.";
+  public static final String PASSKEY_LABEL_LENGTH =
+      "El nombre debe tener entre 1 y 100 caracteres.";
+  public static final String RECENT_AUTH_REQUIRED =
+      "Necesitás una autenticación reciente para realizar esta acción.";
+  public static final String WEBAUTHN_CEREMONY_INVALID =
+      "La ceremonia WebAuthn es inválida o ha expirado.";
+  public static final String WEBAUTHN_VERIFICATION_FAILED =
+      "No pudimos usar una passkey. Podés reintentar o ingresar con tu contraseña.";
 
   private AuthMessages() {}
 }

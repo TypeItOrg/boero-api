@@ -88,6 +88,7 @@ class PermissionCatalogControllerWebMvcTest {
         .andExpect(jsonPath("$[?(@.code == 'institution:study-plan:restore')]").isNotEmpty())
         .andExpect(jsonPath("$[?(@.code == 'institution:shift:read')]").isNotEmpty())
         .andExpect(jsonPath("$[?(@.code == 'institution:shift:restore')]").isNotEmpty())
+        .andExpect(jsonPath("$[?(@.code == 'institution:academic-offer:read')]").isNotEmpty())
         .andExpect(jsonPath("$[?(@.scope == 'PLATFORM')]").isEmpty());
   }
 

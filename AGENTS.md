@@ -1,209 +1,59 @@
-## Project Overview
+# Boero API
 
-Spring Boot 4.0.6 API built with Gradle 9.4.1, Java 21.
-Uses Lombok, JPA, PostgreSQL, Redis, Spring Security, JWT access/refresh tokens, Docker and Testcontainers.
+Spring Boot API using Gradle, Java 21, JPA/PostgreSQL and Redis. Resolve exact versions from `build.gradle` and `gradle/wrapper/gradle-wrapper.properties`.
 
-## Build & Tooling
+## Working scope and tooling
 
-- **Build tool:** Gradle 9.4.1 (`./gradlew`).
-- **Java version:** 21.
-- **Spring Boot:** 4.0.6.
-- **Formatter:** Spotless with `googleJavaFormat()`. Source of truth for Java formatting.
-- **Docker:** multi-stage `Dockerfile` with `prod` and `dev` targets.
-- **Compose:** `compose.yaml` is only for local development. Shared staging and production infrastructure lives in `boero-infra`.
-- **Makefile:** shortcuts for common tasks.
-- **Environment:** copy `.env.dev.example` to `.env.dev`. Never commit real env files.
+- Follow the user's requested scope and existing authorization. Diagnosis/review does not authorize implementation; message drafting does not authorize commits. Complete authorized work without repeatedly asking for the same approval.
+- Preserve unrelated worktree/index changes and local environment files. Commit and push only when requested.
+- Local development uses `make dev` / `compose.yaml`; shared staging and production live in `boero-infra`. Copy `.env.dev.example` for local setup. Document new environment variables in the applicable example files, never real secrets.
+- Staging and production are configured but neither currently has a provisioned VPS. Retain their profiles and Compose configuration. CI/image publication remain enabled; automatic staging deployment is explicitly disabled, while production deployment remains manual pending provisioning.
+- Spotless/google-java-format is the formatting authority. For changed Java files, use the existing formatter's scoped support where available and inspect the resulting diff. Do not reformat unrelated source for a documentation-only task.
+- Commands: `./gradlew compileJava`, `./gradlew spotlessCheck`, `./gradlew fastTest`, `./gradlew integrationTest`, `./gradlew test`. Use only the checks relevant and authorized for the task; do not add or run tests on initiative.
 
-### Common commands
+## Java and domain boundaries
 
-| Command | Description |
-|---|---|
-| `./gradlew bootRun` | Run the application locally |
-| `./gradlew test` | Run all tests |
-| `./gradlew spotlessApply` | Format all Java source files |
-| `./gradlew spotlessCheck` | Verify formatting without changing files |
-| `make dev` | Start local development environment with Docker Compose |
-| `make test` | Run `./gradlew --no-daemon test` |
-| `make format` | Run `./gradlew spotlessApply` |
-| `make format-check` | Run `./gradlew spotlessCheck` |
+- Organize by feature/domain; repositories are named under `interfaces`, and orchestration services generally use `*UseCase`.
+- Use Lombok `@RequiredArgsConstructor` for constructor injection and `@Slf4j` for logging. Prefer final dependencies/parameters in new code without broad mechanical rewrites.
+- Entities own state transitions, calculations and intrinsic relationship invariants. Use intention-revealing methods and named factories when construction has invariants. Builders remain appropriate for DTOs, fixtures and entities without construction rules.
+- An entity may inspect related state or call a side-effect-free related method; it must not arbitrarily mutate a related entity. Keep repository access, transactions, cache operations, notifications and cross-entity coordination in use cases/infrastructure.
+- Avoid `@Data` and unrestricted class-level setters on entities with behavior. Do not add artificial behavior to reference catalogs or formal DDD machinery just for structure.
+- Annotate transactional methods explicitly; use read-only transactions for reads. Class-level transactions are appropriate only if every method shares the contract.
+- Keep readable conditions and useful explanations of invariants. Do not add redundant null checks, wrapper exceptions, one-use variables or abstractions solely to satisfy a generic style recipe.
 
-## Code Formatting
+## Database migrations and lifecycle
 
-- The project uses **Spotless with google-java-format**.
-- Do not rely on manual indentation rules. Run `./gradlew spotlessApply` before committing.
-- CI should run `./gradlew spotlessCheck`.
-- Configure IntelliJ to use the google-java-format plugin (`.idea/google-java-format.xml` is already committed).
+- Create migrations only with `make migration <lowercase_snake_case_name>` from this repository. Edit the exact generated UTC-timestamped path; do not invent, copy or rename migration filenames.
+- Never modify or rename a migration applied to a persistent environment. If correcting a filename in a disposable environment, use the approved recreation workflow; do not substitute Flyway repair, out-of-order execution or ignored migrations.
+- A persistent business invariant needs immediate entity/use-case validation and an appropriate database constraint for concurrency safety. Translate named constraint violations into application errors.
+- For lifecycle-dependent deletion, lock the tenant-scoped root inside the transaction, validate lifecycle state, delete dependents in foreign-key order and delete the root last. Preserve admin/institutional authorization boundaries.
+- Reusable natural identifiers on soft-deleted entities use active-row partial unique indexes. Creation checks and operational lookups must use the same predicate; history is accessed through an explicitly historical path or stable ID.
+- When a task includes tests for persistence or destructive workflows, retain use-case coordination coverage and use PostgreSQL integration coverage for constraints, derived deletes, locks and full-cleanup versus rejected-deletion preservation. If test work is outside the requested scope, report the missing verification rather than silently adding it.
 
-## Java Style
+## HTTP, security and errors
 
-- Use UTF-8 encoding.
-- Use descriptive names for classes, methods, and variables.
-- Prefer explicit types, but `var` is allowed for local variables when the type is obvious from the right-hand side.
-- Declare method parameters and local variables as `final` where possible. Apply this rule to new code; do not refactor the entire codebase just to add `final`.
-- All method parameters should be `final` in new code.
-- Avoid mutations of objects, especially when using for-each loops or Stream API `forEach()`.
-- Avoid magic numbers and strings; use constants instead.
-- Check emptiness and nullness before operations on collections and strings.
-- Avoid methods using `throws` clause; prefer unchecked exceptions.
-- Avoid comments, except for: cron expressions, regex patterns, TODOs, or given/when/then separation in tests.
-- Use `@Override` annotation when overriding methods.
-- Avoid `Objects.isNull()` and `Objects.nonNull()` for one or two variables; prefer direct null checks.
-- Wrap multiple conditions in a boolean variable for better readability.
-- Prefer early returns.
-- Avoid `else` statements when not necessary.
+- Controllers enforce method-security boundaries with the existing role/permission annotations. Use the `Version` enum and mapping `version` parameter; use `UnversionedRestController` only for intentionally unversioned endpoints.
+- Preserve dual authentication: institutional document/institution credentials and platform email credentials. Preserve JWT refresh-family rotation and Redis-backed revocation.
+- Use Java records for request/response payloads, with simple entity-to-response factories where useful. Controllers and payloads are the OpenAPI source of truth; do not maintain another handwritten specification or generate frontend types.
+- Document serialized response fields as required; nullable values use `@Schema(nullable = true)`. Swagger/API docs stay disabled in staging and production.
+- Application exceptions extend `ApplicationException` with an `ErrorCategory` and do not depend on Spring Web. Keep HTTP translation in `ApplicationExceptionHttpMapper` / `GlobalExceptionHandler`, using `ExceptionPayload`.
+- Centralize error text in the existing domain `*Messages` classes.
 
-## Lombok Annotations
+## Testing when requested
 
-- Use `@RequiredArgsConstructor` for dependency injection via constructor.
-- Use `@Slf4j` for logging.
-- Use `@Builder` for complex object creation when construction does not bypass entity invariants. Do not use a setter prefix.
-- Avoid `@Data`; prefer `@Getter` and add `@Setter` only where unrestricted mutation is intentional.
-
-## Spring Annotations
-
-- **`@Service`**: for business logic classes. The project names most of them `*UseCase`.
-- **`@Repository`**: optional for Spring Data interfaces that extend `JpaRepository`; Spring Data detects them automatically.
-- **`@RestController`**: for web controllers.
-- **`@Component`**: for generic Spring components.
-- **`@Configuration`**: for Spring configuration classes.
-- **`@Autowired`**: prefer constructor injection for production code; field injection is acceptable only in tests.
-- **`@ConfigurationProperties`**: for binding related properties. Avoid multiple `@Value` annotations; use this when there are more than 2 properties.
-- **`@Transactional`**: annotate transactional methods explicitly. Prefer `@Transactional(readOnly = true)` for read-only operations. Do not annotate service classes at class level unless every method is transactional.
-- **`@Validated`**: to enable Bean Validation on method parameters or classes.
-- **`@PreAuthorize`**: at the controller layer when using Spring Security to enforce method-level security.
-- **`@Order`**: allowed only for ordering initialization/bootstrap components. Avoid it for dependency resolution.
-- Avoid circular dependencies.
-
-## Project Conventions
-
-### Database migrations
-
-- **Mandatory creation workflow:** from the `boero-api` repository root, always run `make migration <name>` before writing a migration. Example: `make migration add_academic_space_usage_index`.
-- The Makefile command is the only approved way to create a migration file. It generates the current UTC timestamp (`yyyyMMddHHmmss`) and prints the exact path that must be edited.
-- Never create migration files manually with `touch`, shell redirection, an editor-created filename, copied filenames, or invented/sequential/artificial timestamps.
-- Use the exact generated filename unchanged; do not rename it, replace its timestamp, or create a second filename for the same schema change.
-- The migration name must start with a lowercase letter and use lowercase `snake_case`; the command validates this.
-- Once a migration is applied to a persistent environment, never modify or rename it.
-- If a filename must be corrected before production and the affected environment is disposable, recreate that environment instead of using Flyway repair, out-of-order execution, or ignored migration patterns.
-
-### Package structure
-
-Organize code by domain under `ar.edu.utn.frvm.typeit.boero_api`:
-
-- `auth.*`
-- `authorization.*`
-- `institutional.*`
-- `security.*`
-- `common.*`
-- `config.*`
-
-Each domain package contains sub-packages such as:
-
-- `controllers`
-- `services` (or `*UseCase` classes annotated with `@Service`)
-- `interfaces` (repositories)
-- `entities`
-- `payloads` (requests/responses)
-- `exceptions`
-- `config`, `security`, `filters` as needed
-
-### DTOs and payloads
-
-- Use Java records for request/response/payload DTOs.
-- Use `@Builder` on records when fluent construction improves readability.
-- Keep mapping simple: response records may contain a static factory method `public static X from(Entity entity)`.
-
-### OpenAPI contract
-
-- Springdoc serves read-only Swagger UI at `/swagger-ui.html` in development; Swagger UI and `/v3/api-docs` remain disabled in staging and production.
-- Treat controllers and payload records as the source of truth. Do not maintain a separate handwritten API specification or generate frontend types from OpenAPI.
-- On response records, document all serialized fields as required and mark fields that may be `null` with `@Schema(nullable = true)` so Swagger describes runtime JSON accurately.
-
-### Entities
-
-- JPA entities remain classes.
-- Entities should contain behavior that naturally belongs to their state instead of serving only as data containers.
-- Prefer intention-revealing methods such as `activate()`, `deactivate()`, `rename(...)`, `revoke(...)` or `changeAddress(...)` over public setters.
-- An entity may inspect its existing relationships to derive its own state or validate a change. For example, a user may consider its person and institution when deciding whether authentication is allowed.
-- An entity may call side-effect-free methods on a related entity when that behavior is required for its own decision.
-- Do not let an entity arbitrarily mutate a related entity. A user may inspect whether its institution is active, but must not activate or deactivate the institution.
-- Keep repository access, persistence coordination, transactions, cache operations, notifications and other I/O in use cases or infrastructure services.
-- Keep workflows that coordinate multiple independent entities in a use case. Move only state changes, calculations and invariants that clearly belong to one entity into that entity.
-- Validate relationship consistency inside the entity when it is intrinsic to that relationship, such as matching institution ownership or compatible role and permission scopes.
-- Prefer named factory methods when entity creation has invariants. Builders remain acceptable for DTOs, tests, bootstrap data and entities whose construction has no relevant rules.
-- Avoid class-level `@Setter` on entities with behavior. Expose only the mutation required by JPA and intention-revealing methods.
-- Do not add artificial behavior to reference entities such as geographic catalogs when no business rule exists.
-- Do not introduce formal DDD patterns solely to make entities richer. The goal is cohesive behavior, not aggregates, domain services or domain events.
-- Add focused unit tests for entity behavior, invalid transitions and relationship invariants.
-- When a persistent business invariant is introduced, enforce it in the entity or use case for immediate feedback and in a new Flyway constraint for concurrency safety. Translate named constraint violations into the corresponding application error and add a PostgreSQL integration test.
-- Destructive workflows that depend on lifecycle state must lock the tenant-scoped root in their use case, validate the state inside the transaction, delete dependents in explicit foreign-key order, and delete the root last. Keep authorization boundaries in their respective admin and institutional controllers.
-- For destructive workflows, retain a unit test for use-case coordination and add a PostgreSQL Testcontainers test whenever foreign keys, derived deletes, locks, or transaction semantics are involved. Verify both full cleanup and preservation when the lifecycle rejects deletion.
-
-### Soft delete and reusable identifiers
-
-- When a soft-deleted entity has a reusable natural identifier, enforce uniqueness only for active rows with a database partial unique index.
-- Creation checks and operational lookups for that identifier must use the same active-row predicate as the index.
-- Historical lookups may include deleted rows only through an explicitly historical path, such as a lookup by stable entity ID.
-
-### API versioning
-
-- Use the `Version` enum (e.g. `Version.V1`) and the `@PostMapping(version = ..., path = "...")` pattern.
-- Use `UnversionedRestController` for controllers that do not need versioning.
-
-### Security
-
-- Dual authentication model: institutional (document + institution + password) and platform (email + password).
-- JWT access tokens + refresh tokens with family rotation.
-- Redis is used for token blacklisting.
-- Use method-security annotations (`@RequiresPlatformRole`, `@RequiresPermission`, `@RequiresAnyPermission`) where appropriate.
-
-### Git workflow
-
-- Follow Conventional Commits (see `.agents/skills/conventional-commit/SKILL.md`).
-- Suggested branch names: `feat/...`, `fix/...`, `refactor/...`, `docs/...`.
-- Add any new required environment variables to `.env.example`.
-
-## Exception Handling
-
-- Custom application exceptions must not depend on Spring Web. Extend `ApplicationException` and select an `ErrorCategory`.
-- Keep HTTP translation in `ApplicationExceptionHttpMapper` and `GlobalExceptionHandler`.
-- Return the `ExceptionPayload` record with status, message and optional field errors.
-- Centralize error messages in dedicated `*Messages` classes (e.g. `AuthMessages`, `ErrorMessages`).
-
-## Testing
-
-- Use JUnit 5 for unit and integration testing.
-- Use Mockito for mocking dependencies.
-- Use `@WebMvcTest(ControllerClass.class)` for testing Spring MVC controllers.
-- Use `@DataJpaTest` for repository tests.
-- Use `@SpringBootTest` for integration tests that require the full Spring context.
-- Use `@MockitoBean` to mock Spring beans in slice tests.
-- Use descriptive camelCase method names and `@DisplayName` to describe behavior.
-- Avoid reflection in tests.
-- Avoid business logic in tests; focus on behavior verification.
+- Use Boot-managed JUnit Jupiter, Mockito and the existing fixtures. Exact versions come from Gradle dependencies, not a separately pinned testing recipe.
+- Choose unit tests for entity/use-case logic, `@WebMvcTest` for controller HTTP/security behavior, `@DataJpaTest` for repository slices, and `@SpringBootTest` when the full context is necessary. Use `@MockitoBean` for mocked Spring dependencies.
+- Existing MockMvc tests are valid; do not migrate assertion APIs or add fixture libraries just to follow a tutorial. Avoid reflection and business logic in tests.
+- `fastTest` excludes integration-tagged tests; `integrationTest` selects them; `test` runs all. Scope execution with `--tests` when appropriate. Never assume a suite is isolated from external systems without checking its configuration.
+- Fix and rerun failures caused by the requested change within the authorized scope. Report unrelated failures and incomplete runtime/database verification explicitly.
 
 ## Logging
 
-- Use `@Slf4j` from Lombok.
-- Use a lightweight structured format: `[Context] Action/message, key1: {}, key2: {}`.
-- Placeholders (`{}`) MUST be used instead of String concatenation.
-- All HTTP requests automatically include `requestId` in MDC via `RequestLoggingFilter` and return `X-Request-Id` response header.
+- Use parameterized structured messages: `[Context] Action, key: {}`. RequestLoggingFilter provides MDC requestId and the X-Request-Id response header.
+- Never log passwords, JWTs, refresh tokens, authorization headers, cookies or secrets. Prefer internal identifiers over documents, emails or phone numbers.
+- Unexpected errors get one ERROR with stack trace at GlobalExceptionHandler; propagate rather than logging again in internal layers.
+- Expected validation/business errors do not get ERROR stacks or routine WARN logs. INFO records significant successful operations; DEBUG is for diagnostics and remains disabled for application packages in production.
 
-### Log Levels
-- **`ERROR`**: Unexpected server errors or unhandled exceptions that require investigation. Must include stack trace and be handled centrally in `GlobalExceptionHandler`.
-- **`WARN`**: Abnormal but handled conditions (e.g. system fallbacks, rate limiting, external service unavailability). Do NOT use `WARN` for normal business validation rejections.
-- **`INFO`**: Significant normal business operations (e.g. successful login, user creation, session revocation, institution update).
-- **`DEBUG`**: Detailed technical diagnostics (e.g. cache operations, permission resolution details). Disabled for application packages in production.
+## Commits
 
-### Sensitive Data Policy
-- **NEVER** log passwords, JWTs, refresh tokens, authorization headers, cookies, or secrets.
-- Avoid logging raw personal data (document numbers, emails, phone numbers). Prefer internal IDs (`userId`, `personId`, `institutionId`, `sessionId`, `roleId`).
-
-### Exception Policy
-- An unexpected error must generate **a single `ERROR` log with stack trace** at `GlobalExceptionHandler`. Internal layers should propagate exceptions rather than logging redundant stack traces.
-- Expected HTTP/business errors (`400`, `401`, `403`, `404`, `409`) must NOT generate `ERROR` stack traces.
-
-### Examples
-- **Correct (`INFO`):** `log.info("[Auth] Login succeeded, userId: {}, institutionId: {}", userId, institutionId);`
-- **Correct (`DEBUG`):** `log.debug("[Authorization] Authority snapshot resolved, userId: {}", userId);`
-- **Incorrect:** `log.info("User login request: " + request);` *(Exposes passwords/DTOs and uses concatenation)*
+Use lowercase imperative Conventional Commit subjects. The [commit skill](.agents/skills/conventional-commit/SKILL.md) separates drafting from authorized staging/committing; it does not grant permission to publish.

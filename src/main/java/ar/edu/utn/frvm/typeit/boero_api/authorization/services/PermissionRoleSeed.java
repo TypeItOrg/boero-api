@@ -49,7 +49,8 @@ public class PermissionRoleSeed implements ApplicationRunner {
           EnumSet.of(
               PermissionCode.STUDY_PLAN_READ,
               PermissionCode.ACADEMIC_YEAR_READ,
-              PermissionCode.ENROLLMENT_PERIOD_READ),
+              PermissionCode.ENROLLMENT_PERIOD_READ,
+              PermissionCode.ACADEMIC_OFFER_READ),
           SystemRoleCode.STUDENT,
           EnumSet.of(
               PermissionCode.STUDY_PLAN_READ,
@@ -86,6 +87,7 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.STUDY_PLAN_CURRICULUM_UPDATE,
               PermissionCode.STUDY_PLAN_DELETE,
               PermissionCode.STUDY_PLAN_RESTORE,
+              PermissionCode.ACADEMIC_OFFER_READ,
               PermissionCode.ACADEMIC_SPACE_CREATE,
               PermissionCode.ACADEMIC_SPACE_UPDATE,
               PermissionCode.ACADEMIC_SPACE_STATUS_UPDATE,

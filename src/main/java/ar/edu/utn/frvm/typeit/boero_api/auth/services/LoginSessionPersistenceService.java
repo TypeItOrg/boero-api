@@ -5,7 +5,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.entities.RefreshToken;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.UserSession;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.RefreshTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserSessionRepository;
-import java.time.LocalDateTime;
+import java.time.Clock;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class LoginSessionPersistenceService {
+  private final Clock clock;
 
   private final UserSessionRepository userSessionRepository;
   private final RefreshTokenRepository refreshTokenRepository;
@@ -39,7 +40,7 @@ public class LoginSessionPersistenceService {
             .sessionId(session.getId())
             .tokenHash(generatedRefreshToken.tokenHash())
             .familyId(familyId)
-            .expiresAt(LocalDateTime.now().plus(jwtProperties.refreshExpiration(rememberMe)))
+            .expiresAt(clock.instant().plus(jwtProperties.refreshExpiration(rememberMe)))
             .build());
 
     return new Result(session.getId(), generatedRefreshToken.rawToken());

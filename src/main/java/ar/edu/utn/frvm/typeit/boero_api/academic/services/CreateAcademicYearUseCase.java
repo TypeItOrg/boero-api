@@ -7,6 +7,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicYearResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreateAcademicYearRequest;
+import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import java.util.UUID;
@@ -21,6 +22,7 @@ public class CreateAcademicYearUseCase {
 
   private final AcademicYearRepository academicYearRepository;
   private final InstitutionRepository institutionRepository;
+  private final BusinessDateProvider businessDateProvider;
 
   @Transactional
   public AcademicYearResponse execute(
@@ -37,7 +39,11 @@ public class CreateAcademicYearUseCase {
       final var saved =
           academicYearRepository.save(
               AcademicYear.create(
-                  institution, request.year(), request.startDate(), request.endDate()));
+                  institution,
+                  request.year(),
+                  request.startDate(),
+                  request.endDate(),
+                  businessDateProvider.today()));
       academicYearRepository.flush();
       return AcademicYearResponse.from(saved);
     } catch (DataIntegrityViolationException exception) {

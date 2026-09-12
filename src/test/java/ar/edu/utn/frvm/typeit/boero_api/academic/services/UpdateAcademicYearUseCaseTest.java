@@ -10,8 +10,11 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicConflictException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.UpdateAcademicYearRequest;
+import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -33,7 +36,11 @@ class UpdateAcademicYearUseCaseTest {
     final var institution = Institution.builder().id(institutionId).build();
     final var academicYear =
         AcademicYear.create(
-            institution, 2026, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 12, 15));
+            institution,
+            2026,
+            LocalDate.of(2026, 3, 1),
+            LocalDate.of(2026, 12, 15),
+            LocalDate.now(ZoneId.of("America/Argentina/Buenos_Aires")));
     given(academicYearRepository.findByIdAndInstitution_Id(academicYearId, institutionId))
         .willReturn(Optional.of(academicYear));
     given(
@@ -42,7 +49,8 @@ class UpdateAcademicYearUseCaseTest {
         .willReturn(false);
 
     final var response =
-        new UpdateAcademicYearUseCase(academicYearRepository)
+        new UpdateAcademicYearUseCase(
+                academicYearRepository, new BusinessDateProvider(Clock.systemUTC()))
             .execute(
                 institutionId,
                 academicYearId,
@@ -64,7 +72,11 @@ class UpdateAcademicYearUseCaseTest {
     final var institution = Institution.builder().id(institutionId).build();
     final var academicYear =
         AcademicYear.create(
-            institution, 2026, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 12, 15));
+            institution,
+            2026,
+            LocalDate.of(2026, 3, 1),
+            LocalDate.of(2026, 12, 15),
+            LocalDate.now(ZoneId.of("America/Argentina/Buenos_Aires")));
     given(academicYearRepository.findByIdAndInstitution_Id(academicYearId, institutionId))
         .willReturn(Optional.of(academicYear));
     given(
@@ -74,7 +86,8 @@ class UpdateAcademicYearUseCaseTest {
 
     assertThatThrownBy(
             () ->
-                new UpdateAcademicYearUseCase(academicYearRepository)
+                new UpdateAcademicYearUseCase(
+                        academicYearRepository, new BusinessDateProvider(Clock.systemUTC()))
                     .execute(
                         institutionId,
                         academicYearId,

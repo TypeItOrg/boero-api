@@ -1,23 +1,29 @@
 {
   "version": 1,
   "skills": {
+    "conventional-commit": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/conventional-commit/SKILL.md",
+      "computedHash": "251489816d97f1098fac99de53125aeec2374c86432edab80bb8bc6ba89e005d"
+    },
     "java-springboot": {
       "source": "github/awesome-copilot",
       "sourceType": "github",
       "skillPath": "skills/java-springboot/SKILL.md",
-      "computedHash": "f1b9c6b1277178fc33e5a612761c1cd1cf6ab5f946d05d69d52026d142c0a0c1"
+      "computedHash": "d08c86b0b59485b1e1d083e659e54da06606267d92d6fe19e790446d77b658d6"
     },
     "simplify": {
       "source": "brianlovin/claude-config",
       "sourceType": "github",
       "skillPath": "skills/simplify/SKILL.md",
-      "computedHash": "322a20071306ede626dc73ac05182b08c97b60781e23ec3fbf23f85a4d27d111"
+      "computedHash": "5a1c33553e7e21c97b5c993dae8affcaaae71009653b7c85d46b52231fe29ece"
     },
     "spring-boot-testing": {
       "source": "github/awesome-copilot",
       "sourceType": "github",
       "skillPath": "skills/spring-boot-testing/SKILL.md",
-      "computedHash": "4e6153fd6eed64dfc6b0f9a2a38ef8e636a88977702a49f3c5691fafcc02d8a8"
+      "computedHash": "a46e04145124373fec998ed119d8eab37cf8b0d3cbcda7af3dbc74d9b6cf81af"
     }
   }
 }

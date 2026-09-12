@@ -67,7 +67,8 @@ class AuthorityResolverTest {
         .containsExactlyInAnyOrder(
             PermissionCode.STUDY_PLAN_READ,
             PermissionCode.ACADEMIC_YEAR_READ,
-            PermissionCode.ENROLLMENT_PERIOD_READ);
+            PermissionCode.ENROLLMENT_PERIOD_READ,
+            PermissionCode.ACADEMIC_OFFER_READ);
     assertThat(authorities.roles()).containsExactly(SystemRoleCode.APPLICANT.getDisplayName());
   }
 

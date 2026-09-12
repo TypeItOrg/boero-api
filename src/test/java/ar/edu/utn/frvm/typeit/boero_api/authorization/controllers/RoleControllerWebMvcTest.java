@@ -39,7 +39,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.services.RevokePersonRoleU
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.GlobalExceptionHandler;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.config.WebConfig;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -420,7 +420,7 @@ class RoleControllerWebMvcTest {
         .roleId(ROLE_ID)
         .technicalCode(roleCode)
         .displayName(roleCode.getDisplayName())
-        .assignedAt(OffsetDateTime.parse("2026-01-15T10:00:00Z"))
+        .assignedAt(Instant.parse("2026-01-15T10:00:00Z"))
         .build();
   }
 

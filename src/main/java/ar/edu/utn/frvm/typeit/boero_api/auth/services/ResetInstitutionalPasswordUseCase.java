@@ -5,7 +5,8 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidPasswordRecoveryT
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.PasswordConfirmationMismatchException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.InstitutionalPasswordResetTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.ResetPasswordRequest;
-import java.time.LocalDateTime;
+import java.time.Clock;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ResetInstitutionalPasswordUseCase {
+  private final Clock clock;
 
   private final InstitutionalPasswordResetTokenRepository passwordResetTokenRepository;
   private final PasswordEncoder passwordEncoder;
@@ -25,7 +27,7 @@ public class ResetInstitutionalPasswordUseCase {
       throw new PasswordConfirmationMismatchException();
     }
 
-    final LocalDateTime now = LocalDateTime.now();
+    final Instant now = clock.instant();
     final InstitutionalPasswordResetToken token =
         passwordResetTokenRepository
             .findByTokenHashForUpdate(

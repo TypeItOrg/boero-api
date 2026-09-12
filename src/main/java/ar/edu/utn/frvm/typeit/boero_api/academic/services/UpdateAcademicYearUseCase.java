@@ -10,6 +10,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicYearNotFound
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicYearResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.UpdateAcademicYearRequest;
+import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UpdateAcademicYearUseCase {
 
   private final AcademicYearRepository academicYearRepository;
+  private final BusinessDateProvider businessDateProvider;
 
   @Transactional
   public AcademicYearResponse execute(
@@ -33,7 +35,8 @@ public class UpdateAcademicYearUseCase {
         institutionId, request.year(), id)) {
       throw AcademicConflictException.forField("year", AcademicMessages.DUPLICATE_YEAR);
     }
-    academicYear.update(request.year(), request.startDate(), request.endDate());
+    academicYear.update(
+        request.year(), request.startDate(), request.endDate(), businessDateProvider.today());
     updateStatus(institutionId, academicYear, request.status());
     try {
       academicYearRepository.flush();
