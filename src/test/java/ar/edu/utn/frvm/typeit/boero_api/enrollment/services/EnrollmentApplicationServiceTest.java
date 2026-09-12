@@ -12,6 +12,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Instrument;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
@@ -22,6 +23,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplicatio
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.ActiveEnrollmentApplicationExistsException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.ApplicationNotEditableException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentPeriodClosedException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
@@ -172,8 +174,12 @@ class EnrollmentApplicationServiceTest {
     when(person.getLastName()).thenReturn("Pérez");
     when(person.getDocumentNumber()).thenReturn("12345678");
 
+    TrainingPath trainingPath = org.mockito.Mockito.mock(TrainingPath.class);
+    when(trainingPath.getId()).thenReturn(UUID.randomUUID());
+
     StudyPlan studyPlan = org.mockito.Mockito.mock(StudyPlan.class);
     when(studyPlan.getId()).thenReturn(studyPlanId);
+    when(studyPlan.getTrainingPath()).thenReturn(trainingPath);
 
     AcademicYear academicYear = org.mockito.Mockito.mock(AcademicYear.class);
     when(academicYear.getId()).thenReturn(academicYearId);
@@ -197,6 +203,9 @@ class EnrollmentApplicationServiceTest {
     when(personRepository.findById(personId)).thenReturn(Optional.of(person));
     when(studyPlanRepository.findById(studyPlanId)).thenReturn(Optional.of(studyPlan));
     when(academicYearRepository.findById(academicYearId)).thenReturn(Optional.of(academicYear));
+    when(applicationRepository.findActiveByApplicantPersonIdAndTrainingPathId(
+            personId, trainingPath.getId()))
+        .thenReturn(List.of());
 
     EnrollmentApplication newApp =
         EnrollmentApplication.builder()
@@ -219,6 +228,47 @@ class EnrollmentApplicationServiceTest {
 
     assertThat(response.getApplicationId()).isEqualTo(applicationId);
     assertThat(response.getStatus()).isEqualTo(EnrollmentApplicationStatus.DRAFT);
+  }
+
+  @Test
+  @DisplayName(
+      "Should throw ActiveEnrollmentApplicationExistsException when person already has a live"
+          + " application in the same training path")
+  void startOrGetApplication_activeApplicationInSameTrainingPath() {
+    Person person = org.mockito.Mockito.mock(Person.class);
+
+    TrainingPath trainingPath = org.mockito.Mockito.mock(TrainingPath.class);
+    UUID trainingPathId = UUID.randomUUID();
+    when(trainingPath.getId()).thenReturn(trainingPathId);
+
+    StudyPlan studyPlan = org.mockito.Mockito.mock(StudyPlan.class);
+    when(studyPlan.getTrainingPath()).thenReturn(trainingPath);
+
+    EnrollmentPeriod period = org.mockito.Mockito.mock(EnrollmentPeriod.class);
+
+    when(applicationRepository
+            .findByApplicantPersonIdAndStudyPlanIdAndAcademicYearIdAndStatusAndDeletedAtIsNull(
+                personId, studyPlanId, academicYearId, EnrollmentApplicationStatus.DRAFT))
+        .thenReturn(Optional.empty());
+
+    when(periodRepository.findActivePeriod(
+            eq(institutionId),
+            eq(academicYearId),
+            eq(EnrollmentPeriodStatus.OPEN),
+            any(LocalDateTime.class)))
+        .thenReturn(Optional.of(period));
+
+    when(personRepository.findById(personId)).thenReturn(Optional.of(person));
+    when(studyPlanRepository.findById(studyPlanId)).thenReturn(Optional.of(studyPlan));
+    when(applicationRepository.findActiveByApplicantPersonIdAndTrainingPathId(
+            personId, trainingPathId))
+        .thenReturn(List.of(org.mockito.Mockito.mock(EnrollmentApplication.class)));
+
+    StartEnrollmentApplicationRequest request =
+        new StartEnrollmentApplicationRequest(studyPlanId, academicYearId);
+
+    assertThatThrownBy(() -> service.startOrGetApplication(institutionId, personId, request))
+        .isInstanceOf(ActiveEnrollmentApplicationExistsException.class);
   }
 
   @Test

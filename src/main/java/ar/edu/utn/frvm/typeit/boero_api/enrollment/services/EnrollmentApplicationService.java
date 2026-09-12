@@ -19,6 +19,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplicatio
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.ActiveEnrollmentApplicationExistsException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.ApplicationNotEditableException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
@@ -102,13 +103,26 @@ public class EnrollmentApplicationService {
                     new EnrollmentValidationException(
                         "No se encontró la persona postulante con ID " + personId));
 
-    StudyPlan studyPlan =
+    StudyPlan requestedStudyPlan =
         studyPlanRepository
             .findById(request.getStudyPlanId())
             .orElseThrow(
                 () ->
                     new EnrollmentValidationException(
                         "No se encontró el plan de estudio con ID " + request.getStudyPlanId()));
+
+    // 3. Una única inscripción viva por trayecto: si ya tiene una solicitud
+    // no cancelada/rechazada en el trayecto del plan pedido (aunque sea para
+    // otro plan de estudio o ciclo lectivo), no se permite iniciar otra.
+    boolean hasActiveApplicationInTrainingPath =
+        !applicationRepository
+            .findActiveByApplicantPersonIdAndTrainingPathId(
+                personId, requestedStudyPlan.getTrainingPath().getId())
+            .isEmpty();
+
+    if (hasActiveApplicationInTrainingPath) {
+      throw new ActiveEnrollmentApplicationExistsException();
+    }
 
     AcademicYear academicYear =
         academicYearRepository
@@ -122,7 +136,7 @@ public class EnrollmentApplicationService {
         EnrollmentApplication.builder()
             .institution(period.getInstitution())
             .applicantPerson(person)
-            .studyPlan(studyPlan)
+            .studyPlan(requestedStudyPlan)
             .academicYear(academicYear)
             .enrollmentPeriod(period)
             .status(EnrollmentApplicationStatus.DRAFT)
