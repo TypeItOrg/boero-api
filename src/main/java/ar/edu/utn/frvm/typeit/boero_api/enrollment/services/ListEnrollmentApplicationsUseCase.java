@@ -21,9 +21,23 @@ public class ListEnrollmentApplicationsUseCase {
   public Page<EnrollmentApplicationResponse> execute(
       final UUID institutionId,
       @Nullable final EnrollmentApplicationStatus status,
+      @Nullable final UUID trainingPathId,
+      final boolean open,
       final Pageable pageable) {
     return enrollmentApplicationRepository
-        .findByInstitutionId(institutionId, status, pageable)
+        .findByInstitutionId(institutionId, status, trainingPathId, open, pageable)
+        .map(EnrollmentApplicationResponse::from);
+  }
+
+  @Transactional(readOnly = true)
+  public Page<EnrollmentApplicationResponse> executeForPlatform(
+      @Nullable final UUID institutionId,
+      @Nullable final EnrollmentApplicationStatus status,
+      @Nullable final UUID trainingPathId,
+      final boolean open,
+      final Pageable pageable) {
+    return enrollmentApplicationRepository
+        .findByFilters(institutionId, status, trainingPathId, open, pageable)
         .map(EnrollmentApplicationResponse::from);
   }
 }
