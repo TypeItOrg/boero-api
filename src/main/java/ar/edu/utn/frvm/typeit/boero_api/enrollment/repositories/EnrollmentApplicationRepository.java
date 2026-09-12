@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories;
 
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import jakarta.persistence.LockModeType;
@@ -25,6 +26,17 @@ public interface EnrollmentApplicationRepository
           UUID studyPlanId,
           UUID academicYearId,
           EnrollmentApplicationStatus status);
+
+  @Query(
+      "SELECT application FROM EnrollmentApplication application "
+          + "WHERE application.applicantPerson.id = :personId "
+          + "AND application.studyPlan.trainingPath.id = :trainingPathId "
+          + "AND application.deletedAt IS NULL "
+          + "AND application.status NOT IN ("
+          + "ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus.CANCELLED, "
+          + "ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus.REJECTED)")
+  List<EnrollmentApplication> findActiveByApplicantPersonIdAndTrainingPathId(
+      @Param("personId") UUID personId, @Param("trainingPathId") UUID trainingPathId);
 
   @EntityGraph(
       attributePaths = {
