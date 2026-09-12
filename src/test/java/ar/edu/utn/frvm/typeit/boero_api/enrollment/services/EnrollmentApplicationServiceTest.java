@@ -359,6 +359,10 @@ class EnrollmentApplicationServiceTest {
     UUID instrumentId = UUID.randomUUID();
     StudyPlanSpace space = org.mockito.Mockito.mock(StudyPlanSpace.class);
     when(space.getId()).thenReturn(spaceId);
+    ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace spaceAcademicSpace =
+        org.mockito.Mockito.mock(ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace.class);
+    when(spaceAcademicSpace.getName()).thenReturn("Espacio académico");
+    when(space.getAcademicSpace()).thenReturn(spaceAcademicSpace);
     Instrument instrument = org.mockito.Mockito.mock(Instrument.class);
     when(instrument.getId()).thenReturn(instrumentId);
 
@@ -571,10 +575,13 @@ class EnrollmentApplicationServiceTest {
             .status(EnrollmentApplicationStatus.DRAFT)
             .build();
     application.setId(applicationId);
+    StudyPlanSpace selectedStudyPlanSpace = org.mockito.Mockito.mock(StudyPlanSpace.class);
+    ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace selectedAcademicSpace =
+        org.mockito.Mockito.mock(ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace.class);
+    when(selectedAcademicSpace.getName()).thenReturn("Espacio académico");
+    when(selectedStudyPlanSpace.getAcademicSpace()).thenReturn(selectedAcademicSpace);
     application.addSelectedSpace(
-        EnrollmentApplicationSpace.builder()
-            .studyPlanSpace(org.mockito.Mockito.mock(StudyPlanSpace.class))
-            .build());
+        EnrollmentApplicationSpace.builder().studyPlanSpace(selectedStudyPlanSpace).build());
 
     when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
     when(applicationRepository.save(any(EnrollmentApplication.class))).thenReturn(application);

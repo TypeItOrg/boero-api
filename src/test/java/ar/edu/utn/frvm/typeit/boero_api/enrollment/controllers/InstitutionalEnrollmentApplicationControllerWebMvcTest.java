@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.controllers;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
@@ -102,7 +103,7 @@ class InstitutionalEnrollmentApplicationControllerWebMvcTest {
     final var authentication = authentication();
     stubPermission(PermissionCode.ENROLLMENT_APPLICATION_READ, true);
     when(listEnrollmentApplicationsUseCase.execute(
-            eq(INSTITUTION_ID), isNull(), any(Pageable.class)))
+            eq(INSTITUTION_ID), isNull(), isNull(), eq(false), any(Pageable.class)))
         .thenReturn(
             new PageImpl<>(
                 List.of(response(EnrollmentApplicationStatus.SUBMITTED)), Pageable.ofSize(20), 1));
@@ -116,7 +117,7 @@ class InstitutionalEnrollmentApplicationControllerWebMvcTest {
         .andExpect(jsonPath("$.items[0].status").value("SUBMITTED"));
 
     verify(listEnrollmentApplicationsUseCase)
-        .execute(eq(INSTITUTION_ID), isNull(), any(Pageable.class));
+        .execute(eq(INSTITUTION_ID), isNull(), isNull(), eq(false), any(Pageable.class));
   }
 
   @Test
@@ -131,7 +132,8 @@ class InstitutionalEnrollmentApplicationControllerWebMvcTest {
                 .principal(authentication))
         .andExpect(status().isForbidden());
 
-    verify(listEnrollmentApplicationsUseCase, never()).execute(any(), any(), any());
+    verify(listEnrollmentApplicationsUseCase, never())
+        .execute(any(), any(), any(), anyBoolean(), any());
   }
 
   @Test

@@ -34,6 +34,7 @@ public class EnrollmentApplicationResponse {
   private String applicantDocumentNumber;
   private UUID studyPlanId;
   private String studyPlanName;
+  @Schema(nullable = true) private String trainingPathName;
   private UUID academicYearId;
   private Integer academicYear;
   private UUID enrollmentPeriodId;
@@ -47,6 +48,7 @@ public class EnrollmentApplicationResponse {
   @Schema(nullable = true) private UUID resolvedByPersonId;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
+  @Builder.Default private List<EnrollmentApplicationSpaceResponse> spaces = new ArrayList<>();
 
   public UUID applicationId() {
     return applicationId;
@@ -89,6 +91,10 @@ public class EnrollmentApplicationResponse {
             application.getStudyPlan() != null ? application.getStudyPlan().getId() : null)
         .studyPlanName(
             application.getStudyPlan() != null ? application.getStudyPlan().getName() : null)
+        .trainingPathName(
+            application.getStudyPlan() != null && application.getStudyPlan().getTrainingPath() != null
+                ? application.getStudyPlan().getTrainingPath().getName()
+                : null)
         .academicYearId(
             application.getAcademicYear() != null ? application.getAcademicYear().getId() : null)
         .academicYear(
@@ -109,7 +115,29 @@ public class EnrollmentApplicationResponse {
         .resolvedByPersonId(application.getResolvedByPersonId())
         .createdAt(application.getCreatedAt())
         .updatedAt(application.getUpdatedAt())
+        .spaces(buildSpaces(application))
         .build();
+  }
+
+  private static List<EnrollmentApplicationSpaceResponse> buildSpaces(
+      final EnrollmentApplication entity) {
+    if (entity.getSelectedSpaces() == null) {
+      return new ArrayList<>();
+    }
+    return entity.getSelectedSpaces().stream()
+        .map(
+            s ->
+                EnrollmentApplicationSpaceResponse.builder()
+                    .studyPlanSpaceId(s.getStudyPlanSpace().getId())
+                    .spaceName(s.getStudyPlanSpace().getAcademicSpace().getName())
+                    .academicLevelName(
+                        s.getStudyPlanSpace().getAcademicLevel() != null
+                            ? s.getStudyPlanSpace().getAcademicLevel().getName()
+                            : null)
+                    .instrumentId(s.getInstrument() != null ? s.getInstrument().getId() : null)
+                    .instrumentName(s.getInstrument() != null ? s.getInstrument().getName() : null)
+                    .build())
+        .toList();
   }
 
   private static EnrollmentDraftData buildDraftData(final EnrollmentApplication entity) {
