@@ -43,10 +43,14 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
@@ -271,22 +275,28 @@ public class EnrollmentApplicationService {
 
       if (data.getAcademicSpaceSelection() != null
           && data.getAcademicSpaceSelection().getStudyPlanSpaceIds() != null) {
-        application.clearSelectedSpaces();
         Map<UUID, UUID> instrumentsMap =
             data.getInstrumentSelection() != null
                     && data.getInstrumentSelection().getStudyPlanSpaceInstrumentIds() != null
                 ? data.getInstrumentSelection().getStudyPlanSpaceInstrumentIds()
                 : Map.of();
 
-        for (UUID spaceId : data.getAcademicSpaceSelection().getStudyPlanSpaceIds()) {
-          StudyPlanSpace space =
-              studyPlanSpaceRepository
-                  .findById(spaceId)
-                  .orElseThrow(
-                      () ->
-                          new EnrollmentValidationException(
-                              "Espacio de plan de estudio no encontrado: " + spaceId));
+        Set<UUID> desiredSpaceIds =
+            new HashSet<>(data.getAcademicSpaceSelection().getStudyPlanSpaceIds());
 
+        // Reconcile instead of clear+recreate: Hibernate flushes inserts before
+        // orphan-removal deletes within the same transaction, so clearing and
+        // re-adding an unchanged space here would violate the
+        // (enrollment_application_id, study_plan_space_id) unique constraint on
+        // every autosave, since the "old" row hasn't been deleted yet when the
+        // "new" identical row is inserted.
+        application.getSelectedSpaces().removeIf(s -> !desiredSpaceIds.contains(s.getStudyPlanSpace().getId()));
+
+        Map<UUID, EnrollmentApplicationSpace> existingByStudyPlanSpaceId =
+            application.getSelectedSpaces().stream()
+                .collect(Collectors.toMap(s -> s.getStudyPlanSpace().getId(), Function.identity()));
+
+        for (UUID spaceId : desiredSpaceIds) {
           Instrument instrument = null;
           UUID instrumentId = instrumentsMap.get(spaceId);
           if (instrumentId != null) {
@@ -298,6 +308,20 @@ public class EnrollmentApplicationService {
                             new EnrollmentValidationException(
                                 "Instrumento no encontrado: " + instrumentId));
           }
+
+          EnrollmentApplicationSpace existing = existingByStudyPlanSpaceId.get(spaceId);
+          if (existing != null) {
+            existing.setInstrument(instrument);
+            continue;
+          }
+
+          StudyPlanSpace space =
+              studyPlanSpaceRepository
+                  .findById(spaceId)
+                  .orElseThrow(
+                      () ->
+                          new EnrollmentValidationException(
+                              "Espacio de plan de estudio no encontrado: " + spaceId));
 
           EnrollmentApplicationSpace selectedSpace =
               EnrollmentApplicationSpace.builder()
