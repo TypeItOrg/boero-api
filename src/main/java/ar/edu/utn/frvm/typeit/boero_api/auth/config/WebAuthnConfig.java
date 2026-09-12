@@ -14,6 +14,8 @@ import org.springframework.security.web.webauthn.api.UserVerificationRequirement
 import org.springframework.security.web.webauthn.jackson.WebauthnJacksonModule;
 import org.springframework.security.web.webauthn.management.WebAuthnRelyingPartyOperations;
 import org.springframework.security.web.webauthn.management.Webauthn4JRelyingPartyOperations;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
 public class WebAuthnConfig {
@@ -58,9 +60,8 @@ public class WebAuthnConfig {
   }
 
   @Bean
-  tools.jackson.databind.ObjectMapper webauthnObjectMapper(
-      final WebauthnJacksonModule springModule) {
-    return tools.jackson.databind.json.JsonMapper.builder()
+  ObjectMapper webauthnObjectMapper(final WebauthnJacksonModule springModule) {
+    return JsonMapper.builder()
         .addModule(springModule)
         .addModule(new WebAuthnOptionsModule())
         .build();

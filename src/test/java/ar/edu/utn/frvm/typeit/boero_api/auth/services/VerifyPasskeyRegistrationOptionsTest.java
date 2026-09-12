@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.config.WebAuthnProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PasskeyCredential;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.DuplicatePasskeyCredentialException;
@@ -52,6 +53,7 @@ import org.springframework.security.web.webauthn.api.PublicKeyCredentialRpEntity
 import org.springframework.security.web.webauthn.api.PublicKeyCredentialType;
 import org.springframework.security.web.webauthn.api.ResidentKeyRequirement;
 import org.springframework.security.web.webauthn.api.UserVerificationRequirement;
+import org.springframework.security.web.webauthn.management.WebAuthnRelyingPartyOperations;
 import tools.jackson.databind.JsonNode;
 
 @ExtendWith(MockitoExtension.class)
@@ -63,12 +65,10 @@ class VerifyPasskeyRegistrationOptionsTest {
   @Mock private PasskeyCredentialRepository passkeyCredentialRepository;
   @Mock private PasskeyCredentialMapper mapper;
 
-  @Mock
-  private org.springframework.security.web.webauthn.management.WebAuthnRelyingPartyOperations
-      relyingPartyOperations;
+  @Mock private WebAuthnRelyingPartyOperations relyingPartyOperations;
 
   @Mock private WebAuthnCeremonyService ceremonyService;
-  @Mock private ar.edu.utn.frvm.typeit.boero_api.auth.config.WebAuthnProperties properties;
+  @Mock private WebAuthnProperties properties;
   @Mock private WebAuthnOptionsCodec codec;
 
   @Test
@@ -83,7 +83,8 @@ class VerifyPasskeyRegistrationOptionsTest {
             Optional.of(
                 new RegistrationCeremony(
                     "ceremony", userId, sessionId, "Mi PC", "not-json", Instant.now())));
-    when(codec.parseSnapshot("not-json")).thenThrow(new IllegalStateException("unreadable"));
+    when(codec.decodeCreationOptions("not-json"))
+        .thenThrow(new IllegalStateException("unreadable"));
     when(userRepository.findWithLockById(userId)).thenReturn(Optional.of(user(userId)));
     when(passkeyCredentialRepository.countActiveByUserId(any())).thenReturn(0L);
     when(properties.maxPasskeys()).thenReturn(10);
@@ -111,7 +112,7 @@ class VerifyPasskeyRegistrationOptionsTest {
               assertThat(((DuplicatePasskeyCredentialException) exception).category())
                   .isEqualTo(ErrorCategory.CONFLICT);
             });
-    verify(passkeyCredentialRepository, never()).save(any());
+    verify(passkeyCredentialRepository, never()).saveAndFlush(any());
   }
 
   @Test
@@ -122,19 +123,17 @@ class VerifyPasskeyRegistrationOptionsTest {
     final JwtAuthenticatedUser principal =
         institutionalPrincipal(userId, UUID.randomUUID(), sessionId);
     stubVerification(principal, userId, sessionId);
-    final User user = user(userId);
-    when(userRepository.findWithPersonAndInstitutionById(userId)).thenReturn(Optional.of(user));
     when(relyingPartyOperations.registerCredential(any())).thenReturn(credentialRecord());
     when(passkeyCredentialRepository.findByCredentialId(credentialId.toBase64UrlString()))
         .thenReturn(Optional.empty());
-    when(passkeyCredentialRepository.save(any()))
+    when(passkeyCredentialRepository.saveAndFlush(any()))
         .thenThrow(
             new DataIntegrityViolationException(
                 "duplicate",
                 new ConstraintViolationException(
                     "duplicate",
                     new SQLException("duplicate"),
-                    "passkey_credentials_credential_id_unique")));
+                    "passkey_credentials_credential_id_key")));
 
     assertThatThrownBy(() -> useCase().execute(principal, "ceremony", credentialNode()))
         .isInstanceOf(DuplicatePasskeyCredentialException.class);
@@ -148,12 +147,10 @@ class VerifyPasskeyRegistrationOptionsTest {
     final JwtAuthenticatedUser principal =
         institutionalPrincipal(userId, UUID.randomUUID(), sessionId);
     stubVerification(principal, userId, sessionId);
-    final User user = user(userId);
-    when(userRepository.findWithPersonAndInstitutionById(userId)).thenReturn(Optional.of(user));
     when(relyingPartyOperations.registerCredential(any())).thenReturn(credentialRecord());
     when(passkeyCredentialRepository.findByCredentialId(credentialId.toBase64UrlString()))
         .thenReturn(Optional.empty());
-    when(passkeyCredentialRepository.save(any()))
+    when(passkeyCredentialRepository.saveAndFlush(any()))
         .thenThrow(
             new DataIntegrityViolationException(
                 "unexpected",
@@ -209,15 +206,13 @@ class VerifyPasskeyRegistrationOptionsTest {
 
   private void stubVerificationCeremony(
       final JwtAuthenticatedUser principal, final UUID userId, final UUID sessionId) {
-    final User user = user(userId);
     when(ceremonyService.consumeRegistration("ceremony"))
         .thenReturn(
             Optional.of(
                 new RegistrationCeremony(
                     "ceremony", userId, sessionId, "Mi PC", "{}", Instant.now())));
-    when(codec.parseSnapshot("{}")).thenReturn(Mockito.mock(JsonNode.class));
-    when(codec.rebuildCreationOptions(any())).thenReturn(creationOptions());
-    when(userRepository.findWithLockById(userId)).thenReturn(Optional.of(user));
+    when(codec.decodeCreationOptions("{}")).thenReturn(creationOptions());
+    when(userRepository.findWithLockById(userId)).thenReturn(Optional.of(user(userId)));
     when(passkeyCredentialRepository.countActiveByUserId(any())).thenReturn(0L);
     when(properties.maxPasskeys()).thenReturn(10);
   }

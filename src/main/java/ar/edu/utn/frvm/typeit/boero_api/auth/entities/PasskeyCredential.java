@@ -11,7 +11,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -32,7 +32,7 @@ import org.jspecify.annotations.Nullable;
     name = "passkey_credentials",
     uniqueConstraints =
         @UniqueConstraint(
-            name = "passkey_credentials_credential_id_unique",
+            name = "passkey_credentials_credential_id_key",
             columnNames = "credential_id"),
     indexes = {
       @Index(name = "passkey_credentials_user_active_idx", columnList = "user_id"),
@@ -91,10 +91,10 @@ public class PasskeyCredential extends Auditable {
   private String label;
 
   @Column(name = "last_used_at")
-  private @Nullable LocalDateTime lastUsedAt;
+  private @Nullable Instant lastUsedAt;
 
   @Column(name = "revoked_at")
-  private @Nullable LocalDateTime revokedAt;
+  private @Nullable Instant revokedAt;
 
   public boolean isActive() {
     return revokedAt == null;
@@ -109,7 +109,7 @@ public class PasskeyCredential extends Auditable {
     this.label = trimmed;
   }
 
-  public boolean revoke(final LocalDateTime now) {
+  public boolean revoke(final Instant now) {
     if (!isActive()) {
       return false;
     }
@@ -117,7 +117,7 @@ public class PasskeyCredential extends Auditable {
     return true;
   }
 
-  public void markUsed(final LocalDateTime now, final long signatureCount) {
+  public void markUsed(final Instant now, final long signatureCount) {
     this.lastUsedAt = now;
     this.signatureCount = signatureCount;
   }

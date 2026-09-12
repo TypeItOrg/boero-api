@@ -1,6 +1,5 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
-import ar.edu.utn.frvm.typeit.boero_api.auth.config.AuthRateLimitProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.LoginAccountNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.LoginStateInconsistentException;
@@ -9,7 +8,6 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.IdentifyLoginRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.IdentifyLoginResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.IdentifyLoginResponse.LoginNextStep;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,25 +22,11 @@ public class IdentifyLoginUseCase {
   private final UserRepository userRepository;
   private final PasskeyCredentialRepository passkeyCredentialRepository;
   private final LoginAttemptService loginAttemptService;
-  private final AuthRateLimitService rateLimitService;
-  private final AuthRateLimitProperties rateLimitProperties;
 
   @Transactional(readOnly = true)
-  public IdentifyLoginResponse execute(
-      final IdentifyLoginRequest request, final HttpServletRequest httpRequest) {
+  public IdentifyLoginResponse execute(final IdentifyLoginRequest request) {
     final String normalizedDocument =
-        AuthRateLimitService.normalizeDocument(request.documentNumber());
-    final String clientIp = AuthRequestMetadata.clientIp(httpRequest);
-    rateLimitService.checkAllowed(
-        "identify-ip",
-        rateLimitService.hashKey(clientIp),
-        rateLimitProperties.identifyIpMax(),
-        rateLimitProperties.identifyIpWindow());
-    rateLimitService.checkAllowed(
-        "identify-account",
-        rateLimitService.hashKey(request.institutionId() + "|" + normalizedDocument),
-        rateLimitProperties.identifyAccountMax(),
-        rateLimitProperties.identifyAccountWindow());
+        request.documentNumber() == null ? "" : request.documentNumber().trim();
 
     final List<User> users =
         userRepository.findAllByPersonDocumentNumberAndInstitution_Id(

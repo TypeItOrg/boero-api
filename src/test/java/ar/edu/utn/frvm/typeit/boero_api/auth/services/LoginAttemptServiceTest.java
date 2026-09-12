@@ -9,7 +9,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.config.WebAuthnProperties;
+import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidLoginAttemptException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,11 +72,8 @@ class LoginAttemptServiceTest {
     when(valueOperations.get(anyString())).thenReturn(null);
 
     assertThatThrownBy(() -> service.resolve("unknown"))
-        .isInstanceOf(
-            ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidLoginAttemptException.class);
-    assertThatThrownBy(() -> service.resolve(" "))
-        .isInstanceOf(
-            ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidLoginAttemptException.class);
+        .isInstanceOf(InvalidLoginAttemptException.class);
+    assertThatThrownBy(() -> service.resolve(" ")).isInstanceOf(InvalidLoginAttemptException.class);
   }
 
   @Test
@@ -91,8 +90,7 @@ class LoginAttemptServiceTest {
     final String id = UUID.randomUUID().toString();
     final UUID userId = UUID.randomUUID();
     final UUID institutionId = UUID.randomUUID();
-    final String stored =
-        userId + "|" + institutionId + "|true|" + java.time.Instant.now().toEpochMilli();
+    final String stored = userId + "|" + institutionId + "|true|" + Instant.now().toEpochMilli();
     when(valueOperations.getAndDelete("boero:auth:login-attempt:" + id)).thenReturn(stored);
 
     final LoginAttempt claimed = service.claim(id);
@@ -109,10 +107,7 @@ class LoginAttemptServiceTest {
     when(valueOperations.getAndDelete(anyString())).thenReturn(null);
 
     assertThatThrownBy(() -> service.claim("consumed"))
-        .isInstanceOf(
-            ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidLoginAttemptException.class);
-    assertThatThrownBy(() -> service.claim(" "))
-        .isInstanceOf(
-            ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidLoginAttemptException.class);
+        .isInstanceOf(InvalidLoginAttemptException.class);
+    assertThatThrownBy(() -> service.claim(" ")).isInstanceOf(InvalidLoginAttemptException.class);
   }
 }

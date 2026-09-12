@@ -2,7 +2,6 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.controllers;
 
 import static ar.edu.utn.frvm.typeit.boero_api.support.AuthTestData.institutionalPrincipal;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -18,6 +17,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PasskeyAuthenticationOptionsResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PasskeyRegistrationOptionsResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PasskeyResponse;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.JwtService;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.ListPasskeysUseCase;
@@ -30,7 +30,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.services.TokenBlacklistService;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.VerifyPasskeyAuthenticationUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.VerifyPasskeyRegistrationUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -44,6 +44,8 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.util.PathMatcher;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 @WebMvcTest(PasskeyController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -76,16 +78,13 @@ class PasskeyControllerWebMvcTest {
   @MockitoBean private TokenBlacklistService tokenBlacklistService;
   @MockitoBean private IsSessionActiveUseCase isSessionActiveUseCase;
 
-  @MockitoBean
-  private ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUseCase
-      isPlatformSessionActiveUseCase;
+  @MockitoBean private IsPlatformSessionActiveUseCase isPlatformSessionActiveUseCase;
 
   @Test
   @DisplayName("Should expose authentication options without user data")
   void shouldExposeAuthenticationOptions() throws Exception {
-    final tools.jackson.databind.ObjectMapper mapper =
-        tools.jackson.databind.json.JsonMapper.builder().build();
-    when(requestAuthenticationOptionsUseCase.execute(eq("attempt"), any()))
+    final ObjectMapper mapper = JsonMapper.builder().build();
+    when(requestAuthenticationOptionsUseCase.execute("attempt"))
         .thenReturn(
             new PasskeyAuthenticationOptionsResponse(
                 "ceremony",
@@ -129,7 +128,7 @@ class PasskeyControllerWebMvcTest {
   void shouldListActivePasskeys() throws Exception {
     final JwtAuthenticatedUser principal = principal();
     when(listPasskeysUseCase.execute(principal))
-        .thenReturn(List.of(new PasskeyResponse(PASSKEY_ID, "Mi PC", LocalDateTime.now(), null)));
+        .thenReturn(List.of(new PasskeyResponse(PASSKEY_ID, "Mi PC", Instant.now(), null)));
     when(webAuthnProperties.maxPasskeys()).thenReturn(10);
 
     mockMvc
@@ -158,8 +157,7 @@ class PasskeyControllerWebMvcTest {
   @DisplayName("Should request registration options with a valid label")
   void shouldRequestRegistrationOptions() throws Exception {
     final JwtAuthenticatedUser principal = principal();
-    final tools.jackson.databind.ObjectMapper mapper =
-        tools.jackson.databind.json.JsonMapper.builder().build();
+    final ObjectMapper mapper = JsonMapper.builder().build();
     when(requestRegistrationOptionsUseCase.execute(any(), any()))
         .thenReturn(
             new PasskeyRegistrationOptionsResponse(

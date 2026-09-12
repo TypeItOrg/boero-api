@@ -3,7 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.PasskeyNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PasskeyCredentialRepository;
-import java.time.LocalDateTime;
+import java.time.Clock;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RevokePasskeyUseCase {
 
+  private final Clock clock;
+
   private final PasskeyCredentialRepository passkeyCredentialRepository;
   private final RecentAuthService recentAuthService;
 
@@ -23,10 +25,10 @@ public class RevokePasskeyUseCase {
     recentAuthService.requireRecent(principal.sessionId(), principal.userId());
     final var credential =
         passkeyCredentialRepository
-            .findByIdAndUserId(passkeyId, principal.userId())
+            .findWithLockByIdAndUserId(passkeyId, principal.userId())
             .filter(c -> c.isActive())
             .orElseThrow(PasskeyNotFoundException::new);
-    credential.revoke(LocalDateTime.now());
+    credential.revoke(clock.instant());
     passkeyCredentialRepository.save(credential);
     log.info("[Auth] Passkey revoked, userId: {}", principal.userId());
   }

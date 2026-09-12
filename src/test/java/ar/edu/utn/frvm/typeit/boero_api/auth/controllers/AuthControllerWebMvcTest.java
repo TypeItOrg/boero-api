@@ -21,9 +21,12 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.UserRegisteredRe
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.UserResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.GetActiveSessionsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.GetCurrentUserUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.IdentifyLoginUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.JwtService;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.LogoutUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.PasswordLoginWithAttemptUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RefreshTokenUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RegisterUserUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RequestInstitutionalPasswordRecoveryUseCase;
@@ -65,12 +68,9 @@ class AuthControllerWebMvcTest {
   @MockitoBean private RegisterUserUseCase registerUserUseCase;
   @MockitoBean private RefreshTokenUseCase refreshTokenUseCase;
 
-  @MockitoBean
-  private ar.edu.utn.frvm.typeit.boero_api.auth.services.IdentifyLoginUseCase identifyLoginUseCase;
+  @MockitoBean private IdentifyLoginUseCase identifyLoginUseCase;
 
-  @MockitoBean
-  private ar.edu.utn.frvm.typeit.boero_api.auth.services.PasswordLoginWithAttemptUseCase
-      passwordLoginWithAttemptUseCase;
+  @MockitoBean private PasswordLoginWithAttemptUseCase passwordLoginWithAttemptUseCase;
 
   @MockitoBean
   private RequestInstitutionalPasswordRecoveryUseCase requestInstitutionalPasswordRecoveryUseCase;
@@ -84,9 +84,7 @@ class AuthControllerWebMvcTest {
   @MockitoBean private TokenBlacklistService tokenBlacklistService;
   @MockitoBean private IsSessionActiveUseCase isSessionActiveUseCase;
 
-  @MockitoBean
-  private ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUseCase
-      isPlatformSessionActiveUseCase;
+  @MockitoBean private IsPlatformSessionActiveUseCase isPlatformSessionActiveUseCase;
 
   @Test
   @DisplayName("Should register user and return created response")

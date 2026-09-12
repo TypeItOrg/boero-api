@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.config.WebAuthnProperties;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
@@ -30,7 +31,7 @@ public class WebAuthnCeremonyService {
             + "|"
             + Base64.getUrlEncoder()
                 .withoutPadding()
-                .encodeToString(label.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+                .encodeToString(label.getBytes(StandardCharsets.UTF_8))
             + "|"
             + Instant.now().toEpochMilli()
             + "\n"
@@ -87,8 +88,7 @@ public class WebAuthnCeremonyService {
     }
     try {
       final String label =
-          new String(
-              Base64.getUrlDecoder().decode(parts[2]), java.nio.charset.StandardCharsets.UTF_8);
+          new String(Base64.getUrlDecoder().decode(parts[2]), StandardCharsets.UTF_8);
       return Optional.of(
           new RegistrationCeremony(
               ceremonyId,

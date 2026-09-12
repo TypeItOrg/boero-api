@@ -1,12 +1,10 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
-import ar.edu.utn.frvm.typeit.boero_api.auth.config.AuthRateLimitProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidLoginAttemptException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PasskeyAuthenticationOptionsResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.webauthn.WebAuthnOptionsCodec;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -24,27 +22,14 @@ public class RequestPasskeyAuthenticationOptionsUseCase {
   private final UserRepository userRepository;
   private final WebAuthnRelyingPartyOperations relyingPartyOperations;
   private final WebAuthnCeremonyService ceremonyService;
-  private final AuthRateLimitService rateLimitService;
-  private final AuthRateLimitProperties rateLimitProperties;
   private final WebAuthnOptionsCodec optionsCodec;
 
   @Transactional(readOnly = true)
-  public PasskeyAuthenticationOptionsResponse execute(
-      final String loginAttemptId, final HttpServletRequest httpRequest) {
+  public PasskeyAuthenticationOptionsResponse execute(final String loginAttemptId) {
     final LoginAttempt attempt = loginAttemptService.resolve(loginAttemptId);
     if (!attempt.hasActivePasskeys()) {
       throw new InvalidLoginAttemptException();
     }
-    rateLimitService.checkAllowed(
-        "passkey-options-ip",
-        rateLimitService.hashKey(AuthRequestMetadata.clientIp(httpRequest)),
-        rateLimitProperties.webauthnIpMax(),
-        rateLimitProperties.webauthnIpWindow());
-    rateLimitService.checkAllowed(
-        "passkey-options",
-        rateLimitService.hashKey(attempt.userId().toString()),
-        rateLimitProperties.webauthnMax(),
-        rateLimitProperties.webauthnWindow());
     final User user =
         userRepository
             .findWithPersonAndInstitutionById(attempt.userId())
@@ -58,6 +43,6 @@ public class RequestPasskeyAuthenticationOptionsUseCase {
     final String ceremonyId =
         ceremonyService.storeAuthentication(attempt.id(), user.getId(), optionsJson);
     return new PasskeyAuthenticationOptionsResponse(
-        ceremonyId, optionsCodec.requestOptionsTree(options));
+        ceremonyId, optionsCodec.parseSnapshot(optionsJson));
   }
 }

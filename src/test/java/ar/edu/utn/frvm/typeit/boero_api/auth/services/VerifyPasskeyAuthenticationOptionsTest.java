@@ -20,6 +20,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import com.webauthn4j.verifier.exception.BadSignatureException;
 import jakarta.servlet.http.HttpServletRequest;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -37,6 +38,7 @@ import org.springframework.security.web.webauthn.api.ImmutablePublicKeyCredentia
 import org.springframework.security.web.webauthn.api.PublicKeyCredential;
 import org.springframework.security.web.webauthn.api.PublicKeyCredentialRequestOptions;
 import org.springframework.security.web.webauthn.api.UserVerificationRequirement;
+import org.springframework.security.web.webauthn.management.WebAuthnRelyingPartyOperations;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -47,14 +49,10 @@ class VerifyPasskeyAuthenticationOptionsTest {
   @Mock private UserRepository userRepository;
   @Mock private PasskeyCredentialRepository passkeyCredentialRepository;
 
-  @Mock
-  private org.springframework.security.web.webauthn.management.WebAuthnRelyingPartyOperations
-      relyingPartyOperations;
+  @Mock private WebAuthnRelyingPartyOperations relyingPartyOperations;
 
   @Mock private WebAuthnCeremonyService ceremonyService;
   @Mock private AuthenticationSessionIssuer sessionIssuer;
-  @Mock private AuthRateLimitService rateLimitService;
-  @Mock private ar.edu.utn.frvm.typeit.boero_api.auth.config.AuthRateLimitProperties rateLimits;
   @Mock private HttpServletRequest httpRequest;
   @Mock private WebAuthnOptionsCodec codec;
 
@@ -66,7 +64,7 @@ class VerifyPasskeyAuthenticationOptionsTest {
     final LoginAttempt attempt =
         new LoginAttempt("attempt", userId, institutionId, true, Instant.now());
     when(loginAttemptService.resolve("attempt")).thenReturn(attempt);
-    when(codec.parseSnapshot("not-json")).thenThrow(new IllegalStateException("unreadable"));
+    when(codec.decodeRequestOptions("not-json")).thenThrow(new IllegalStateException("unreadable"));
     when(ceremonyService.consumeAuthentication("ceremony"))
         .thenReturn(
             Optional.of(
@@ -80,8 +78,6 @@ class VerifyPasskeyAuthenticationOptionsTest {
             relyingPartyOperations,
             ceremonyService,
             sessionIssuer,
-            rateLimitService,
-            rateLimits,
             codec);
 
     final JsonNode credential =
@@ -124,8 +120,6 @@ class VerifyPasskeyAuthenticationOptionsTest {
         relyingPartyOperations,
         ceremonyService,
         sessionIssuer,
-        rateLimitService,
-        rateLimits,
         codec);
   }
 
@@ -134,16 +128,11 @@ class VerifyPasskeyAuthenticationOptionsTest {
     final LoginAttempt attempt =
         new LoginAttempt("attempt", userId, UUID.randomUUID(), true, Instant.now());
     when(loginAttemptService.resolve("attempt")).thenReturn(attempt);
-    when(rateLimits.webauthnMax()).thenReturn(20);
-    when(rateLimits.webauthnWindow()).thenReturn(Duration.ofMinutes(1));
-    when(rateLimits.webauthnIpMax()).thenReturn(60);
-    when(rateLimits.webauthnIpWindow()).thenReturn(Duration.ofMinutes(1));
     when(ceremonyService.consumeAuthentication("ceremony"))
         .thenReturn(
             Optional.of(
                 new AuthenticationCeremony("ceremony", "attempt", userId, "{}", Instant.now())));
-    when(codec.parseSnapshot("{}")).thenReturn(Mockito.mock(JsonNode.class));
-    when(codec.rebuildRequestOptions(any())).thenReturn(requestOptions());
+    when(codec.decodeRequestOptions("{}")).thenReturn(requestOptions());
     when(codec.decodeAssertionCredential(any())).thenReturn(assertionCredential());
   }
 
@@ -165,20 +154,15 @@ class VerifyPasskeyAuthenticationOptionsTest {
                     .build())
             .password("hash")
             .build();
-    final byte[] handle = user.ensureWebAuthnUserHandle(new java.security.SecureRandom());
+    final byte[] handle = user.ensureWebAuthnUserHandle(new SecureRandom());
     final LoginAttempt attempt =
         new LoginAttempt("attempt", userId, institutionId, true, Instant.now());
     when(loginAttemptService.resolve("attempt")).thenReturn(attempt);
-    when(rateLimits.webauthnMax()).thenReturn(20);
-    when(rateLimits.webauthnWindow()).thenReturn(Duration.ofMinutes(1));
-    when(rateLimits.webauthnIpMax()).thenReturn(60);
-    when(rateLimits.webauthnIpWindow()).thenReturn(Duration.ofMinutes(1));
     when(ceremonyService.consumeAuthentication("ceremony"))
         .thenReturn(
             Optional.of(
                 new AuthenticationCeremony("ceremony", "attempt", userId, "{}", Instant.now())));
-    when(codec.parseSnapshot("{}")).thenReturn(Mockito.mock(JsonNode.class));
-    when(codec.rebuildRequestOptions(any())).thenReturn(requestOptions());
+    when(codec.decodeRequestOptions("{}")).thenReturn(requestOptions());
     when(codec.decodeAssertionCredential(any())).thenReturn(assertionCredential());
     when(relyingPartyOperations.authenticate(any()))
         .thenReturn(

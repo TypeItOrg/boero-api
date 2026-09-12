@@ -1,29 +1,20 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.within;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import ar.edu.utn.frvm.typeit.boero_api.auth.config.AuthRateLimitProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.config.PasswordRecoveryProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.InstitutionalPasswordResetToken;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.events.InstitutionalPasswordRecoveryRequested;
-import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.RateLimitExceededException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.InstitutionalPasswordResetTokenRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PasswordRecoveryRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import java.time.Clock;
-import jakarta.servlet.http.HttpServletRequest;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -54,12 +45,6 @@ class RequestInstitutionalPasswordRecoveryUseCaseTest {
 
   @Mock private ApplicationEventPublisher eventPublisher;
 
-  @Mock private AuthRateLimitService rateLimitService;
-
-  @Mock private AuthRateLimitProperties rateLimitProperties;
-
-  @Mock private HttpServletRequest httpRequest;
-
   private RequestInstitutionalPasswordRecoveryUseCase useCase;
 
   @BeforeEach
@@ -70,10 +55,7 @@ class RequestInstitutionalPasswordRecoveryUseCaseTest {
             userRepository,
             passwordResetTokenRepository,
             eventPublisher,
-            new PasswordRecoveryProperties("http://localhost:3000", TOKEN_EXPIRATION),
-            rateLimitService,
-            rateLimitProperties);
-    when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
+            new PasswordRecoveryProperties("http://localhost:3000", TOKEN_EXPIRATION));
   }
 
   @Test
@@ -86,7 +68,7 @@ class RequestInstitutionalPasswordRecoveryUseCaseTest {
         .thenReturn(Optional.of(user));
 
     // when
-    useCase.execute(new PasswordRecoveryRequest(DOCUMENT_NUMBER, INSTITUTION_ID), httpRequest);
+    useCase.execute(new PasswordRecoveryRequest(DOCUMENT_NUMBER, INSTITUTION_ID));
 
     // then
     verify(passwordResetTokenRepository).deleteByUserId(USER_ID);
@@ -119,7 +101,7 @@ class RequestInstitutionalPasswordRecoveryUseCaseTest {
             DOCUMENT_NUMBER, INSTITUTION_ID))
         .thenReturn(Optional.empty());
 
-    useCase.execute(new PasswordRecoveryRequest(DOCUMENT_NUMBER, INSTITUTION_ID), httpRequest);
+    useCase.execute(new PasswordRecoveryRequest(DOCUMENT_NUMBER, INSTITUTION_ID));
 
     verifyNoInteractions(passwordResetTokenRepository, eventPublisher);
   }
@@ -138,7 +120,7 @@ class RequestInstitutionalPasswordRecoveryUseCaseTest {
             DOCUMENT_NUMBER, INSTITUTION_ID))
         .thenReturn(Optional.of(user));
 
-    useCase.execute(new PasswordRecoveryRequest(DOCUMENT_NUMBER, INSTITUTION_ID), httpRequest);
+    useCase.execute(new PasswordRecoveryRequest(DOCUMENT_NUMBER, INSTITUTION_ID));
 
     verifyNoInteractions(passwordResetTokenRepository, eventPublisher);
   }
@@ -157,25 +139,9 @@ class RequestInstitutionalPasswordRecoveryUseCaseTest {
             DOCUMENT_NUMBER, INSTITUTION_ID))
         .thenReturn(Optional.of(user));
 
-    useCase.execute(new PasswordRecoveryRequest(DOCUMENT_NUMBER, INSTITUTION_ID), httpRequest);
+    useCase.execute(new PasswordRecoveryRequest(DOCUMENT_NUMBER, INSTITUTION_ID));
 
     verifyNoInteractions(passwordResetTokenRepository, eventPublisher);
-  }
-
-  @Test
-  @DisplayName("propaga el límite de intentos sin revelar si la cuenta existe")
-  void propagatesRateLimitWithoutRevealingAccountExistence() {
-    doThrow(new RateLimitExceededException())
-        .when(rateLimitService)
-        .checkAllowed(anyString(), any(), anyInt(), any());
-
-    assertThatThrownBy(
-            () ->
-                useCase.execute(
-                    new PasswordRecoveryRequest(DOCUMENT_NUMBER, INSTITUTION_ID), httpRequest))
-        .isInstanceOf(RateLimitExceededException.class);
-
-    verifyNoInteractions(userRepository, passwordResetTokenRepository, eventPublisher);
   }
 
   private User recoverableUser() {

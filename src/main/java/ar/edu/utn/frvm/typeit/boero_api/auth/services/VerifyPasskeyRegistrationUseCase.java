@@ -89,17 +89,10 @@ public class VerifyPasskeyRegistrationUseCase {
     if (passkeyCredentialRepository.findByCredentialId(credentialId).isPresent()) {
       throw new DuplicatePasskeyCredentialException();
     }
-    final User user =
-        userRepository
-            .findWithPersonAndInstitutionById(locked.getId())
-            .orElseThrow(LoginStateInconsistentException::new);
-    final PasskeyCredential entity = mapper.toEntity(null, user, record, ceremony.label());
-    if (record.getAttestationObject() != null) {
-      // attestation already mapped inside toEntity when present
-    }
+    final PasskeyCredential entity = mapper.toEntity(locked, record, ceremony.label());
     final PasskeyCredential saved;
     try {
-      saved = passkeyCredentialRepository.save(entity);
+      saved = passkeyCredentialRepository.saveAndFlush(entity);
     } catch (DataIntegrityViolationException exception) {
       if (isCredentialIdConflict(exception)) {
         throw new DuplicatePasskeyCredentialException();
@@ -114,7 +107,7 @@ public class VerifyPasskeyRegistrationUseCase {
     Throwable cause = exception.getCause();
     while (cause != null) {
       if (cause instanceof ConstraintViolationException violation) {
-        return "passkey_credentials_credential_id_unique".equals(violation.getConstraintName());
+        return "passkey_credentials_credential_id_key".equals(violation.getConstraintName());
       }
       cause = cause.getCause();
     }
@@ -122,42 +115,11 @@ public class VerifyPasskeyRegistrationUseCase {
   }
 
   private PublicKeyCredentialCreationOptions readOptions(final String json) {
-    final tools.jackson.databind.JsonNode snapshot = parseSnapshot(json);
     try {
-      return optionsCodec.rebuildCreationOptions(snapshot);
+      return optionsCodec.decodeCreationOptions(json);
     } catch (IllegalStateException exception) {
-      log.info(
-          "[Auth] Failed to reconstruct Spring WebAuthn registration options, exceptionType={}, message={}",
-          exceptionType(exception),
-          exceptionMessage(exception));
       throw new WebAuthnCeremonyInvalidException();
     }
-  }
-
-  private tools.jackson.databind.JsonNode parseSnapshot(final String json) {
-    try {
-      return optionsCodec.parseSnapshot(json);
-    } catch (IllegalStateException exception) {
-      log.info(
-          "[Auth] Failed to deserialize WebAuthn registration snapshot, exceptionType={}, message={}",
-          exceptionType(exception),
-          exceptionMessage(exception));
-      throw new WebAuthnCeremonyInvalidException();
-    }
-  }
-
-  private static String exceptionType(final IllegalStateException exception) {
-    if (exception.getCause() == null) {
-      return exception.getClass().getSimpleName();
-    }
-    return exception.getCause().getClass().getSimpleName();
-  }
-
-  private static String exceptionMessage(final IllegalStateException exception) {
-    if (exception.getCause() instanceof IllegalArgumentException cause) {
-      return cause.getMessage();
-    }
-    return exception.getMessage();
   }
 
   private PublicKeyCredential<AuthenticatorAttestationResponse> readCredential(

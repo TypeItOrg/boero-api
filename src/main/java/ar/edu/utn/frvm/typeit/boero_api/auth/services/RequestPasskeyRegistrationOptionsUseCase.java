@@ -9,6 +9,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PasskeyCredentialReposit
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PasskeyRegistrationOptionsResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.webauthn.WebAuthnOptionsCodec;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -50,8 +51,7 @@ public class RequestPasskeyRegistrationOptionsUseCase {
             .findWithPersonAndInstitutionById(principal.userId())
             .orElseThrow(LoginStateInconsistentException::new);
     final Authentication authentication =
-        UsernamePasswordAuthenticationToken.authenticated(
-            user.getId().toString(), null, java.util.List.of());
+        UsernamePasswordAuthenticationToken.authenticated(user.getId().toString(), null, List.of());
     final PublicKeyCredentialCreationOptions options =
         relyingPartyOperations.createPublicKeyCredentialCreationOptions(
             new ImmutablePublicKeyCredentialCreationOptionsRequest(authentication));
@@ -60,6 +60,6 @@ public class RequestPasskeyRegistrationOptionsUseCase {
         ceremonyService.storeRegistration(
             user.getId(), principal.sessionId(), trimmed, optionsJson);
     return new PasskeyRegistrationOptionsResponse(
-        ceremonyId, optionsCodec.creationOptionsTree(options));
+        ceremonyId, optionsCodec.parseSnapshot(optionsJson));
   }
 }

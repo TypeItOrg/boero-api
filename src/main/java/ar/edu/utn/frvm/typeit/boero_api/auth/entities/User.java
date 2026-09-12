@@ -17,6 +17,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +27,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -64,7 +66,7 @@ public class User extends Auditable implements UserDetails {
   private boolean enabled = true;
 
   @Column(name = "webauthn_user_handle")
-  private @org.jspecify.annotations.Nullable byte[] webauthnUserHandle;
+  private @Nullable byte[] webauthnUserHandle;
 
   @Override
   public String getUsername() {
@@ -114,7 +116,7 @@ public class User extends Auditable implements UserDetails {
     this.password = password;
   }
 
-  public byte[] ensureWebAuthnUserHandle(final java.security.SecureRandom secureRandom) {
+  public byte[] ensureWebAuthnUserHandle(final SecureRandom secureRandom) {
     if (webauthnUserHandle != null) {
       return webauthnUserHandle.clone();
     }

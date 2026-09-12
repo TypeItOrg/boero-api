@@ -66,9 +66,8 @@ public class AuthController {
   }
 
   @PostMapping(version = Version.V1, path = "/login/identify")
-  public IdentifyLoginResponse identify(
-      @Valid @RequestBody IdentifyLoginRequest request, HttpServletRequest httpRequest) {
-    return identifyLoginUseCase.execute(request, httpRequest);
+  public IdentifyLoginResponse identify(@Valid @RequestBody IdentifyLoginRequest request) {
+    return identifyLoginUseCase.execute(request);
   }
 
   @PostMapping(version = Version.V1, path = "/login/password")
@@ -84,18 +83,14 @@ public class AuthController {
 
   @PostMapping(version = Version.V1, path = "/password-recovery")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void requestPasswordRecovery(
-      @Valid @RequestBody final PasswordRecoveryRequest request,
-      final HttpServletRequest httpRequest) {
-    requestInstitutionalPasswordRecoveryUseCase.execute(request, httpRequest);
+  public void requestPasswordRecovery(@Valid @RequestBody final PasswordRecoveryRequest request) {
+    requestInstitutionalPasswordRecoveryUseCase.execute(request);
   }
 
   @PostMapping(version = Version.V1, path = "/password-recovery/reset")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void resetPassword(
-      @Valid @RequestBody final ResetPasswordRequest request,
-      final HttpServletRequest httpRequest) {
-    resetInstitutionalPasswordUseCase.execute(request, httpRequest);
+  public void resetPassword(@Valid @RequestBody final ResetPasswordRequest request) {
+    resetInstitutionalPasswordUseCase.execute(request);
   }
 
   @PostMapping(version = Version.V1, path = "/logout")

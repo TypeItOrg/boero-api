@@ -22,7 +22,7 @@ public class RenamePasskeyUseCase {
       final JwtAuthenticatedUser principal, final UUID passkeyId, final String label) {
     final var credential =
         passkeyCredentialRepository
-            .findByIdAndUserId(passkeyId, principal.userId())
+            .findWithLockByIdAndUserId(passkeyId, principal.userId())
             .filter(c -> c.isActive())
             .orElseThrow(PasskeyNotFoundException::new);
     credential.rename(label);

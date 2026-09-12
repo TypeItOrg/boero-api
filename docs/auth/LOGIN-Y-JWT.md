@@ -20,7 +20,7 @@ El flujo (`PasswordLoginWithAttemptUseCase`, `src/main/java/.../auth/services/Pa
 9. Genera el access token JWT
 10. Devuelve `AuthResponse` con access token + raw refresh token
 
-El endpoint legacy de login directo (`POST /api/v1/auth/login`, `LoginUseCase`) fue eliminado: todo password login pasa por identifier-first con rate limiting.
+El endpoint legacy de login directo (`POST /api/v1/auth/login`, `LoginUseCase`) fue eliminado: todo password login pasa por identifier-first. El rate limiting corresponde a Nginx.
 
 ## Login plataforma
 

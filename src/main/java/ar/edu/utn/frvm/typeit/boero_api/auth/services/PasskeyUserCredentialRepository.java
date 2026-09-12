@@ -3,7 +3,10 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PasskeyCredential;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PasskeyCredentialRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
+import java.time.Clock;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.web.webauthn.api.Bytes;
 import org.springframework.security.web.webauthn.api.CredentialRecord;
@@ -15,18 +18,20 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PasskeyUserCredentialRepository implements UserCredentialRepository {
 
+  private final Clock clock;
+
   private final PasskeyCredentialRepository passkeyCredentialRepository;
   private final UserRepository userRepository;
   private final PasskeyCredentialMapper mapper;
 
   @Override
-  @Transactional(readOnly = true)
+  @Transactional
   public CredentialRecord findByCredentialId(final Bytes credentialId) {
     if (credentialId == null) {
       return null;
     }
     return passkeyCredentialRepository
-        .findByCredentialId(credentialId.toBase64UrlString())
+        .findWithLockByCredentialId(credentialId.toBase64UrlString())
         .filter(PasskeyCredential::isActive)
         .map(mapper::toRecord)
         .orElse(null);
@@ -55,18 +60,17 @@ public class PasskeyUserCredentialRepository implements UserCredentialRepository
       return;
     }
     passkeyCredentialRepository
-        .findByCredentialId(credentialRecord.getCredentialId().toBase64UrlString())
-        .filter(ar.edu.utn.frvm.typeit.boero_api.auth.entities.PasskeyCredential::isActive)
+        .findWithLockByCredentialId(credentialRecord.getCredentialId().toBase64UrlString())
+        .filter(PasskeyCredential::isActive)
         .ifPresent(
             existing -> {
-              existing.markUsed(
-                  java.time.LocalDateTime.now(), credentialRecord.getSignatureCount());
+              existing.markUsed(clock.instant(), credentialRecord.getSignatureCount());
               existing.applyTransports(
                   credentialRecord.getTransports() == null
-                      ? java.util.Set.of()
+                      ? Set.of()
                       : credentialRecord.getTransports().stream()
                           .map(transport -> transport == null ? "" : transport.getValue())
-                          .collect(java.util.stream.Collectors.toUnmodifiableSet()));
+                          .collect(Collectors.toUnmodifiableSet()));
               passkeyCredentialRepository.save(existing);
             });
   }

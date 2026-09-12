@@ -15,7 +15,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -30,7 +33,7 @@ class WebAuthnCeremonyServiceTest {
 
   @BeforeEach
   void setUp() {
-    org.mockito.Mockito.lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+    Mockito.lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
     service =
         new WebAuthnCeremonyService(
             redisTemplate,
@@ -48,15 +51,14 @@ class WebAuthnCeremonyServiceTest {
   @DisplayName("Should consume authentication ceremonies atomically and only once")
   void authenticationCeremony_isOneTime() {
     final UUID userId = UUID.randomUUID();
-    final org.mockito.ArgumentCaptor<String> valueCaptor =
-        org.mockito.ArgumentCaptor.forClass(String.class);
+    final ArgumentCaptor<String> valueCaptor = ArgumentCaptor.forClass(String.class);
 
     final String ceremonyId =
         service.storeAuthentication("attempt-1", userId, "{\"type\":\"auth\"}");
 
     verify(valueOperations)
         .set(
-            org.mockito.ArgumentMatchers.eq("boero:webauthn:authentication:" + ceremonyId),
+            ArgumentMatchers.eq("boero:webauthn:authentication:" + ceremonyId),
             valueCaptor.capture(),
             any(Duration.class));
     when(valueOperations.getAndDelete(anyString())).thenReturn(valueCaptor.getValue());
@@ -78,15 +80,14 @@ class WebAuthnCeremonyServiceTest {
   void registrationCeremony_bindsSession() {
     final UUID userId = UUID.randomUUID();
     final UUID sessionId = UUID.randomUUID();
-    final org.mockito.ArgumentCaptor<String> valueCaptor =
-        org.mockito.ArgumentCaptor.forClass(String.class);
+    final ArgumentCaptor<String> valueCaptor = ArgumentCaptor.forClass(String.class);
 
     final String ceremonyId =
         service.storeRegistration(userId, sessionId, "Mi PC", "{\"type\":\"reg\"}");
 
     verify(valueOperations)
         .set(
-            org.mockito.ArgumentMatchers.eq("boero:webauthn:registration:" + ceremonyId),
+            ArgumentMatchers.eq("boero:webauthn:registration:" + ceremonyId),
             valueCaptor.capture(),
             any(Duration.class));
     when(valueOperations.getAndDelete(anyString())).thenReturn(valueCaptor.getValue());

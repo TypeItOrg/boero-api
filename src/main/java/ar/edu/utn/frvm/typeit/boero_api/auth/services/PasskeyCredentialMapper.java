@@ -1,9 +1,8 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PasskeyCredential;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.Arrays;
+import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -11,6 +10,7 @@ import org.springframework.security.web.webauthn.api.AuthenticatorTransport;
 import org.springframework.security.web.webauthn.api.Bytes;
 import org.springframework.security.web.webauthn.api.CredentialRecord;
 import org.springframework.security.web.webauthn.api.ImmutableCredentialRecord;
+import org.springframework.security.web.webauthn.api.ImmutableCredentialRecord.ImmutableCredentialRecordBuilder;
 import org.springframework.security.web.webauthn.api.ImmutablePublicKeyCose;
 import org.springframework.security.web.webauthn.api.PublicKeyCredentialType;
 import org.springframework.stereotype.Component;
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 public class PasskeyCredentialMapper {
 
   public CredentialRecord toRecord(final PasskeyCredential credential) {
-    final ImmutableCredentialRecord.ImmutableCredentialRecordBuilder builder =
+    final ImmutableCredentialRecordBuilder builder =
         ImmutableCredentialRecord.builder()
             .credentialType(PublicKeyCredentialType.PUBLIC_KEY)
             .credentialId(new Bytes(decodeBase64Url(credential.getCredentialId())))
@@ -31,7 +31,7 @@ public class PasskeyCredentialMapper {
             .backupEligible(credential.isBackupEligible())
             .backupState(credential.isBackupState())
             .label(credential.getLabel())
-            .created(toInstant(credential.getCreatedAt()));
+            .created(credential.getCreatedAt());
     if (credential.getAttestationObject() != null) {
       builder.attestationObject(new Bytes(credential.getAttestationObject().clone()));
     }
@@ -40,16 +40,13 @@ public class PasskeyCredentialMapper {
           new Bytes(credential.getAttestationClientDataJson().clone()));
     }
     if (credential.getLastUsedAt() != null) {
-      builder.lastUsed(toInstant(credential.getLastUsedAt()));
+      builder.lastUsed(credential.getLastUsedAt());
     }
     return builder.build();
   }
 
   public PasskeyCredential toEntity(
-      final java.util.UUID id,
-      final ar.edu.utn.frvm.typeit.boero_api.auth.entities.User user,
-      final CredentialRecord record,
-      final String label) {
+      final User user, final CredentialRecord record, final String label) {
     final PasskeyCredential credential =
         PasskeyCredential.builder()
             .user(user)
@@ -113,15 +110,7 @@ public class PasskeyCredentialMapper {
     return handle.clone();
   }
 
-  private static java.time.Instant toInstant(final LocalDateTime dateTime) {
-    return dateTime == null ? null : dateTime.toInstant(ZoneOffset.UTC);
-  }
-
   private static byte[] decodeBase64Url(final String value) {
-    return java.util.Base64.getUrlDecoder().decode(value);
-  }
-
-  public static byte[] copyOf(final byte[] value) {
-    return value == null ? null : Arrays.copyOf(value, value.length);
+    return Base64.getUrlDecoder().decode(value);
   }
 }

@@ -11,7 +11,8 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PasskeyCredential;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PasskeyCredentialRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
-import java.time.LocalDateTime;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -37,10 +38,12 @@ class PasskeyUserCredentialRepositoryTest {
   @DisplayName("Should not create credentials on save for unknown ids")
   void save_ignoresUnknownCredentialIds() {
     final PasskeyUserCredentialRepository repository =
-        new PasskeyUserCredentialRepository(passkeyCredentialRepository, userRepository, mapper);
+        new PasskeyUserCredentialRepository(
+            Clock.systemUTC(), passkeyCredentialRepository, userRepository, mapper);
     final CredentialRecord record = Mockito.mock(CredentialRecord.class);
     when(record.getCredentialId()).thenReturn(Bytes.random());
-    when(passkeyCredentialRepository.findByCredentialId(any())).thenReturn(Optional.empty());
+    when(passkeyCredentialRepository.findWithLockByCredentialId(any()))
+        .thenReturn(Optional.empty());
 
     repository.save(record);
 
@@ -52,9 +55,11 @@ class PasskeyUserCredentialRepositoryTest {
   void save_updatesKnownCredential() {
     final PasskeyCredential existing = Mockito.mock(PasskeyCredential.class);
     when(existing.isActive()).thenReturn(true);
-    when(passkeyCredentialRepository.findByCredentialId(any())).thenReturn(Optional.of(existing));
+    when(passkeyCredentialRepository.findWithLockByCredentialId(any()))
+        .thenReturn(Optional.of(existing));
     final PasskeyUserCredentialRepository repository =
-        new PasskeyUserCredentialRepository(passkeyCredentialRepository, userRepository, mapper);
+        new PasskeyUserCredentialRepository(
+            Clock.systemUTC(), passkeyCredentialRepository, userRepository, mapper);
     final CredentialRecord record = Mockito.mock(CredentialRecord.class);
     when(record.getCredentialId()).thenReturn(Bytes.random());
     when(record.getSignatureCount()).thenReturn(7L);
@@ -62,7 +67,7 @@ class PasskeyUserCredentialRepositoryTest {
 
     repository.save(record);
 
-    verify(existing).markUsed(any(LocalDateTime.class), eq(7L));
+    verify(existing).markUsed(any(Instant.class), eq(7L));
     verify(passkeyCredentialRepository).save(existing);
   }
 
@@ -70,10 +75,12 @@ class PasskeyUserCredentialRepositoryTest {
   @DisplayName("Should resolve active credentials by id without leaking revoked ones")
   void findByCredentialId_filtersRevoked() {
     final PasskeyUserCredentialRepository repository =
-        new PasskeyUserCredentialRepository(passkeyCredentialRepository, userRepository, mapper);
+        new PasskeyUserCredentialRepository(
+            Clock.systemUTC(), passkeyCredentialRepository, userRepository, mapper);
     final PasskeyCredential revoked = Mockito.mock(PasskeyCredential.class);
     when(revoked.isActive()).thenReturn(false);
-    when(passkeyCredentialRepository.findByCredentialId(any())).thenReturn(Optional.of(revoked));
+    when(passkeyCredentialRepository.findWithLockByCredentialId(any()))
+        .thenReturn(Optional.of(revoked));
 
     assertThat(repository.findByCredentialId(Bytes.random())).isNull();
     verify(mapper, never()).toRecord(any());
@@ -91,7 +98,8 @@ class PasskeyUserCredentialRepositoryTest {
     final CredentialRecord mapped = Mockito.mock(CredentialRecord.class);
     when(mapper.toRecord(credential)).thenReturn(mapped);
     final PasskeyUserCredentialRepository repository =
-        new PasskeyUserCredentialRepository(passkeyCredentialRepository, userRepository, mapper);
+        new PasskeyUserCredentialRepository(
+            Clock.systemUTC(), passkeyCredentialRepository, userRepository, mapper);
 
     assertThat(repository.findByUserId(Bytes.random())).containsExactly(mapped);
   }

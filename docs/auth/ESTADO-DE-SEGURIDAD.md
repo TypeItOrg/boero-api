@@ -20,7 +20,7 @@ No describe funcionalidades futuras como si ya existieran. Cuando una garantía 
 | Conflictos concurrentes de unicidad | Implementado | Las restricciones se fuerzan con `flush()` y se convierten a excepciones HTTP 409 |
 | Pruebas PostgreSQL de refresh | Implementado | Se prueba commit tras reutilización y rotación concurrente con Testcontainers |
 | Migraciones de esquema | Implementado | Flyway versiona las transiciones y Hibernate valida el resultado contra las entidades |
-| Rate limiting de autenticación | Implementado | Lua atómico, buckets IP+cuenta, HMAC dedicado, fail-closed y recovery cubierto |
+| Rate limiting de autenticación | Capa externa | Nginx; verificar cobertura de rutas de autenticación antes del despliegue |
 
 ## Invariantes que no deben romperse
 
@@ -84,21 +84,16 @@ Esta regla se aplica en autenticación, refresh y validación de sesión. No deb
 ### Errores
 
 - Solo fallos conocidos de verificación WebAuthn (`VerificationException`, `IllegalArgumentException` de Spring) se mapean a 401; fallos de infraestructura o bugs propagan como 5xx observables. Un contador clonado (`MaliciousCounterValueException`) se loguea como `WARN`.
-- Un duplicado de `credential_id` (pre-check o constraint `passkey_credentials_credential_id_unique`) es 409 controlado; cualquier otra violación de integridad es 5xx.
+- Un duplicado de `credential_id` (pre-check o constraint `passkey_credentials_credential_id_key`) es 409 controlado; cualquier otra violación de integridad es 5xx.
 - Los estados de cuenta nunca se revelan antes de autenticar: `DisabledException` se mapea a credenciales inválidas genéricas.
 - `ExceptionPayload` incluye `code` machine-readable opcional; `RECENT_AUTHENTICATION_REQUIRED` es el único código que abre el diálogo de re-autenticación en el frontend (nunca el status 403 a secas).
-- Redis caído en rate limiting es 503 distinguible del 429.
 - Un usuario que desaparece a mitad de ceremonia/login se mapea a estado inconsistente reintentable (401), nunca a 500 accidental.
 
 ### Rate limiting de autenticación
 
-- Todo password login pasa por identifier-first con throttling; no existe endpoint legacy sin límite.
-- Los contadores usan un script Lua atómico (`INCR` + `PEXPIRE` en una sola operación): nunca quedan buckets sin TTL.
-- Buckets independientes por IP y por cuenta en `identify`, password, passkey (options/verify), re-auth y recovery (request + reset).
-- Las claves derivadas de DNI usan HMAC-SHA-256 con `AUTH_RATE_LIMIT_KEY_SECRET` dedicado; nunca DNI crudo ni SHA-256 simple.
-- Si Redis no está disponible el limiter falla cerrado (`503`), distinguible del `429` por límite excedido.
-- No hay lockouts permanentes: todas las ventanas expiran. La dimensión por IP es la más estricta; la de cuenta es tolerante para no permitir DoS contra una cuenta conocida.
-- La IP efectiva es `request.getRemoteAddr()`; en staging/producción `server.forward-headers-strategy=native` delega en el proxy confiable, que debe sanear `X-Forwarded-For`. La app nunca confía en headers de forwarding directamente.
+El control de frecuencia corresponde a Nginx, fuera de la API. Antes del despliegue se debe comprobar que sus reglas cubran identificación, contraseña, passkeys, reautenticación y recuperación. La API no mantiene contadores por IP ni por cuenta. El ejemplo versionado de `boero-infra` todavía enumera el login anterior y activa `limit_req_dry_run`; su revisión no sustituye verificar la configuración efectiva del servidor.
+
+Redis sigue siendo necesario para intentos de login, ceremonias WebAuthn, autenticación reciente y los demás mecanismos de sesión existentes.
 
 ## Capas de protección
 
@@ -126,6 +121,10 @@ Los repositorios de refresh token usan `PESSIMISTIC_WRITE` al buscar por hash. E
 ### Última autoridad
 
 Antes de contar autoridades y revocar un rol o eliminar una persona, se bloquea la fila de `Institution`. Todas las operaciones que preservan este invariante deben adquirir el mismo lock antes del conteo.
+
+### Credenciales passkey
+
+La autenticación bloquea la credencial hasta finalizar su transacción. Revocación y renombrado adquieren el mismo bloqueo y validan su estado antes de modificarla, evitando que una actualización obsoleta restaure una credencial revocada.
 
 ### Login attempts
 
@@ -187,8 +186,7 @@ La suite incluye:
 - Asignación inicial de roles privilegiados.
 - Integridad JPA y restricciones de persistencia.
 - Conversión de carreras de unicidad a conflictos.
-- PostgreSQL real con Testcontainers para reutilización y rotación concurrente de refresh tokens.
-- Rate limiting con Redis real: atomicidad `INCR`+TTL, expiración de ventana, conteo concurrente exacto, buckets independientes, HMAC y fail-closed.
+- PostgreSQL real con Testcontainers para reutilización y rotación concurrente de refresh tokens, revocación concurrente de passkeys y traducción de su restricción de unicidad creada por Flyway.
 
 Los tests H2 siguen siendo útiles para slices rápidos, pero las garantías que dependen de locks o semántica transaccional de PostgreSQL deben cubrirse con Testcontainers.
 

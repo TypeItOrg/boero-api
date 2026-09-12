@@ -11,3 +11,5 @@ La auditoría JPA y la emisión y validación de JWT usan el reloj compartido. L
 En pruebas, se puede reemplazar el reloj por `Clock.fixed(...)`. Cambiar el reloj no modifica los tipos almacenados ni la zona de negocio.
 
 La migración `20260909174839__normalize_event_timestamps_to_utc.sql` convierte columnas naive existentes a `timestamptz`. `created_at`, `updated_at` y `started_at` se interpretan como UTC porque la auditoría JPA ya escribía `LocalDateTime.now(UTC)`. `expires_at`, `used_at`, `ended_at` y `deleted_at` se interpretan como `America/Argentina/Buenos_Aires` porque se persistían con `LocalDateTime.now()` en la zona de la JVM. La tabla de historial de Flyway y las columnas `date` permanecen fuera de esta conversión. Si un entorno persistió esas columnas con otra zona de JVM, hay que recrearlo en lugar de reaplicar la migración.
+
+La migración `20260912032354__normalize_passkey_timestamps_to_utc.sql` aplica la misma conversión a las passkeys, cuya tabla se creó después de la normalización general: auditoría interpretada como UTC y último uso/revocación como Argentina. Los nuevos eventos usan el `Clock` UTC compartido.

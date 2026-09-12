@@ -16,6 +16,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -74,6 +75,6 @@ class RecentAuthServiceTest {
   void mark_setsWithTtl() {
     service.mark(UUID.randomUUID(), UUID.randomUUID(), "PASSWORD");
 
-    org.mockito.Mockito.verify(valueOperations).set(anyString(), anyString(), any(Duration.class));
+    Mockito.verify(valueOperations).set(anyString(), anyString(), any(Duration.class));
   }
 }

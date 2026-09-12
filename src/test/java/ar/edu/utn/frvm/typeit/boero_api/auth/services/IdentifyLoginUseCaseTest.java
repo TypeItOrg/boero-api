@@ -2,8 +2,6 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
@@ -16,7 +14,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.IdentifyLoginRes
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.IdentifyLoginResponse.LoginNextStep;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
-import jakarta.servlet.http.HttpServletRequest;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,26 +30,13 @@ class IdentifyLoginUseCaseTest {
   @Mock private UserRepository userRepository;
   @Mock private PasskeyCredentialRepository passkeyCredentialRepository;
   @Mock private LoginAttemptService loginAttemptService;
-  @Mock private AuthRateLimitService rateLimitService;
-  @Mock private ar.edu.utn.frvm.typeit.boero_api.auth.config.AuthRateLimitProperties rateLimits;
-  @Mock private HttpServletRequest httpRequest;
 
   private IdentifyLoginUseCase useCase;
 
   @BeforeEach
   void setUp() {
     useCase =
-        new IdentifyLoginUseCase(
-            userRepository,
-            passkeyCredentialRepository,
-            loginAttemptService,
-            rateLimitService,
-            rateLimits);
-    when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
-    when(rateLimits.identifyIpMax()).thenReturn(30);
-    when(rateLimits.identifyIpWindow()).thenReturn(java.time.Duration.ofMinutes(1));
-    when(rateLimits.identifyAccountMax()).thenReturn(10);
-    when(rateLimits.identifyAccountWindow()).thenReturn(java.time.Duration.ofMinutes(1));
+        new IdentifyLoginUseCase(userRepository, passkeyCredentialRepository, loginAttemptService);
   }
 
   @Test
@@ -65,10 +50,10 @@ class IdentifyLoginUseCaseTest {
     when(loginAttemptService.create(user.getId(), user.getInstitutionId(), false))
         .thenReturn(
             new LoginAttempt(
-                "attempt", user.getId(), user.getInstitutionId(), false, java.time.Instant.now()));
+                "attempt", user.getId(), user.getInstitutionId(), false, Instant.now()));
 
     final IdentifyLoginResponse response =
-        useCase.execute(new IdentifyLoginRequest(institutionId, "12345678"), httpRequest);
+        useCase.execute(new IdentifyLoginRequest(institutionId, "12345678"));
 
     assertThat(response.nextStep()).isEqualTo(LoginNextStep.PASSWORD);
     assertThat(response.loginAttemptId()).isEqualTo("attempt");
@@ -85,10 +70,10 @@ class IdentifyLoginUseCaseTest {
     when(loginAttemptService.create(user.getId(), user.getInstitutionId(), true))
         .thenReturn(
             new LoginAttempt(
-                "attempt", user.getId(), user.getInstitutionId(), true, java.time.Instant.now()));
+                "attempt", user.getId(), user.getInstitutionId(), true, Instant.now()));
 
     final IdentifyLoginResponse response =
-        useCase.execute(new IdentifyLoginRequest(institutionId, "12345678"), httpRequest);
+        useCase.execute(new IdentifyLoginRequest(institutionId, "12345678"));
 
     assertThat(response.nextStep()).isEqualTo(LoginNextStep.PASSKEY);
   }
@@ -100,8 +85,7 @@ class IdentifyLoginUseCaseTest {
     when(userRepository.findAllByPersonDocumentNumberAndInstitution_Id("99999999", institutionId))
         .thenReturn(List.of());
 
-    assertThatThrownBy(
-            () -> useCase.execute(new IdentifyLoginRequest(institutionId, "99999999"), httpRequest))
+    assertThatThrownBy(() -> useCase.execute(new IdentifyLoginRequest(institutionId, "99999999")))
         .isInstanceOf(LoginAccountNotFoundException.class)
         .hasMessageNotContaining("99999999");
   }
@@ -113,27 +97,8 @@ class IdentifyLoginUseCaseTest {
     when(userRepository.findAllByPersonDocumentNumberAndInstitution_Id("12345678", institutionId))
         .thenReturn(List.of(userWith(institutionId), userWith(institutionId)));
 
-    assertThatThrownBy(
-            () -> useCase.execute(new IdentifyLoginRequest(institutionId, "12345678"), httpRequest))
+    assertThatThrownBy(() -> useCase.execute(new IdentifyLoginRequest(institutionId, "12345678")))
         .isInstanceOf(LoginStateInconsistentException.class);
-  }
-
-  @Test
-  @DisplayName("Should apply rate limits before lookup")
-  void execute_checksRateLimits() {
-    final UUID institutionId = UUID.randomUUID();
-    final User user = userWith(institutionId);
-    when(userRepository.findAllByPersonDocumentNumberAndInstitution_Id("12345678", institutionId))
-        .thenReturn(List.of(user));
-    when(passkeyCredentialRepository.existsActiveByUserId(user.getId())).thenReturn(false);
-    when(loginAttemptService.create(any(), any(), any(boolean.class)))
-        .thenReturn(
-            new LoginAttempt("a", user.getId(), institutionId, false, java.time.Instant.now()));
-
-    useCase.execute(new IdentifyLoginRequest(institutionId, "12345678"), httpRequest);
-
-    verify(rateLimitService, org.mockito.Mockito.times(2))
-        .checkAllowed(any(), any(), any(int.class), any(java.time.Duration.class));
   }
 
   private static User userWith(final UUID institutionId) {

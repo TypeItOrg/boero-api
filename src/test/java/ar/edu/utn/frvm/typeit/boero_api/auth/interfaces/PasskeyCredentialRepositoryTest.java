@@ -11,7 +11,8 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.services.PasskeyCredentialMapper;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.support.JpaAuditingTestConfig;
 import jakarta.persistence.EntityManager;
-import java.time.LocalDateTime;
+import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,7 @@ class PasskeyCredentialRepositoryTest {
     final User user = createUser(entityManager, institution, "12345678");
     persistCredential(user, "credential-active");
     final PasskeyCredential revoked = persistCredential(user, "credential-revoked");
-    revoked.revoke(LocalDateTime.now());
+    revoked.revoke(Instant.now());
     passkeyCredentialRepository.save(revoked);
     entityManager.flush();
 
@@ -55,9 +56,13 @@ class PasskeyCredentialRepositoryTest {
     final PasskeyCredential credential = persistCredential(owner, "credential-owned");
     entityManager.flush();
 
-    assertThat(passkeyCredentialRepository.findByIdAndUserId(credential.getId(), owner.getId()))
+    assertThat(
+            passkeyCredentialRepository.findWithLockByIdAndUserId(
+                credential.getId(), owner.getId()))
         .isPresent();
-    assertThat(passkeyCredentialRepository.findByIdAndUserId(credential.getId(), other.getId()))
+    assertThat(
+            passkeyCredentialRepository.findWithLockByIdAndUserId(
+                credential.getId(), other.getId()))
         .isEmpty();
     assertThat(passkeyCredentialRepository.findByCredentialId("credential-owned")).isPresent();
   }
@@ -68,7 +73,7 @@ class PasskeyCredentialRepositoryTest {
     final Institution institution = createInstitution(entityManager, "boero");
     final User user = createUser(entityManager, institution, "12345678");
     final PasskeyCredential revoked = persistCredential(user, "credential-duplicated");
-    revoked.revoke(LocalDateTime.now());
+    revoked.revoke(Instant.now());
     passkeyCredentialRepository.saveAndFlush(revoked);
 
     assertThatThrownBy(
@@ -83,7 +88,7 @@ class PasskeyCredentialRepositoryTest {
   void shouldRoundtripUserHandle() {
     final Institution institution = createInstitution(entityManager, "boero");
     final User user = createUser(entityManager, institution, "12345678");
-    user.ensureWebAuthnUserHandle(new java.security.SecureRandom());
+    user.ensureWebAuthnUserHandle(new SecureRandom());
     userRepository.save(user);
     entityManager.flush();
 
@@ -113,7 +118,7 @@ class PasskeyCredentialRepositoryTest {
   void shouldResolveUserHandleFromUser() {
     final Institution institution = createInstitution(entityManager, "boero");
     final User user = createUser(entityManager, institution, "12345678");
-    final byte[] canonicalHandle = user.ensureWebAuthnUserHandle(new java.security.SecureRandom());
+    final byte[] canonicalHandle = user.ensureWebAuthnUserHandle(new SecureRandom());
     userRepository.save(user);
     final PasskeyCredential credential = detachedCredential(user, "credential-canonical-handle");
     passkeyCredentialRepository.saveAndFlush(credential);

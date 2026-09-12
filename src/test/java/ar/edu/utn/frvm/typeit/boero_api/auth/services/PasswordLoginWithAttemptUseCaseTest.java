@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
@@ -39,8 +40,6 @@ class PasswordLoginWithAttemptUseCaseTest {
   @Mock private UserRepository userRepository;
   @Mock private CredentialsAuthenticator credentialsAuthenticator;
   @Mock private AuthenticationSessionIssuer sessionIssuer;
-  @Mock private AuthRateLimitService rateLimitService;
-  @Mock private ar.edu.utn.frvm.typeit.boero_api.auth.config.AuthRateLimitProperties rateLimits;
   @Mock private HttpServletRequest httpRequest;
 
   private PasswordLoginWithAttemptUseCase useCase;
@@ -49,18 +48,9 @@ class PasswordLoginWithAttemptUseCaseTest {
   void setUp() {
     useCase =
         new PasswordLoginWithAttemptUseCase(
-            loginAttemptService,
-            userRepository,
-            credentialsAuthenticator,
-            sessionIssuer,
-            rateLimitService,
-            rateLimits);
-    org.mockito.Mockito.lenient().when(rateLimits.passwordMax()).thenReturn(10);
-    org.mockito.Mockito.lenient()
-        .when(rateLimits.passwordWindow())
-        .thenReturn(java.time.Duration.ofMinutes(1));
-    org.mockito.Mockito.lenient().when(httpRequest.getHeader("User-Agent")).thenReturn("JUnit");
-    org.mockito.Mockito.lenient().when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
+            loginAttemptService, userRepository, credentialsAuthenticator, sessionIssuer);
+    Mockito.lenient().when(httpRequest.getHeader("User-Agent")).thenReturn("JUnit");
+    Mockito.lenient().when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
   }
 
   @Test
@@ -77,7 +67,7 @@ class PasswordLoginWithAttemptUseCaseTest {
         .thenReturn(
             UsernamePasswordAuthenticationToken.authenticated(
                 user, "secret", user.getAuthorities()));
-    when(sessionIssuer.issue(any(), any(), any(), any(boolean.class), any()))
+    when(sessionIssuer.issuePassword(any(), any(), any(), any(), any(boolean.class)))
         .thenReturn(
             AuthResponse.builder()
                 .user(UserPayload.from(user, user.getPerson().getId(), Set.of()))
@@ -92,8 +82,7 @@ class PasswordLoginWithAttemptUseCaseTest {
     final InOrder order = inOrder(loginAttemptService, credentialsAuthenticator, sessionIssuer);
     order.verify(loginAttemptService).resolve("attempt");
     order.verify(credentialsAuthenticator).authenticate(any(), any());
-    order.verify(loginAttemptService).claim("attempt");
-    order.verify(sessionIssuer).issue(any(), any(), any(), any(boolean.class), any(String.class));
+    order.verify(sessionIssuer).issuePassword(any(), any(), any(), any(), any(boolean.class));
   }
 
   @Test
@@ -129,8 +118,7 @@ class PasswordLoginWithAttemptUseCaseTest {
             () -> useCase.execute(new PasswordLoginRequest("attempt", "wrong", false), httpRequest))
         .isInstanceOf(InvalidCredentialsException.class);
     verify(loginAttemptService, never()).claim(any());
-    verify(sessionIssuer, never())
-        .issue(any(), any(), any(), any(boolean.class), any(String.class));
+    verify(sessionIssuer, never()).issuePassword(any(), any(), any(), any(), any(boolean.class));
   }
 
   @Test
@@ -154,8 +142,7 @@ class PasswordLoginWithAttemptUseCaseTest {
                 useCase.execute(new PasswordLoginRequest("attempt", "secret", false), httpRequest))
         .isInstanceOf(InvalidCredentialsException.class);
     verify(loginAttemptService, never()).claim(any());
-    verify(sessionIssuer, never())
-        .issue(any(), any(), any(), any(boolean.class), any(String.class));
+    verify(sessionIssuer, never()).issuePassword(any(), any(), any(), any(), any(boolean.class));
   }
 
   @Test
@@ -179,8 +166,7 @@ class PasswordLoginWithAttemptUseCaseTest {
                 useCase.execute(new PasswordLoginRequest("attempt", "secret", false), httpRequest))
         .isInstanceOf(InvalidCredentialsException.class);
     verify(loginAttemptService, never()).claim(any());
-    verify(sessionIssuer, never())
-        .issue(any(), any(), any(), any(boolean.class), any(String.class));
+    verify(sessionIssuer, never()).issuePassword(any(), any(), any(), any(), any(boolean.class));
   }
 
   private static User userWith(final UUID institutionId) {

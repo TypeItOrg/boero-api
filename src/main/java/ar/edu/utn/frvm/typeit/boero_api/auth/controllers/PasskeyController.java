@@ -57,9 +57,8 @@ public class PasskeyController {
 
   @PostMapping(version = Version.V1, path = "/passkeys/authentication/options")
   public PasskeyAuthenticationOptionsResponse authenticationOptions(
-      @Valid @RequestBody final PasskeyAuthenticationOptionsRequest request,
-      final HttpServletRequest httpRequest) {
-    return requestAuthenticationOptionsUseCase.execute(request.loginAttemptId(), httpRequest);
+      @Valid @RequestBody final PasskeyAuthenticationOptionsRequest request) {
+    return requestAuthenticationOptionsUseCase.execute(request.loginAttemptId());
   }
 
   @PostMapping(version = Version.V1, path = "/passkeys/authentication/verify")
@@ -125,10 +124,9 @@ public class PasskeyController {
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void reAuthenticate(
       final Authentication authentication,
-      @Valid @RequestBody final ReAuthenticateRequest request,
-      final HttpServletRequest httpRequest) {
+      @Valid @RequestBody final ReAuthenticateRequest request) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
     final JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
-    reAuthenticateUseCase.execute(principal, request.password(), httpRequest);
+    reAuthenticateUseCase.execute(principal, request.password());
   }
 }

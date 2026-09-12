@@ -21,7 +21,9 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.webauthn.WebAuthnOptionsCodec;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.support.IntegrationTest;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -109,21 +111,19 @@ class RecentAuthCeremonyIntegrationTest {
 
     final UserRepository userRepository = Mockito.mock(UserRepository.class);
     when(userRepository.findWithLockById(userId)).thenReturn(Optional.of(user));
-    when(userRepository.findWithPersonAndInstitutionById(userId)).thenReturn(Optional.of(user));
     final PasskeyCredentialRepository passkeyCredentialRepository =
         Mockito.mock(PasskeyCredentialRepository.class);
     when(passkeyCredentialRepository.countActiveByUserId(any())).thenReturn(0L);
     when(passkeyCredentialRepository.findByCredentialId(any())).thenReturn(Optional.empty());
     final PasskeyCredential saved = Mockito.mock(PasskeyCredential.class);
-    when(passkeyCredentialRepository.save(any())).thenReturn(saved);
+    when(passkeyCredentialRepository.saveAndFlush(any())).thenReturn(saved);
     final PasskeyCredentialMapper mapper = Mockito.mock(PasskeyCredentialMapper.class);
-    when(mapper.toEntity(any(), any(), any(), any())).thenReturn(saved);
+    when(mapper.toEntity(any(), any(), any())).thenReturn(saved);
     final WebAuthnRelyingPartyOperations relyingPartyOperations =
         Mockito.mock(WebAuthnRelyingPartyOperations.class);
     when(relyingPartyOperations.registerCredential(any())).thenReturn(credentialRecord());
     final WebAuthnOptionsCodec codec = Mockito.mock(WebAuthnOptionsCodec.class);
-    when(codec.parseSnapshot("{}")).thenReturn(Mockito.mock(JsonNode.class));
-    when(codec.rebuildCreationOptions(any())).thenReturn(creationOptions());
+    when(codec.decodeCreationOptions("{}")).thenReturn(creationOptions());
     when(codec.decodeAttestationCredential(any())).thenReturn(attestationCredential());
     final VerifyPasskeyRegistrationUseCase useCase =
         new VerifyPasskeyRegistrationUseCase(
@@ -140,7 +140,7 @@ class RecentAuthCeremonyIntegrationTest {
 
     assertThat(recentAuthService.isRecent(sessionId, userId)).isFalse();
     assertThat(response).isNotNull();
-    verify(passkeyCredentialRepository).save(any());
+    verify(passkeyCredentialRepository).saveAndFlush(any());
   }
 
   @Test
@@ -193,9 +193,7 @@ class RecentAuthCeremonyIntegrationTest {
             Mockito.mock(UserRepository.class),
             Mockito.mock(PasskeyCredentialRepository.class),
             Mockito.mock(PasskeyCredentialMapper.class),
-            Mockito.mock(
-                org.springframework.security.web.webauthn.management.WebAuthnRelyingPartyOperations
-                    .class),
+            Mockito.mock(WebAuthnRelyingPartyOperations.class),
             ceremonyService,
             properties,
             Mockito.mock(WebAuthnOptionsCodec.class));
@@ -217,11 +215,11 @@ class RecentAuthCeremonyIntegrationTest {
     final PasskeyCredentialRepository passkeyCredentialRepository =
         Mockito.mock(PasskeyCredentialRepository.class);
     final RevokePasskeyUseCase useCase =
-        new RevokePasskeyUseCase(passkeyCredentialRepository, recentAuthService);
+        new RevokePasskeyUseCase(Clock.systemUTC(), passkeyCredentialRepository, recentAuthService);
 
     assertThatThrownBy(() -> useCase.execute(principal, UUID.randomUUID()))
         .isInstanceOf(RecentAuthRequiredException.class);
-    verify(passkeyCredentialRepository, never()).findByIdAndUserId(any(), any());
+    verify(passkeyCredentialRepository, never()).findWithLockByIdAndUserId(any(), any());
   }
 
   private void expireRecentMarker(final UUID sessionId) {
@@ -255,7 +253,7 @@ class RecentAuthCeremonyIntegrationTest {
         .backupEligible(false)
         .backupState(false)
         .label("Mi PC")
-        .created(java.time.Instant.now())
+        .created(Instant.now())
         .build();
   }
 

@@ -7,7 +7,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PasskeyCredential;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,16 +33,16 @@ class PasskeyCredentialTest {
     final PasskeyCredential credential = credentialWith("Key");
 
     assertThat(credential.isActive()).isTrue();
-    assertThat(credential.revoke(LocalDateTime.now())).isTrue();
+    assertThat(credential.revoke(Instant.now())).isTrue();
     assertThat(credential.isActive()).isFalse();
-    assertThat(credential.revoke(LocalDateTime.now())).isFalse();
+    assertThat(credential.revoke(Instant.now())).isFalse();
   }
 
   @Test
   @DisplayName("Should track last usage")
   void markUsed_updatesTimestamp() {
     final PasskeyCredential credential = credentialWith("Key");
-    final LocalDateTime now = LocalDateTime.now();
+    final Instant now = Instant.now();
 
     credential.markUsed(now, 7L);
 

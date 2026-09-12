@@ -198,7 +198,12 @@ class WebAuthnSpringGeneratedRoundTripTest {
     assertThat(generated.getRpId()).isEqualTo("localhost");
     assertThat(generated.getTimeout()).isNotNull();
     assertThat(generated.getUserVerification()).isEqualTo(UserVerificationRequirement.PREFERRED);
-    assertThat(codec.requestOptionsTree(generated).get("allowCredentials").isEmpty()).isTrue();
+    assertThat(
+            codec
+                .parseSnapshot(codec.encodeRequestOptions(generated))
+                .get("allowCredentials")
+                .isEmpty())
+        .isTrue();
   }
 
   @Test
@@ -213,12 +218,12 @@ class WebAuthnSpringGeneratedRoundTripTest {
         operations.createCredentialRequestOptions(
             new ImmutablePublicKeyCredentialRequestOptionsRequest(authentication));
 
-    final JsonNode creationTree = codec.creationOptionsTree(creation);
-    final JsonNode requestTree = codec.requestOptionsTree(request);
+    final JsonNode creationTree = codec.parseSnapshot(codec.encodeCreationOptions(creation));
+    final JsonNode requestTree = codec.parseSnapshot(codec.encodeRequestOptions(request));
 
     assertThat(requestTree.propertyNames())
         .containsExactlyInAnyOrder(
-            "challenge", "rpId", "timeout", "allowCredentials", "userVerification");
+            "challenge", "rpId", "timeout", "allowCredentials", "userVerification", "extensions");
     assertThat(requestTree.get("challenge").asString())
         .isEqualTo(request.getChallenge().toBase64UrlString());
     assertThat(requestTree.get("rpId").asString()).isEqualTo("localhost");
@@ -240,7 +245,8 @@ class WebAuthnSpringGeneratedRoundTripTest {
             "timeout",
             "excludeCredentials",
             "authenticatorSelection",
-            "attestation");
+            "attestation",
+            "extensions");
     assertThat(creationTree.get("challenge").asString())
         .isEqualTo(creation.getChallenge().toBase64UrlString());
     assertThat(creationTree.get("rp").get("id").asString()).isEqualTo("localhost");
@@ -253,6 +259,7 @@ class WebAuthnSpringGeneratedRoundTripTest {
     assertThat(creationTree.get("authenticatorSelection").get("residentKey").asString())
         .isEqualTo(creation.getAuthenticatorSelection().getResidentKey().getValue());
     assertThat(creationTree.get("excludeCredentials")).hasSize(1);
+    assertThat(creationTree.get("extensions").get("credProps").asBoolean()).isTrue();
   }
 
   private PublicKeyCredentialUserEntity userEntity() {

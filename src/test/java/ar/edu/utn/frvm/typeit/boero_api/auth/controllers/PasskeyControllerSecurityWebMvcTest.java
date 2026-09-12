@@ -28,12 +28,13 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.services.VerifyPasskeyRegistrationU
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.GlobalExceptionHandler;
+import ar.edu.utn.frvm.typeit.boero_api.config.TimeConfig;
 import ar.edu.utn.frvm.typeit.boero_api.security.config.SecurityConfig;
 import ar.edu.utn.frvm.typeit.boero_api.security.handlers.CustomAccessDeniedHandler;
 import ar.edu.utn.frvm.typeit.boero_api.security.handlers.CustomAuthenticationEntryPoint;
 import ar.edu.utn.frvm.typeit.boero_api.security.handlers.SecurityErrorResponseWriter;
 import ar.edu.utn.frvm.typeit.boero_api.support.AuthTestData;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +54,7 @@ import org.springframework.util.PathMatcher;
 
 @WebMvcTest(PasskeyController.class)
 @Import({
+  TimeConfig.class,
   SecurityConfig.class,
   JwtAuthenticationFilter.class,
   CustomAuthenticationEntryPoint.class,
@@ -148,9 +150,7 @@ class PasskeyControllerSecurityWebMvcTest {
     when(webAuthnProperties.maxPasskeys()).thenReturn(10);
     when(listPasskeysUseCase.execute(any()))
         .thenReturn(
-            List.of(
-                new PasskeyResponse(
-                    UUID.randomUUID(), "Llave", LocalDateTime.now(), LocalDateTime.now())));
+            List.of(new PasskeyResponse(UUID.randomUUID(), "Llave", Instant.now(), Instant.now())));
 
     mockMvc
         .perform(

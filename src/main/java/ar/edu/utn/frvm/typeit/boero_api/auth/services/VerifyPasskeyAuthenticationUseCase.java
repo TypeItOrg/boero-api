@@ -1,6 +1,5 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
-import ar.edu.utn.frvm.typeit.boero_api.auth.config.AuthRateLimitProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PasskeyCredential;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidLoginAttemptException;
@@ -13,6 +12,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.webauthn.WebAuthnOptionsCodec;
 import com.webauthn4j.verifier.exception.MaliciousCounterValueException;
 import com.webauthn4j.verifier.exception.VerificationException;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.web.webauthn.api.AuthenticatorAssertionResponse;
@@ -36,8 +36,6 @@ public class VerifyPasskeyAuthenticationUseCase {
   private final WebAuthnRelyingPartyOperations relyingPartyOperations;
   private final WebAuthnCeremonyService ceremonyService;
   private final AuthenticationSessionIssuer sessionIssuer;
-  private final AuthRateLimitService rateLimitService;
-  private final AuthRateLimitProperties rateLimitProperties;
   private final WebAuthnOptionsCodec optionsCodec;
 
   @Transactional
@@ -48,16 +46,6 @@ public class VerifyPasskeyAuthenticationUseCase {
       final Boolean rememberMe,
       final HttpServletRequest httpRequest) {
     final LoginAttempt attempt = loginAttemptService.resolve(loginAttemptId);
-    rateLimitService.checkAllowed(
-        "passkey-verify-ip",
-        rateLimitService.hashKey(AuthRequestMetadata.clientIp(httpRequest)),
-        rateLimitProperties.webauthnIpMax(),
-        rateLimitProperties.webauthnIpWindow());
-    rateLimitService.checkAllowed(
-        "passkey-verify",
-        rateLimitService.hashKey(attempt.userId().toString()),
-        rateLimitProperties.webauthnMax(),
-        rateLimitProperties.webauthnWindow());
     final AuthenticationCeremony ceremony =
         ceremonyService.consumeAuthentication(ceremonyId).orElse(null);
     if (ceremony == null) {
@@ -94,7 +82,7 @@ public class VerifyPasskeyAuthenticationUseCase {
         owner != null
             && owner.getId() != null
             && expected.getWebauthnUserHandle() != null
-            && java.util.Arrays.equals(owner.getId().getBytes(), expected.getWebauthnUserHandle());
+            && Arrays.equals(owner.getId().getBytes(), expected.getWebauthnUserHandle());
     if (!ownerMatches) {
       log.info("[Auth] Passkey auth owner mismatch, userId: {}", attempt.userId());
       throw new WebAuthnVerificationFailedException();
@@ -125,42 +113,11 @@ public class VerifyPasskeyAuthenticationUseCase {
   }
 
   private PublicKeyCredentialRequestOptions readOptions(final String json) {
-    final tools.jackson.databind.JsonNode snapshot = parseSnapshot(json);
     try {
-      return optionsCodec.rebuildRequestOptions(snapshot);
+      return optionsCodec.decodeRequestOptions(json);
     } catch (IllegalStateException exception) {
-      log.info(
-          "[Auth] Failed to reconstruct Spring WebAuthn authentication options, exceptionType={}, message={}",
-          exceptionType(exception),
-          exceptionMessage(exception));
       throw new WebAuthnCeremonyInvalidException();
     }
-  }
-
-  private tools.jackson.databind.JsonNode parseSnapshot(final String json) {
-    try {
-      return optionsCodec.parseSnapshot(json);
-    } catch (IllegalStateException exception) {
-      log.info(
-          "[Auth] Failed to deserialize WebAuthn authentication snapshot, exceptionType={}, message={}",
-          exceptionType(exception),
-          exceptionMessage(exception));
-      throw new WebAuthnCeremonyInvalidException();
-    }
-  }
-
-  private static String exceptionType(final IllegalStateException exception) {
-    if (exception.getCause() == null) {
-      return exception.getClass().getSimpleName();
-    }
-    return exception.getCause().getClass().getSimpleName();
-  }
-
-  private static String exceptionMessage(final IllegalStateException exception) {
-    if (exception.getCause() instanceof IllegalArgumentException cause) {
-      return cause.getMessage();
-    }
-    return exception.getMessage();
   }
 
   private PublicKeyCredential<AuthenticatorAssertionResponse> readCredential(final JsonNode node) {

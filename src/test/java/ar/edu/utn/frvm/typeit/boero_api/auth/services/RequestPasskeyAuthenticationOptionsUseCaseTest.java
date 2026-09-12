@@ -8,15 +8,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import ar.edu.utn.frvm.typeit.boero_api.auth.config.AuthRateLimitProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidLoginAttemptException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PasskeyAuthenticationOptionsResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.webauthn.WebAuthnOptionsCodec;
 import ar.edu.utn.frvm.typeit.boero_api.auth.webauthn.WebAuthnOptionsModule;
-import jakarta.servlet.http.HttpServletRequest;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -60,9 +57,6 @@ class RequestPasskeyAuthenticationOptionsUseCaseTest {
   @Mock private LoginAttemptService loginAttemptService;
   @Mock private UserRepository userRepository;
   @Mock private WebAuthnCeremonyService ceremonyService;
-  @Mock private AuthRateLimitService rateLimitService;
-  @Mock private AuthRateLimitProperties rateLimitProperties;
-  @Mock private HttpServletRequest httpRequest;
 
   private final WebAuthnOptionsCodec codec =
       new WebAuthnOptionsCodec(
@@ -134,13 +128,7 @@ class RequestPasskeyAuthenticationOptionsUseCaseTest {
         builder -> builder.userVerification(UserVerificationRequirement.REQUIRED));
     useCase =
         new RequestPasskeyAuthenticationOptionsUseCase(
-            loginAttemptService,
-            userRepository,
-            operations,
-            ceremonyService,
-            rateLimitService,
-            rateLimitProperties,
-            codec);
+            loginAttemptService, userRepository, operations, ceremonyService, codec);
   }
 
   @Test
@@ -148,17 +136,12 @@ class RequestPasskeyAuthenticationOptionsUseCaseTest {
   void execute_exposesDiscoverableOptionsAndStoresConsistentCeremony() {
     final User user = Mockito.mock(User.class);
     when(user.getId()).thenReturn(USER_ID);
-    when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
-    when(rateLimitProperties.webauthnMax()).thenReturn(20);
-    when(rateLimitProperties.webauthnWindow()).thenReturn(Duration.ofMinutes(1));
-    when(rateLimitProperties.webauthnIpMax()).thenReturn(60);
-    when(rateLimitProperties.webauthnIpWindow()).thenReturn(Duration.ofMinutes(1));
     when(loginAttemptService.resolve("attempt"))
         .thenReturn(new LoginAttempt("attempt", USER_ID, INSTITUTION_ID, true, Instant.now()));
     when(userRepository.findWithPersonAndInstitutionById(USER_ID)).thenReturn(Optional.of(user));
     when(ceremonyService.storeAuthentication(any(), any(), any())).thenReturn("ceremony");
 
-    final PasskeyAuthenticationOptionsResponse response = useCase.execute("attempt", httpRequest);
+    final PasskeyAuthenticationOptionsResponse response = useCase.execute("attempt");
 
     final JsonNode wire = response.options();
     assertThat(wire.get("allowCredentials").isArray()).isTrue();
@@ -169,8 +152,9 @@ class RequestPasskeyAuthenticationOptionsUseCaseTest {
 
     final ArgumentCaptor<String> optionsJson = ArgumentCaptor.forClass(String.class);
     verify(ceremonyService).storeAuthentication(eq("attempt"), eq(USER_ID), optionsJson.capture());
+    assertThat(wire).isEqualTo(codec.parseSnapshot(optionsJson.getValue()));
     final PublicKeyCredentialRequestOptions stored =
-        codec.rebuildRequestOptions(codec.parseSnapshot(optionsJson.getValue()));
+        codec.decodeRequestOptions(optionsJson.getValue());
     assertThat(stored.getAllowCredentials()).isEmpty();
     assertThat(stored.getChallenge().toBase64UrlString())
         .isEqualTo(wire.get("challenge").asString());
@@ -183,10 +167,10 @@ class RequestPasskeyAuthenticationOptionsUseCaseTest {
     when(loginAttemptService.resolve("attempt"))
         .thenReturn(new LoginAttempt("attempt", USER_ID, INSTITUTION_ID, false, Instant.now()));
 
-    assertThatThrownBy(() -> useCase.execute("attempt", httpRequest))
+    assertThatThrownBy(() -> useCase.execute("attempt"))
         .isInstanceOf(InvalidLoginAttemptException.class);
 
-    verifyNoInteractions(userRepository, ceremonyService, rateLimitService, rateLimitProperties);
+    verifyNoInteractions(userRepository, ceremonyService);
   }
 
   private PublicKeyCredentialUserEntity userEntity() {

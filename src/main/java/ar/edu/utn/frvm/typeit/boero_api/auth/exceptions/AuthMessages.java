@@ -73,11 +73,6 @@ public final class AuthMessages {
       "La ceremonia WebAuthn es inválida o ha expirado.";
   public static final String WEBAUTHN_VERIFICATION_FAILED =
       "No pudimos usar una passkey. Podés reintentar o ingresar con tu contraseña.";
-  public static final String RATE_LIMIT_EXCEEDED =
-      "Demasiados intentos. Intentá nuevamente más tarde.";
-  public static final String RATE_LIMIT_UNAVAILABLE =
-      "No pudimos verificar el límite de intentos. Intentá nuevamente más tarde.";
-  public static final String HMAC_SHA_256_UNAVAILABLE = "HMAC-SHA-256 debe estar disponible.";
 
   private AuthMessages() {}
 }
