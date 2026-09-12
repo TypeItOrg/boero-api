@@ -7,13 +7,13 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationSt
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.ApplicationNotEditableException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidEnrollmentApplicationStateException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.MissingRejectionReasonException;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class EnrollmentApplicationTest {
 
-  private static final LocalDateTime RESOLVED_AT = LocalDateTime.of(2026, 9, 6, 10, 0);
+  private static final Instant RESOLVED_AT = Instant.parse("2026-09-06T10:00:00Z");
   private static final UUID RESOLVER_PERSON_ID = UUID.randomUUID();
 
   @Test
@@ -74,7 +74,7 @@ class EnrollmentApplicationTest {
     final var application = submitted();
     application.approve(RESOLVED_AT, RESOLVER_PERSON_ID);
 
-    assertThatThrownBy(() -> application.approve(RESOLVED_AT.plusHours(1), RESOLVER_PERSON_ID))
+    assertThatThrownBy(() -> application.approve(RESOLVED_AT.plusSeconds(3600), RESOLVER_PERSON_ID))
         .isInstanceOf(InvalidEnrollmentApplicationStateException.class);
   }
 
@@ -109,7 +109,7 @@ class EnrollmentApplicationTest {
     assertThatThrownBy(
             () ->
                 application.reject(
-                    "Otro motivo", RESOLVED_AT.plusHours(1), RESOLVER_PERSON_ID))
+                    "Otro motivo", RESOLVED_AT.plusSeconds(3600), RESOLVER_PERSON_ID))
         .isInstanceOf(InvalidEnrollmentApplicationStateException.class);
   }
 

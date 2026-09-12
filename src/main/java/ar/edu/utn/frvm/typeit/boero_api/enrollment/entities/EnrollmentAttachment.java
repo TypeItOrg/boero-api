@@ -12,7 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -56,7 +56,7 @@ public class EnrollmentAttachment extends SoftDeletable {
   private Long fileSize;
 
   public boolean markDeleted() {
-    return markDeleted(LocalDateTime.now());
+    return markDeleted(Instant.now());
   }
 
   public String getFilePath() {

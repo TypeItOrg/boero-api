@@ -25,7 +25,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentAttachmentTyp
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentAttachmentResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentAttachmentService;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentAttachmentService.AttachmentContentResult;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -92,7 +92,7 @@ class EnrollmentAttachmentControllerWebMvcTest {
             EnrollmentAttachmentType.DNI_FRONT,
             "dni.pdf",
             13L,
-            LocalDateTime.of(2026, 9, 8, 12, 0));
+            Instant.parse("2026-09-08T12:00:00Z"));
 
     when(attachmentService.uploadAttachment(eq(APPLICATION_ID), any(), eq("DNI_FRONT"), any()))
         .thenReturn(response);
@@ -167,7 +167,7 @@ class EnrollmentAttachmentControllerWebMvcTest {
             EnrollmentAttachmentType.DNI_FRONT,
             "dni.pdf",
             13L,
-            LocalDateTime.of(2026, 9, 8, 12, 0));
+            Instant.parse("2026-09-08T12:00:00Z"));
 
     when(attachmentService.listAttachments(eq(APPLICATION_ID), any())).thenReturn(List.of(response));
 

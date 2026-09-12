@@ -6,6 +6,7 @@ import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.ApplicationNotEditableException;
+import java.time.Instant;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidEnrollmentApplicationStateException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.MissingRejectionReasonException;
@@ -82,7 +83,7 @@ public class EnrollmentApplication extends SoftDeletable {
   private String rejectionReason;
 
   @Column(name = "resolved_at")
-  private LocalDateTime resolvedAt;
+  private Instant resolvedAt;
 
   @Column(name = "resolved_by_person_id")
   private UUID resolvedByPersonId;
@@ -239,7 +240,7 @@ public class EnrollmentApplication extends SoftDeletable {
         || status == EnrollmentApplicationStatus.CANCELLED;
   }
 
-  public void approve(final LocalDateTime resolvedAt, final UUID resolvedByPersonId) {
+  public void approve(final Instant resolvedAt, final UUID resolvedByPersonId) {
     ensurePendingEvaluation();
     status = EnrollmentApplicationStatus.APPROVED;
     this.resolvedAt = resolvedAt;
@@ -247,7 +248,7 @@ public class EnrollmentApplication extends SoftDeletable {
   }
 
   public void reject(
-      final String rejectionReason, final LocalDateTime resolvedAt, final UUID resolvedByPersonId) {
+      final String rejectionReason, final Instant resolvedAt, final UUID resolvedByPersonId) {
     ensurePendingEvaluation();
     if (rejectionReason == null || rejectionReason.isBlank()) {
       throw new MissingRejectionReasonException();

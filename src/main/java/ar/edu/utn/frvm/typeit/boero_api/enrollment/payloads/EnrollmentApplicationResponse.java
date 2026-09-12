@@ -9,7 +9,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationSt
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -44,10 +44,10 @@ public class EnrollmentApplicationResponse {
   private EnrollmentDraftData data;
   @Schema(nullable = true) private String secondarySchool;
   @Schema(nullable = true) private String rejectionReason;
-  @Schema(nullable = true) private LocalDateTime resolvedAt;
+  @Schema(nullable = true) private Instant resolvedAt;
   @Schema(nullable = true) private UUID resolvedByPersonId;
-  private LocalDateTime createdAt;
-  private LocalDateTime updatedAt;
+  private Instant createdAt;
+  private Instant updatedAt;
   @Builder.Default private List<EnrollmentApplicationSpaceResponse> spaces = new ArrayList<>();
 
   public UUID applicationId() {
@@ -62,7 +62,7 @@ public class EnrollmentApplicationResponse {
     return rejectionReason;
   }
 
-  public LocalDateTime resolvedAt() {
+  public Instant resolvedAt() {
     return resolvedAt;
   }
 

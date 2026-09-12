@@ -38,6 +38,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplic
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationStudyPlanSpacesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationTrainingPathsUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -119,8 +120,8 @@ class EnrollmentApplicationControllerWebMvcTest {
                         .email("lucia@example.com")
                         .build())
                 .build())
-        .createdAt(LocalDateTime.now())
-        .updatedAt(LocalDateTime.now())
+        .createdAt(Instant.now())
+        .updatedAt(Instant.now())
         .build();
   }
 

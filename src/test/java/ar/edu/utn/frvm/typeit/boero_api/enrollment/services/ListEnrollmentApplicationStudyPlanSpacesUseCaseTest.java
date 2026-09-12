@@ -125,7 +125,7 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
     final var path = TrainingPath.create(institution, "Base", null);
     final var plan = StudyPlan.create(institution, path, "Plan", LocalDate.of(2026, 3, 1), null);
     final var year =
-        AcademicYear.create(institution, 2026, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 12, 1));
+        AcademicYear.create(institution, 2026, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 12, 1), LocalDate.of(2026, 1, 1));
     return EnrollmentApplication.builder()
         .id(UUID.randomUUID())
         .institution(institution)

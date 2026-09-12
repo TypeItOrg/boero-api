@@ -85,6 +85,11 @@ class PasskeyControllerSecurityWebMvcTest {
     PathMatcher pathMatcher() {
       return new AntPathMatcher();
     }
+
+    @Bean
+    com.fasterxml.jackson.databind.ObjectMapper objectMapper() {
+      return new com.fasterxml.jackson.databind.ObjectMapper();
+    }
   }
 
   @Autowired private MockMvc mockMvc;

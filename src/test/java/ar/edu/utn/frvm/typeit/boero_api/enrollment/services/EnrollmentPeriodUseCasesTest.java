@@ -20,6 +20,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentPeriod
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -65,7 +66,7 @@ class EnrollmentPeriodUseCasesTest {
     periodId = UUID.randomUUID();
 
     institution = Institution.builder().id(institutionId).name("UTN FRVM").build();
-    academicYear = AcademicYear.create(institution, 2026, null, null);
+    academicYear = AcademicYear.create(institution, 2026, null, null, LocalDate.of(2026, 1, 1));
 
     period =
         EnrollmentPeriod.builder()
