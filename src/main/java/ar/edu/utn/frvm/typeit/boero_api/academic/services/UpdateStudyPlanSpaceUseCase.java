@@ -52,13 +52,16 @@ public class UpdateStudyPlanSpaceUseCase {
     final var instruments = resolveInstruments(institutionId, request.instrumentIds());
     existing.update(
         space, level, request.requirementType(), request.displayOrder(), request.approvalMode());
+
     try {
       studyPlanSpaceInstrumentRepository.deleteByStudyPlanSpace_Id(existing.getId());
+      studyPlanSpaceInstrumentRepository.flush();
       saveInstrumentRelations(existing, instruments);
       studyPlanSpaceRepository.flush();
     } catch (DataIntegrityViolationException exception) {
       throw AcademicIntegrityViolationTranslator.translate(exception);
     }
+
     return StudyPlanSpaceResponse.from(existing, instrumentOptions(instruments));
   }
 
@@ -66,6 +69,7 @@ public class UpdateStudyPlanSpaceUseCase {
     if (academicLevelId == null) {
       return null;
     }
+
     return academicLevelRepository
         .findByIdAndStudyPlan_Id(academicLevelId, studyPlanId)
         .orElseThrow(() -> new AcademicConflictException(AcademicMessages.INVALID_RELATIONSHIP));
@@ -78,11 +82,13 @@ public class UpdateStudyPlanSpaceUseCase {
     }
 
     final var uniqueIds = new LinkedHashSet<>(instrumentIds);
+
     if (uniqueIds.size() != instrumentIds.size()) {
       throw new AcademicConflictException(AcademicMessages.INVALID_RELATIONSHIP);
     }
 
     final List<Instrument> instruments = new ArrayList<>();
+
     for (final UUID instrumentId : uniqueIds) {
       final var instrument =
           instrumentRepository
@@ -92,6 +98,7 @@ public class UpdateStudyPlanSpaceUseCase {
                   () -> new AcademicConflictException(AcademicMessages.INVALID_RELATIONSHIP));
       instruments.add(instrument);
     }
+
     return instruments;
   }
 

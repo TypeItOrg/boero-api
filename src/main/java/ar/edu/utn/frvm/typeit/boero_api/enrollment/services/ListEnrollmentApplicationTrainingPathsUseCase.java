@@ -27,6 +27,7 @@ public class ListEnrollmentApplicationTrainingPathsUseCase {
         .findByIdAndPerson_IdAndInstitution_IdAndDeletedAtIsNull(
             applicationId, principal.personId(), principal.institutionId())
         .orElseThrow(EnrollmentApplicationNotFoundException::new);
+
     return trainingPathRepository
         .findByInstitution_IdAndActiveTrueAndDeletedAtIsNullOrderByNameAsc(
             principal.institutionId())

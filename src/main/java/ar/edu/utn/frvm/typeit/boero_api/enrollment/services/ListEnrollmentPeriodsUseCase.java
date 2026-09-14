@@ -4,8 +4,8 @@ import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentPeriodRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentPeriodResponse;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentPeriodRepository;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
@@ -47,6 +47,7 @@ public class ListEnrollmentPeriodsUseCase {
     final var page =
         periodRepository.findAll(
             byFilters(institutionId, academicYearId, status, search, deleted), pageable);
+
     return PaginatedResponse.from(page.map(EnrollmentPeriodResponse::from));
   }
 
@@ -67,13 +68,17 @@ public class ListEnrollmentPeriodsUseCase {
       if (academicYearId != null) {
         predicates.add(criteriaBuilder.equal(root.get("academicYear").get("id"), academicYearId));
       }
+
       if (status != null) {
         predicates.add(criteriaBuilder.equal(root.get("status"), status));
       }
+
       final String normalizedSearch = SearchNormalization.normalizeSearch(search);
+
       if (normalizedSearch != null) {
         predicates.add(searchPredicate(root, criteriaBuilder, normalizedSearch));
       }
+
       return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
     };
   }
@@ -91,9 +96,11 @@ public class ListEnrollmentPeriodsUseCase {
             pattern));
 
     final Set<EnrollmentPeriodStatus> matchingStatuses = matchingStatuses(search);
+
     if (!matchingStatuses.isEmpty()) {
       matches.add(root.get("status").in(matchingStatuses));
     }
+
     return criteriaBuilder.or(matches.toArray(Predicate[]::new));
   }
 
@@ -106,6 +113,7 @@ public class ListEnrollmentPeriodsUseCase {
 
   private static Set<EnrollmentPeriodStatus> matchingStatuses(final String search) {
     final String normalizedSearch = SearchNormalization.normalizeForComparison(search);
+
     return Arrays.stream(EnrollmentPeriodStatus.values())
         .filter(
             status ->

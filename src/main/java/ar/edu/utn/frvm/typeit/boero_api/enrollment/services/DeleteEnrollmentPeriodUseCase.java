@@ -1,7 +1,8 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentPeriodNotFoundException;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentPeriodRepository;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentPeriodRepository;
+import java.time.Clock;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DeleteEnrollmentPeriodUseCase {
 
   private final EnrollmentPeriodRepository periodRepository;
+  private final Clock clock;
 
   @Transactional
   public void execute(final UUID institutionId, final UUID periodId) {
@@ -20,7 +22,7 @@ public class DeleteEnrollmentPeriodUseCase {
             .findByIdAndInstitutionIdAndDeletedAtIsNull(periodId, institutionId)
             .orElseThrow(EnrollmentPeriodNotFoundException::new);
 
-    period.markDeleted();
+    period.markDeleted(clock.instant());
     periodRepository.save(period);
   }
 }

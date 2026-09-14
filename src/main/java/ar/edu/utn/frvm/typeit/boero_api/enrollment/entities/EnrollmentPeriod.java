@@ -4,6 +4,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidEnrollmentPeriodDatesException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,19 +16,17 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "enrollment_periods")
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
@@ -50,16 +49,30 @@ public class EnrollmentPeriod extends SoftDeletable {
   private String name;
 
   @Column(name = "start_date", nullable = false)
-  private LocalDateTime startDate;
+  private Instant startDate;
 
   @Column(name = "end_date", nullable = false)
-  private LocalDateTime endDate;
+  private Instant endDate;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 20)
   private EnrollmentPeriodStatus status;
 
-  public boolean markDeleted() {
-    return markDeleted(Instant.now());
+  public void updateDetails(final String name, final Instant startDate, final Instant endDate) {
+    if (startDate.isAfter(endDate)) {
+      throw new InvalidEnrollmentPeriodDatesException();
+    }
+
+    this.name = name.trim();
+    this.startDate = startDate;
+    this.endDate = endDate;
+  }
+
+  public void changeStatus(final EnrollmentPeriodStatus status) {
+    this.status = Objects.requireNonNull(status);
+  }
+
+  public boolean markDeleted(final Instant now) {
+    return super.markDeleted(now);
   }
 }

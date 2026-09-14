@@ -36,6 +36,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -64,7 +65,7 @@ class EnrollmentDraftDataValidatorTest {
             enrollmentEffectiveStudyPlanResolver);
 
     studyPlan = mock(StudyPlan.class);
-    org.mockito.Mockito.lenient().when(studyPlan.getId()).thenReturn(studyPlanId);
+    Mockito.lenient().when(studyPlan.getId()).thenReturn(studyPlanId);
 
     Institution institution = mock(Institution.class);
     AcademicYear academicYear = mock(AcademicYear.class);

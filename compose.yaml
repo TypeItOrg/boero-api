@@ -12,6 +12,7 @@ services:
         required: false
     environment:
       SERVER_PORT: ${SERVER_PORT:-8080}
+      ENROLLMENT_STORAGE_DIR: /workspace/storage/enrollments
       DB_HOST: ${DB_HOST:-postgres}
       DB_PORT: ${DB_PORT:-5432}
       DB_NAME: ${DB_NAME:-boero_db}
@@ -53,6 +54,7 @@ services:
       - "8080:8080"
     volumes:
       - gradle-cache:/root/.gradle
+      - enrollment-storage:/workspace/storage/enrollments
     logging:
       driver: "local"
       options:
@@ -129,6 +131,8 @@ services:
       start_period: 45s
 
 volumes:
+  enrollment-storage:
+    name: boero-api-enrollment-storage-dev
   gradle-cache:
     name: boero-api-gradle-cache-dev
   postgres-data:

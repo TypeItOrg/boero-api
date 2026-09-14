@@ -42,6 +42,7 @@ public record StudyPlanSpaceResponse(
       final StudyPlanSpace space,
       final List<StudyPlanSpaceInstrumentOptionResponse> allowedInstruments) {
     final var level = space.getAcademicLevel();
+
     return new StudyPlanSpaceResponse(
         space.getId(),
         space.getStudyPlan().getId(),

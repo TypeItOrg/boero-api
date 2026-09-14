@@ -52,8 +52,6 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.util.PathMatcher;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 
 @WebMvcTest(EnrollmentApplicationController.class)
 @Import({PermissionAuthorizationAspect.class, GlobalExceptionHandler.class, WebConfig.class})
@@ -80,10 +78,9 @@ class EnrollmentApplicationControllerWebMvcTest {
   @Autowired private MockMvc mockMvc;
   private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
-  @MockitoBean private org.springframework.util.PathMatcher pathMatcher;
+  @MockitoBean private PathMatcher pathMatcher;
 
-  @MockitoBean
-  private org.springframework.security.web.AuthenticationEntryPoint authenticationEntryPoint;
+  @MockitoBean private AuthenticationEntryPoint authenticationEntryPoint;
 
   @MockitoBean private EnrollmentApplicationService applicationService;
   @MockitoBean private InstitutionalCallerGuard institutionalCallerGuard;

@@ -20,6 +20,7 @@ Spring Boot API using Gradle, Java 21, JPA/PostgreSQL and Redis. Resolve exact v
 - Avoid `@Data` and unrestricted class-level setters on entities with behavior. Do not add artificial behavior to reference catalogs or formal DDD machinery just for structure.
 - Annotate transactional methods explicitly; use read-only transactions for reads. Class-level transactions are appropriate only if every method shares the contract.
 - Keep readable conditions and useful explanations of invariants. Do not add redundant null checks, wrapper exceptions, one-use variables or abstractions solely to satisfy a generic style recipe.
+- Always use braces for control-flow bodies, including single-statement guards. Separate validation, data preparation, I/O and return phases with blank lines; keep related statements together instead of spacing every line individually.
 
 ## Database migrations and lifecycle
 

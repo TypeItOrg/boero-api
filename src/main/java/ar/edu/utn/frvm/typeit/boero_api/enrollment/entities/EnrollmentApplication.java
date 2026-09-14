@@ -22,6 +22,10 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
@@ -68,6 +72,16 @@ public class EnrollmentApplication extends SoftDeletable {
   @JoinColumn(name = "study_plan_id", nullable = false)
   private StudyPlan studyPlan;
 
+  @Setter(AccessLevel.NONE)
+  @Column(name = "training_path_id", nullable = false)
+  private UUID trainingPathId;
+
+  @PrePersist
+  @PreUpdate
+  private void synchronizeTrainingPath() {
+    trainingPathId = studyPlan.getTrainingPath().getId();
+  }
+
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "academic_year_id", nullable = false)
   private AcademicYear academicYear;
@@ -95,21 +109,96 @@ public class EnrollmentApplication extends SoftDeletable {
       orphanRemoval = true)
   private ApplicantEducationBackground educationBackground;
 
-  public static EnrollmentApplication create(
-      final Person person,
-      final Institution institution,
-      final StudyPlan studyPlan,
-      final AcademicYear academicYear,
-      final UUID enrollmentPeriodId) {
-    return EnrollmentApplication.builder()
-        .person(person)
-        .institution(institution)
-        .studyPlan(studyPlan)
-        .academicYear(academicYear)
-        .enrollmentPeriodId(enrollmentPeriodId)
-        .status(EnrollmentApplicationStatus.DRAFT)
-        .data(OBJECT_MAPPER.createObjectNode())
-        .build();
+  @OneToOne(
+      mappedBy = "enrollmentApplication",
+      cascade = CascadeType.ALL,
+      fetch = FetchType.LAZY,
+      orphanRemoval = true)
+  private ApplicantHealthInclusion healthInclusion;
+
+  @OneToOne(
+      mappedBy = "enrollmentApplication",
+      cascade = CascadeType.ALL,
+      fetch = FetchType.LAZY,
+      orphanRemoval = true)
+  private ApplicantResponsible responsible;
+
+  @OneToOne(
+      mappedBy = "enrollmentApplication",
+      cascade = CascadeType.ALL,
+      fetch = FetchType.LAZY,
+      orphanRemoval = true)
+  private ApplicantPreference preference;
+
+  @OneToMany(
+      mappedBy = "enrollmentApplication",
+      cascade = CascadeType.ALL,
+      fetch = FetchType.LAZY,
+      orphanRemoval = true)
+  @Builder.Default
+  private List<EnrollmentAttachment> attachments = new ArrayList<>();
+
+  @OneToMany(
+      mappedBy = "enrollmentApplication",
+      cascade = CascadeType.ALL,
+      fetch = FetchType.LAZY,
+      orphanRemoval = true)
+  @Builder.Default
+  private List<EnrollmentApplicationSpace> selectedSpaces = new ArrayList<>();
+
+  public void setEducationBackground(ApplicantEducationBackground educationBackground) {
+    this.educationBackground = educationBackground;
+
+    if (educationBackground != null) {
+      educationBackground.setEnrollmentApplication(this);
+    }
+  }
+
+  public void setHealthInclusion(ApplicantHealthInclusion healthInclusion) {
+    this.healthInclusion = healthInclusion;
+
+    if (healthInclusion != null) {
+      healthInclusion.setEnrollmentApplication(this);
+    }
+  }
+
+  public void setResponsible(ApplicantResponsible responsible) {
+    this.responsible = responsible;
+
+    if (responsible != null) {
+      responsible.setEnrollmentApplication(this);
+    }
+  }
+
+  public void setPreference(ApplicantPreference preference) {
+    this.preference = preference;
+
+    if (preference != null) {
+      preference.setEnrollmentApplication(this);
+    }
+  }
+
+  public void addAttachment(EnrollmentAttachment attachment) {
+    attachments.add(attachment);
+    attachment.setEnrollmentApplication(this);
+  }
+
+  public void addSelectedSpace(EnrollmentApplicationSpace selectedSpace) {
+    selectedSpaces.add(selectedSpace);
+    selectedSpace.setEnrollmentApplication(this);
+  }
+
+  public void clearSelectedSpaces() {
+    selectedSpaces.clear();
+  }
+
+  public void changeStudyPlan(final StudyPlan studyPlan) {
+    if (!isEditable()) {
+      throw new ApplicationNotEditableException(id);
+    }
+
+    this.studyPlan = studyPlan;
+    clearSelectedSpaces();
   }
 
   public static EnrollmentApplication create(
@@ -131,8 +220,10 @@ public class EnrollmentApplication extends SoftDeletable {
   public void submit() {
     if (isEditable()) {
       status = EnrollmentApplicationStatus.SUBMITTED;
+
       return;
     }
+
     throw new InvalidEnrollmentApplicationStateException(
         EnrollmentMessages.APPLICATION_CANNOT_SUBMIT);
   }
@@ -141,6 +232,7 @@ public class EnrollmentApplication extends SoftDeletable {
     if (!isEditable()) {
       throw new ApplicationNotEditableException(id);
     }
+
     status = EnrollmentApplicationStatus.CANCELLED;
   }
 
@@ -149,14 +241,17 @@ public class EnrollmentApplication extends SoftDeletable {
       throw new InvalidEnrollmentApplicationStateException(
           EnrollmentMessages.APPLICATION_NOT_EDITABLE);
     }
+
     if (educationBackground == null) {
       educationBackground =
           ApplicantEducationBackground.builder()
               .enrollmentApplication(this)
               .secondarySchool(secondarySchool)
               .build();
+
       return;
     }
+
     educationBackground.setSecondarySchool(secondarySchool);
   }
 
@@ -188,9 +283,11 @@ public class EnrollmentApplication extends SoftDeletable {
   public void reject(
       final String rejectionReason, final Instant resolvedAt, final UUID resolvedByPersonId) {
     ensurePendingEvaluation();
+
     if (rejectionReason == null || rejectionReason.isBlank()) {
       throw new MissingRejectionReasonException();
     }
+
     status = EnrollmentApplicationStatus.REJECTED;
     this.rejectionReason = rejectionReason;
     this.resolvedAt = resolvedAt;
@@ -202,6 +299,7 @@ public class EnrollmentApplication extends SoftDeletable {
       throw new InvalidEnrollmentApplicationStateException(
           EnrollmentMessages.APPLICATION_ALREADY_RESOLVED);
     }
+
     if (!isPendingEvaluation()) {
       throw new InvalidEnrollmentApplicationStateException(
           EnrollmentMessages.APPLICATION_NOT_PENDING_EVALUATION);

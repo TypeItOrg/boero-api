@@ -413,6 +413,7 @@ public enum PermissionCode {
     final EnumSet<PermissionCode> expanded = EnumSet.noneOf(PermissionCode.class);
     expanded.addAll(permissions);
     boolean changed;
+
     do {
       changed =
           expanded.addAll(
@@ -420,6 +421,7 @@ public enum PermissionCode {
                   .flatMap(permission -> permission.requiredPermissions().stream())
                   .toList());
     } while (changed);
+
     return Set.copyOf(expanded);
   }
 
@@ -429,6 +431,7 @@ public enum PermissionCode {
         return permission;
       }
     }
+
     throw new IllegalArgumentException(
         String.format(AuthorizationMessages.UNKNOWN_PERMISSION_CODE, code));
   }

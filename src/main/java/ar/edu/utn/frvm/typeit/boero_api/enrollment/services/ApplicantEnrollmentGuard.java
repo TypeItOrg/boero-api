@@ -23,9 +23,11 @@ public class ApplicantEnrollmentGuard {
     final boolean isApplicant =
         personRoleAssignmentRepository.existsByPerson_IdAndInstitution_IdAndRole_Code(
             principal.personId(), principal.institutionId(), SystemRoleCode.APPLICANT.name());
+
     if (!isApplicant) {
       throw new AccessDeniedException(DEFAULT_FORBIDDEN_MESSAGE);
     }
+
     return personRepository
         .findByIdAndInstitution_Id(principal.personId(), principal.institutionId())
         .orElseThrow(PersonNotFoundException::new);

@@ -28,13 +28,11 @@ public class InstitutionRoleProvisioner {
           SystemRoleCode.APPLICANT,
           EnumSet.of(
               PermissionCode.STUDY_PLAN_READ,
-              PermissionCode.ACADEMIC_YEAR_READ,
-              PermissionCode.ENROLLMENT_PERIOD_READ),
+              PermissionCode.ACADEMIC_YEAR_READ),
           SystemRoleCode.STUDENT,
-          EnumSet.of(
-              PermissionCode.STUDY_PLAN_READ,
-              PermissionCode.ACADEMIC_YEAR_READ,
-              PermissionCode.ENROLLMENT_PERIOD_READ),
+          EnumSet.of(PermissionCode.STUDY_PLAN_READ, PermissionCode.ACADEMIC_YEAR_READ),
+          SystemRoleCode.TEACHER,
+          Set.of(),
           SystemRoleCode.INSTITUTIONAL_AUTHORITY,
           EnumSet.allOf(PermissionCode.class));
 
@@ -64,10 +62,12 @@ public class InstitutionRoleProvisioner {
                           .system(true)
                           .institution(institution)
                           .build()));
+
       if (!role.getName().equals(code.getDisplayName())) {
         role.rename(code.getDisplayName());
         roleRepository.save(role);
       }
+
       if (existingRole.isEmpty() || code == SystemRoleCode.INSTITUTIONAL_AUTHORITY) {
         assignDefaults(role, DEFAULT_PERMISSIONS.get(code));
       }
@@ -76,12 +76,14 @@ public class InstitutionRoleProvisioner {
 
   private void assignDefaults(Role role, Set<PermissionCode> codes) {
     codes = PermissionCode.withRequiredPermissions(codes);
+
     for (PermissionCode code : codes) {
       Permission permission =
           permissionRepository
               .findByCode(code.getCode())
               .orElseThrow(
                   () -> new IllegalStateException(String.format(PERMISSION_NOT_SEEDED, code)));
+
       if (!rolePermissionRepository.existsByRoleIdAndPermissionId(
           role.getId(), permission.getId())) {
         rolePermissionRepository.save(RolePermission.of(role, permission));

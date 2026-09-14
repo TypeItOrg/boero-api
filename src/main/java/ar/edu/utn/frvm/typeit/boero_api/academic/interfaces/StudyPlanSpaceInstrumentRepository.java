@@ -3,6 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.interfaces;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpaceInstrument;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,6 +12,22 @@ public interface StudyPlanSpaceInstrumentRepository
     extends JpaRepository<StudyPlanSpaceInstrument, UUID> {
 
   void deleteByStudyPlanSpace_Id(UUID studyPlanSpaceId);
+
+  @EntityGraph(attributePaths = "instrument")
+  List<StudyPlanSpaceInstrument> findByStudyPlanSpace_IdOrderByInstrument_Name(
+      UUID studyPlanSpaceId);
+
+  @Query(
+      """
+      SELECT relation FROM StudyPlanSpaceInstrument relation
+      JOIN FETCH relation.instrument instrument
+      JOIN FETCH relation.studyPlanSpace space
+      WHERE relation.institution.id = :institutionId
+        AND space.studyPlan.id = :studyPlanId
+      ORDER BY instrument.name, instrument.id
+      """)
+  List<StudyPlanSpaceInstrument> findByStudyPlanIdWithInstruments(
+      @Param("institutionId") UUID institutionId, @Param("studyPlanId") UUID studyPlanId);
 
   @Query(
       """

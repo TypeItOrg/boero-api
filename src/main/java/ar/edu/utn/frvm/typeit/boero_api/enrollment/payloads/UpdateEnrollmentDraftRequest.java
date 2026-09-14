@@ -1,15 +1,15 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads;
 
-import lombok.AllArgsConstructor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class UpdateEnrollmentDraftRequest {
+public record UpdateEnrollmentDraftRequest(@Schema(nullable = true) EnrollmentDraftData data) {
+  public UpdateEnrollmentDraftRequest() {
+    this(null);
+  }
 
-  private EnrollmentDraftData data;
+  public EnrollmentDraftData getData() {
+    return data;
+  }
 }

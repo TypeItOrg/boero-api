@@ -30,6 +30,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.UpdateEnrollmentPeri
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.UpdateEnrollmentPeriodUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -93,8 +94,8 @@ class EnrollmentPeriodControllerWebMvcTest {
             ACADEMIC_YEAR_ID,
             2026,
             "Inscripción 2026",
-            LocalDateTime.of(2026, 11, 1, 8, 0),
-            LocalDateTime.of(2026, 12, 1, 20, 0),
+            LocalDateTime.of(2026, 11, 1, 8, 0).toInstant(ZoneOffset.UTC),
+            LocalDateTime.of(2026, 12, 1, 20, 0).toInstant(ZoneOffset.UTC),
             EnrollmentPeriodStatus.PLANNED,
             null);
 

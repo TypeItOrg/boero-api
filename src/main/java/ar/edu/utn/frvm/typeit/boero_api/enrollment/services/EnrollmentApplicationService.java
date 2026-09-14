@@ -5,6 +5,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
+import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantEducationBackground;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantHealthInclusion;
@@ -21,6 +22,8 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicat
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentPeriodClosedException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationRepository;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentPeriodRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.AcademicBackgroundDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentDraftData;
@@ -29,13 +32,10 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.PreferenceDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.ResponsibleDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.StartEnrollmentApplicationRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentDraftRequest;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentApplicationRepository;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentPeriodRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
 import jakarta.persistence.criteria.Predicate;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.Clock;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,7 +48,9 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.exception.ConstraintViolationException;
 import org.jspecify.annotations.Nullable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -64,11 +66,23 @@ public class EnrollmentApplicationService {
   private final PersonRepository personRepository;
   private final StudyPlanRepository studyPlanRepository;
   private final AcademicYearRepository academicYearRepository;
+  private final StudyPlanSpaceRepository studyPlanSpaceRepository;
+  private final InstrumentRepository instrumentRepository;
+  private final EnrollmentDraftDataValidator enrollmentDraftDataValidator;
+  private final BusinessDateProvider businessDateProvider;
+  private final Clock clock;
 
   @Transactional
   public EnrollmentApplicationResponse startOrGetApplication(
       UUID institutionId, UUID personId, StartEnrollmentApplicationRequest request) {
 
+    Person person =
+        personRepository
+            .findByIdAndInstitution_Id(personId, institutionId)
+            .orElseThrow(
+                () ->
+                    new EnrollmentValidationException(
+                        EnrollmentMessages.ENROLLMENT_APPLICATION_APPLICANT_REQUIRED));
     // 1. Buscar borrador existente activo
     Optional<EnrollmentApplication> existingDraft =
         applicationRepository
@@ -76,36 +90,32 @@ public class EnrollmentApplicationService {
                 personId,
                 request.getStudyPlanId(),
                 request.getAcademicYearId(),
-                EnrollmentApplicationStatus.DRAFT);
+                EnrollmentApplicationStatus.DRAFT)
+            .filter(app -> app.getInstitution().getId().equals(institutionId))
+            .filter(app -> app.getStudyPlan().getInstitution().getId().equals(institutionId));
 
     if (existingDraft.isPresent()) {
       return EnrollmentApplicationResponse.from(existingDraft.get());
     }
 
-    // 2. Si no existe, validar período de inscripción activo
-    LocalDateTime now = LocalDateTime.now();
-    EnrollmentPeriod activePeriod =
-        periodRepository
-            .findActivePeriod(
-                institutionId, request.getAcademicYearId(), EnrollmentPeriodStatus.OPEN, now)
-            .orElseThrow(EnrollmentPeriodClosedException::new);
-
-    // 3. Obtener referencias de dominio
-    Person applicant =
-        personRepository
-            .findById(personId)
-            .orElseThrow(
-                () ->
-                    new EnrollmentValidationException(
-                        "No se encontró la persona postulante con ID " + personId));
-
     StudyPlan requestedStudyPlan =
         studyPlanRepository
-            .findById(request.getStudyPlanId())
+            .findAvailableOfferById(
+                institutionId, request.getStudyPlanId(), businessDateProvider.today())
             .orElseThrow(
                 () ->
                     new EnrollmentValidationException(
-                        "No se encontró el plan de estudio con ID " + request.getStudyPlanId()));
+                        EnrollmentMessages.ENROLLMENT_APPLICATION_TRAINING_PATH_INVALID));
+
+    // 2. Validar período de inscripción abierto
+    EnrollmentPeriod period =
+        periodRepository
+            .findActivePeriod(
+                institutionId,
+                request.getAcademicYearId(),
+                EnrollmentPeriodStatus.OPEN,
+                clock.instant())
+            .orElseThrow(EnrollmentPeriodClosedException::new);
 
     // 3. Una única inscripción viva por trayecto: si ya tiene una solicitud
     // no cancelada/rechazada en el trayecto del plan pedido (aunque sea para
@@ -122,8 +132,12 @@ public class EnrollmentApplicationService {
 
     AcademicYear academicYear =
         academicYearRepository
-            .findById(request.getAcademicYearId())
-            .orElseThrow(() -> new IllegalArgumentException("Ciclo lectivo no encontrado"));
+            .findByIdAndInstitution_Id(request.getAcademicYearId(), institutionId)
+            .orElseThrow(
+                () ->
+                    new EnrollmentValidationException(
+                        EnrollmentMessages.ACADEMIC_YEAR_ID_NOT_FOUND
+                            + request.getAcademicYearId()));
 
     // 4. Crear nuevo borrador
     EnrollmentApplication newApplication =
@@ -136,7 +150,8 @@ public class EnrollmentApplicationService {
             .status(EnrollmentApplicationStatus.DRAFT)
             .build();
 
-    EnrollmentApplication saved = applicationRepository.save(newApplication);
+    EnrollmentApplication saved = saveAndFlush(newApplication);
+
     return EnrollmentApplicationResponse.from(saved);
   }
 
@@ -145,9 +160,7 @@ public class EnrollmentApplicationService {
       UUID personId, UUID applicationId, UpdateEnrollmentDraftRequest request) {
     EnrollmentApplication application =
         applicationRepository
-            .findById(applicationId)
-            .filter(app -> app.getApplicantPerson().getId().equals(personId))
-            .filter(app -> app.getDeletedAt() == null)
+            .findOwnedForUpdate(applicationId, personId)
             .orElseThrow(() -> new EnrollmentApplicationNotFoundException(applicationId));
 
     if (application.getStatus() != EnrollmentApplicationStatus.DRAFT) {
@@ -163,24 +176,31 @@ public class EnrollmentApplicationService {
 
       // 2. Antecedentes académicos
       AcademicBackgroundDto academicBg = data.getAcademicBackground();
+
       if (academicBg != null) {
         ApplicantEducationBackground bg = application.getEducationBackground();
+
         if (bg == null) {
           bg = ApplicantEducationBackground.builder().enrollmentApplication(application).build();
           application.setEducationBackground(bg);
         }
+
         if (academicBg.getSecondarySchool() != null) {
           bg.setSecondarySchool(academicBg.getSecondarySchool());
         }
+
         if (academicBg.getSchoolOrigin() != null) {
           bg.setSchoolOrigin(academicBg.getSchoolOrigin());
         }
+
         if (academicBg.getCurrentGradeYear() != null) {
           bg.setCurrentGradeYear(academicBg.getCurrentGradeYear());
         }
+
         if (academicBg.getSecondaryCompleted() != null) {
           bg.setSecondaryCompleted(academicBg.getSecondaryCompleted());
         }
+
         if (academicBg.getSecondaryDegreeTitle() != null) {
           bg.setSecondaryDegreeTitle(academicBg.getSecondaryDegreeTitle());
         }
@@ -188,15 +208,19 @@ public class EnrollmentApplicationService {
 
       // 3. Salud e Inclusión
       HealthInclusionDto health = data.getHealthInclusion();
+
       if (health != null) {
         ApplicantHealthInclusion inc = application.getHealthInclusion();
+
         if (inc == null) {
           inc = ApplicantHealthInclusion.builder().enrollmentApplication(application).build();
           application.setHealthInclusion(inc);
         }
+
         if (health.getReceivesReasonableAdjustments() != null) {
           inc.setReceivesReasonableAdjustments(health.getReceivesReasonableAdjustments());
         }
+
         if (health.getAdjustmentDetails() != null) {
           inc.setAdjustmentDetails(health.getAdjustmentDetails());
         }
@@ -204,27 +228,35 @@ public class EnrollmentApplicationService {
 
       // 4. Tutor / Responsable legal
       ResponsibleDto resp = data.getResponsible();
+
       if (resp != null) {
         ApplicantResponsible responsible = application.getResponsible();
+
         if (responsible == null) {
           responsible = ApplicantResponsible.builder().enrollmentApplication(application).build();
           application.setResponsible(responsible);
         }
+
         if (resp.getFullName() != null) {
           responsible.setFullName(resp.getFullName());
         }
+
         if (resp.getDocumentNumber() != null) {
           responsible.setDocumentNumber(resp.getDocumentNumber());
         }
+
         if (resp.getOccupation() != null) {
           responsible.setOccupation(resp.getOccupation());
         }
+
         if (resp.getPhoneNumber() != null) {
           responsible.setPhoneNumber(resp.getPhoneNumber());
         }
+
         if (resp.getEmail() != null) {
           responsible.setEmail(resp.getEmail());
         }
+
         if (resp.getEducationLevel() != null) {
           responsible.setEducationLevel(resp.getEducationLevel());
         }
@@ -232,21 +264,27 @@ public class EnrollmentApplicationService {
 
       // 5. Preferencias
       PreferenceDto pref = data.getPreference();
+
       if (pref != null) {
         ApplicantPreference preference = application.getPreference();
+
         if (preference == null) {
           preference = ApplicantPreference.builder().enrollmentApplication(application).build();
           application.setPreference(preference);
         }
+
         if (pref.getPreferredShift() != null) {
           preference.setPreferredShift(pref.getPreferredShift());
         }
+
         if (pref.getAllowsImageUse() != null) {
           preference.setAllowsImageUse(pref.getAllowsImageUse());
         }
+
         if (pref.getIsReenrolling() != null) {
           preference.setIsReenrolling(pref.getIsReenrolling());
         }
+
         if (pref.getPreviousTeacher() != null) {
           preference.setPreviousTeacher(pref.getPreviousTeacher());
         }
@@ -259,9 +297,20 @@ public class EnrollmentApplicationService {
       StudyPlan effectiveStudyPlan =
           enrollmentDraftDataValidator.validate(
               application.getInstitution().getId(), application, data);
+
       if (!effectiveStudyPlan.getId().equals(application.getStudyPlan().getId())) {
-        application.setStudyPlan(effectiveStudyPlan);
-        application.clearSelectedSpaces();
+        boolean hasOtherActiveApplication =
+            applicationRepository
+                .findActiveByApplicantPersonIdAndTrainingPathId(
+                    personId, effectiveStudyPlan.getTrainingPath().getId())
+                .stream()
+                .anyMatch(other -> !other.getId().equals(applicationId));
+
+        if (hasOtherActiveApplication) {
+          throw new ActiveEnrollmentApplicationExistsException();
+        }
+
+        application.changeStudyPlan(effectiveStudyPlan);
       }
 
       if (data.getAcademicSpaceSelection() != null
@@ -292,6 +341,7 @@ public class EnrollmentApplicationService {
         for (UUID spaceId : desiredSpaceIds) {
           Instrument instrument = null;
           UUID instrumentId = instrumentsMap.get(spaceId);
+
           if (instrumentId != null) {
             instrument =
                 instrumentRepository
@@ -299,10 +349,11 @@ public class EnrollmentApplicationService {
                     .orElseThrow(
                         () ->
                             new EnrollmentValidationException(
-                                "Instrumento no encontrado: " + instrumentId));
+                                EnrollmentMessages.INSTRUMENT_ID_NOT_FOUND + instrumentId));
           }
 
           EnrollmentApplicationSpace existing = existingByStudyPlanSpaceId.get(spaceId);
+
           if (existing != null) {
             existing.setInstrument(instrument);
             continue;
@@ -314,7 +365,7 @@ public class EnrollmentApplicationService {
                   .orElseThrow(
                       () ->
                           new EnrollmentValidationException(
-                              "Espacio de plan de estudio no encontrado: " + spaceId));
+                              EnrollmentMessages.SPACE_ID_NOT_FOUND + spaceId));
 
           EnrollmentApplicationSpace selectedSpace =
               EnrollmentApplicationSpace.builder()
@@ -327,21 +378,38 @@ public class EnrollmentApplicationService {
       }
     }
 
-    EnrollmentApplication saved = applicationRepository.save(application);
+    EnrollmentApplication saved = saveAndFlush(application);
+
     return EnrollmentApplicationResponse.from(saved);
+  }
+
+  private EnrollmentApplication saveAndFlush(final EnrollmentApplication application) {
+    try {
+      return applicationRepository.saveAndFlush(application);
+    } catch (DataIntegrityViolationException exception) {
+      for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+        if (cause instanceof ConstraintViolationException violation
+            && ("enrollment_apps_applicant_active_path_unique".equals(violation.getConstraintName())
+                || "enrollment_apps_applicant_active_draft_unique"
+                    .equals(violation.getConstraintName()))) {
+          throw new ActiveEnrollmentApplicationExistsException();
+        }
+      }
+
+      throw exception;
+    }
   }
 
   @Transactional
   public EnrollmentApplicationResponse cancelApplication(UUID personId, UUID applicationId) {
     EnrollmentApplication application =
         applicationRepository
-            .findById(applicationId)
-            .filter(app -> app.getApplicantPerson().getId().equals(personId))
-            .filter(app -> app.getDeletedAt() == null)
+            .findOwnedForUpdate(applicationId, personId)
             .orElseThrow(() -> new EnrollmentApplicationNotFoundException(applicationId));
 
     application.cancel();
     EnrollmentApplication saved = applicationRepository.save(application);
+
     return EnrollmentApplicationResponse.from(saved);
   }
 
@@ -349,9 +417,7 @@ public class EnrollmentApplicationService {
   public EnrollmentApplicationResponse submitApplication(UUID personId, UUID applicationId) {
     EnrollmentApplication application =
         applicationRepository
-            .findById(applicationId)
-            .filter(app -> app.getApplicantPerson().getId().equals(personId))
-            .filter(app -> app.getDeletedAt() == null)
+            .findOwnedForUpdate(applicationId, personId)
             .orElseThrow(() -> new EnrollmentApplicationNotFoundException(applicationId));
 
     if (application.getStatus() != EnrollmentApplicationStatus.DRAFT) {
@@ -362,40 +428,46 @@ public class EnrollmentApplicationService {
 
     // 1. Validar datos personales
     Person applicant = application.getApplicantPerson();
+
     if (applicant == null) {
-      errors.put("applicant", "Los datos del aspirante son obligatorios");
+      errors.put("applicant", EnrollmentMessages.APPLICANT_REQUIRED);
     } else {
       if (applicant.getFirstName() == null || applicant.getFirstName().isBlank()) {
-        errors.put("personalData.firstName", "El nombre es obligatorio");
+        errors.put("personalData.firstName", EnrollmentMessages.NAME_REQUIRED);
       }
+
       if (applicant.getLastName() == null || applicant.getLastName().isBlank()) {
-        errors.put("personalData.lastName", "El apellido es obligatorio");
+        errors.put("personalData.lastName", EnrollmentMessages.LAST_NAME_REQUIRED);
       }
+
       if (applicant.getDocumentNumber() == null || applicant.getDocumentNumber().isBlank()) {
-        errors.put("personalData.documentNumber", "El número de documento es obligatorio");
+        errors.put("personalData.documentNumber", EnrollmentMessages.DOCUMENT_REQUIRED);
       }
+
       if (applicant.getEmail() == null || applicant.getEmail().isBlank()) {
-        errors.put("personalData.email", "El correo electrónico es obligatorio");
+        errors.put("personalData.email", EnrollmentMessages.EMAIL_REQUIRED);
       }
 
       if (applicant.getBirthDate() != null) {
-        int age = Period.between(applicant.getBirthDate(), LocalDate.now()).getYears();
+        int age = Period.between(applicant.getBirthDate(), businessDateProvider.today()).getYears();
+
         if (age < 18) {
           ApplicantResponsible resp = application.getResponsible();
+
           if (resp == null) {
-            errors.put(
-                "responsible",
-                "Los postulantes menores de 18 años deben incluir los datos del tutor o responsable legal");
+            errors.put("responsible", EnrollmentMessages.RESPONSIBLE_REQUIRED);
           } else {
             if (resp.getFullName() == null || resp.getFullName().isBlank()) {
-              errors.put("responsible.fullName", "El nombre del responsable es obligatorio");
+              errors.put("responsible.fullName", EnrollmentMessages.RESPONSIBLE_NAME_REQUIRED);
             }
+
             if (resp.getDocumentNumber() == null || resp.getDocumentNumber().isBlank()) {
               errors.put(
-                  "responsible.documentNumber", "El documento del responsable es obligatorio");
+                  "responsible.documentNumber", EnrollmentMessages.RESPONSIBLE_DOCUMENT_REQUIRED);
             }
+
             if (resp.getPhoneNumber() == null || resp.getPhoneNumber().isBlank()) {
-              errors.put("responsible.phoneNumber", "El teléfono del responsable es obligatorio");
+              errors.put("responsible.phoneNumber", EnrollmentMessages.RESPONSIBLE_PHONE_REQUIRED);
             }
           }
         }
@@ -404,10 +476,11 @@ public class EnrollmentApplicationService {
 
     // 2. Validar antecedentes académicos
     ApplicantEducationBackground edu = application.getEducationBackground();
+
     if (edu == null
         || ((edu.getSecondarySchool() == null || edu.getSecondarySchool().isBlank())
             && (edu.getSchoolOrigin() == null || edu.getSchoolOrigin().isBlank()))) {
-      errors.put("academicBackground", "Los antecedentes educativos son obligatorios");
+      errors.put("academicBackground", EnrollmentMessages.EDUCATION_REQUIRED);
     }
 
     // 3. Validar selección de espacios académicos
@@ -415,26 +488,27 @@ public class EnrollmentApplicationService {
       errors.put(
           "academicSpaceSelection.studyPlanSpaceIds",
           EnrollmentMessages.ENROLLMENT_APPLICATION_SPACES_REQUIRED);
+    } else {
+      enrollmentDraftDataValidator.validateSubmission(application);
     }
 
     // 4. Validar preferencias
     ApplicantPreference pref = application.getPreference();
+
     if (pref == null || pref.getPreferredShift() == null || pref.getPreferredShift().isBlank()) {
-      errors.put("preference.preferredShift", "El turno preferido es obligatorio");
+      errors.put("preference.preferredShift", EnrollmentMessages.SHIFT_REQUIRED);
     } else if (pref.isReenrolling()
         && (pref.getPreviousTeacher() == null || pref.getPreviousTeacher().isBlank())) {
-      errors.put(
-          "preference.previousTeacher",
-          "El docente previo es obligatorio para aspirantes reingresantes");
+      errors.put("preference.previousTeacher", EnrollmentMessages.PREVIOUS_TEACHER_REQUIRED);
     }
 
     if (!errors.isEmpty()) {
-      throw new EnrollmentValidationException(
-          "Existen campos obligatorios sin completar para enviar la inscripción", errors);
+      throw new EnrollmentValidationException(EnrollmentMessages.SUBMISSION_INCOMPLETE, errors);
     }
 
     application.submit();
     EnrollmentApplication saved = applicationRepository.save(application);
+
     return EnrollmentApplicationResponse.from(saved);
   }
 
@@ -494,6 +568,7 @@ public class EnrollmentApplicationService {
       }
 
       String normalizedSearch = SearchNormalization.normalizeSearch(search);
+
       if (normalizedSearch != null) {
         String pattern = SearchNormalization.likeContainsPattern(normalizedSearch);
         var personJoin = root.join("applicantPerson");

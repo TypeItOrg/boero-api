@@ -4,7 +4,6 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Schema(
@@ -16,7 +15,8 @@ import java.util.UUID;
       "name",
       "startDate",
       "endDate",
-      "status"
+      "status",
+      "deletedAt"
     })
 public record EnrollmentPeriodResponse(
     UUID id,
@@ -24,8 +24,8 @@ public record EnrollmentPeriodResponse(
     UUID academicYearId,
     int academicYearNumber,
     String name,
-    LocalDateTime startDate,
-    LocalDateTime endDate,
+    Instant startDate,
+    Instant endDate,
     EnrollmentPeriodStatus status,
     @Schema(nullable = true) Instant deletedAt) {
 

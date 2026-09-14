@@ -13,15 +13,17 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentPeriodNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidEnrollmentPeriodDatesException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentPeriodRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CreateEnrollmentPeriodRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentPeriodStatusRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentPeriodRequest;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentPeriodRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,7 +61,7 @@ class EnrollmentPeriodUseCasesTest {
     getUseCase = new GetEnrollmentPeriodUseCase(periodRepository);
     updateUseCase = new UpdateEnrollmentPeriodUseCase(periodRepository);
     updateStatusUseCase = new UpdateEnrollmentPeriodStatusUseCase(periodRepository);
-    deleteUseCase = new DeleteEnrollmentPeriodUseCase(periodRepository);
+    deleteUseCase = new DeleteEnrollmentPeriodUseCase(periodRepository, Clock.systemUTC());
 
     institutionId = UUID.randomUUID();
     academicYearId = UUID.randomUUID();
@@ -74,8 +76,8 @@ class EnrollmentPeriodUseCasesTest {
             .institution(institution)
             .academicYear(academicYear)
             .name("Inscripción 2026 - Primer Llamado")
-            .startDate(LocalDateTime.of(2026, 11, 1, 8, 0))
-            .endDate(LocalDateTime.of(2026, 12, 1, 20, 0))
+            .startDate(LocalDateTime.of(2026, 11, 1, 8, 0).toInstant(ZoneOffset.UTC))
+            .endDate(LocalDateTime.of(2026, 12, 1, 20, 0).toInstant(ZoneOffset.UTC))
             .status(EnrollmentPeriodStatus.PLANNED)
             .build();
   }
@@ -87,8 +89,8 @@ class EnrollmentPeriodUseCasesTest {
         new CreateEnrollmentPeriodRequest(
             academicYearId,
             "Inscripción 2026",
-            LocalDateTime.of(2026, 11, 1, 8, 0),
-            LocalDateTime.of(2026, 12, 1, 20, 0));
+            LocalDateTime.of(2026, 11, 1, 8, 0).toInstant(ZoneOffset.UTC),
+            LocalDateTime.of(2026, 12, 1, 20, 0).toInstant(ZoneOffset.UTC));
 
     when(institutionRepository.findById(institutionId)).thenReturn(Optional.of(institution));
     when(academicYearRepository.findById(academicYearId)).thenReturn(Optional.of(academicYear));
@@ -108,8 +110,8 @@ class EnrollmentPeriodUseCasesTest {
         new CreateEnrollmentPeriodRequest(
             academicYearId,
             "Inscripción 2026",
-            LocalDateTime.of(2026, 12, 1, 8, 0),
-            LocalDateTime.of(2026, 11, 1, 20, 0));
+            LocalDateTime.of(2026, 12, 1, 8, 0).toInstant(ZoneOffset.UTC),
+            LocalDateTime.of(2026, 11, 1, 20, 0).toInstant(ZoneOffset.UTC));
 
     assertThatThrownBy(() -> createUseCase.execute(institutionId, request))
         .isInstanceOf(InvalidEnrollmentPeriodDatesException.class);
@@ -122,8 +124,8 @@ class EnrollmentPeriodUseCasesTest {
         new CreateEnrollmentPeriodRequest(
             academicYearId,
             "Inscripción 2026",
-            LocalDateTime.of(2026, 11, 1, 8, 0),
-            LocalDateTime.of(2026, 12, 1, 20, 0));
+            LocalDateTime.of(2026, 11, 1, 8, 0).toInstant(ZoneOffset.UTC),
+            LocalDateTime.of(2026, 12, 1, 20, 0).toInstant(ZoneOffset.UTC));
 
     when(institutionRepository.findById(institutionId)).thenReturn(Optional.empty());
 
@@ -138,8 +140,8 @@ class EnrollmentPeriodUseCasesTest {
         new CreateEnrollmentPeriodRequest(
             academicYearId,
             "Inscripción 2026",
-            LocalDateTime.of(2026, 11, 1, 8, 0),
-            LocalDateTime.of(2026, 12, 1, 20, 0));
+            LocalDateTime.of(2026, 11, 1, 8, 0).toInstant(ZoneOffset.UTC),
+            LocalDateTime.of(2026, 12, 1, 20, 0).toInstant(ZoneOffset.UTC));
 
     when(institutionRepository.findById(institutionId)).thenReturn(Optional.of(institution));
     when(academicYearRepository.findById(academicYearId)).thenReturn(Optional.empty());
@@ -176,8 +178,8 @@ class EnrollmentPeriodUseCasesTest {
     var request =
         new UpdateEnrollmentPeriodRequest(
             "Inscripción 2026 Editada",
-            LocalDateTime.of(2026, 11, 5, 8, 0),
-            LocalDateTime.of(2026, 12, 10, 20, 0));
+            LocalDateTime.of(2026, 11, 5, 8, 0).toInstant(ZoneOffset.UTC),
+            LocalDateTime.of(2026, 12, 10, 20, 0).toInstant(ZoneOffset.UTC));
 
     when(periodRepository.findByIdAndInstitutionIdAndDeletedAtIsNull(periodId, institutionId))
         .thenReturn(Optional.of(period));

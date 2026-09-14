@@ -6,6 +6,6 @@ import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorCategory;
 public class EnrollmentPeriodClosedException extends ApplicationException {
 
   public EnrollmentPeriodClosedException() {
-    super(ErrorCategory.CONFLICT, "No existe un período de inscripción habilitado actualmente.");
+    super(ErrorCategory.CONFLICT, EnrollmentMessages.PERIOD_NOT_OPEN);
   }
 }

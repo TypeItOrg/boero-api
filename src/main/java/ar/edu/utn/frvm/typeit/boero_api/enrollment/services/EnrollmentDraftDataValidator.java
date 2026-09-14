@@ -43,6 +43,7 @@ public class EnrollmentDraftDataValidator {
     }
 
     UUID trainingPathId = null;
+
     if (data.getCareerSelection() != null
         && data.getCareerSelection().getTrainingPathId() != null) {
       trainingPathId = data.getCareerSelection().getTrainingPathId();
@@ -61,6 +62,7 @@ public class EnrollmentDraftDataValidator {
             institutionId, application, trainingPathId);
 
     Set<UUID> selectedSpaceIds = Set.of();
+
     if (data.getAcademicSpaceSelection() != null
         && data.getAcademicSpaceSelection().getStudyPlanSpaceIds() != null) {
       selectedSpaceIds =
@@ -81,58 +83,55 @@ public class EnrollmentDraftDataValidator {
     return effectiveStudyPlan;
   }
 
-  private void validateStudyPlanSpaceSelection(
-      final UUID institutionId, final EnrollmentApplication application, final JsonNode data) {
-    validateStudyPlanSpaceSelection(institutionId, application, data, null);
+  public void validateSubmission(final EnrollmentApplication application) {
+    final UUID institutionId = application.getInstitution().getId();
+    final var spaces = application.getSelectedSpaces();
+    final var selectedIds =
+        validateStudyPlanSpaces(
+            institutionId,
+            application.getStudyPlan().getId(),
+            spaces.stream().map(space -> space.getStudyPlanSpace().getId()).toList());
+    final Map<UUID, UUID> selectedInstruments = new HashMap<>();
+
+    for (final var space : spaces) {
+      if (space.getInstrument() != null) {
+        selectedInstruments.put(space.getStudyPlanSpace().getId(), space.getInstrument().getId());
+      }
+    }
+
+    validateInstruments(institutionId, selectedIds, selectedInstruments);
+    final var requiredRelations =
+        studyPlanSpaceInstrumentRepository.findActiveByStudyPlanSpaceIds(
+            institutionId, new ArrayList<>(selectedIds));
+
+    for (final var relation : requiredRelations) {
+      if (!selectedInstruments.containsKey(relation.getStudyPlanSpace().getId())) {
+        throw new EnrollmentValidationException(
+            EnrollmentMessages.ENROLLMENT_APPLICATION_INSTRUMENT_REQUIRED,
+            Map.of(
+                "instrumentSelection.studyPlanSpaceInstrumentIds",
+                EnrollmentMessages.ENROLLMENT_APPLICATION_INSTRUMENT_REQUIRED));
+      }
+    }
   }
 
-  private void validateStudyPlanSpaceSelection(
-      final UUID institutionId,
-      final EnrollmentApplication application,
-      final JsonNode data,
-      final UUID trainingPathId) {
-    final UUID effectiveStudyPlanId =
-        resolveEffectiveStudyPlanId(institutionId, application, trainingPathId);
-    final Set<UUID> selectedStudyPlanSpaceIds =
-        validateStudyPlanSpaceSelection(institutionId, effectiveStudyPlanId, data);
-    validateInstrumentSelection(
-        institutionId, selectedStudyPlanSpaceIds, effectiveStudyPlanId, data);
-  }
-
-  private Set<UUID> validateStudyPlanSpaceSelection(
-      final UUID institutionId, final UUID studyPlanId, final JsonNode data) {
-    final JsonNode studyPlanSpaceIdsNode =
-        data.path("academicSpaceSelection").path("studyPlanSpaceIds");
-    if (studyPlanSpaceIdsNode.isMissingNode() || studyPlanSpaceIdsNode.isNull()) {
-      return Set.of();
-    }
-    if (!studyPlanSpaceIdsNode.isArray()) {
-      throw invalidStudyPlanSpaces();
-    }
-    final List<UUID> studyPlanSpaceIds = new ArrayList<>();
-    final Set<UUID> uniqueIds = new HashSet<>();
-    for (final JsonNode studyPlanSpaceIdNode : studyPlanSpaceIdsNode) {
-      if (!studyPlanSpaceIdNode.isTextual()) {
-        throw invalidStudyPlanSpaces();
-      }
-      final UUID studyPlanSpaceId;
-      try {
-        studyPlanSpaceId = UUID.fromString(studyPlanSpaceIdNode.asText());
-      } catch (IllegalArgumentException exception) {
-        throw invalidStudyPlanSpaces();
-      }
-      if (!uniqueIds.add(studyPlanSpaceId)) {
-        throw invalidStudyPlanSpaces();
-      }
-      studyPlanSpaceIds.add(studyPlanSpaceId);
-    }
+  private Set<UUID> validateStudyPlanSpaces(
+      final UUID institutionId, final UUID studyPlanId, final List<UUID> studyPlanSpaceIds) {
     if (studyPlanSpaceIds.isEmpty()) {
       return Set.of();
     }
+
+    final Set<UUID> uniqueIds = new HashSet<>(studyPlanSpaceIds);
+
+    if (uniqueIds.size() != studyPlanSpaceIds.size()) {
+      throw invalidStudyPlanSpaces();
+    }
+
     final int eligibleCount =
         studyPlanSpaceRepository
             .findEligibleByIdInAndStudyPlanId(institutionId, studyPlanId, studyPlanSpaceIds)
             .size();
+
     if (eligibleCount != studyPlanSpaceIds.size()) {
       throw new EnrollmentValidationException(
           EnrollmentMessages.ENROLLMENT_APPLICATION_STUDY_PLAN_SPACE_INVALID,
@@ -140,7 +139,8 @@ public class EnrollmentDraftDataValidator {
               "data.academicSpaceSelection.studyPlanSpaceIds",
               EnrollmentMessages.ENROLLMENT_APPLICATION_STUDY_PLAN_SPACE_INVALID));
     }
-    return Set.copyOf(studyPlanSpaceIds);
+
+    return uniqueIds;
   }
 
   private void validateInstrumentSelection(
@@ -159,8 +159,9 @@ public class EnrollmentDraftDataValidator {
 
     final var allowedRelations =
         studyPlanSpaceInstrumentRepository.findActiveByStudyPlanSpaceIds(
-            institutionId, new ArrayList<>(selectedStudyPlanSpaceIds));
-    final Map<UUID, Set<UUID>> allowedInstrumentIdsByStudyPlanSpaceId = new HashMap<>();
+            institutionId, new ArrayList<>(selectedSpaceIds));
+    final Map<UUID, Set<UUID>> allowedInstrumentIdsBySpaceId = new HashMap<>();
+
     for (final var relation : allowedRelations) {
       allowedInstrumentIdsByStudyPlanSpaceId
           .computeIfAbsent(relation.getStudyPlanSpace().getId(), ignored -> new HashSet<>())
@@ -179,24 +180,10 @@ public class EnrollmentDraftDataValidator {
         throw invalidInstrumentSelection();
       }
 
-      final JsonNode instrumentIdNode = entry.getValue();
-      if (instrumentIdNode == null || !instrumentIdNode.isTextual()) {
-        throw invalidInstrumentSelection();
-      }
+      final Set<UUID> allowed =
+          allowedInstrumentIdsBySpaceId.getOrDefault(studyPlanSpaceId, Set.of());
 
-      final UUID instrumentId;
-      try {
-        instrumentId = UUID.fromString(instrumentIdNode.asText());
-      } catch (IllegalArgumentException exception) {
-        throw invalidInstrumentSelection();
-      }
-
-      final Set<UUID> allowedInstrumentIds =
-          allowedInstrumentIdsByStudyPlanSpaceId.getOrDefault(studyPlanSpaceId, Set.of());
-      if (allowedInstrumentIds.isEmpty()) {
-        throw invalidInstrumentSelection();
-      }
-      if (!allowedInstrumentIds.contains(instrumentId)) {
+      if (allowed.isEmpty() || !allowed.contains(instrumentId)) {
         throw new EnrollmentValidationException(
             EnrollmentMessages.ENROLLMENT_APPLICATION_INSTRUMENT_INVALID,
             Map.of(

@@ -6,8 +6,6 @@ import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorCategory;
 public class ActiveEnrollmentApplicationExistsException extends ApplicationException {
 
   public ActiveEnrollmentApplicationExistsException() {
-    super(
-        ErrorCategory.CONFLICT,
-        "Ya existe una solicitud de inscripción activa para ese trayecto formativo.");
+    super(ErrorCategory.CONFLICT, EnrollmentMessages.ACTIVE_PATH_APPLICATION_EXISTS);
   }
 }

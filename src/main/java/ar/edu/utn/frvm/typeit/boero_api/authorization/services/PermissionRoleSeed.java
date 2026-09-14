@@ -48,13 +48,9 @@ public class PermissionRoleSeed implements ApplicationRunner {
           SystemRoleCode.APPLICANT,
           EnumSet.of(
               PermissionCode.STUDY_PLAN_READ,
-              PermissionCode.ACADEMIC_YEAR_READ,
-              PermissionCode.ENROLLMENT_PERIOD_READ),
+              PermissionCode.ACADEMIC_YEAR_READ),
           SystemRoleCode.STUDENT,
-          EnumSet.of(
-              PermissionCode.STUDY_PLAN_READ,
-              PermissionCode.ACADEMIC_YEAR_READ,
-              PermissionCode.ENROLLMENT_PERIOD_READ),
+          EnumSet.of(PermissionCode.STUDY_PLAN_READ, PermissionCode.ACADEMIC_YEAR_READ),
           SystemRoleCode.ADMINISTRATIVE,
           EnumSet.of(
               PermissionCode.ENROLLMENT_APPLICATION_READ,
@@ -136,9 +132,11 @@ public class PermissionRoleSeed implements ApplicationRunner {
     syncInstitutionalRoles(permissions);
     syncPlatformRoles(permissions);
     provisionInstitutionRoles();
+
     if (shouldBackfillApplicants()) {
       backfillApplicantRoleForPersonsWithoutRoles();
     }
+
     clearAuthorityCaches();
   }
 
@@ -152,6 +150,7 @@ public class PermissionRoleSeed implements ApplicationRunner {
     if (environment.acceptsProfiles(Profiles.of("test"))) {
       return;
     }
+
     entityManager
         .createNativeQuery("select pg_advisory_xact_lock(:lockId)")
         .setParameter("lockId", SEED_LOCK_ID)
@@ -165,6 +164,7 @@ public class PermissionRoleSeed implements ApplicationRunner {
                 Collectors.toMap(permission -> permission.getCode(), permission -> permission));
 
     Map<PermissionCode, Permission> synced = new HashMap<>();
+
     for (PermissionCode code : PermissionCode.values()) {
       Permission permission =
           byCode.computeIfAbsent(
@@ -178,6 +178,7 @@ public class PermissionRoleSeed implements ApplicationRunner {
                           .build()));
       synced.put(code, permission);
     }
+
     return synced;
   }
 
@@ -228,10 +229,12 @@ public class PermissionRoleSeed implements ApplicationRunner {
                             .name(displayName)
                             .system(true)
                             .build()));
+
     if (!role.getName().equals(displayName)) {
       role.rename(displayName);
       roleRepository.save(role);
     }
+
     return role;
   }
 
@@ -251,6 +254,7 @@ public class PermissionRoleSeed implements ApplicationRunner {
 
     for (PermissionCode permissionCode : requiredPermissionCodes) {
       Permission permission = permissions.get(permissionCode);
+
       if (!rolePermissionRepository.existsByRoleIdAndPermissionId(
           role.getId(), permission.getId())) {
         rolePermissionRepository.save(RolePermission.of(role, permission));
@@ -264,6 +268,7 @@ public class PermissionRoleSeed implements ApplicationRunner {
 
   private void backfillApplicantRoleForPersonsWithoutRoles() {
     List<Person> persons = personRoleAssignmentRepository.findPersonsWithoutRoleAssignments();
+
     for (Person person : persons) {
       assignPersonSystemRoleUseCase.execute(person, SystemRoleCode.APPLICANT);
     }
@@ -272,6 +277,7 @@ public class PermissionRoleSeed implements ApplicationRunner {
   private void clearAuthorityCaches() {
     for (final String cacheName : AUTHORITY_CACHE_NAMES) {
       final var cache = cacheManager.getCache(cacheName);
+
       if (cache != null) {
         cache.clear();
       }

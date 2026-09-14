@@ -1,15 +1,22 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads;
 
-import lombok.AllArgsConstructor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class HealthInclusionDto {
-  private Boolean receivesReasonableAdjustments;
-  private String adjustmentDetails;
+@Schema(requiredProperties = {"receivesReasonableAdjustments", "adjustmentDetails"})
+public record HealthInclusionDto(
+    @Schema(nullable = true) Boolean receivesReasonableAdjustments,
+    @Schema(nullable = true) String adjustmentDetails) {
+  public HealthInclusionDto() {
+    this(null, null);
+  }
+
+  public Boolean getReceivesReasonableAdjustments() {
+    return receivesReasonableAdjustments;
+  }
+
+  public String getAdjustmentDetails() {
+    return adjustmentDetails;
+  }
 }

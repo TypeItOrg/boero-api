@@ -46,6 +46,7 @@ public class CreateStudyPlanSpaceUseCase {
             .orElseThrow(AcademicSpaceNotFoundException::new);
     final var level = resolveLevel(studyPlanId, request.academicLevelId());
     final var instruments = resolveInstruments(institutionId, request.instrumentIds());
+
     try {
       final var saved =
           studyPlanSpaceRepository.save(
@@ -59,6 +60,7 @@ public class CreateStudyPlanSpaceUseCase {
                   request.approvalMode()));
       saveInstrumentRelations(saved, instruments);
       studyPlanSpaceRepository.flush();
+
       return StudyPlanSpaceResponse.from(saved, instrumentOptions(instruments));
     } catch (DataIntegrityViolationException exception) {
       throw AcademicIntegrityViolationTranslator.translate(exception);
@@ -69,6 +71,7 @@ public class CreateStudyPlanSpaceUseCase {
     if (academicLevelId == null) {
       return null;
     }
+
     return academicLevelRepository
         .findByIdAndStudyPlan_Id(academicLevelId, studyPlanId)
         .orElseThrow(() -> new AcademicConflictException(AcademicMessages.INVALID_RELATIONSHIP));
@@ -81,11 +84,13 @@ public class CreateStudyPlanSpaceUseCase {
     }
 
     final var uniqueIds = new LinkedHashSet<>(instrumentIds);
+
     if (uniqueIds.size() != instrumentIds.size()) {
       throw new AcademicConflictException(AcademicMessages.INVALID_RELATIONSHIP);
     }
 
     final List<Instrument> instruments = new ArrayList<>();
+
     for (final UUID instrumentId : uniqueIds) {
       final var instrument =
           instrumentRepository
@@ -95,6 +100,7 @@ public class CreateStudyPlanSpaceUseCase {
                   () -> new AcademicConflictException(AcademicMessages.INVALID_RELATIONSHIP));
       instruments.add(instrument);
     }
+
     return instruments;
   }
 

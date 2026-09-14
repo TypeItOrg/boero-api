@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class EnrollmentApplicationDomainTest {
 
@@ -33,8 +34,25 @@ class EnrollmentApplicationDomainTest {
     final var application = application();
     application.cancel();
 
-    assertThatThrownBy(() -> application.replaceDraftData(OBJECT_MAPPER.createObjectNode()))
-        .isInstanceOf(EnrollmentApplicationNotEditableException.class);
+    assertThat(application.isEditable()).isFalse();
+  }
+
+  @Test
+  @DisplayName("Should manage selected spaces collection")
+  void managesSelectedSpaces() {
+    final var application = application();
+    final var space = Mockito.mock(StudyPlanSpace.class);
+    final var selectedSpace =
+        EnrollmentApplicationSpace.builder()
+            .enrollmentApplication(application)
+            .studyPlanSpace(space)
+            .build();
+
+    application.addSelectedSpace(selectedSpace);
+    assertThat(application.getSelectedSpaces()).hasSize(1);
+
+    application.clearSelectedSpaces();
+    assertThat(application.getSelectedSpaces()).isEmpty();
   }
 
   private static EnrollmentApplication application() {

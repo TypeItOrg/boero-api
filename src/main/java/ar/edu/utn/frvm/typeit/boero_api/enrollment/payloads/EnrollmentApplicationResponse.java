@@ -15,76 +15,169 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
+@Builder
+@Schema(
+    requiredProperties = {
+      "applicationId",
+      "institutionId",
+      "personId",
+      "applicantFirstName",
+      "applicantLastName",
+      "applicantDocumentNumber",
+      "studyPlanId",
+      "studyPlanName",
+      "trainingPathName",
+      "academicYearId",
+      "academicYear",
+      "enrollmentPeriodId",
+      "status",
+      "isEditable",
+      "data",
+      "secondarySchool",
+      "rejectionReason",
+      "resolvedAt",
+      "resolvedByPersonId",
+      "createdAt",
+      "updatedAt",
+      "spaces"
+    })
 public record EnrollmentApplicationResponse(
-    UUID applicationId,
-    UUID personId,
-    UUID institutionId,
-    UUID studyPlanId,
-    UUID academicYearId,
-    UUID enrollmentPeriodId,
-    EnrollmentApplicationStatus status,
-    boolean isEditable,
-    JsonNode data,
-    LocalDateTime createdAt,
-    LocalDateTime updatedAt) {
+    @Schema(nullable = true) UUID applicationId,
+    @Schema(nullable = true) UUID institutionId,
+    @Schema(nullable = true) UUID personId,
+    @Schema(nullable = true) String applicantFirstName,
+    @Schema(nullable = true) String applicantLastName,
+    @Schema(nullable = true) String applicantDocumentNumber,
+    @Schema(nullable = true) UUID studyPlanId,
+    @Schema(nullable = true) String studyPlanName,
+    @Schema(nullable = true) String trainingPathName,
+    @Schema(nullable = true) UUID academicYearId,
+    @Schema(nullable = true) Integer academicYear,
+    @Schema(nullable = true) UUID enrollmentPeriodId,
+    @Schema(nullable = true) EnrollmentApplicationStatus status,
+    @JsonProperty("isEditable") boolean isEditable,
+    @Schema(nullable = true) EnrollmentDraftData data,
+    @Schema(nullable = true) String secondarySchool,
+    @Schema(nullable = true) String rejectionReason,
+    @Schema(nullable = true) Instant resolvedAt,
+    @Schema(nullable = true) UUID resolvedByPersonId,
+    @Schema(nullable = true) Instant createdAt,
+    @Schema(nullable = true) Instant updatedAt,
+    @Schema(nullable = true) List<EnrollmentApplicationSpaceResponse> spaces) {
+  public EnrollmentApplicationResponse() {
+    this(
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        false,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        new ArrayList<>());
+  }
 
-  private UUID applicationId;
-  private UUID institutionId;
-  private UUID personId;
-  private String applicantFirstName;
-  private String applicantLastName;
-  private String applicantDocumentNumber;
-  private UUID studyPlanId;
-  private String studyPlanName;
+  public EnrollmentApplicationResponse {
+    spaces = spaces == null ? new ArrayList<>() : spaces;
+  }
 
-  @Schema(nullable = true)
-  private String trainingPathName;
-
-  private UUID academicYearId;
-  private Integer academicYear;
-  private UUID enrollmentPeriodId;
-  private EnrollmentApplicationStatus status;
-
-  @JsonProperty("isEditable")
-  private boolean isEditable;
-
-  private EnrollmentDraftData data;
-
-  @Schema(nullable = true)
-  private String secondarySchool;
-
-  @Schema(nullable = true)
-  private String rejectionReason;
-
-  @Schema(nullable = true)
-  private Instant resolvedAt;
-
-  @Schema(nullable = true)
-  private UUID resolvedByPersonId;
-
-  private Instant createdAt;
-  private Instant updatedAt;
-  @Builder.Default private List<EnrollmentApplicationSpaceResponse> spaces = new ArrayList<>();
-
-  public UUID applicationId() {
+  public UUID getApplicationId() {
     return applicationId;
   }
 
-  public EnrollmentApplicationStatus status() {
+  public UUID getInstitutionId() {
+    return institutionId;
+  }
+
+  public UUID getPersonId() {
+    return personId;
+  }
+
+  public String getApplicantFirstName() {
+    return applicantFirstName;
+  }
+
+  public String getApplicantLastName() {
+    return applicantLastName;
+  }
+
+  public String getApplicantDocumentNumber() {
+    return applicantDocumentNumber;
+  }
+
+  public UUID getStudyPlanId() {
+    return studyPlanId;
+  }
+
+  public String getStudyPlanName() {
+    return studyPlanName;
+  }
+
+  public String getTrainingPathName() {
+    return trainingPathName;
+  }
+
+  public UUID getAcademicYearId() {
+    return academicYearId;
+  }
+
+  public Integer getAcademicYear() {
+    return academicYear;
+  }
+
+  public UUID getEnrollmentPeriodId() {
+    return enrollmentPeriodId;
+  }
+
+  public EnrollmentApplicationStatus getStatus() {
     return status;
   }
 
-  public String rejectionReason() {
+  public EnrollmentDraftData getData() {
+    return data;
+  }
+
+  public String getSecondarySchool() {
+    return secondarySchool;
+  }
+
+  public String getRejectionReason() {
     return rejectionReason;
   }
 
-  public Instant resolvedAt() {
+  public Instant getResolvedAt() {
     return resolvedAt;
+  }
+
+  public UUID getResolvedByPersonId() {
+    return resolvedByPersonId;
+  }
+
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
+
+  public Instant getUpdatedAt() {
+    return updatedAt;
+  }
+
+  public List<EnrollmentApplicationSpaceResponse> getSpaces() {
+    return spaces;
   }
 
   public static EnrollmentApplicationResponse from(final EnrollmentApplication application) {
@@ -145,6 +238,7 @@ public record EnrollmentApplicationResponse(
     if (entity.getSelectedSpaces() == null) {
       return new ArrayList<>();
     }
+
     return entity.getSelectedSpaces().stream()
         .map(
             s ->
@@ -164,6 +258,7 @@ public record EnrollmentApplicationResponse(
   private static EnrollmentDraftData buildDraftData(final EnrollmentApplication entity) {
     PersonalDataDto personalDataDto = null;
     Person applicant = entity.getApplicantPerson();
+
     if (applicant != null) {
       personalDataDto =
           PersonalDataDto.builder()
@@ -178,6 +273,7 @@ public record EnrollmentApplicationResponse(
 
     AcademicBackgroundDto academicBgDto = null;
     ApplicantEducationBackground bg = entity.getEducationBackground();
+
     if (bg != null) {
       academicBgDto =
           AcademicBackgroundDto.builder()
@@ -191,6 +287,7 @@ public record EnrollmentApplicationResponse(
 
     HealthInclusionDto healthDto = null;
     ApplicantHealthInclusion health = entity.getHealthInclusion();
+
     if (health != null) {
       healthDto =
           HealthInclusionDto.builder()
@@ -201,6 +298,7 @@ public record EnrollmentApplicationResponse(
 
     ResponsibleDto responsibleDto = null;
     ApplicantResponsible resp = entity.getResponsible();
+
     if (resp != null) {
       responsibleDto =
           ResponsibleDto.builder()
@@ -215,6 +313,7 @@ public record EnrollmentApplicationResponse(
 
     PreferenceDto preferenceDto = null;
     ApplicantPreference pref = entity.getPreference();
+
     if (pref != null) {
       preferenceDto =
           PreferenceDto.builder()
@@ -227,6 +326,7 @@ public record EnrollmentApplicationResponse(
 
     AcademicSpaceSelectionDto spaceSelectionDto = null;
     InstrumentSelectionDto instrumentSelectionDto = null;
+
     if (entity.getSelectedSpaces() != null && !entity.getSelectedSpaces().isEmpty()) {
       List<UUID> spaceIds =
           entity.getSelectedSpaces().stream().map(s -> s.getStudyPlanSpace().getId()).toList();
@@ -242,11 +342,13 @@ public record EnrollmentApplicationResponse(
     }
 
     CareerSelectionDto careerDto = null;
+
     if (entity.getStudyPlan() != null && entity.getStudyPlan().getTrainingPath() != null) {
       careerDto = new CareerSelectionDto(entity.getStudyPlan().getTrainingPath().getId());
     }
 
     List<AttachmentDto> attachmentsList = new ArrayList<>();
+
     if (entity.getAttachments() != null) {
       attachmentsList =
           entity.getAttachments().stream()

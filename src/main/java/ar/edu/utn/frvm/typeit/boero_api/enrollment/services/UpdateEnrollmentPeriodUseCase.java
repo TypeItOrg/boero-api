@@ -2,9 +2,9 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentPeriodNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidEnrollmentPeriodDatesException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentPeriodRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentPeriodResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentPeriodRequest;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentPeriodRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,11 +28,10 @@ public class UpdateEnrollmentPeriodUseCase {
             .findByIdAndInstitutionIdAndDeletedAtIsNull(periodId, institutionId)
             .orElseThrow(EnrollmentPeriodNotFoundException::new);
 
-    period.setName(request.name().trim());
-    period.setStartDate(request.startDate());
-    period.setEndDate(request.endDate());
+    period.updateDetails(request.name(), request.startDate(), request.endDate());
 
     final var saved = periodRepository.save(period);
+
     return EnrollmentPeriodResponse.from(saved);
   }
 }

@@ -1,6 +1,76 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions;
 
 public final class EnrollmentMessages {
+  public static final String PERIOD_NOT_FOUND = "Período de inscripción no encontrado.";
+  public static final String S3_BUCKET_REQUIRED =
+      "Debe configurar el bucket de almacenamiento de inscripciones.";
+
+  public static final String PERIOD_NOT_OPEN =
+      "No existe un período de inscripción habilitado actualmente.";
+  public static final String APPLICATION_ID_NOT_FOUND =
+      "No se encontró la solicitud de inscripción con ID ";
+  public static final String PERIOD_DATES_INVALID =
+      "La fecha de inicio del período de inscripción debe ser anterior o igual a la fecha de fin.";
+  public static final String ACTIVE_PATH_APPLICATION_EXISTS =
+      "Ya existe una solicitud de inscripción activa para ese trayecto formativo.";
+  public static final String ATTACHMENT_ID_NOT_FOUND = "No se encontró el archivo adjunto con ID ";
+  public static final String ACADEMIC_YEAR_ID_NOT_FOUND = "No se encontró el ciclo lectivo con ID ";
+  public static final String INSTRUMENT_ID_NOT_FOUND = "Instrumento no encontrado: ";
+  public static final String SPACE_ID_NOT_FOUND = "Espacio de plan de estudio no encontrado: ";
+  public static final String APPLICANT_REQUIRED = "Los datos del aspirante son obligatorios";
+  public static final String NAME_REQUIRED = "El nombre es obligatorio";
+  public static final String LAST_NAME_REQUIRED = "El apellido es obligatorio";
+  public static final String DOCUMENT_REQUIRED = "El número de documento es obligatorio";
+  public static final String EMAIL_REQUIRED = "El correo electrónico es obligatorio";
+  public static final String RESPONSIBLE_REQUIRED =
+      "Los postulantes menores de 18 años deben incluir los datos del tutor o responsable legal";
+  public static final String RESPONSIBLE_NAME_REQUIRED = "El nombre del responsable es obligatorio";
+  public static final String RESPONSIBLE_DOCUMENT_REQUIRED =
+      "El documento del responsable es obligatorio";
+  public static final String RESPONSIBLE_PHONE_REQUIRED =
+      "El teléfono del responsable es obligatorio";
+  public static final String EDUCATION_REQUIRED = "Los antecedentes educativos son obligatorios";
+  public static final String SHIFT_REQUIRED = "El turno preferido es obligatorio";
+  public static final String PREVIOUS_TEACHER_REQUIRED =
+      "El docente previo es obligatorio para aspirantes reingresantes";
+  public static final String SUBMISSION_INCOMPLETE =
+      "Existen campos obligatorios sin completar para enviar la inscripción";
+  public static final String STUDY_PLAN_REQUIRED = "El plan de estudio es obligatorio";
+  public static final String ACADEMIC_YEAR_REQUIRED = "El ciclo lectivo es obligatorio";
+  public static final String STATUS_REQUIRED = "El estado es obligatorio";
+  public static final String NAME_TOO_LONG = "El nombre no debe superar los 150 caracteres";
+  public static final String START_DATE_REQUIRED = "La fecha de inicio es obligatoria";
+  public static final String END_DATE_REQUIRED = "La fecha de fin es obligatoria";
+  public static final String FILE_EMPTY = "El archivo no puede estar vacío.";
+  public static final String FILE_TOO_LARGE = "El tamaño del archivo no puede superar los 10MB.";
+  public static final String FILE_TYPE_REQUIRED = "Tipo de archivo no especificado.";
+  public static final String FILE_TYPE_INVALID =
+      "Tipo de archivo no permitido. Solo se permiten formatos PDF, JPG y PNG.";
+  public static final String FILE_PATH_TRAVERSAL = "Intento de path traversal detectado.";
+  public static final String FILE_NOT_FOUND = "No se encontró el archivo físico en almacenamiento.";
+  public static final String FILE_UNREADABLE = "No se pudo leer el archivo físico.";
+  public static final String FILE_PATH_INVALID = "Ruta de archivo inválida.";
+  public static final String FILE_PATH_REQUIRED = "Ruta de archivo no especificada.";
+  public static final String FILE_OUTSIDE_STORAGE =
+      "Acceso no permitido fuera del directorio de almacenamiento.";
+  public static final String FILE_EXTENSION_INVALID = "Extensión de archivo no permitida.";
+  public static final String ATTACHMENT_TYPE_REQUIRED = "El tipo de adjunto es obligatorio.";
+  public static final String ATTACHMENT_TYPE_INVALID =
+      "Tipo de adjunto no válido. Tipos aceptados: ";
+  public static final String ATTACHMENT_MODIFY_DENIED =
+      "No tiene permisos para modificar adjuntos de esta solicitud.";
+
+  public static final String ATTACHMENT_TYPE_CONFLICT =
+      "Ya existe un adjunto activo de este tipo. Volvé a intentar.";
+  public static final String ATTACHMENT_ACCESS_DENIED =
+      "No tiene permisos para acceder a los adjuntos de esta solicitud.";
+  public static final String ATTACHMENT_NAME_TOO_LONG =
+      "El nombre del archivo no puede superar los 255 caracteres.";
+
+  public static final String ENROLLMENT_STORAGE_UNAVAILABLE =
+      "No se pudo inicializar el almacenamiento de adjuntos de inscripción: ";
+  public static final String ENROLLMENT_APPLICATION_INSTRUMENT_REQUIRED =
+      "Debe seleccionar un instrumento para cada espacio que lo requiere.";
 
   public static final String ENROLLMENT_APPLICATION_NOT_FOUND =
       "La solicitud de inscripción especificada no existe.";

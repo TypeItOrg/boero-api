@@ -1,4 +1,4 @@
-package ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories;
+package ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces;
 
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentAttachment;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentAttachmentType;

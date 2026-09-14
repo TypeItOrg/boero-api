@@ -5,12 +5,15 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
+import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentPeriodResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentStudyPlanSpaceInstrumentOptionsResponse;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentApplicationDraftRequest;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CreateEnrollmentApplicationUseCase;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.GetEnrollmentApplicationUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.StartEnrollmentApplicationRequest;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentDraftRequest;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentApplicationService;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationPeriodsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationStudyPlanSpacesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationTrainingPathsUseCase;
@@ -20,6 +23,9 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -46,6 +52,7 @@ public class EnrollmentApplicationController {
       listEnrollmentApplicationStudyPlanSpacesUseCase;
   private final ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase
       listEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase;
+  private final ListEnrollmentApplicationPeriodsUseCase listEnrollmentApplicationPeriodsUseCase;
 
   @PostMapping(version = Version.V1)
   public ResponseEntity<EnrollmentApplicationResponse> startOrGetApplication(
@@ -55,7 +62,18 @@ public class EnrollmentApplicationController {
     EnrollmentApplicationResponse response =
         applicationService.startOrGetApplication(
             principal.institutionId(), principal.personId(), request);
+
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
+  }
+
+  @GetMapping(value = "/options/periods", version = Version.V1)
+  public PaginatedResponse<EnrollmentPeriodResponse> listAvailablePeriods(
+      final Authentication authentication,
+      @PageableDefault(sort = "startDate", direction = Sort.Direction.ASC)
+          final Pageable pageable) {
+    final var principal = requireInstitutionalUser(authentication);
+
+    return listEnrollmentApplicationPeriodsUseCase.execute(principal, pageable);
   }
 
   @GetMapping(value = "/{applicationId}", version = Version.V1)
@@ -71,6 +89,7 @@ public class EnrollmentApplicationController {
             : null;
     EnrollmentApplicationResponse response =
         applicationService.getApplicationById(institutionId, principal.personId(), applicationId);
+
     return ResponseEntity.ok(response);
   }
 
@@ -82,6 +101,7 @@ public class EnrollmentApplicationController {
     JwtAuthenticatedUser principal = requireInstitutionalUser(authentication);
     EnrollmentApplicationResponse response =
         applicationService.updateDraft(principal.personId(), applicationId, request);
+
     return ResponseEntity.ok(response);
   }
 
@@ -91,6 +111,7 @@ public class EnrollmentApplicationController {
     JwtAuthenticatedUser principal = requireInstitutionalUser(authentication);
     EnrollmentApplicationResponse response =
         applicationService.cancelApplication(principal.personId(), applicationId);
+
     return ResponseEntity.ok(response);
   }
 
@@ -100,21 +121,23 @@ public class EnrollmentApplicationController {
     JwtAuthenticatedUser principal = requireInstitutionalUser(authentication);
     EnrollmentApplicationResponse response =
         applicationService.submitApplication(principal.personId(), applicationId);
+
     return ResponseEntity.ok(response);
   }
 
   @GetMapping(value = "/{applicationId}/training-paths", version = Version.V1)
-  public List<ar.edu.utn.frvm.typeit.boero_api.academic.payloads.TrainingPathResponse>
-      listTrainingPaths(
-          final Authentication authentication, @PathVariable final UUID applicationId) {
-    final var principal = principal(authentication);
+  public List<TrainingPathResponse> listTrainingPaths(
+      final Authentication authentication, @PathVariable final UUID applicationId) {
+    final var principal = requireInstitutionalUser(authentication);
+
     return listEnrollmentApplicationTrainingPathsUseCase.execute(principal, applicationId);
   }
 
   @GetMapping(value = "/{applicationId}/study-plan-spaces", version = Version.V1)
   public List<StudyPlanSpaceResponse> listStudyPlanSpaces(
       final Authentication authentication, @PathVariable final UUID applicationId) {
-    final var principal = principal(authentication);
+    final var principal = requireInstitutionalUser(authentication);
+
     return listEnrollmentApplicationStudyPlanSpacesUseCase.execute(principal, applicationId);
   }
 
@@ -125,13 +148,15 @@ public class EnrollmentApplicationController {
       final Authentication authentication,
       @PathVariable final UUID applicationId,
       @PathVariable final UUID studyPlanSpaceId) {
-    final var principal = principal(authentication);
+    final var principal = requireInstitutionalUser(authentication);
+
     return listEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase.execute(
         principal, applicationId, studyPlanSpaceId);
   }
 
   private JwtAuthenticatedUser principal(final Authentication authentication) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
+
     return (JwtAuthenticatedUser) authentication.getPrincipal();
   }
 }

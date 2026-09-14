@@ -18,20 +18,23 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentAttachmentTyp
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.ApplicationNotEditableException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.AttachmentNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidFileException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationRepository;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentAttachmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentAttachmentResponse;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentApplicationRepository;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentAttachmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
+import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -40,6 +43,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionSynchronizationUtils;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -62,27 +67,34 @@ class EnrollmentAttachmentServiceTest {
 
   @BeforeEach
   void setUp() {
+    TransactionSynchronizationManager.initSynchronization();
     service =
         new EnrollmentAttachmentService(
             applicationRepository,
             attachmentRepository,
             localStorageService,
             authorizationService,
-            authorityResolver);
+            authorityResolver,
+            Clock.systemUTC());
 
-    Institution institution = org.mockito.Mockito.mock(Institution.class);
-    org.mockito.Mockito.lenient().when(institution.getId()).thenReturn(institutionId);
+    Institution institution = Mockito.mock(Institution.class);
+    Mockito.lenient().when(institution.getId()).thenReturn(institutionId);
 
-    Person applicant = org.mockito.Mockito.mock(Person.class);
-    org.mockito.Mockito.lenient().when(applicant.getId()).thenReturn(applicantPersonId);
+    Person applicant = Mockito.mock(Person.class);
+    Mockito.lenient().when(applicant.getId()).thenReturn(applicantPersonId);
 
     application =
         EnrollmentApplication.builder()
+            .id(applicationId)
             .institution(institution)
             .applicantPerson(applicant)
             .status(EnrollmentApplicationStatus.DRAFT)
             .build();
-    application.setId(applicationId);
+  }
+
+  @AfterEach
+  void tearDownTransaction() {
+    TransactionSynchronizationManager.clearSynchronization();
   }
 
   private TestingAuthenticationToken authenticationFor(UUID personId) {
@@ -101,7 +113,8 @@ class EnrollmentAttachmentServiceTest {
   @Test
   @DisplayName("Should successfully upload attachment for draft application")
   void uploadAttachment_success() {
-    when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+    when(applicationRepository.findForAttachmentUpdate(applicationId, institutionId))
+        .thenReturn(Optional.of(application));
     when(attachmentRepository.findByEnrollmentApplicationIdAndAttachmentTypeAndDeletedAtIsNull(
             applicationId, EnrollmentAttachmentType.DNI_FRONT))
         .thenReturn(Optional.empty());
@@ -115,6 +128,7 @@ class EnrollmentAttachmentServiceTest {
 
     EnrollmentAttachment savedAttachment =
         EnrollmentAttachment.builder()
+            .id(attachmentId)
             .enrollmentApplication(application)
             .attachmentType(EnrollmentAttachmentType.DNI_FRONT)
             .originalFileName("dni.pdf")
@@ -122,9 +136,9 @@ class EnrollmentAttachmentServiceTest {
             .contentType("application/pdf")
             .fileSize(7L)
             .build();
-    savedAttachment.setId(attachmentId);
 
-    when(attachmentRepository.save(any(EnrollmentAttachment.class))).thenReturn(savedAttachment);
+    when(attachmentRepository.saveAndFlush(any(EnrollmentAttachment.class)))
+        .thenReturn(savedAttachment);
 
     EnrollmentAttachmentResponse response =
         service.uploadAttachment(
@@ -133,16 +147,18 @@ class EnrollmentAttachmentServiceTest {
     assertThat(response.id()).isEqualTo(attachmentId);
     assertThat(response.attachmentType()).isEqualTo(EnrollmentAttachmentType.DNI_FRONT);
     assertThat(response.originalFileName()).isEqualTo("dni.pdf");
-    verify(attachmentRepository).save(any(EnrollmentAttachment.class));
+    verify(attachmentRepository).saveAndFlush(any(EnrollmentAttachment.class));
   }
 
   @Test
   @DisplayName("Should replace existing active attachment of the same type")
   void uploadAttachment_replaceExisting() {
-    when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+    when(applicationRepository.findForAttachmentUpdate(applicationId, institutionId))
+        .thenReturn(Optional.of(application));
 
     EnrollmentAttachment existing =
         EnrollmentAttachment.builder()
+            .id(UUID.randomUUID())
             .enrollmentApplication(application)
             .attachmentType(EnrollmentAttachmentType.DNI_FRONT)
             .originalFileName("old_dni.pdf")
@@ -150,7 +166,6 @@ class EnrollmentAttachmentServiceTest {
             .contentType("application/pdf")
             .fileSize(10L)
             .build();
-    existing.setId(UUID.randomUUID());
 
     when(attachmentRepository.findByEnrollmentApplicationIdAndAttachmentTypeAndDeletedAtIsNull(
             applicationId, EnrollmentAttachmentType.DNI_FRONT))
@@ -165,6 +180,7 @@ class EnrollmentAttachmentServiceTest {
 
     EnrollmentAttachment savedAttachment =
         EnrollmentAttachment.builder()
+            .id(attachmentId)
             .enrollmentApplication(application)
             .attachmentType(EnrollmentAttachmentType.DNI_FRONT)
             .originalFileName("dni.pdf")
@@ -172,21 +188,24 @@ class EnrollmentAttachmentServiceTest {
             .contentType("application/pdf")
             .fileSize(7L)
             .build();
-    savedAttachment.setId(attachmentId);
-    when(attachmentRepository.save(any(EnrollmentAttachment.class))).thenReturn(savedAttachment);
+    when(attachmentRepository.saveAndFlush(any(EnrollmentAttachment.class)))
+        .thenReturn(savedAttachment);
 
     service.uploadAttachment(
         applicationId, file, "DNI_FRONT", authenticationFor(applicantPersonId));
 
     assertThat(existing.isDeleted()).isTrue();
+    verify(localStorageService, never()).deletePhysicalFile("old_path.pdf");
+    TransactionSynchronizationUtils.triggerAfterCommit();
     verify(localStorageService).deletePhysicalFile("old_path.pdf");
   }
 
   @Test
   @DisplayName("Should reject upload when application is not editable")
   void uploadAttachment_notEditable() {
-    application.setStatus(EnrollmentApplicationStatus.SUBMITTED);
-    when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+    application.submit();
+    when(applicationRepository.findForAttachmentUpdate(applicationId, institutionId))
+        .thenReturn(Optional.of(application));
 
     MockMultipartFile file =
         new MockMultipartFile("file", "dni.pdf", "application/pdf", "content".getBytes());
@@ -203,7 +222,8 @@ class EnrollmentAttachmentServiceTest {
   @Test
   @DisplayName("Should reject upload when caller is not owner and not administrative")
   void uploadAttachment_unauthorized() {
-    when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+    when(applicationRepository.findForAttachmentUpdate(applicationId, institutionId))
+        .thenReturn(Optional.of(application));
     UUID strangerId = UUID.randomUUID();
     when(authorityResolver.resolvePersonAuthorities(strangerId, institutionId))
         .thenReturn(new InstitutionalAuthoritySnapshot(Set.of(), List.of()));
@@ -221,7 +241,6 @@ class EnrollmentAttachmentServiceTest {
   @Test
   @DisplayName("Should reject upload when caller is not authenticated")
   void uploadAttachment_unauthenticated() {
-    when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
 
     MockMultipartFile file =
         new MockMultipartFile("file", "dni.pdf", "application/pdf", "content".getBytes());
@@ -250,6 +269,7 @@ class EnrollmentAttachmentServiceTest {
 
     EnrollmentAttachment attachment =
         EnrollmentAttachment.builder()
+            .id(attachmentId)
             .enrollmentApplication(application)
             .attachmentType(EnrollmentAttachmentType.PHOTO_ID)
             .originalFileName("foto.png")
@@ -257,7 +277,6 @@ class EnrollmentAttachmentServiceTest {
             .contentType("image/png")
             .fileSize(100L)
             .build();
-    attachment.setId(attachmentId);
 
     when(attachmentRepository.findByIdAndEnrollmentApplicationIdAndDeletedAtIsNull(
             attachmentId, applicationId))
@@ -285,6 +304,7 @@ class EnrollmentAttachmentServiceTest {
 
     EnrollmentAttachment attachment =
         EnrollmentAttachment.builder()
+            .id(attachmentId)
             .enrollmentApplication(application)
             .attachmentType(EnrollmentAttachmentType.PHOTO_ID)
             .originalFileName("foto.png")
@@ -292,7 +312,6 @@ class EnrollmentAttachmentServiceTest {
             .contentType("image/png")
             .fileSize(100L)
             .build();
-    attachment.setId(attachmentId);
 
     when(attachmentRepository.findByIdAndEnrollmentApplicationIdAndDeletedAtIsNull(
             attachmentId, applicationId))
@@ -325,10 +344,12 @@ class EnrollmentAttachmentServiceTest {
   @Test
   @DisplayName("Should successfully soft delete attachment and remove physical file")
   void deleteAttachment_success() {
-    when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+    when(applicationRepository.findForAttachmentUpdate(applicationId, institutionId))
+        .thenReturn(Optional.of(application));
 
     EnrollmentAttachment attachment =
         EnrollmentAttachment.builder()
+            .id(attachmentId)
             .enrollmentApplication(application)
             .attachmentType(EnrollmentAttachmentType.SECONDARY_CERTIFICATE)
             .originalFileName("cert.pdf")
@@ -336,7 +357,6 @@ class EnrollmentAttachmentServiceTest {
             .contentType("application/pdf")
             .fileSize(500L)
             .build();
-    attachment.setId(attachmentId);
 
     when(attachmentRepository.findByIdAndEnrollmentApplicationIdAndDeletedAtIsNull(
             attachmentId, applicationId))
@@ -346,6 +366,8 @@ class EnrollmentAttachmentServiceTest {
 
     assertThat(attachment.isDeleted()).isTrue();
     verify(attachmentRepository).save(attachment);
+    verify(localStorageService, never()).deletePhysicalFile(attachment.getStoragePath());
+    TransactionSynchronizationUtils.triggerAfterCommit();
     verify(localStorageService).deletePhysicalFile(attachment.getStoragePath());
   }
 
@@ -356,6 +378,7 @@ class EnrollmentAttachmentServiceTest {
 
     EnrollmentAttachment attachment =
         EnrollmentAttachment.builder()
+            .id(attachmentId)
             .enrollmentApplication(application)
             .attachmentType(EnrollmentAttachmentType.DNI_FRONT)
             .originalFileName("dni.pdf")
@@ -363,7 +386,6 @@ class EnrollmentAttachmentServiceTest {
             .contentType("application/pdf")
             .fileSize(200L)
             .build();
-    attachment.setId(attachmentId);
 
     when(attachmentRepository.findByEnrollmentApplicationIdAndDeletedAtIsNull(applicationId))
         .thenReturn(List.of(attachment));

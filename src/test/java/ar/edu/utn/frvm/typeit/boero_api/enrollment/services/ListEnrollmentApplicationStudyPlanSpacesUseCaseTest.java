@@ -9,6 +9,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.ApprovalMode;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequirementType;
@@ -17,11 +18,14 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceInstru
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
+import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -52,7 +56,11 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
     final var principal = principal(application);
     final var academicSpace =
         AcademicSpace.create(
-            application.getInstitution(), "Armonia I", "", AcademicSpaceType.SUBJECT);
+            application.getInstitution(),
+            "Armonia I",
+            "",
+            AcademicSpaceType.SUBJECT,
+            AcademicSpaceFormat.INDIVIDUAL);
     final var studyPlanSpace =
         StudyPlanSpace.create(
             application.getInstitution(),
@@ -76,7 +84,8 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
         new ListEnrollmentApplicationStudyPlanSpacesUseCase(
             new ApplicantEnrollmentGuard(personRepository, personRoleAssignmentRepository),
             enrollmentApplicationRepository,
-            new EnrollmentEffectiveStudyPlanResolver(studyPlanRepository),
+            new EnrollmentEffectiveStudyPlanResolver(
+                studyPlanRepository, new BusinessDateProvider(Clock.systemUTC())),
             studyPlanSpaceRepository,
             studyPlanSpaceInstrumentRepository);
     givenApplicant(principal, application.getPerson());

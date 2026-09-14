@@ -51,6 +51,7 @@ public class EnrollmentAttachmentController {
 
     EnrollmentAttachmentResponse response =
         attachmentService.uploadAttachment(applicationId, file, attachmentType, authentication);
+
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 
@@ -65,6 +66,7 @@ public class EnrollmentAttachmentController {
         attachmentService.getAttachmentContent(applicationId, attachmentId, authentication);
 
     MediaType mediaType;
+
     try {
       mediaType = MediaType.parseMediaType(result.attachment().getContentType());
     } catch (Exception e) {
@@ -92,6 +94,7 @@ public class EnrollmentAttachmentController {
       Authentication authentication) {
 
     attachmentService.deleteAttachment(applicationId, attachmentId, authentication);
+
     return ResponseEntity.noContent().build();
   }
 
@@ -102,6 +105,7 @@ public class EnrollmentAttachmentController {
 
     List<EnrollmentAttachmentResponse> response =
         attachmentService.listAttachments(applicationId, authentication);
+
     return ResponseEntity.ok(response);
   }
 }

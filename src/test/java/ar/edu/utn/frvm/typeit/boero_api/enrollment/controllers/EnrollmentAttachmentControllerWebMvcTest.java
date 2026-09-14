@@ -119,13 +119,13 @@ class EnrollmentAttachmentControllerWebMvcTest {
 
     EnrollmentAttachment attachment =
         EnrollmentAttachment.builder()
+            .id(ATTACHMENT_ID)
             .attachmentType(EnrollmentAttachmentType.DNI_FRONT)
             .originalFileName("dni.pdf")
             .storagePath(APPLICATION_ID + "/safe-dni.pdf")
             .contentType("application/pdf")
             .fileSize((long) fileBytes.length)
             .build();
-    attachment.setId(ATTACHMENT_ID);
 
     when(attachmentService.getAttachmentContent(eq(APPLICATION_ID), eq(ATTACHMENT_ID), any()))
         .thenReturn(new AttachmentContentResult(resource, attachment));

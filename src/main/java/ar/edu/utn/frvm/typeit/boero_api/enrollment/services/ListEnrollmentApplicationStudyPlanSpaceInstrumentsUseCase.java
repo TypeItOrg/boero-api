@@ -40,6 +40,7 @@ public class ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase {
     final var eligibleSpaces =
         studyPlanSpaceRepository.findEligibleByIdInAndStudyPlanId(
             principal.institutionId(), effectiveStudyPlan.getId(), List.of(studyPlanSpaceId));
+
     if (eligibleSpaces.isEmpty()) {
       throw new EnrollmentValidationException(
           EnrollmentMessages.ENROLLMENT_APPLICATION_STUDY_PLAN_SPACE_INVALID,
@@ -47,6 +48,7 @@ public class ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase {
               "studyPlanSpaceId",
               EnrollmentMessages.ENROLLMENT_APPLICATION_STUDY_PLAN_SPACE_INVALID));
     }
+
     final var instruments =
         studyPlanSpaceInstrumentRepository.findActiveByStudyPlanSpaceId(
             principal.institutionId(), studyPlanSpaceId);
@@ -57,6 +59,7 @@ public class ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase {
                     new StudyPlanSpaceInstrumentOptionResponse(
                         relation.getInstrument().getId(), relation.getInstrument().getName()))
             .toList();
+
     return new EnrollmentStudyPlanSpaceInstrumentOptionsResponse(
         studyPlanSpaceId, !options.isEmpty(), options);
   }

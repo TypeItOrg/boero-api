@@ -12,15 +12,18 @@ import static org.mockito.Mockito.verify;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
+import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidEnrollmentApplicationStateException;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentApplicationRepository;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Student;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.StudentRepository;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,6 +48,7 @@ class ApproveEnrollmentApplicationUseCaseTest {
 
   @Mock private EnrollmentApplicationRepository enrollmentApplicationRepository;
   @Mock private StudentRepository studentRepository;
+  @Mock private PersonRepository personRepository;
   @Mock private EnrollmentApplication application;
   @Mock private StudyPlan studyPlan;
   @Mock private AcademicYear academicYear;
@@ -106,10 +110,17 @@ class ApproveEnrollmentApplicationUseCaseTest {
 
   private ApproveEnrollmentApplicationUseCase useCase() {
     return new ApproveEnrollmentApplicationUseCase(
-        enrollmentApplicationRepository, studentRepository);
+        enrollmentApplicationRepository,
+        studentRepository,
+        personRepository,
+        Clock.systemUTC(),
+        new BusinessDateProvider(Clock.systemUTC()));
   }
 
   private void stubApplication() {
+    lenient().when(application.getApplicantPerson()).thenReturn(PERSON);
+    given(personRepository.findByIdAndInstitutionIdForUpdate(PERSON.getId(), INSTITUTION_ID))
+        .willReturn(Optional.of(PERSON));
     final var institution = Institution.builder().id(INSTITUTION_ID).name("Conservatorio").build();
     given(
             enrollmentApplicationRepository.findByIdAndInstitutionIdForUpdate(

@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public class AttachmentNotFoundException extends ApplicationException {
   public AttachmentNotFoundException(UUID attachmentId) {
-    super(ErrorCategory.NOT_FOUND, "No se encontró el archivo adjunto con ID " + attachmentId);
+    super(ErrorCategory.NOT_FOUND, EnrollmentMessages.ATTACHMENT_ID_NOT_FOUND + attachmentId);
   }
 
   public AttachmentNotFoundException(String message) {

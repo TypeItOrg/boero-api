@@ -1,13 +1,13 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentApplicationRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Student;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.StudentRepository;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.Year;
+import java.time.Clock;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +19,9 @@ public class ApproveEnrollmentApplicationUseCase {
 
   private final EnrollmentApplicationRepository enrollmentApplicationRepository;
   private final StudentRepository studentRepository;
+  private final PersonRepository personRepository;
+  private final Clock clock;
+  private final BusinessDateProvider businessDateProvider;
 
   @Transactional
   public EnrollmentApplicationResponse execute(
@@ -28,7 +31,10 @@ public class ApproveEnrollmentApplicationUseCase {
             .findByIdAndInstitutionIdForUpdate(institutionId, applicationId)
             .orElseThrow(EnrollmentApplicationNotFoundException::new);
 
-    application.approve(Instant.now(), resolvedByPersonId);
+    personRepository
+        .findByIdAndInstitutionIdForUpdate(application.getApplicantPerson().getId(), institutionId)
+        .orElseThrow(EnrollmentApplicationNotFoundException::new);
+    application.approve(clock.instant(), resolvedByPersonId);
 
     if (!studentRepository.existsByInstitution_IdAndPerson_Id(
         institutionId, application.getApplicantPerson().getId())) {
@@ -37,15 +43,17 @@ public class ApproveEnrollmentApplicationUseCase {
               .institution(application.getInstitution())
               .person(application.getApplicantPerson())
               .fileNumber(generateFileNumber())
-              .enrollmentDate(LocalDate.now())
+              .enrollmentDate(businessDateProvider.today())
               .build());
     }
+
     return EnrollmentApplicationResponse.from(application);
   }
 
   private String generateFileNumber() {
-    final int year = Year.now().getValue();
+    final int year = businessDateProvider.today().getYear();
     final long sequence = studentRepository.nextFileNumberSequenceValue();
+
     return String.format("%d-%05d", year, sequence);
   }
 }

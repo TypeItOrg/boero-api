@@ -36,7 +36,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(
@@ -60,7 +59,6 @@ import lombok.Setter;
     indexes =
         @Index(name = "people_institution_deleted_idx", columnList = "institution_id, deleted"))
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder

@@ -29,8 +29,9 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData;
 import ar.edu.utn.frvm.typeit.boero_api.support.IntegrationTest;
 import jakarta.persistence.EntityManager;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -264,8 +265,8 @@ class EnrollmentApplicationPostgresIntegrationTest {
                 .institution(institution)
                 .academicYear(academicYear)
                 .name("Periodo " + suffix)
-                .startDate(LocalDateTime.now().minusDays(1))
-                .endDate(LocalDateTime.now().plusDays(30))
+                .startDate(Instant.now().minus(1, ChronoUnit.DAYS))
+                .endDate(Instant.now().plus(30, ChronoUnit.DAYS))
                 .status(EnrollmentPeriodStatus.OPEN)
                 .build());
 

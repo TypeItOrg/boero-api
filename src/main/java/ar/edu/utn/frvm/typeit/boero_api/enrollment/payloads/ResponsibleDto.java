@@ -1,19 +1,50 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads;
 
-import lombok.AllArgsConstructor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ResponsibleDto {
-  private String fullName;
-  private String documentNumber;
-  private String occupation;
-  private String phoneNumber;
-  private String email;
-  private String educationLevel;
+@Schema(
+    requiredProperties = {
+      "fullName",
+      "documentNumber",
+      "occupation",
+      "phoneNumber",
+      "email",
+      "educationLevel"
+    })
+public record ResponsibleDto(
+    @Schema(nullable = true) String fullName,
+    @Schema(nullable = true) String documentNumber,
+    @Schema(nullable = true) String occupation,
+    @Schema(nullable = true) String phoneNumber,
+    @Schema(nullable = true) String email,
+    @Schema(nullable = true) String educationLevel) {
+  public ResponsibleDto() {
+    this(null, null, null, null, null, null);
+  }
+
+  public String getFullName() {
+    return fullName;
+  }
+
+  public String getDocumentNumber() {
+    return documentNumber;
+  }
+
+  public String getOccupation() {
+    return occupation;
+  }
+
+  public String getPhoneNumber() {
+    return phoneNumber;
+  }
+
+  public String getEmail() {
+    return email;
+  }
+
+  public String getEducationLevel() {
+    return educationLevel;
+  }
 }

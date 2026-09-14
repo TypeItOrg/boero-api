@@ -1,21 +1,74 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class EnrollmentDraftData {
-  private PersonalDataDto personalData;
-  private AcademicBackgroundDto academicBackground;
-  private HealthInclusionDto healthInclusion;
-  private ResponsibleDto responsible;
-  private PreferenceDto preference;
-  @Builder.Default private List<AttachmentDto> attachments = new ArrayList<>();
+@Schema(
+    requiredProperties = {
+      "personalData",
+      "academicBackground",
+      "healthInclusion",
+      "responsible",
+      "preference",
+      "careerSelection",
+      "academicSpaceSelection",
+      "instrumentSelection",
+      "attachments"
+    })
+public record EnrollmentDraftData(
+    @Schema(nullable = true) PersonalDataDto personalData,
+    @Schema(nullable = true) AcademicBackgroundDto academicBackground,
+    @Schema(nullable = true) HealthInclusionDto healthInclusion,
+    @Schema(nullable = true) ResponsibleDto responsible,
+    @Schema(nullable = true) PreferenceDto preference,
+    @Schema(nullable = true) CareerSelectionDto careerSelection,
+    @Schema(nullable = true) AcademicSpaceSelectionDto academicSpaceSelection,
+    @Schema(nullable = true) InstrumentSelectionDto instrumentSelection,
+    @Schema(nullable = true) List<AttachmentDto> attachments) {
+  public EnrollmentDraftData() {
+    this(null, null, null, null, null, null, null, null, new ArrayList<>());
+  }
+
+  public EnrollmentDraftData {
+    attachments = attachments == null ? new ArrayList<>() : attachments;
+  }
+
+  public PersonalDataDto getPersonalData() {
+    return personalData;
+  }
+
+  public AcademicBackgroundDto getAcademicBackground() {
+    return academicBackground;
+  }
+
+  public HealthInclusionDto getHealthInclusion() {
+    return healthInclusion;
+  }
+
+  public ResponsibleDto getResponsible() {
+    return responsible;
+  }
+
+  public PreferenceDto getPreference() {
+    return preference;
+  }
+
+  public CareerSelectionDto getCareerSelection() {
+    return careerSelection;
+  }
+
+  public AcademicSpaceSelectionDto getAcademicSpaceSelection() {
+    return academicSpaceSelection;
+  }
+
+  public InstrumentSelectionDto getInstrumentSelection() {
+    return instrumentSelection;
+  }
+
+  public List<AttachmentDto> getAttachments() {
+    return attachments;
+  }
 }

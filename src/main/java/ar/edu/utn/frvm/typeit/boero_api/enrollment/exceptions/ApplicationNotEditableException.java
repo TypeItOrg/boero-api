@@ -7,8 +7,6 @@ import java.util.UUID;
 public class ApplicationNotEditableException extends ApplicationException {
 
   public ApplicationNotEditableException(UUID applicationId) {
-    super(
-        ErrorCategory.CONFLICT,
-        "La solicitud con ID " + applicationId + " no se encuentra en estado editable.");
+    super(ErrorCategory.CONFLICT, EnrollmentMessages.APPLICATION_NOT_EDITABLE);
   }
 }

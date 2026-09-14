@@ -12,8 +12,8 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationSt
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidEnrollmentApplicationStateException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.MissingRejectionReasonException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.RejectEnrollmentApplicationRequest;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.repositories.EnrollmentApplicationRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ApproveEnrollmentApplicationUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.RejectEnrollmentApplicationUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
@@ -27,6 +27,7 @@ import jakarta.persistence.PersistenceException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Year;
+import java.time.ZoneOffset;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -123,8 +124,8 @@ class EnrollmentResolutionPostgresIntegrationTest {
             .institution(institution)
             .academicYear(academicYear)
             .name("Inscripción " + year)
-            .startDate(LocalDateTime.of(year, 2, 1, 0, 0))
-            .endDate(LocalDateTime.of(year, 12, 15, 23, 59))
+            .startDate(LocalDateTime.of(year, 2, 1, 0, 0).toInstant(ZoneOffset.UTC))
+            .endDate(LocalDateTime.of(year, 12, 15, 23, 59).toInstant(ZoneOffset.UTC))
             .status(EnrollmentPeriodStatus.OPEN)
             .build();
     InstitutionalTestData.persist(entityManager, enrollmentPeriod);

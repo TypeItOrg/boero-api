@@ -4,8 +4,8 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.StudyPlanNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
+import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
-import java.time.LocalDate;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 public class EnrollmentEffectiveStudyPlanResolver {
 
   private final StudyPlanRepository studyPlanRepository;
+  private final BusinessDateProvider businessDateProvider;
 
   public StudyPlan resolve(final UUID institutionId, final EnrollmentApplication application) {
     return resolveForTrainingPath(institutionId, application, null);
@@ -31,14 +32,12 @@ public class EnrollmentEffectiveStudyPlanResolver {
       final UUID institutionId,
       final EnrollmentApplication application,
       final @Nullable UUID trainingPathId) {
-    if (trainingPathId == null) {
+    if (trainingPathId == null
+        || trainingPathId.equals(application.getStudyPlan().getTrainingPath().getId())) {
       return application.getStudyPlan();
     }
 
-    final var validOn =
-        application.getAcademicYear().getStartDate() != null
-            ? application.getAcademicYear().getStartDate()
-            : LocalDate.now();
+    final var validOn = businessDateProvider.today();
 
     return studyPlanRepository
         .findActiveByTrainingPathIdAndInstitutionIdValidOn(

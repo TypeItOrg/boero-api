@@ -24,7 +24,6 @@ import lombok.Setter;
 @Entity
 @Table(name = "enrollment_attachments")
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
@@ -37,6 +36,7 @@ public class EnrollmentAttachment extends SoftDeletable {
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "enrollment_application_id", nullable = false)
+  @Setter
   private EnrollmentApplication enrollmentApplication;
 
   @Enumerated(EnumType.STRING)
@@ -55,21 +55,18 @@ public class EnrollmentAttachment extends SoftDeletable {
   @Column(name = "file_size", nullable = false)
   private Long fileSize;
 
-  public boolean markDeleted() {
-    return markDeleted(Instant.now());
+  public boolean markDeleted(final Instant now) {
+    return super.markDeleted(now);
   }
 
   public String getFilePath() {
     return storagePath;
   }
 
-  public void setFilePath(String filePath) {
-    this.storagePath = filePath;
-  }
-
   public static class EnrollmentAttachmentBuilder {
     public EnrollmentAttachmentBuilder filePath(String filePath) {
       this.storagePath = filePath;
+
       return this;
     }
   }

@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.controllers;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedPlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresInstitutionAccess;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPermission;
@@ -16,6 +17,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.RejectEnrollmentAppl
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -83,7 +85,11 @@ public class InstitutionalEnrollmentApplicationController {
         institutionId, applicationId, request, currentPersonId(authentication));
   }
 
-  private UUID currentPersonId(final Authentication authentication) {
+  private @Nullable UUID currentPersonId(final Authentication authentication) {
+    if (authentication.getPrincipal() instanceof JwtAuthenticatedPlatformAccount) {
+      return null;
+    }
+
     return ((JwtAuthenticatedUser) authentication.getPrincipal()).personId();
   }
 }
