@@ -488,7 +488,6 @@ class EnrollmentApplicationServiceTest {
   @DisplayName("Should throw ApplicationNotEditableException when application status is not DRAFT")
   void updateDraft_notEditable() {
     Person person = Mockito.mock(Person.class);
-    when(person.getId()).thenReturn(personId);
 
     EnrollmentApplication application =
         EnrollmentApplication.builder()
@@ -555,7 +554,6 @@ class EnrollmentApplicationServiceTest {
   @DisplayName("Should throw ApplicationNotEditableException when cancelling non-draft application")
   void cancelApplication_notDraft() {
     Person person = Mockito.mock(Person.class);
-    when(person.getId()).thenReturn(personId);
 
     EnrollmentApplication application =
         EnrollmentApplication.builder()
@@ -631,7 +629,6 @@ class EnrollmentApplicationServiceTest {
   @DisplayName("Should require at least one selected study plan space to submit")
   void submitApplication_requiresSelectedSpaces() {
     Person person = Mockito.mock(Person.class);
-    when(person.getId()).thenReturn(personId);
     when(person.getFirstName()).thenReturn("Juan");
     when(person.getLastName()).thenReturn("Pérez");
     when(person.getDocumentNumber()).thenReturn("12345678");
@@ -667,7 +664,6 @@ class EnrollmentApplicationServiceTest {
       "Should throw EnrollmentValidationException reporting each missing field when mandatory fields are missing upon submission")
   void submitApplication_missingFields() {
     Person person = Mockito.mock(Person.class);
-    when(person.getId()).thenReturn(personId);
     when(person.getFirstName()).thenReturn("");
     when(person.getLastName()).thenReturn(null);
     when(person.getDocumentNumber()).thenReturn(null);
@@ -705,7 +701,6 @@ class EnrollmentApplicationServiceTest {
       "Should throw EnrollmentValidationException when a minor applicant has no responsible/tutor data")
   void submitApplication_minorWithoutResponsible_reportsError() {
     Person person = Mockito.mock(Person.class);
-    when(person.getId()).thenReturn(personId);
     when(person.getFirstName()).thenReturn("Juan");
     when(person.getLastName()).thenReturn("Pérez");
     when(person.getDocumentNumber()).thenReturn("12345678");

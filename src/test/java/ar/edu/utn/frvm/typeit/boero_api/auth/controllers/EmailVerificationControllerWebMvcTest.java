@@ -46,6 +46,11 @@ class EmailVerificationControllerWebMvcTest {
   @TestConfiguration
   static class Config {
     @Bean
+    com.fasterxml.jackson.databind.ObjectMapper objectMapper() {
+      return new com.fasterxml.jackson.databind.ObjectMapper();
+    }
+
+    @Bean
     PathMatcher pathMatcher() {
       return new AntPathMatcher();
     }

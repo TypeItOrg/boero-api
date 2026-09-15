@@ -29,9 +29,11 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationSt
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CreateEnrollmentApplicationRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentStudyPlanSpaceInstrumentOptionsResponse;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentApplicationDraftRequest;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CreateEnrollmentApplicationUseCase;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.GetEnrollmentApplicationUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.PersonalDataDto;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.StartEnrollmentApplicationRequest;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentDraftRequest;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentApplicationService;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationPeriodsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationStudyPlanSpacesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationTrainingPathsUseCase;
@@ -98,8 +100,9 @@ class EnrollmentApplicationControllerWebMvcTest {
   private ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase
       listEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase;
 
-  @MockitoBean private PathMatcher pathMatcher;
-  @MockitoBean private AuthenticationEntryPoint authenticationEntryPoint;
+  @MockitoBean
+  private ListEnrollmentApplicationPeriodsUseCase listEnrollmentApplicationPeriodsUseCase;
+
   @MockitoBean private JwtService jwtService;
   @MockitoBean private TokenBlacklistService tokenBlacklistService;
   @MockitoBean private IsSessionActiveUseCase isSessionActiveUseCase;

@@ -100,7 +100,31 @@ class PermissionRoleSeedTest {
             PermissionCode.ENROLLMENT_PERIOD_CREATE.getCode(),
             PermissionCode.ENROLLMENT_PERIOD_UPDATE.getCode(),
             PermissionCode.ENROLLMENT_PERIOD_STATUS_UPDATE.getCode(),
-            PermissionCode.ENROLLMENT_PERIOD_READ.getCode());
+            PermissionCode.ENROLLMENT_PERIOD_READ.getCode(),
+            PermissionCode.SHIFT_CREATE.getCode(),
+            PermissionCode.SHIFT_UPDATE.getCode(),
+            PermissionCode.SHIFT_STATUS_UPDATE.getCode(),
+            PermissionCode.SHIFT_READ.getCode(),
+            PermissionCode.ACADEMIC_OFFER_READ.getCode());
+  }
+
+  @Test
+  @DisplayName("Should grant academic offer access to applicants")
+  void run_assignsAcademicOfferPermissionToApplicants() {
+    permissionRoleSeed.run(null);
+
+    final var applicantRole =
+        roleRepository
+            .findByScopeAndCodeAndInstitutionIsNull(
+                RoleScope.INSTITUTION, SystemRoleCode.APPLICANT.name())
+            .orElseThrow();
+
+    assertThat(rolePermissionRepository.findByRole_Id(applicantRole.getId()))
+        .extracting(rolePermission -> rolePermission.getPermission().getCode())
+        .containsExactlyInAnyOrder(
+            PermissionCode.ACADEMIC_OFFER_READ.getCode(),
+            PermissionCode.STUDY_PLAN_READ.getCode(),
+            PermissionCode.ACADEMIC_YEAR_READ.getCode());
   }
 
   @Test

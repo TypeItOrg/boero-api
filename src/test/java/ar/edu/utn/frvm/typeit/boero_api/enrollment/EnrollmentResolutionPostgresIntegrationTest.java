@@ -72,7 +72,9 @@ class EnrollmentResolutionPostgresIntegrationTest {
 
   private Institution institution;
   private Person person;
+  private Person constraintPerson;
   private UUID studyPlanId;
+  private UUID trainingPathId;
   private UUID academicYearId;
   private EnrollmentPeriod enrollmentPeriod;
   private UUID resolverPersonId;
@@ -90,6 +92,8 @@ class EnrollmentResolutionPostgresIntegrationTest {
     institution = InstitutionalTestData.createInstitution(entityManager, "cons-enrollment");
     person = InstitutionalTestData.person(institution, "30000001");
     InstitutionalTestData.persist(entityManager, person);
+    constraintPerson = InstitutionalTestData.person(institution, "30000002");
+    InstitutionalTestData.persist(entityManager, constraintPerson);
 
     final var resolver = InstitutionalTestData.person(institution, "20000001");
     InstitutionalTestData.persist(entityManager, resolver);
@@ -98,6 +102,7 @@ class EnrollmentResolutionPostgresIntegrationTest {
     final var trainingPath =
         TrainingPath.create(institution, "Formación Básica", "Programa de ingreso");
     InstitutionalTestData.persist(entityManager, trainingPath);
+    trainingPathId = trainingPath.getId();
     final var studyPlan =
         StudyPlan.create(
             institution,
@@ -224,15 +229,16 @@ class EnrollmentResolutionPostgresIntegrationTest {
                         """
                         INSERT INTO enrollment_applications (
                           enrollment_application_id, institution_id, applicant_person_id,
-                          study_plan_id, academic_year_id, enrollment_period_id, status,
+                          study_plan_id, training_path_id, academic_year_id, enrollment_period_id, status,
                           rejection_reason, created_at, updated_at
-                        ) VALUES (:id, :institutionId, :personId, :studyPlanId, :academicYearId,
+                        ) VALUES (:id, :institutionId, :personId, :studyPlanId, :trainingPathId, :academicYearId,
                                  :periodId, 'SUBMITTED', 'Reason without rejected status', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                         """)
                     .setParameter("id", UUID.randomUUID())
                     .setParameter("institutionId", institution.getId())
-                    .setParameter("personId", person.getId())
+                    .setParameter("personId", constraintPerson.getId())
                     .setParameter("studyPlanId", studyPlanId)
+                    .setParameter("trainingPathId", trainingPathId)
                     .setParameter("academicYearId", academicYearId)
                     .setParameter(
                         "periodId",
@@ -259,15 +265,16 @@ class EnrollmentResolutionPostgresIntegrationTest {
                         """
                         INSERT INTO enrollment_applications (
                           enrollment_application_id, institution_id, applicant_person_id,
-                          study_plan_id, academic_year_id, enrollment_period_id, status,
+                          study_plan_id, training_path_id, academic_year_id, enrollment_period_id, status,
                           rejection_reason, created_at, updated_at
-                        ) VALUES (:id, :institutionId, :personId, :studyPlanId, :academicYearId,
+                        ) VALUES (:id, :institutionId, :personId, :studyPlanId, :trainingPathId, :academicYearId,
                                  :periodId, 'REJECTED', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                         """)
                     .setParameter("id", UUID.randomUUID())
                     .setParameter("institutionId", institution.getId())
-                    .setParameter("personId", person.getId())
+                    .setParameter("personId", constraintPerson.getId())
                     .setParameter("studyPlanId", studyPlanId)
+                    .setParameter("trainingPathId", trainingPathId)
                     .setParameter("academicYearId", academicYearId)
                     .setParameter(
                         "periodId",

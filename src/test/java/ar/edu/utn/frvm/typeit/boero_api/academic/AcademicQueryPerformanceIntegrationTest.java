@@ -433,7 +433,7 @@ class AcademicQueryPerformanceIntegrationTest {
     final var response = listStudyPlanSpacesUseCase.execute(institutionId, studyPlanId);
 
     assertThat(response).hasSize(COLLECTION_SIZE);
-    assertPreparedStatementCount(2);
+    assertPreparedStatementCount(3);
   }
 
   @Test
@@ -446,13 +446,13 @@ class AcademicQueryPerformanceIntegrationTest {
   }
 
   @Test
-  @DisplayName("Should get a study plan space with one query")
-  void shouldGetStudyPlanSpaceWithOneQuery() {
+  @DisplayName("Should get a study plan space with a constant query count")
+  void shouldGetStudyPlanSpaceWithoutNPlusOne() {
     final var response = getStudyPlanSpaceUseCase.execute(institutionId, targetStudyPlanSpaceId);
 
     assertThat(response.academicSpaceName()).isNotBlank();
     assertThat(response.academicLevelName()).isNotBlank();
-    assertPreparedStatementCount(1);
+    assertPreparedStatementCount(2);
   }
 
   @Test

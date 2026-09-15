@@ -105,8 +105,8 @@ class EnrollmentPeriodControllerWebMvcTest {
         Map.of(
             "academicYearId", ACADEMIC_YEAR_ID,
             "name", "Inscripción 2026",
-            "startDate", "2026-11-01T08:00:00",
-            "endDate", "2026-12-01T20:00:00");
+            "startDate", "2026-11-01T08:00:00Z",
+            "endDate", "2026-12-01T20:00:00Z");
 
     mockMvc
         .perform(
@@ -132,8 +132,8 @@ class EnrollmentPeriodControllerWebMvcTest {
         Map.of(
             "academicYearId", ACADEMIC_YEAR_ID,
             "name", "Inscripción 2026",
-            "startDate", "2026-11-01T08:00:00",
-            "endDate", "2026-12-01T20:00:00");
+            "startDate", "2026-11-01T08:00:00Z",
+            "endDate", "2026-12-01T20:00:00Z");
 
     mockMvc
         .perform(
