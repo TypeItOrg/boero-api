@@ -11,9 +11,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidEnrollmentA
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.MissingRejectionReasonException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -37,8 +35,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import lombok.Setter;
 
 @Entity
 @Table(
@@ -50,10 +47,8 @@ import org.hibernate.type.SqlTypes;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@Builder(access = AccessLevel.PACKAGE)
+@Builder
 public class EnrollmentApplication extends SoftDeletable {
-
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Id
   @GeneratedUUIDv7
@@ -61,12 +56,12 @@ public class EnrollmentApplication extends SoftDeletable {
   private UUID id;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "person_id", nullable = false)
-  private Person person;
-
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "institution_id", nullable = false)
   private Institution institution;
+
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "applicant_person_id", nullable = false)
+  private Person applicantPerson;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "study_plan_id", nullable = false)
@@ -86,11 +81,12 @@ public class EnrollmentApplication extends SoftDeletable {
   @JoinColumn(name = "academic_year_id", nullable = false)
   private AcademicYear academicYear;
 
-  @Column(name = "enrollment_period_id")
-  private UUID enrollmentPeriodId;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "enrollment_period_id", nullable = false)
+  private EnrollmentPeriod enrollmentPeriod;
 
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false, length = 20)
+  @Column(name = "status", nullable = false, length = 20)
   private EnrollmentApplicationStatus status;
 
   @Column(name = "rejection_reason", columnDefinition = "text")

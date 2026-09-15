@@ -32,8 +32,10 @@ public class ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase {
     applicantEnrollmentGuard.requireApplicant(principal);
     final var application =
         enrollmentApplicationRepository
-            .findByIdAndPerson_IdAndInstitution_IdAndDeletedAtIsNull(
-                applicationId, principal.personId(), principal.institutionId())
+            .findById(applicationId)
+            .filter(app -> app.getDeletedAt() == null)
+            .filter(app -> app.getApplicantPerson().getId().equals(principal.personId()))
+            .filter(app -> app.getInstitution().getId().equals(principal.institutionId()))
             .orElseThrow(EnrollmentApplicationNotFoundException::new);
     final var effectiveStudyPlan =
         enrollmentEffectiveStudyPlanResolver.resolve(principal.institutionId(), application);

@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.controllers;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceResponse;
+import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.TrainingPathResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
@@ -17,8 +18,6 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplic
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationStudyPlanSpacesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationTrainingPathsUseCase;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationsUseCase;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.UpdateEnrollmentApplicationDraftUseCase;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -27,6 +26,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -36,16 +36,20 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Identity for every endpoint here comes from the authenticated principal, never from
+ * client-supplied headers or parameters — an institutional {@link JwtAuthenticatedUser} always
+ * carries its own {@code personId} and {@code institutionId}, so there is nothing for a caller to
+ * spoof.
+ */
 @RestController
 @RequestMapping("/enrollment-applications")
 @RequiredArgsConstructor
 public class EnrollmentApplicationController {
 
+  private final EnrollmentApplicationService applicationService;
   private final InstitutionalCallerGuard institutionalCallerGuard;
-  private final CreateEnrollmentApplicationUseCase createEnrollmentApplicationUseCase;
-  private final ListEnrollmentApplicationsUseCase listEnrollmentApplicationsUseCase;
-  private final GetEnrollmentApplicationUseCase getEnrollmentApplicationUseCase;
-  private final UpdateEnrollmentApplicationDraftUseCase updateEnrollmentApplicationDraftUseCase;
+  private final AuthorizationService authorizationService;
   private final ListEnrollmentApplicationTrainingPathsUseCase
       listEnrollmentApplicationTrainingPathsUseCase;
   private final ListEnrollmentApplicationStudyPlanSpacesUseCase
@@ -154,7 +158,7 @@ public class EnrollmentApplicationController {
         principal, applicationId, studyPlanSpaceId);
   }
 
-  private JwtAuthenticatedUser principal(final Authentication authentication) {
+  private JwtAuthenticatedUser requireInstitutionalUser(Authentication authentication) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
 
     return (JwtAuthenticatedUser) authentication.getPrincipal();

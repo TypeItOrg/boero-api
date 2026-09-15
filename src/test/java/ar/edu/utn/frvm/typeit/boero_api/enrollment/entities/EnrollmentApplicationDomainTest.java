@@ -1,15 +1,14 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.entities;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotEditableException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -17,8 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 class EnrollmentApplicationDomainTest {
-
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Test
   @DisplayName("Should report draft applications as editable")
@@ -29,8 +26,8 @@ class EnrollmentApplicationDomainTest {
   }
 
   @Test
-  @DisplayName("Should reject replacing draft data when the application is no longer editable")
-  void rejectsReplacingDataWhenNotEditable() {
+  @DisplayName("Should report non-draft applications as not editable")
+  void reportsNonDraftAsNotEditable() {
     final var application = application();
     application.cancel();
 

@@ -1,10 +1,9 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.controllers;
 
-import static ar.edu.utn.frvm.typeit.boero_api.support.AuthTestData.institutionalPrincipal;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -16,18 +15,20 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequirementType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceInstrumentOptionResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.TrainingPathResponse;
+import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.JwtService;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.TokenBlacklistService;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.security.PermissionAuthorizationAspect;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.GlobalExceptionHandler;
 import ar.edu.utn.frvm.typeit.boero_api.config.WebConfig;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CreateEnrollmentApplicationRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentDraftData;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentStudyPlanSpaceInstrumentOptionsResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.PersonalDataDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.StartEnrollmentApplicationRequest;
@@ -107,14 +108,19 @@ class EnrollmentApplicationControllerWebMvcTest {
   @MockitoBean private TokenBlacklistService tokenBlacklistService;
   @MockitoBean private IsSessionActiveUseCase isSessionActiveUseCase;
   @MockitoBean private IsPlatformSessionActiveUseCase isPlatformSessionActiveUseCase;
-  @MockitoBean private AuthorizationService authorizationService;
-  @MockitoBean private InstitutionalCallerGuard institutionalCallerGuard;
-  @MockitoBean private CreateEnrollmentApplicationUseCase createEnrollmentApplicationUseCase;
-  @MockitoBean private ListEnrollmentApplicationsUseCase listEnrollmentApplicationsUseCase;
-  @MockitoBean private GetEnrollmentApplicationUseCase getEnrollmentApplicationUseCase;
 
-  @MockitoBean
-  private UpdateEnrollmentApplicationDraftUseCase updateEnrollmentApplicationDraftUseCase;
+  private static TestingAuthenticationToken applicantAuthentication() {
+    JwtAuthenticatedUser principal =
+        JwtAuthenticatedUser.builder()
+            .userId(UUID.randomUUID())
+            .personId(PERSON_ID)
+            .documentNumber("35123456")
+            .institutionId(INSTITUTION_ID)
+            .sessionId(UUID.randomUUID())
+            .tokenId("jti")
+            .build();
+    return new TestingAuthenticationToken(principal, null);
+  }
 
   private EnrollmentApplicationResponse createMockResponse(EnrollmentApplicationStatus status) {
     return EnrollmentApplicationResponse.builder()
@@ -142,28 +148,21 @@ class EnrollmentApplicationControllerWebMvcTest {
   }
 
   @Test
-  @DisplayName("Should create an enrollment application")
-  void createsApplication() throws Exception {
-    final var authentication =
-        new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
-    when(createEnrollmentApplicationUseCase.execute(
-            any(), eq(new CreateEnrollmentApplicationRequest(STUDY_PLAN_ID, ACADEMIC_YEAR_ID))))
-        .thenReturn(response(data()));
+  @DisplayName("POST /api/v1/enrollment-applications should start or get application")
+  void startOrGetApplication_success() throws Exception {
+    EnrollmentApplicationResponse response = createMockResponse(EnrollmentApplicationStatus.DRAFT);
+    when(applicationService.startOrGetApplication(eq(INSTITUTION_ID), eq(PERSON_ID), any()))
+        .thenReturn(response);
+
+    StartEnrollmentApplicationRequest request =
+        new StartEnrollmentApplicationRequest(STUDY_PLAN_ID, ACADEMIC_YEAR_ID);
 
     mockMvc
         .perform(
             post("/api/v1/enrollment-applications")
-                .principal(authentication)
-                .contentType(APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                      "studyPlanId": "%s",
-                      "academicYearId": "%s"
-                    }
-                    """
-                        .formatted(STUDY_PLAN_ID, ACADEMIC_YEAR_ID)))
+                .principal(applicantAuthentication())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.applicationId").value(APPLICATION_ID.toString()))
         .andExpect(jsonPath("$.status").value("DRAFT"))
@@ -228,20 +227,10 @@ class EnrollmentApplicationControllerWebMvcTest {
 
     mockMvc
         .perform(
-            patch("/api/v1/enrollment-applications/{applicationId}/draft", APPLICATION_ID)
-                .principal(authentication)
-                .contentType(APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                      "data": {
-                        "careerSelection": {
-                          "trainingPathId": "%s"
-                        }
-                      }
-                    }
-                    """
-                        .formatted(TRAINING_PATH_ID)))
+            patch("/api/v1/enrollment-applications/{id}/draft", APPLICATION_ID)
+                .principal(applicantAuthentication())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.applicationId").value(APPLICATION_ID.toString()))
         .andExpect(jsonPath("$.isEditable").value(true));
@@ -282,9 +271,6 @@ class EnrollmentApplicationControllerWebMvcTest {
   @Test
   @DisplayName("Should list available training paths for the applicant application")
   void listsTrainingPaths() throws Exception {
-    final var authentication =
-        new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
     when(listEnrollmentApplicationTrainingPathsUseCase.execute(any(), eq(APPLICATION_ID)))
         .thenReturn(
             List.of(
@@ -300,7 +286,7 @@ class EnrollmentApplicationControllerWebMvcTest {
     mockMvc
         .perform(
             get("/api/v1/enrollment-applications/{applicationId}/training-paths", APPLICATION_ID)
-                .principal(authentication))
+                .principal(applicantAuthentication()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].id").value(TRAINING_PATH_ID.toString()))
         .andExpect(jsonPath("$[0].name").value("Trayecto A"));
@@ -309,9 +295,6 @@ class EnrollmentApplicationControllerWebMvcTest {
   @Test
   @DisplayName("Should list available study plan spaces for the applicant application")
   void listsStudyPlanSpaces() throws Exception {
-    final var authentication =
-        new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
     when(listEnrollmentApplicationStudyPlanSpacesUseCase.execute(any(), eq(APPLICATION_ID)))
         .thenReturn(
             List.of(
@@ -331,7 +314,7 @@ class EnrollmentApplicationControllerWebMvcTest {
     mockMvc
         .perform(
             get("/api/v1/enrollment-applications/{applicationId}/study-plan-spaces", APPLICATION_ID)
-                .principal(authentication))
+                .principal(applicantAuthentication()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].id").value(STUDY_PLAN_SPACE_ID.toString()))
         .andExpect(jsonPath("$[0].academicSpaceId").value(ACADEMIC_SPACE_ID.toString()))
@@ -341,9 +324,6 @@ class EnrollmentApplicationControllerWebMvcTest {
   @Test
   @DisplayName("Should list available instruments for an applicant study plan space")
   void listsStudyPlanSpaceInstruments() throws Exception {
-    final var authentication =
-        new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
     when(listEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase.execute(
             any(), eq(APPLICATION_ID), eq(STUDY_PLAN_SPACE_ID)))
         .thenReturn(
@@ -358,32 +338,11 @@ class EnrollmentApplicationControllerWebMvcTest {
                     "/api/v1/enrollment-applications/{applicationId}/study-plan-spaces/{studyPlanSpaceId}/instruments",
                     APPLICATION_ID,
                     STUDY_PLAN_SPACE_ID)
-                .principal(authentication))
+                .principal(applicantAuthentication()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.studyPlanSpaceId").value(STUDY_PLAN_SPACE_ID.toString()))
         .andExpect(jsonPath("$.requiresInstrument").value(true))
         .andExpect(jsonPath("$.instruments[0].instrumentId").value(INSTRUMENT_ID.toString()))
         .andExpect(jsonPath("$.instruments[0].name").value("Piano"));
-  }
-
-  private static EnrollmentApplicationResponse response(final ObjectNode data) {
-    return new EnrollmentApplicationResponse(
-        APPLICATION_ID,
-        UUID.randomUUID(),
-        INSTITUTION_ID,
-        STUDY_PLAN_ID,
-        ACADEMIC_YEAR_ID,
-        null,
-        EnrollmentApplicationStatus.DRAFT,
-        true,
-        data,
-        LocalDateTime.now(),
-        LocalDateTime.now());
-  }
-
-  private static ObjectNode data() {
-    final ObjectNode data = new ObjectMapper().createObjectNode();
-    data.putObject("careerSelection").put("trainingPathId", TRAINING_PATH_ID.toString());
-    return data;
   }
 }

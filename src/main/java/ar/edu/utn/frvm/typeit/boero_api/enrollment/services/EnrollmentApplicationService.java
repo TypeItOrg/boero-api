@@ -1,9 +1,13 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Instrument;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.InstrumentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
@@ -139,14 +143,13 @@ public class EnrollmentApplicationService {
                         EnrollmentMessages.ACADEMIC_YEAR_ID_NOT_FOUND
                             + request.getAcademicYearId()));
 
-    // 4. Crear nuevo borrador
     EnrollmentApplication newApplication =
         EnrollmentApplication.builder()
             .institution(period.getInstitution())
             .applicantPerson(person)
             .studyPlan(requestedStudyPlan)
             .academicYear(academicYear)
-            .enrollmentPeriod(activePeriod)
+            .enrollmentPeriod(period)
             .status(EnrollmentApplicationStatus.DRAFT)
             .build();
 

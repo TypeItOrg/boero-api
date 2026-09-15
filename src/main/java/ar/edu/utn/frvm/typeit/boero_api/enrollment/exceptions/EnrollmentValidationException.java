@@ -5,6 +5,7 @@ import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorCategory;
 import java.util.Map;
 
 public class EnrollmentValidationException extends ApplicationException {
+
   public EnrollmentValidationException(final String message) {
     super(ErrorCategory.INVALID_INPUT, message);
   }

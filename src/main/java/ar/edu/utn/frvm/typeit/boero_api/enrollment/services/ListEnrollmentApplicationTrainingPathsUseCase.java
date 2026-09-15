@@ -24,8 +24,10 @@ public class ListEnrollmentApplicationTrainingPathsUseCase {
       final JwtAuthenticatedUser principal, final UUID applicationId) {
     applicantEnrollmentGuard.requireApplicant(principal);
     enrollmentApplicationRepository
-        .findByIdAndPerson_IdAndInstitution_IdAndDeletedAtIsNull(
-            applicationId, principal.personId(), principal.institutionId())
+        .findById(applicationId)
+        .filter(app -> app.getDeletedAt() == null)
+        .filter(app -> app.getApplicantPerson().getId().equals(principal.personId()))
+        .filter(app -> app.getInstitution().getId().equals(principal.institutionId()))
         .orElseThrow(EnrollmentApplicationNotFoundException::new);
 
     return trainingPathRepository

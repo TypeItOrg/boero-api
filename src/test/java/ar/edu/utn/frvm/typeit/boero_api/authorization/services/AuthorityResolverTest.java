@@ -65,6 +65,7 @@ class AuthorityResolverTest {
 
     assertThat(authorities.permissions())
         .containsExactlyInAnyOrder(
+            PermissionCode.ACADEMIC_OFFER_READ,
             PermissionCode.STUDY_PLAN_READ,
             PermissionCode.ACADEMIC_YEAR_READ);
     assertThat(authorities.roles()).containsExactly(SystemRoleCode.APPLICANT.getDisplayName());

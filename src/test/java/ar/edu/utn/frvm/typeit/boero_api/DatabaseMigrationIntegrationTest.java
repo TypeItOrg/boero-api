@@ -22,7 +22,7 @@ class DatabaseMigrationIntegrationTest extends DatabaseMigrationTestSupport {
     assertThat(utcEventTimestampColumnCount()).isPositive();
     assertThat(tableCount()).isEqualTo(47);
     assertThat(institutionCount()).isPositive();
-    assertThat(tenantRelationshipConstraintCount()).isEqualTo(10);
+    assertThat(tenantRelationshipConstraintCount()).isEqualTo(8);
     assertThat(activePersonDocumentIndexCount()).isEqualTo(1);
     assertThat(passwordResetTokenUserUniqueIndexCount()).isEqualTo(1);
     assertThat(pgTrgmExtensionCount()).isEqualTo(1);
@@ -110,9 +110,7 @@ class DatabaseMigrationIntegrationTest extends DatabaseMigrationTestSupport {
           'student_guardians_student_institution_fk',
           'student_guardians_guardian_institution_fk',
           'person_role_assignments_person_institution_fk',
-          'enrollment_applications_person_institution_fk',
-          'enrollment_applications_study_plan_institution_fk',
-          'enrollment_applications_academic_year_institution_fk'
+          'course_class_teachers_person_institution_fk'
         )
         """,
         Integer.class);

@@ -9,6 +9,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicat
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationRepository;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,8 +30,10 @@ public class ListEnrollmentApplicationStudyPlanSpacesUseCase {
     applicantEnrollmentGuard.requireApplicant(principal);
     final var application =
         enrollmentApplicationRepository
-            .findByIdAndPerson_IdAndInstitution_IdAndDeletedAtIsNull(
-                applicationId, principal.personId(), principal.institutionId())
+            .findById(applicationId)
+            .filter(app -> app.getDeletedAt() == null)
+            .filter(app -> app.getApplicantPerson().getId().equals(principal.personId()))
+            .filter(app -> app.getInstitution().getId().equals(principal.institutionId()))
             .orElseThrow(EnrollmentApplicationNotFoundException::new);
     final var effectiveStudyPlan =
         enrollmentEffectiveStudyPlanResolver.resolve(principal.institutionId(), application);
@@ -44,14 +47,14 @@ public class ListEnrollmentApplicationStudyPlanSpacesUseCase {
                 studyPlanSpaces.stream().map(space -> space.getId()).toList())
             .stream()
             .collect(
-                java.util.stream.Collectors.groupingBy(
+                Collectors.groupingBy(
                     relation -> relation.getStudyPlanSpace().getId(),
-                    java.util.stream.Collectors.mapping(
+                    Collectors.mapping(
                         relation ->
                             new StudyPlanSpaceInstrumentOptionResponse(
                                 relation.getInstrument().getId(),
                                 relation.getInstrument().getName()),
-                        java.util.stream.Collectors.toList())));
+                        Collectors.toList())));
 
     return studyPlanSpaces.stream()
         .map(

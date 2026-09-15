@@ -8,6 +8,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathReposito
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentDraftData;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,7 +18,6 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.JsonNode;
 
 @Component
 @RequiredArgsConstructor
@@ -51,11 +51,6 @@ public class EnrollmentDraftDataValidator {
           .findByIdAndInstitution_IdAndActiveTrueAndDeletedAtIsNull(trainingPathId, institutionId)
           .orElseThrow(TrainingPathNotFoundException::new);
     }
-    trainingPathRepository
-        .findByIdAndInstitution_IdAndActiveTrueAndDeletedAtIsNull(trainingPathId, institutionId)
-        .orElseThrow(TrainingPathNotFoundException::new);
-    validateStudyPlanSpaceSelection(institutionId, application, data, trainingPathId);
-    return;
 
     final StudyPlan effectiveStudyPlan =
         enrollmentEffectiveStudyPlanResolver.resolveForTrainingPath(
@@ -136,25 +131,19 @@ public class EnrollmentDraftDataValidator {
       throw new EnrollmentValidationException(
           EnrollmentMessages.ENROLLMENT_APPLICATION_STUDY_PLAN_SPACE_INVALID,
           Map.of(
-              "data.academicSpaceSelection.studyPlanSpaceIds",
+              "academicSpaceSelection.studyPlanSpaceIds",
               EnrollmentMessages.ENROLLMENT_APPLICATION_STUDY_PLAN_SPACE_INVALID));
     }
 
     return uniqueIds;
   }
 
-  private void validateInstrumentSelection(
+  private void validateInstruments(
       final UUID institutionId,
-      final Set<UUID> selectedStudyPlanSpaceIds,
-      final UUID studyPlanId,
-      final JsonNode data) {
-    final JsonNode instrumentSelectionNode =
-        data.path("instrumentSelection").path("studyPlanSpaceInstrumentIds");
-    if (instrumentSelectionNode.isMissingNode() || instrumentSelectionNode.isNull()) {
+      final Set<UUID> selectedSpaceIds,
+      final Map<UUID, UUID> studyPlanSpaceInstrumentIds) {
+    if (studyPlanSpaceInstrumentIds.isEmpty()) {
       return;
-    }
-    if (!instrumentSelectionNode.isObject()) {
-      throw invalidInstrumentSelection();
     }
 
     final var allowedRelations =
@@ -163,20 +152,16 @@ public class EnrollmentDraftDataValidator {
     final Map<UUID, Set<UUID>> allowedInstrumentIdsBySpaceId = new HashMap<>();
 
     for (final var relation : allowedRelations) {
-      allowedInstrumentIdsByStudyPlanSpaceId
+      allowedInstrumentIdsBySpaceId
           .computeIfAbsent(relation.getStudyPlanSpace().getId(), ignored -> new HashSet<>())
           .add(relation.getInstrument().getId());
     }
 
-    for (final var entry : instrumentSelectionNode.properties()) {
-      final String studyPlanSpaceIdText = entry.getKey();
-      final UUID studyPlanSpaceId;
-      try {
-        studyPlanSpaceId = UUID.fromString(studyPlanSpaceIdText);
-      } catch (IllegalArgumentException exception) {
-        throw invalidInstrumentSelection();
-      }
-      if (!selectedStudyPlanSpaceIds.contains(studyPlanSpaceId)) {
+    for (final var entry : studyPlanSpaceInstrumentIds.entrySet()) {
+      final UUID studyPlanSpaceId = entry.getKey();
+      final UUID instrumentId = entry.getValue();
+
+      if (!selectedSpaceIds.contains(studyPlanSpaceId)) {
         throw invalidInstrumentSelection();
       }
 
@@ -187,7 +172,7 @@ public class EnrollmentDraftDataValidator {
         throw new EnrollmentValidationException(
             EnrollmentMessages.ENROLLMENT_APPLICATION_INSTRUMENT_INVALID,
             Map.of(
-                "data.instrumentSelection.studyPlanSpaceInstrumentIds",
+                "instrumentSelection.studyPlanSpaceInstrumentIds",
                 EnrollmentMessages.ENROLLMENT_APPLICATION_INSTRUMENT_INVALID));
       }
     }
@@ -197,7 +182,7 @@ public class EnrollmentDraftDataValidator {
     return new EnrollmentValidationException(
         EnrollmentMessages.ENROLLMENT_APPLICATION_STUDY_PLAN_SPACES_INVALID,
         Map.of(
-            "data.academicSpaceSelection.studyPlanSpaceIds",
+            "academicSpaceSelection.studyPlanSpaceIds",
             EnrollmentMessages.ENROLLMENT_APPLICATION_STUDY_PLAN_SPACES_INVALID));
   }
 
@@ -205,7 +190,7 @@ public class EnrollmentDraftDataValidator {
     return new EnrollmentValidationException(
         EnrollmentMessages.ENROLLMENT_APPLICATION_INSTRUMENT_SELECTION_INVALID,
         Map.of(
-            "data.instrumentSelection.studyPlanSpaceInstrumentIds",
+            "instrumentSelection.studyPlanSpaceInstrumentIds",
             EnrollmentMessages.ENROLLMENT_APPLICATION_INSTRUMENT_SELECTION_INVALID));
   }
 }
