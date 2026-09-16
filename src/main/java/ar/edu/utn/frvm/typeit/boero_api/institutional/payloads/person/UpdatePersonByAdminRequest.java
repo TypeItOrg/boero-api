@@ -3,6 +3,8 @@ package ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_MAX;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_MIN;
 import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.NAME_PATTERN;
+import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.PASSWORD_MAX;
+import static ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints.PASSWORD_MIN;
 
 import ar.edu.utn.frvm.typeit.boero_api.common.validation.ValidationMessages;
 import jakarta.validation.constraints.Email;
@@ -23,9 +25,26 @@ public record UpdatePersonByAdminRequest(
         @Pattern(regexp = NAME_PATTERN, message = ValidationMessages.LAST_NAME_FORMAT)
         String lastName,
     @Email(message = ValidationMessages.PERSON_EMAIL_FORMAT) String email,
-    String phoneNumber) {
+    String phoneNumber,
+    @Pattern(
+            regexp = "^$|(?s:.{" + PASSWORD_MIN + "," + PASSWORD_MAX + "})$",
+            message = ValidationMessages.PASSWORD_RANGE)
+        String password) {
+
+  public UpdatePersonByAdminRequest(
+      final String firstName, final String lastName, final String email, final String phoneNumber) {
+    this(firstName, lastName, email, phoneNumber, null);
+  }
+
+  public boolean hasPassword() {
+    return password != null && !password.isEmpty();
+  }
 
   public boolean isEmpty() {
-    return firstName == null && lastName == null && email == null && phoneNumber == null;
+    return firstName == null
+        && lastName == null
+        && email == null
+        && phoneNumber == null
+        && !hasPassword();
   }
 }

@@ -1,5 +1,8 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
+import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionPersonResolver;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.PersonNotFoundException;
@@ -11,6 +14,7 @@ import jakarta.validation.Validator;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +24,9 @@ public class UpdatePersonByAdminUseCase {
 
   private final InstitutionPersonResolver institutionPersonResolver;
   private final PersonRepository personRepository;
+  private final UserRepository userRepository;
+  private final PasswordEncoder passwordEncoder;
+  private final SessionRevocationService sessionRevocationService;
   private final Validator validator;
 
   @Transactional
@@ -44,6 +51,16 @@ public class UpdatePersonByAdminUseCase {
       throw new ConstraintViolationException(violations);
     }
     personRepository.save(person);
+
+    if (request.hasPassword()) {
+      User user =
+          userRepository
+              .findByPerson_IdAndInstitution_Id(personId, institutionId)
+              .orElseThrow(PersonNotFoundException::new);
+      user.changePassword(passwordEncoder.encode(request.password()));
+      userRepository.save(user);
+      sessionRevocationService.revokeInstitutionalSessionsForUser(user.getId());
+    }
 
     return personRepository
         .findWithDetailsByIdAndInstitution_Id(personId, institutionId)
