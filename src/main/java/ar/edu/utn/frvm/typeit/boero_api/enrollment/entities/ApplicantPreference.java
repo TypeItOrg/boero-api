@@ -37,7 +37,7 @@ public class ApplicantPreference extends SoftDeletable {
 
   // Un DRAFT es parcial por definición: submitApplication() exige este campo
   // recién al enviar, así que la columna acepta NULL (migración 20260908150000).
-  @Column(name = "preferred_shift", length = 30)
+  @Column(name = "preferred_shift", length = 150)
   private String preferredShift;
 
   @Column(name = "allows_image_use", nullable = false)

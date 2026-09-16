@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.controllers;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.ShiftResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.TrainingPathResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
@@ -15,6 +16,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.StartEnrollmentAppli
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentDraftRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentApplicationService;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationPeriodsUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationShiftsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationStudyPlanSpacesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationTrainingPathsUseCase;
@@ -54,6 +56,7 @@ public class EnrollmentApplicationController {
       listEnrollmentApplicationTrainingPathsUseCase;
   private final ListEnrollmentApplicationStudyPlanSpacesUseCase
       listEnrollmentApplicationStudyPlanSpacesUseCase;
+  private final ListEnrollmentApplicationShiftsUseCase listEnrollmentApplicationShiftsUseCase;
   private final ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase
       listEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase;
   private final ListEnrollmentApplicationPeriodsUseCase listEnrollmentApplicationPeriodsUseCase;
@@ -135,6 +138,14 @@ public class EnrollmentApplicationController {
     final var principal = requireInstitutionalUser(authentication);
 
     return listEnrollmentApplicationTrainingPathsUseCase.execute(principal, applicationId);
+  }
+
+  @GetMapping(value = "/{applicationId}/shifts", version = Version.V1)
+  public List<ShiftResponse> listShifts(
+      final Authentication authentication, @PathVariable final UUID applicationId) {
+    final var principal = requireInstitutionalUser(authentication);
+
+    return listEnrollmentApplicationShiftsUseCase.execute(principal, applicationId);
   }
 
   @GetMapping(value = "/{applicationId}/study-plan-spaces", version = Version.V1)

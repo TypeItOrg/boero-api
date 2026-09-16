@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.interfaces;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Shift;
 import jakarta.persistence.LockModeType;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
@@ -27,6 +28,8 @@ public interface ShiftRepository extends JpaRepository<Shift, UUID> {
       @Param("active") @Nullable Boolean active,
       @Param("deleted") boolean deleted,
       Pageable pageable);
+
+  List<Shift> findByInstitution_IdAndActiveTrueAndDeletedAtIsNullOrderByNameAsc(UUID institutionId);
 
   @Query(
       "SELECT shift FROM Shift shift WHERE shift.id = :id AND shift.institution.id = :institutionId AND shift.deletedAt IS NULL")

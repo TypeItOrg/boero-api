@@ -35,6 +35,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.StartEnrollmentAppli
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentDraftRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentApplicationService;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationPeriodsUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationShiftsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationStudyPlanSpacesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationTrainingPathsUseCase;
@@ -96,6 +97,9 @@ class EnrollmentApplicationControllerWebMvcTest {
   @MockitoBean
   private ListEnrollmentApplicationStudyPlanSpacesUseCase
       listEnrollmentApplicationStudyPlanSpacesUseCase;
+
+  @MockitoBean
+  private ListEnrollmentApplicationShiftsUseCase listEnrollmentApplicationShiftsUseCase;
 
   @MockitoBean
   private ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase
