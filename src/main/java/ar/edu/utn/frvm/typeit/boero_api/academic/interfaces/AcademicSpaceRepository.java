@@ -83,7 +83,7 @@ public interface AcademicSpaceRepository extends JpaRepository<AcademicSpace, UU
   boolean existsInEditableOrActivePlan(@Param("academicSpaceId") UUID academicSpaceId);
 
   @Query(
-      "SELECT COUNT(course) > 0 FROM Course course WHERE course.institution.id = :institutionId AND course.academicSpace.id = :academicSpaceId")
+      "SELECT COUNT(course) > 0 FROM Course course WHERE course.institution.id = :institutionId AND course.academicSpaceId = :academicSpaceId")
   boolean existsInCourse(
       @Param("institutionId") UUID institutionId, @Param("academicSpaceId") UUID academicSpaceId);
 }

@@ -46,7 +46,7 @@ public class ListCourseSpaceOptionsUseCase {
               .contains(normalizedSearch)) {
         continue;
       }
-      spaces.putIfAbsent(academicSpace.getId(), CourseSpaceOptionResponse.from(academicSpace));
+      spaces.putIfAbsent(space.getId(), CourseSpaceOptionResponse.from(space));
     }
     return List.copyOf(spaces.values());
   }

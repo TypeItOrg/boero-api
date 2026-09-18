@@ -28,15 +28,24 @@ public class UpdateAcademicSpaceUseCase {
             .orElseThrow(AcademicSpaceNotFoundException::new);
     final var name = AcademicNameNormalizer.display(request.name());
     final boolean formatChanged = space.getFormat() != request.format();
-    if (formatChanged && academicSpaceRepository.existsInCourse(institutionId, id)) {
+    final boolean instrumentalChanged = space.isInstrumental() != request.instrumental();
+    final boolean hasCourses =
+        (formatChanged || instrumentalChanged)
+            && academicSpaceRepository.existsInCourse(institutionId, id);
+    if (formatChanged && hasCourses) {
       throw AcademicConflictException.forField(
           "format", AcademicMessages.ACADEMIC_SPACE_FORMAT_HAS_COURSES);
+    }
+    if (instrumentalChanged && hasCourses) {
+      throw AcademicConflictException.forField(
+          "instrumental", AcademicMessages.ACADEMIC_SPACE_INSTRUMENTAL_HAS_COURSES);
     }
     if (academicSpaceRepository.existsByNormalizedNameAndTypeAndFormatAndIdNot(
         institutionId, name, request.type().name(), request.format().name(), id)) {
       throw AcademicConflictException.forField("name", AcademicMessages.DUPLICATE_NAME);
     }
-    space.update(name, request.description(), request.type(), request.format());
+    space.update(
+        name, request.description(), request.type(), request.format(), request.instrumental());
     try {
       academicSpaceRepository.flush();
     } catch (DataIntegrityViolationException exception) {

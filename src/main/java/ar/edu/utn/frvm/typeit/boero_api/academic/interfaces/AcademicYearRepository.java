@@ -45,4 +45,9 @@ public interface AcademicYearRepository
 
   boolean existsByInstitution_IdAndStatusAndDeletedAtIsNull(
       UUID institutionId, AcademicYearStatus status);
+
+  @Query(
+      "SELECT year FROM AcademicYear year WHERE year.institution.id = :institutionId AND year.status = :status AND year.deletedAt IS NULL")
+  Optional<AcademicYear> findByInstitutionIdAndStatus(
+      @Param("institutionId") UUID institutionId, @Param("status") AcademicYearStatus status);
 }

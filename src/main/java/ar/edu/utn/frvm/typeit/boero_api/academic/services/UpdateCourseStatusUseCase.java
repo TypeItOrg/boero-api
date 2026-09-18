@@ -14,6 +14,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseStatusRequest;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,10 @@ public class UpdateCourseStatusUseCase {
   private final CourseRepository courseRepository;
   private final AcademicYearRepository academicYearRepository;
   private final StudyPlanRepository studyPlanRepository;
+
+  @Autowired
+  private ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CourseClosureService
+      courseClosureService;
 
   @Transactional
   public void execute(final UUID institutionId, final UUID id, final CourseStatusRequest request) {
@@ -49,8 +54,21 @@ public class UpdateCourseStatusUseCase {
       if (academicYear.getStatus() != AcademicYearStatus.ACTIVE) {
         throw new AcademicConflictException(AcademicMessages.COURSE_YEAR_NOT_ACTIVE);
       }
+      if (course.getAcademicSpace() != null
+          && course.getAcademicSpace().isInstrumental()
+          && (course.getInstrument() == null || !course.getInstrument().isActive())) {
+        throw new AcademicConflictException(AcademicMessages.INSTRUMENT_REQUIRED);
+      }
+      if (course.getAcademicSpace() != null
+          && !course.getAcademicSpace().isInstrumental()
+          && course.getInstrument() != null) {
+        throw new AcademicConflictException(AcademicMessages.INSTRUMENT_NOT_ALLOWED);
+      }
     }
     course.updateStatus(request.status());
     courseRepository.flush();
+    if (request.status() == CourseStatus.CLOSED && courseClosureService != null) {
+      courseClosureService.close(institutionId, id, null);
+    }
   }
 }

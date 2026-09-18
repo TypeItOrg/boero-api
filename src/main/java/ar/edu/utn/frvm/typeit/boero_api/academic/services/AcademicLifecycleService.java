@@ -34,6 +34,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,6 +54,10 @@ public class AcademicLifecycleService {
   private final CourseRepository courseRepository;
   private final AcademicLifecycleEventRepository eventRepository;
   private final AcademicLifecycleActorResolver actorResolver;
+
+  @Autowired
+  private ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.CourseEnrollmentRepository
+      courseEnrollmentRepository;
 
   @Transactional
   public void deleteAcademicYear(
@@ -233,6 +238,10 @@ public class AcademicLifecycleService {
         courseRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
             .orElseThrow(CourseNotFoundException::new);
+    if (courseEnrollmentRepository != null
+        && courseEnrollmentRepository.existsByCourseIncludingHistorical(institutionId, id)) {
+      throw new AcademicConflictException(AcademicMessages.DELETE_REFERENCED_RESOURCE);
+    }
     if (course.delete(clock.instant())) {
       record(
           course.getInstitution(),

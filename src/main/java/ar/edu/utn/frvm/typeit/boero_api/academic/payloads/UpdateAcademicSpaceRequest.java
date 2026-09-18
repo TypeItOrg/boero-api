@@ -10,4 +10,14 @@ public record UpdateAcademicSpaceRequest(
     @NotBlank @Size(max = 150) String name,
     @Size(max = 1000) String description,
     @NotNull AcademicSpaceType type,
-    @NotNull AcademicSpaceFormat format) {}
+    @NotNull AcademicSpaceFormat format,
+    boolean instrumental) {
+
+  public UpdateAcademicSpaceRequest(
+      final String name,
+      final String description,
+      final AcademicSpaceType type,
+      final AcademicSpaceFormat format) {
+    this(name, description, type, format, false);
+  }
+}

@@ -53,7 +53,7 @@ public record StudyPlanSpaceResponse(
         space.getRequirementType(),
         space.getDisplayOrder(),
         space.getApprovalMode(),
-        !allowedInstruments.isEmpty(),
+        space.getAcademicSpace().isInstrumental() || !allowedInstruments.isEmpty(),
         allowedInstruments);
   }
 }

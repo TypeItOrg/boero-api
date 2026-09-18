@@ -25,6 +25,6 @@ public class ListMyEnrollmentApplicationsUseCase {
       final Pageable pageable) {
     return enrollmentApplicationRepository
         .findMyApplications(institutionId, personId, status, pageable)
-        .map(EnrollmentApplicationResponse::from);
+        .map(EnrollmentApplicationResponse::summary);
   }
 }

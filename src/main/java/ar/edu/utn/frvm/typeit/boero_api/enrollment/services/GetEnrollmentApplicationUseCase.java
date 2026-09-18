@@ -18,7 +18,9 @@ public class GetEnrollmentApplicationUseCase {
   public EnrollmentApplicationResponse execute(final UUID institutionId, final UUID applicationId) {
     return enrollmentApplicationRepository
         .findByIdAndInstitutionId(institutionId, applicationId)
-        .map(EnrollmentApplicationResponse::from)
+        .map(
+            application ->
+                EnrollmentApplicationResponse.from(application, application.isApproved()))
         .orElseThrow(EnrollmentApplicationNotFoundException::new);
   }
 }

@@ -26,6 +26,7 @@ import lombok.Builder;
       "applicantFirstName",
       "applicantLastName",
       "applicantDocumentNumber",
+      "trainingPathId",
       "studyPlanId",
       "studyPlanName",
       "trainingPathName",
@@ -41,7 +42,8 @@ import lombok.Builder;
       "resolvedByPersonId",
       "createdAt",
       "updatedAt",
-      "spaces"
+      "spaces",
+      "courses"
     })
 public record EnrollmentApplicationResponse(
     @Schema(nullable = true) UUID applicationId,
@@ -50,6 +52,7 @@ public record EnrollmentApplicationResponse(
     @Schema(nullable = true) String applicantFirstName,
     @Schema(nullable = true) String applicantLastName,
     @Schema(nullable = true) String applicantDocumentNumber,
+    @Schema(nullable = true) UUID trainingPathId,
     @Schema(nullable = true) UUID studyPlanId,
     @Schema(nullable = true) String studyPlanName,
     @Schema(nullable = true) String trainingPathName,
@@ -65,9 +68,11 @@ public record EnrollmentApplicationResponse(
     @Schema(nullable = true) UUID resolvedByPersonId,
     @Schema(nullable = true) Instant createdAt,
     @Schema(nullable = true) Instant updatedAt,
-    @Schema(nullable = true) List<EnrollmentApplicationSpaceResponse> spaces) {
+    @Schema(nullable = true) List<EnrollmentApplicationSpaceResponse> spaces,
+    @Schema(nullable = true) List<EnrollmentApplicationCourseResponse> courses) {
   public EnrollmentApplicationResponse() {
     this(
+        null,
         null,
         null,
         null,
@@ -89,11 +94,13 @@ public record EnrollmentApplicationResponse(
         null,
         null,
         null,
+        new ArrayList<>(),
         new ArrayList<>());
   }
 
   public EnrollmentApplicationResponse {
     spaces = spaces == null ? new ArrayList<>() : spaces;
+    courses = courses == null ? new ArrayList<>() : courses;
   }
 
   public UUID getApplicationId() {
@@ -118,6 +125,10 @@ public record EnrollmentApplicationResponse(
 
   public String getApplicantDocumentNumber() {
     return applicantDocumentNumber;
+  }
+
+  public UUID getTrainingPathId() {
+    return trainingPathId;
   }
 
   public UUID getStudyPlanId() {
@@ -180,7 +191,72 @@ public record EnrollmentApplicationResponse(
     return spaces;
   }
 
+  public List<EnrollmentApplicationCourseResponse> getCourses() {
+    return courses;
+  }
+
   public static EnrollmentApplicationResponse from(final EnrollmentApplication application) {
+    return from(application, true);
+  }
+
+  public static EnrollmentApplicationResponse summary(final EnrollmentApplication application) {
+    final var trainingPath = application.getTrainingPath();
+    return EnrollmentApplicationResponse.builder()
+        .applicationId(application.getId())
+        .institutionId(
+            application.getInstitution() == null ? null : application.getInstitution().getId())
+        .personId(
+            application.getApplicantPerson() == null
+                ? null
+                : application.getApplicantPerson().getId())
+        .applicantFirstName(
+            application.getApplicantPerson() == null
+                ? null
+                : application.getApplicantPerson().getFirstName())
+        .applicantLastName(
+            application.getApplicantPerson() == null
+                ? null
+                : application.getApplicantPerson().getLastName())
+        .applicantDocumentNumber(
+            application.getApplicantPerson() == null
+                ? null
+                : application.getApplicantPerson().getDocumentNumber())
+        .trainingPathId(trainingPath == null ? null : trainingPath.getId())
+        .studyPlanId(application.getStudyPlan() == null ? null : application.getStudyPlan().getId())
+        .studyPlanName(
+            application.getStudyPlan() == null ? null : application.getStudyPlan().getName())
+        .trainingPathName(trainingPath == null ? null : trainingPath.getName())
+        .academicYearId(
+            application.getAcademicYear() == null ? null : application.getAcademicYear().getId())
+        .academicYear(
+            application.getAcademicYear() == null ? null : application.getAcademicYear().getYear())
+        .enrollmentPeriodId(
+            application.getEnrollmentPeriod() == null
+                ? null
+                : application.getEnrollmentPeriod().getId())
+        .status(application.getStatus())
+        .isEditable(application.isEditable())
+        .data(
+            EnrollmentDraftData.builder()
+                .careerSelection(
+                    trainingPath == null ? null : new CareerSelectionDto(trainingPath.getId()))
+                .build())
+        .secondarySchool(
+            application.getEducationBackground() == null
+                ? null
+                : application.getEducationBackground().getSecondarySchool())
+        .rejectionReason(application.getRejectionReason())
+        .resolvedAt(application.getResolvedAt())
+        .resolvedByPersonId(application.getResolvedByPersonId())
+        .createdAt(application.getCreatedAt())
+        .updatedAt(application.getUpdatedAt())
+        .spaces(new ArrayList<>())
+        .courses(new ArrayList<>())
+        .build();
+  }
+
+  public static EnrollmentApplicationResponse from(
+      final EnrollmentApplication application, final boolean includeCourseDetails) {
     return EnrollmentApplicationResponse.builder()
         .applicationId(application.getId())
         .institutionId(
@@ -201,14 +277,13 @@ public record EnrollmentApplicationResponse(
             application.getApplicantPerson() != null
                 ? application.getApplicantPerson().getDocumentNumber()
                 : null)
+        .trainingPathId(
+            application.getTrainingPath() != null ? application.getTrainingPath().getId() : null)
         .studyPlanId(application.getStudyPlan() != null ? application.getStudyPlan().getId() : null)
         .studyPlanName(
             application.getStudyPlan() != null ? application.getStudyPlan().getName() : null)
         .trainingPathName(
-            application.getStudyPlan() != null
-                    && application.getStudyPlan().getTrainingPath() != null
-                ? application.getStudyPlan().getTrainingPath().getName()
-                : null)
+            application.getTrainingPath() != null ? application.getTrainingPath().getName() : null)
         .academicYearId(
             application.getAcademicYear() != null ? application.getAcademicYear().getId() : null)
         .academicYear(
@@ -229,7 +304,13 @@ public record EnrollmentApplicationResponse(
         .resolvedByPersonId(application.getResolvedByPersonId())
         .createdAt(application.getCreatedAt())
         .updatedAt(application.getUpdatedAt())
-        .spaces(buildSpaces(application))
+        .spaces(includeCourseDetails ? buildSpaces(application) : new ArrayList<>())
+        .courses(
+            !includeCourseDetails || application.getCourseSelections() == null
+                ? new ArrayList<>()
+                : application.getCourseSelections().stream()
+                    .map(EnrollmentApplicationCourseResponse::from)
+                    .toList())
         .build();
   }
 
@@ -343,8 +424,8 @@ public record EnrollmentApplicationResponse(
 
     CareerSelectionDto careerDto = null;
 
-    if (entity.getStudyPlan() != null && entity.getStudyPlan().getTrainingPath() != null) {
-      careerDto = new CareerSelectionDto(entity.getStudyPlan().getTrainingPath().getId());
+    if (entity.getTrainingPath() != null) {
+      careerDto = new CareerSelectionDto(entity.getTrainingPath().getId());
     }
 
     List<AttachmentDto> attachmentsList = new ArrayList<>();
@@ -381,6 +462,18 @@ public record EnrollmentApplicationResponse(
             spaceSelectionDto != null ? spaceSelectionDto : new AcademicSpaceSelectionDto())
         .instrumentSelection(
             instrumentSelectionDto != null ? instrumentSelectionDto : new InstrumentSelectionDto())
+        .courses(
+            entity.getCourseSelections() == null
+                ? new ArrayList<>()
+                : entity.getCourseSelections().stream()
+                    .map(
+                        selection ->
+                            new CourseSelectionDto(
+                                selection.getCourse().getId(),
+                                selection.getPreferredTeacher() == null
+                                    ? null
+                                    : selection.getPreferredTeacher().getId()))
+                    .toList())
         .attachments(attachmentsList)
         .build();
   }

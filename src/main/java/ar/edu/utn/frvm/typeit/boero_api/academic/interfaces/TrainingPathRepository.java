@@ -39,6 +39,24 @@ public interface TrainingPathRepository extends JpaRepository<TrainingPath, UUID
   Optional<TrainingPath> findByIdAndInstitution_IdAndActiveTrueAndDeletedAtIsNull(
       UUID id, UUID institutionId);
 
+  @EntityGraph(attributePaths = "institution")
+  @Query(
+      """
+      SELECT path FROM TrainingPath path
+      WHERE path.institution.id = :institutionId
+        AND path.active = true
+        AND path.deletedAt IS NULL
+        AND EXISTS (
+          SELECT course.id FROM Course course
+          WHERE course.institution.id = :institutionId
+            AND course.studyPlanSpace.studyPlan.trainingPath.id = path.id
+            AND course.status = ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus.ACTIVE
+            AND course.deletedAt IS NULL
+        )
+      """)
+  Page<TrainingPath> findAvailableForEnrollment(
+      @Param("institutionId") UUID institutionId, Pageable pageable);
+
   java.util.List<TrainingPath> findByInstitution_IdAndActiveTrueAndDeletedAtIsNullOrderByNameAsc(
       UUID institutionId);
 

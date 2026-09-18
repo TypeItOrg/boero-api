@@ -120,7 +120,8 @@ enum SearchDefinition {
         FROM courses c
         JOIN institutions i ON i.institution_id = c.institution_id
         JOIN academic_spaces e ON e.academic_space_id = c.academic_space_id
-        JOIN study_plans p ON p.study_plan_id = c.study_plan_id
+        JOIN study_plan_spaces s ON s.study_plan_space_id = c.study_plan_space_id
+        JOIN study_plans p ON p.study_plan_id = s.study_plan_id
        WHERE c.deleted_at IS NULL
          AND e.deleted_at IS NULL
          AND p.deleted_at IS NULL

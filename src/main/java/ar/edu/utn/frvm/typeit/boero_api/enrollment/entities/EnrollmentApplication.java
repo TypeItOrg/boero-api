@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.entities;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
@@ -22,9 +23,11 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.PostLoad;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -63,18 +66,38 @@ public class EnrollmentApplication extends SoftDeletable {
   @JoinColumn(name = "applicant_person_id", nullable = false)
   private Person applicantPerson;
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "study_plan_id", nullable = false)
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "study_plan_id")
   private StudyPlan studyPlan;
+
+  @Column(name = "study_plan_id", insertable = false, updatable = false)
+  private UUID legacyStudyPlanId;
+
+  @Transient private boolean legacyPlanLoaded;
+
+  @PostLoad
+  private void detectLegacyPlan() {
+    legacyPlanLoaded = studyPlan != null;
+  }
+
+  public boolean hasLegacyStudyPlan() {
+    return legacyPlanLoaded || legacyStudyPlanId != null || studyPlan != null;
+  }
 
   @Setter(AccessLevel.NONE)
   @Column(name = "training_path_id", nullable = false)
   private UUID trainingPathId;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "training_path_id", insertable = false, updatable = false)
+  private TrainingPath trainingPath;
+
   @PrePersist
   @PreUpdate
   private void synchronizeTrainingPath() {
-    trainingPathId = studyPlan.getTrainingPath().getId();
+    if (trainingPathId == null && studyPlan != null) {
+      trainingPathId = studyPlan.getTrainingPath().getId();
+    }
   }
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -142,6 +165,14 @@ public class EnrollmentApplication extends SoftDeletable {
   @Builder.Default
   private List<EnrollmentApplicationSpace> selectedSpaces = new ArrayList<>();
 
+  @OneToMany(
+      mappedBy = "enrollmentApplication",
+      cascade = CascadeType.ALL,
+      fetch = FetchType.LAZY,
+      orphanRemoval = true)
+  @Builder.Default
+  private List<EnrollmentApplicationCourse> courseSelections = new ArrayList<>();
+
   public void setEducationBackground(ApplicantEducationBackground educationBackground) {
     this.educationBackground = educationBackground;
 
@@ -188,13 +219,35 @@ public class EnrollmentApplication extends SoftDeletable {
     selectedSpaces.clear();
   }
 
+  public void addCourseSelection(final EnrollmentApplicationCourse selection) {
+    courseSelections.add(selection);
+  }
+
+  public void clearCourseSelections() {
+    courseSelections.clear();
+  }
+
   public void changeStudyPlan(final StudyPlan studyPlan) {
     if (!isEditable()) {
       throw new ApplicationNotEditableException(id);
     }
 
     this.studyPlan = studyPlan;
+    this.trainingPathId = studyPlan.getTrainingPath().getId();
+    this.trainingPath = studyPlan.getTrainingPath();
     clearSelectedSpaces();
+  }
+
+  public void changeTrainingPath(final TrainingPath trainingPath) {
+    if (!isEditable()) {
+      throw new ApplicationNotEditableException(id);
+    }
+
+    this.trainingPath = trainingPath;
+    this.trainingPathId = trainingPath.getId();
+    this.studyPlan = null;
+    clearSelectedSpaces();
+    clearCourseSelections();
   }
 
   public static EnrollmentApplication create(
@@ -207,6 +260,23 @@ public class EnrollmentApplication extends SoftDeletable {
         .institution(institution)
         .applicantPerson(applicantPerson)
         .studyPlan(studyPlan)
+        .academicYear(academicYear)
+        .enrollmentPeriod(enrollmentPeriod)
+        .status(EnrollmentApplicationStatus.DRAFT)
+        .build();
+  }
+
+  public static EnrollmentApplication createForTrainingPath(
+      final Institution institution,
+      final Person applicantPerson,
+      final TrainingPath trainingPath,
+      final AcademicYear academicYear,
+      final EnrollmentPeriod enrollmentPeriod) {
+    return EnrollmentApplication.builder()
+        .institution(institution)
+        .applicantPerson(applicantPerson)
+        .trainingPathId(trainingPath.getId())
+        .trainingPath(trainingPath)
         .academicYear(academicYear)
         .enrollmentPeriod(enrollmentPeriod)
         .status(EnrollmentApplicationStatus.DRAFT)
@@ -267,6 +337,14 @@ public class EnrollmentApplication extends SoftDeletable {
     return status == EnrollmentApplicationStatus.APPROVED
         || status == EnrollmentApplicationStatus.REJECTED
         || status == EnrollmentApplicationStatus.CANCELLED;
+  }
+
+  public TrainingPath getTrainingPath() {
+    if (trainingPath != null) {
+      return trainingPath;
+    }
+
+    return studyPlan == null ? null : studyPlan.getTrainingPath();
   }
 
   public void approve(final Instant resolvedAt, final UUID resolvedByPersonId) {

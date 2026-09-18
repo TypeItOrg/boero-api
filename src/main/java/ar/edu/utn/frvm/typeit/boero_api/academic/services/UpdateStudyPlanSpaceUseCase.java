@@ -10,6 +10,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicSpaceNotFoun
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.StudyPlanSpaceNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicLevelRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicSpaceRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.InstrumentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceInstrumentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
@@ -21,6 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +36,7 @@ public class UpdateStudyPlanSpaceUseCase {
   private final InstrumentRepository instrumentRepository;
   private final StudyPlanSpaceInstrumentRepository studyPlanSpaceInstrumentRepository;
   private final StudyPlanDraftGuard studyPlanDraftGuard;
+  @Autowired private CourseRepository courseRepository;
 
   @Transactional
   public StudyPlanSpaceResponse execute(
@@ -49,6 +52,17 @@ public class UpdateStudyPlanSpaceUseCase {
                 request.academicSpaceId(), institutionId)
             .orElseThrow(AcademicSpaceNotFoundException::new);
     final var level = resolveLevel(plan.getId(), request.academicLevelId());
+    if (courseRepository != null
+        && courseRepository.existsByStudyPlanSpaceId(existing.getId())
+        && (!existing.getAcademicSpace().getId().equals(space.getId())
+            || (existing.getAcademicLevel() == null
+                ? level != null
+                : !existing
+                    .getAcademicLevel()
+                    .getId()
+                    .equals(level == null ? null : level.getId())))) {
+      throw new AcademicConflictException(AcademicMessages.COURSE_SPACE_NOT_IN_PLAN);
+    }
     final var instruments = resolveInstruments(institutionId, request.instrumentIds());
     existing.update(
         space, level, request.requirementType(), request.displayOrder(), request.approvalMode());

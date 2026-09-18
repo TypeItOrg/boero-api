@@ -131,16 +131,22 @@ final class MigrationFixtures {
       final UUID studyPlanId,
       final UUID academicSpaceId,
       final UUID academicYearId) {
+    final UUID studyPlanSpaceId = UUID.randomUUID();
+    insertStudyPlanSpace(studyPlanSpaceId, institutionId, studyPlanId, academicSpaceId);
     jdbcTemplate.update(
         """
         INSERT INTO courses (
-          course_id, institution_id, study_plan_id, academic_space_id, academic_year_id,
-          status, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          course_id, institution_id, study_plan_space_id, training_path_id, academic_space_id, academic_year_id,
+          academic_level_id, instrument_id, status, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         """,
         id,
         institutionId,
-        studyPlanId,
+        studyPlanSpaceId,
+        jdbcTemplate.queryForObject(
+            "SELECT training_path_id FROM study_plans WHERE study_plan_id = ?",
+            UUID.class,
+            studyPlanId),
         academicSpaceId,
         academicYearId);
   }

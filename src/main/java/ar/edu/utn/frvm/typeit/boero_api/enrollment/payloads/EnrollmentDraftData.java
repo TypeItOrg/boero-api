@@ -16,6 +16,7 @@ import lombok.Builder;
       "careerSelection",
       "academicSpaceSelection",
       "instrumentSelection",
+      "courses",
       "attachments"
     })
 public record EnrollmentDraftData(
@@ -27,12 +28,37 @@ public record EnrollmentDraftData(
     @Schema(nullable = true) CareerSelectionDto careerSelection,
     @Schema(nullable = true) AcademicSpaceSelectionDto academicSpaceSelection,
     @Schema(nullable = true) InstrumentSelectionDto instrumentSelection,
+    @Schema(nullable = true) List<CourseSelectionDto> courses,
     @Schema(nullable = true) List<AttachmentDto> attachments) {
   public EnrollmentDraftData() {
-    this(null, null, null, null, null, null, null, null, new ArrayList<>());
+    this(null, null, null, null, null, null, null, null, new ArrayList<>(), new ArrayList<>());
+  }
+
+  public EnrollmentDraftData(
+      final PersonalDataDto personalData,
+      final AcademicBackgroundDto academicBackground,
+      final HealthInclusionDto healthInclusion,
+      final ResponsibleDto responsible,
+      final PreferenceDto preference,
+      final CareerSelectionDto careerSelection,
+      final AcademicSpaceSelectionDto academicSpaceSelection,
+      final InstrumentSelectionDto instrumentSelection,
+      final List<AttachmentDto> attachments) {
+    this(
+        personalData,
+        academicBackground,
+        healthInclusion,
+        responsible,
+        preference,
+        careerSelection,
+        academicSpaceSelection,
+        instrumentSelection,
+        new ArrayList<>(),
+        attachments);
   }
 
   public EnrollmentDraftData {
+    courses = courses == null ? new ArrayList<>() : courses;
     attachments = attachments == null ? new ArrayList<>() : attachments;
   }
 
@@ -66,6 +92,10 @@ public record EnrollmentDraftData(
 
   public InstrumentSelectionDto getInstrumentSelection() {
     return instrumentSelection;
+  }
+
+  public List<CourseSelectionDto> getCourses() {
+    return courses;
   }
 
   public List<AttachmentDto> getAttachments() {

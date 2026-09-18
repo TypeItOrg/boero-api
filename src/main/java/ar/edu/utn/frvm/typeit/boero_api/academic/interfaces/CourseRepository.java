@@ -19,10 +19,13 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
   @EntityGraph(
       attributePaths = {
         "institution",
-        "studyPlan",
-        "studyPlan.trainingPath",
-        "academicSpace",
-        "academicYear"
+        "studyPlanSpace",
+        "studyPlanSpace.studyPlan",
+        "studyPlanSpace.studyPlan.trainingPath",
+        "studyPlanSpace.academicSpace",
+        "studyPlanSpace.academicLevel",
+        "academicYear",
+        "instrument"
       })
   @Query(
       """
@@ -30,11 +33,11 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
       WHERE (:institutionId IS NULL OR course.institution.id = :institutionId)
         AND ((:deleted = true AND course.deletedAt IS NOT NULL) OR (:deleted = false AND course.deletedAt IS NULL))
         AND (:status IS NULL OR course.status = :status)
-        AND (:academicSpaceId IS NULL OR course.academicSpace.id = :academicSpaceId)
-        AND (:trainingPathId IS NULL OR course.studyPlan.trainingPath.id = :trainingPathId)
-        AND (:studyPlanId IS NULL OR course.studyPlan.id = :studyPlanId)
+        AND (:academicSpaceId IS NULL OR course.academicSpaceId = :academicSpaceId)
+        AND (:trainingPathId IS NULL OR course.studyPlanSpace.studyPlan.trainingPath.id = :trainingPathId)
+        AND (:studyPlanId IS NULL OR course.studyPlanSpace.studyPlan.id = :studyPlanId)
         AND (:year IS NULL OR course.academicYear.year = :year)
-        AND (:search IS NULL OR UNACCENT_LOWER(course.academicSpace.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
+        AND (:search IS NULL OR UNACCENT_LOWER(course.studyPlanSpace.academicSpace.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
           OR UNACCENT_LOWER(course.institution.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%')))
       """)
   Page<Course> findByFilters(
@@ -51,10 +54,12 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
   @EntityGraph(
       attributePaths = {
         "institution",
-        "studyPlan",
-        "studyPlan.trainingPath",
-        "academicSpace",
-        "academicYear"
+        "studyPlanSpace",
+        "studyPlanSpace.studyPlan",
+        "studyPlanSpace.studyPlan.trainingPath",
+        "studyPlanSpace.academicSpace",
+        "academicYear",
+        "instrument"
       })
   @Query(
       "SELECT course FROM Course course WHERE course.id = :id AND course.institution.id = :institutionId AND course.deletedAt IS NULL")
@@ -75,7 +80,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
 
   @Query(
       """
-      SELECT course.academicYear.id AS academicYearId, course.studyPlan.id AS studyPlanId
+      SELECT course.academicYear.id AS academicYearId, course.studyPlanSpace.studyPlan.id AS studyPlanId
       FROM Course course
       WHERE course.id = :courseId AND course.institution.id = :institutionId
       """)
@@ -97,11 +102,116 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
       @Param("academicSpaceId") UUID academicSpaceId,
       @Param("academicYearId") UUID academicYearId);
 
-  boolean existsByInstitution_IdAndStudyPlan_IdAndStatusAndDeletedAtIsNull(
-      UUID institutionId, UUID studyPlanId, CourseStatus status);
+  @Query(
+      """
+      SELECT COUNT(course) > 0 FROM Course course
+      WHERE course.institution.id = :institutionId
+        AND course.instrument.id = :instrumentId
+        AND course.status = ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus.ACTIVE
+        AND course.deletedAt IS NULL
+      """)
+  boolean existsActiveByInstrument(
+      @Param("institutionId") UUID institutionId, @Param("instrumentId") UUID instrumentId);
 
+  @Query(
+      """
+      SELECT COUNT(course) > 0 FROM Course course
+      WHERE course.institution.id = :institutionId
+        AND course.studyPlanSpace.studyPlan.trainingPath.id = :trainingPathId
+        AND course.status = ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus.ACTIVE
+        AND course.deletedAt IS NULL
+      """)
+  boolean existsActiveByTrainingPath(
+      @Param("institutionId") UUID institutionId, @Param("trainingPathId") UUID trainingPathId);
+
+  @Query(
+      "SELECT COUNT(course) > 0 FROM Course course WHERE course.studyPlanSpace.id = :studyPlanSpaceId")
+  boolean existsByStudyPlanSpaceId(@Param("studyPlanSpaceId") UUID studyPlanSpaceId);
+
+  @EntityGraph(
+      attributePaths = {
+        "studyPlanSpace",
+        "studyPlanSpace.studyPlan",
+        "studyPlanSpace.studyPlan.trainingPath",
+        "studyPlanSpace.academicSpace",
+        "studyPlanSpace.academicLevel",
+        "academicYear",
+        "instrument"
+      })
+  @Query(
+      """
+      SELECT course FROM Course course
+      WHERE course.institution.id = :institutionId
+        AND course.studyPlanSpace.studyPlan.trainingPath.id = :trainingPathId
+        AND course.academicYear.id = :academicYearId
+        AND course.status = ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus.ACTIVE
+        AND course.deletedAt IS NULL
+      ORDER BY course.studyPlanSpace.academicLevel.displayOrder NULLS LAST,
+               course.studyPlanSpace.academicSpace.name,
+               course.id
+      """)
+  List<Course> findActiveByTrainingPathAndAcademicYear(
+      @Param("institutionId") UUID institutionId,
+      @Param("trainingPathId") UUID trainingPathId,
+      @Param("academicYearId") UUID academicYearId);
+
+  @EntityGraph(
+      attributePaths = {
+        "studyPlanSpace",
+        "studyPlanSpace.studyPlan",
+        "studyPlanSpace.studyPlan.trainingPath",
+        "studyPlanSpace.academicSpace",
+        "studyPlanSpace.academicLevel",
+        "academicYear",
+        "instrument"
+      })
+  @Query(
+      """
+      SELECT course FROM Course course
+      WHERE course.institution.id = :institutionId
+        AND course.studyPlanSpace.studyPlan.trainingPath.id = :trainingPathId
+        AND course.academicYear.id = :academicYearId
+        AND course.status = ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus.ACTIVE
+        AND course.deletedAt IS NULL
+        AND (:search IS NULL OR UNACCENT_LOWER(course.studyPlanSpace.academicSpace.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
+          OR UNACCENT_LOWER(course.studyPlanSpace.studyPlan.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
+          OR UNACCENT_LOWER(COALESCE(course.instrument.name, '')) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%')))
+      ORDER BY course.studyPlanSpace.academicLevel.displayOrder NULLS LAST,
+               course.studyPlanSpace.academicSpace.name,
+               course.id
+      """)
+  Page<Course> findActiveByTrainingPathAndAcademicYear(
+      @Param("institutionId") UUID institutionId,
+      @Param("trainingPathId") UUID trainingPathId,
+      @Param("academicYearId") UUID academicYearId,
+      @Param("search") @Nullable String search,
+      Pageable pageable);
+
+  @Query(
+      """
+      SELECT COUNT(course) > 0 FROM Course course
+      WHERE course.institution.id = :institutionId
+        AND course.studyPlanSpace.studyPlan.id = :studyPlanId
+        AND course.status = :status
+        AND course.deletedAt IS NULL
+      """)
+  boolean existsByInstitution_IdAndStudyPlan_IdAndStatusAndDeletedAtIsNull(
+      @Param("institutionId") UUID institutionId,
+      @Param("studyPlanId") UUID studyPlanId,
+      @Param("status") CourseStatus status);
+
+  @Query(
+      """
+      SELECT COUNT(course) > 0 FROM Course course
+      WHERE course.institution.id = :institutionId
+        AND course.studyPlanSpace.studyPlan.id = :studyPlanId
+        AND course.status <> :status
+        AND course.deletedAt IS NULL
+      """)
   boolean existsByInstitution_IdAndStudyPlan_IdAndStatusNotAndDeletedAtIsNull(
-      UUID institutionId, UUID studyPlanId, CourseStatus status);
+      @Param("institutionId") UUID institutionId,
+      @Param("studyPlanId") UUID studyPlanId,
+      @Param("status") CourseStatus status);
 
   default boolean existsByInstitution_IdAndStudyPlan_IdAndActiveTrueAndDeletedAtIsNull(
       final UUID institutionId, final UUID studyPlanId) {
