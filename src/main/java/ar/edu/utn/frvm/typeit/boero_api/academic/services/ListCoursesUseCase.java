@@ -8,7 +8,9 @@ import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,7 @@ public class ListCoursesUseCase {
       final @Nullable Integer year,
       final boolean deleted,
       final Pageable pageable) {
+    final Pageable repositoryPageable = mapSort(pageable);
     return PaginatedResponse.from(
         courseRepository
             .findByFilters(
@@ -39,8 +42,21 @@ public class ListCoursesUseCase {
                 studyPlanId,
                 year,
                 deleted,
-                pageable)
+                repositoryPageable)
             .map(CourseResponse::from));
+  }
+
+  private static Pageable mapSort(final Pageable pageable) {
+    final Sort sort =
+        Sort.by(
+            pageable.getSort().stream()
+                .map(
+                    order ->
+                        order.getProperty().equals("academicSpace.name")
+                            ? order.withProperty("studyPlanSpace.academicSpace.name")
+                            : order)
+                .toList());
+    return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
   }
 
   public PaginatedResponse<CourseResponse> execute(

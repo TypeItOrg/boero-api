@@ -340,7 +340,47 @@ public enum PermissionCode {
       "institution:enrollment-application:reject",
       PermissionScope.INSTITUTION,
       PermissionGroup.ENROLLMENT,
-      "Rechazar solicitudes de inscripción");
+      "Rechazar solicitudes de inscripción"),
+  COURSE_ENROLLMENT_READ(
+      "institution:course-enrollment:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Ver cursadas institucionales"),
+  COURSE_ENROLLMENT_CREATE(
+      "institution:course-enrollment:create",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Crear cursadas manuales"),
+  COURSE_ENROLLMENT_WITHDRAW(
+      "institution:course-enrollment:withdraw",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Registrar bajas de cursadas"),
+  COURSE_ENROLLMENT_ACADEMIC_STATUS_UPDATE(
+      "institution:course-enrollment:academic-status-update",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Modificar resultados académicos"),
+  ENROLLMENT_APPLICATION_COURSE_READ(
+      "institution:enrollment-application-course:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Ver solicitudes de cursada"),
+  ENROLLMENT_APPLICATION_COURSE_ENROLL(
+      "institution:enrollment-application-course:enroll",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Inscribir solicitudes de cursada"),
+  ENROLLMENT_APPLICATION_COURSE_REJECT(
+      "institution:enrollment-application-course:reject",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Rechazar solicitudes de cursada"),
+  COURSE_WAITLIST_READ(
+      "institution:course-waitlist:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Ver listas de espera");
 
   private final String code;
   private final PermissionScope scope;
@@ -405,6 +445,13 @@ public enum PermissionCode {
           Set.of(COURSE_READ);
       case ENROLLMENT_APPLICATION_APPROVE, ENROLLMENT_APPLICATION_REJECT ->
           Set.of(ENROLLMENT_APPLICATION_READ);
+      case COURSE_ENROLLMENT_CREATE,
+          COURSE_ENROLLMENT_WITHDRAW,
+          COURSE_ENROLLMENT_ACADEMIC_STATUS_UPDATE,
+          COURSE_WAITLIST_READ ->
+          Set.of(COURSE_ENROLLMENT_READ);
+      case ENROLLMENT_APPLICATION_COURSE_ENROLL, ENROLLMENT_APPLICATION_COURSE_REJECT ->
+          Set.of(ENROLLMENT_APPLICATION_COURSE_READ);
       default -> Set.of();
     };
   }

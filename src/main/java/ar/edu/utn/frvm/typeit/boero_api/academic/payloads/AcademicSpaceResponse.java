@@ -16,6 +16,7 @@ import java.util.UUID;
       "description",
       "type",
       "format",
+      "instrumental",
       "active",
       "deletedAt"
     })
@@ -27,6 +28,7 @@ public record AcademicSpaceResponse(
     @Schema(nullable = true) String description,
     AcademicSpaceType type,
     AcademicSpaceFormat format,
+    boolean instrumental,
     boolean active,
     @Schema(nullable = true) Instant deletedAt) {
 
@@ -39,6 +41,7 @@ public record AcademicSpaceResponse(
         space.getDescription(),
         space.getType(),
         space.getFormat(),
+        space.isInstrumental(),
         space.isActive(),
         space.getDeletedAt());
   }

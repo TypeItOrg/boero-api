@@ -26,7 +26,7 @@ public class ListEnrollmentApplicationsUseCase {
       final Pageable pageable) {
     return enrollmentApplicationRepository
         .findByInstitutionId(institutionId, status, trainingPathId, open, pageable)
-        .map(EnrollmentApplicationResponse::from);
+        .map(EnrollmentApplicationResponse::summary);
   }
 
   @Transactional(readOnly = true)
@@ -38,6 +38,6 @@ public class ListEnrollmentApplicationsUseCase {
       final Pageable pageable) {
     return enrollmentApplicationRepository
         .findByFilters(institutionId, status, trainingPathId, open, pageable)
-        .map(EnrollmentApplicationResponse::from);
+        .map(EnrollmentApplicationResponse::summary);
   }
 }

@@ -1,10 +1,12 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.interfaces;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -43,6 +45,21 @@ public interface StudyPlanSpaceRepository extends JpaRepository<StudyPlanSpace, 
         AND space.studyPlan.deletedAt IS NULL
       """)
   Optional<StudyPlanSpace> findDetailsByIdAndInstitutionId(
+      @Param("id") UUID id, @Param("institutionId") UUID institutionId);
+
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query(
+      """
+      SELECT space FROM StudyPlanSpace space
+      LEFT JOIN FETCH space.academicLevel
+      JOIN FETCH space.academicSpace
+      JOIN FETCH space.studyPlan studyPlan
+      JOIN FETCH studyPlan.trainingPath
+      WHERE space.id = :id
+        AND space.institution.id = :institutionId
+        AND studyPlan.deletedAt IS NULL
+      """)
+  Optional<StudyPlanSpace> findDetailsByIdAndInstitutionIdForUpdate(
       @Param("id") UUID id, @Param("institutionId") UUID institutionId);
 
   @Query(
@@ -90,6 +107,23 @@ public interface StudyPlanSpaceRepository extends JpaRepository<StudyPlanSpace, 
   boolean existsByStudyPlanId(@Param("studyPlanId") UUID studyPlanId);
 
   boolean existsByStudyPlan_IdAndAcademicSpace_Id(UUID studyPlanId, UUID academicSpaceId);
+
+  @Query(
+      """
+      SELECT space FROM StudyPlanSpace space
+      LEFT JOIN FETCH space.academicLevel
+      JOIN FETCH space.academicSpace
+      JOIN FETCH space.studyPlan studyPlan
+      JOIN FETCH studyPlan.trainingPath
+      WHERE space.studyPlan.id = :studyPlanId
+        AND space.academicSpace.id = :academicSpaceId
+        AND space.institution.id = :institutionId
+        AND studyPlan.deletedAt IS NULL
+      """)
+  List<StudyPlanSpace> findByStudyPlanIdAndAcademicSpaceId(
+      @Param("studyPlanId") UUID studyPlanId,
+      @Param("academicSpaceId") UUID academicSpaceId,
+      @Param("institutionId") UUID institutionId);
 
   @Query(
       """

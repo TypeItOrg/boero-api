@@ -47,6 +47,16 @@ public final class AcademicMessages {
       "El espacio académico no puede desactivarse porque está utilizado en un plan de estudio activo o en borrador.";
   public static final String ACADEMIC_SPACE_FORMAT_HAS_COURSES =
       "El formato del espacio académico no puede modificarse porque ya tiene cursos asociados.";
+  public static final String ACADEMIC_SPACE_INSTRUMENTAL_HAS_COURSES =
+      "La instrumentalidad del espacio académico no puede modificarse porque ya tiene cursos asociados.";
+  public static final String COURSE_DUPLICATE =
+      "Ya existe un curso con la misma identidad curricular en el ciclo lectivo indicado.";
+  public static final String INSTRUMENT_REQUIRED =
+      "El espacio académico instrumental requiere un instrumento.";
+  public static final String INSTRUMENT_NOT_ALLOWED =
+      "El espacio académico no instrumental no admite un instrumento.";
+  public static final String INSTRUMENT_IN_USE =
+      "El instrumento no puede desactivarse porque está siendo utilizado por cursos activos.";
   public static final String STUDY_PLAN_ACTIVATION_REQUIRES_START_AND_ACTIVE_PATH =
       "El plan no puede activarse hasta completar la fecha de inicio y tener un trayecto formativo activo.";
   public static final String STUDY_PLAN_ACTIVATION_REQUIRES_SPACES =

@@ -8,16 +8,21 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollApplicationCourseRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.RejectEnrollmentApplicationCourseRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.RejectEnrollmentApplicationRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ApproveEnrollmentApplicationUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CourseEnrollmentService;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.GetEnrollmentApplicationUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationsUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.RejectEnrollmentApplicationCourseUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.RejectEnrollmentApplicationUseCase;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -42,6 +47,12 @@ public class InstitutionalEnrollmentApplicationController {
   private final GetEnrollmentApplicationUseCase getEnrollmentApplicationUseCase;
   private final ApproveEnrollmentApplicationUseCase approveEnrollmentApplicationUseCase;
   private final RejectEnrollmentApplicationUseCase rejectEnrollmentApplicationUseCase;
+
+  @Autowired(required = false)
+  private CourseEnrollmentService courseEnrollmentService;
+
+  @Autowired(required = false)
+  private RejectEnrollmentApplicationCourseUseCase rejectEnrollmentApplicationCourseUseCase;
 
   @GetMapping(version = Version.V1)
   @RequiresPermission(PermissionCode.ENROLLMENT_APPLICATION_READ)
@@ -83,6 +94,33 @@ public class InstitutionalEnrollmentApplicationController {
       final Authentication authentication) {
     return rejectEnrollmentApplicationUseCase.execute(
         institutionId, applicationId, request, currentPersonId(authentication));
+  }
+
+  @PostMapping(
+      value = "/{applicationId}/courses/{applicationCourseId}/enroll",
+      version = Version.V1)
+  @RequiresPermission(PermissionCode.ENROLLMENT_APPLICATION_COURSE_ENROLL)
+  public ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentResponse enrollCourse(
+      @PathVariable final UUID institutionId,
+      @PathVariable final UUID applicationCourseId,
+      @Valid @RequestBody final EnrollApplicationCourseRequest request,
+      final Authentication authentication) {
+    return courseEnrollmentService.enrollApplicationCourse(
+        institutionId, applicationCourseId, request, currentPersonId(authentication));
+  }
+
+  @PostMapping(
+      value = "/{applicationId}/courses/{applicationCourseId}/reject",
+      version = Version.V1)
+  @RequiresPermission(PermissionCode.ENROLLMENT_APPLICATION_COURSE_REJECT)
+  public ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationCourseResponse
+      rejectCourse(
+          @PathVariable final UUID institutionId,
+          @PathVariable final UUID applicationCourseId,
+          @Valid @RequestBody final RejectEnrollmentApplicationCourseRequest request,
+          final Authentication authentication) {
+    return rejectEnrollmentApplicationCourseUseCase.execute(
+        institutionId, applicationCourseId, request, currentPersonId(authentication));
   }
 
   private @Nullable UUID currentPersonId(final Authentication authentication) {

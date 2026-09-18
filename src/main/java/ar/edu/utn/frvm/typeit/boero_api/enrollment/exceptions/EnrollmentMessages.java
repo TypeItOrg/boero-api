@@ -94,6 +94,37 @@ public final class EnrollmentMessages {
       "Solo un postulante puede operar sobre solicitudes de inscripción.";
   public static final String ENROLLMENT_APPLICATION_SPACES_REQUIRED =
       "Debe seleccionar al menos un espacio académico para enviar la inscripción.";
+  public static final String ENROLLMENT_APPLICATION_SPACES_DUPLICATED =
+      "No puede seleccionar más de un curso del mismo espacio curricular.";
+  public static final String PERSON_ID_NOT_FOUND = "No se encontró la persona con ID ";
+  public static final String ENROLLMENT_APPLICATION_TEACHER_INVALID =
+      "El docente preferido no dicta clases en el curso seleccionado.";
+  public static final String COURSE_ENROLLMENT_NOT_FOUND = "La cursada especificada no existe.";
+  public static final String COURSE_NOT_ACTIVE = "El curso seleccionado no está activo.";
+  public static final String COURSE_CLASS_INVALID =
+      "La clase seleccionada no pertenece al curso indicado.";
+  public static final String COURSE_ASSIGNMENT_REQUIRED =
+      "Debe seleccionar al menos un día u horario.";
+  public static final String COURSE_ASSIGNMENT_INVALID =
+      "La asignación horaria no pertenece a la clase seleccionada.";
+  public static final String COURSE_ASSIGNMENT_CONFLICT =
+      "La asignación horaria entra en conflicto con otra cursada vigente.";
+  public static final String COURSE_CAPACITY_EXCEEDED =
+      "No existe capacidad disponible para la asignación seleccionada.";
+  public static final String COURSE_ALREADY_ENROLLED =
+      "El estudiante ya tiene una cursada vigente para este curso.";
+  public static final String COURSE_ALREADY_REQUESTED =
+      "El curso ya está solicitado en otra inscripción vigente.";
+  public static final String COURSE_ENROLLMENT_REASON_REQUIRED =
+      "Debe indicar un motivo para modificar la cursada.";
+  public static final String COURSE_ENROLLMENT_VERSION_STALE =
+      "La cursada fue modificada por otra operación. Actualizá los datos e intentá nuevamente.";
+  public static final String PARENT_NOT_APPROVED =
+      "La solicitud documental todavía no está aprobada.";
+  public static final String COURSE_APPLICATION_NOT_FOUND =
+      "La solicitud de cursada especificada no existe.";
+  public static final String COURSE_APPLICATION_ALREADY_RESOLVED =
+      "La solicitud de cursada ya fue resuelta y no puede modificarse.";
 
   public static final String APPLICATION_NOT_FOUND =
       "La solicitud de inscripción no existe o no pertenece a la institución.";

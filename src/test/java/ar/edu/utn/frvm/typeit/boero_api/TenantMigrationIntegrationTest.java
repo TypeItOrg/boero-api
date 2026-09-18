@@ -74,6 +74,7 @@ class TenantMigrationIntegrationTest extends DatabaseMigrationTestSupport {
           courseClassTeacherId);
       jdbcTemplate.update("DELETE FROM course_classes WHERE course_class_id = ?", courseClassId);
       jdbcTemplate.update("DELETE FROM courses WHERE course_id = ?", courseId);
+      jdbcTemplate.update("DELETE FROM study_plan_spaces WHERE study_plan_id = ?", studyPlanId);
       jdbcTemplate.update("DELETE FROM people WHERE person_id = ?", personId);
       jdbcTemplate.update("DELETE FROM academic_years WHERE academic_year_id = ?", academicYearId);
       jdbcTemplate.update(

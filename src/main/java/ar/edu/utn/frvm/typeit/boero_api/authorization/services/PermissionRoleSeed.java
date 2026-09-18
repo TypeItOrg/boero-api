@@ -56,7 +56,15 @@ public class PermissionRoleSeed implements ApplicationRunner {
           EnumSet.of(
               PermissionCode.ENROLLMENT_APPLICATION_READ,
               PermissionCode.ENROLLMENT_APPLICATION_APPROVE,
-              PermissionCode.ENROLLMENT_APPLICATION_REJECT),
+              PermissionCode.ENROLLMENT_APPLICATION_REJECT,
+              PermissionCode.ENROLLMENT_APPLICATION_COURSE_READ,
+              PermissionCode.ENROLLMENT_APPLICATION_COURSE_ENROLL,
+              PermissionCode.ENROLLMENT_APPLICATION_COURSE_REJECT,
+              PermissionCode.COURSE_ENROLLMENT_READ,
+              PermissionCode.COURSE_ENROLLMENT_CREATE,
+              PermissionCode.COURSE_ENROLLMENT_WITHDRAW,
+              PermissionCode.COURSE_ENROLLMENT_ACADEMIC_STATUS_UPDATE,
+              PermissionCode.COURSE_WAITLIST_READ),
           SystemRoleCode.INSTITUTIONAL_AUTHORITY,
           EnumSet.of(
               PermissionCode.INSTITUTION_ROLE_ASSIGN,
@@ -112,7 +120,15 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.COURSE_RESTORE,
               PermissionCode.ENROLLMENT_APPLICATION_READ,
               PermissionCode.ENROLLMENT_APPLICATION_APPROVE,
-              PermissionCode.ENROLLMENT_APPLICATION_REJECT));
+              PermissionCode.ENROLLMENT_APPLICATION_REJECT,
+              PermissionCode.ENROLLMENT_APPLICATION_COURSE_READ,
+              PermissionCode.ENROLLMENT_APPLICATION_COURSE_ENROLL,
+              PermissionCode.ENROLLMENT_APPLICATION_COURSE_REJECT,
+              PermissionCode.COURSE_ENROLLMENT_READ,
+              PermissionCode.COURSE_ENROLLMENT_CREATE,
+              PermissionCode.COURSE_ENROLLMENT_WITHDRAW,
+              PermissionCode.COURSE_ENROLLMENT_ACADEMIC_STATUS_UPDATE,
+              PermissionCode.COURSE_WAITLIST_READ));
 
   private final PermissionRepository permissionRepository;
   private final RoleRepository roleRepository;

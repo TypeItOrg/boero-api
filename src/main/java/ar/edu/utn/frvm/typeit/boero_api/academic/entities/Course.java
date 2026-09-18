@@ -16,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.util.UUID;
@@ -48,12 +49,21 @@ public class Course extends SoftDeletable {
   private Institution institution;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "study_plan_id", nullable = false)
-  private StudyPlan studyPlan;
+  @JoinColumn(name = "study_plan_space_id", nullable = false)
+  private StudyPlanSpace studyPlanSpace;
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "academic_space_id", nullable = false)
-  private AcademicSpace academicSpace;
+  @Column(name = "training_path_id", nullable = false, updatable = false)
+  private UUID trainingPathId;
+
+  @Column(name = "academic_space_id", nullable = false, updatable = false)
+  private UUID academicSpaceId;
+
+  @Column(name = "academic_level_id", updatable = false)
+  private UUID academicLevelId;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "instrument_id")
+  private Instrument instrument;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "academic_year_id", nullable = false)
@@ -63,18 +73,72 @@ public class Course extends SoftDeletable {
   @Column(nullable = false, length = 20)
   private CourseStatus status;
 
+  @Transient private StudyPlan legacyStudyPlan;
+
+  @Transient private AcademicSpace legacyAcademicSpace;
+
+  public StudyPlan getStudyPlan() {
+    if (studyPlanSpace != null) {
+      return studyPlanSpace.getStudyPlan();
+    }
+
+    return legacyStudyPlan;
+  }
+
+  public AcademicSpace getAcademicSpace() {
+    if (studyPlanSpace != null) {
+      return studyPlanSpace.getAcademicSpace();
+    }
+
+    return legacyAcademicSpace;
+  }
+
+  public static Course create(
+      final Institution institution,
+      final StudyPlanSpace studyPlanSpace,
+      final AcademicYear academicYear) {
+    return create(institution, studyPlanSpace, academicYear, null);
+  }
+
+  public static Course create(
+      final Institution institution,
+      final StudyPlanSpace studyPlanSpace,
+      final AcademicYear academicYear,
+      final Instrument instrument) {
+    return Course.builder()
+        .institution(institution)
+        .studyPlanSpace(studyPlanSpace)
+        .trainingPathId(studyPlanSpace.getStudyPlan().getTrainingPath().getId())
+        .academicSpaceId(studyPlanSpace.getAcademicSpace().getId())
+        .academicLevelId(
+            studyPlanSpace.getAcademicLevel() == null
+                ? null
+                : studyPlanSpace.getAcademicLevel().getId())
+        .instrument(instrument)
+        .academicYear(academicYear)
+        .status(CourseStatus.ACTIVE)
+        .build();
+  }
+
+  /**
+   * Compatibility factory for in-memory callers created before Course was anchored to a
+   * StudyPlanSpace. Persisted courses must use the StudyPlanSpace factory above.
+   */
+  @Deprecated
   public static Course create(
       final Institution institution,
       final StudyPlan studyPlan,
       final AcademicSpace academicSpace,
       final AcademicYear academicYear) {
-    return Course.builder()
-        .institution(institution)
-        .studyPlan(studyPlan)
-        .academicSpace(academicSpace)
-        .academicYear(academicYear)
-        .status(CourseStatus.ACTIVE)
-        .build();
+    final var course =
+        Course.builder()
+            .institution(institution)
+            .academicYear(academicYear)
+            .status(CourseStatus.ACTIVE)
+            .build();
+    course.legacyStudyPlan = studyPlan;
+    course.legacyAcademicSpace = academicSpace;
+    return course;
   }
 
   public void activate() {
@@ -158,7 +222,7 @@ public class Course extends SoftDeletable {
   }
 
   private void ensureParentsActive() {
-    if (studyPlan.getStatus() != StudyPlanStatus.ACTIVE) {
+    if (getStudyPlan().getStatus() != StudyPlanStatus.ACTIVE) {
       throw new InvalidAcademicStateException();
     }
     ensureAcademicYearActive();

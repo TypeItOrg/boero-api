@@ -50,11 +50,28 @@ public interface EnrollmentApplicationRepository
   List<EnrollmentApplication> findActiveByApplicantPersonIdAndTrainingPathId(
       @Param("personId") UUID personId, @Param("trainingPathId") UUID trainingPathId);
 
+  @Query(
+      "SELECT application FROM EnrollmentApplication application "
+          + "WHERE application.applicantPerson.id = :personId "
+          + "AND application.institution.id = :institutionId "
+          + "AND application.trainingPathId = :trainingPathId "
+          + "AND application.academicYear.id = :academicYearId "
+          + "AND application.deletedAt IS NULL "
+          + "AND application.status IN ("
+          + "ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus.DRAFT, "
+          + "ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus.SUBMITTED)")
+  List<EnrollmentApplication> findOpenByApplicantAndContext(
+      @Param("personId") UUID personId,
+      @Param("institutionId") UUID institutionId,
+      @Param("trainingPathId") UUID trainingPathId,
+      @Param("academicYearId") UUID academicYearId);
+
   @EntityGraph(
       attributePaths = {
         "institution",
         "applicantPerson",
         "studyPlan",
+        "trainingPath",
         "academicYear",
       })
   @Query(
@@ -62,7 +79,7 @@ public interface EnrollmentApplicationRepository
           + "WHERE application.institution.id = :institutionId "
           + "AND application.deletedAt IS NULL "
           + "AND (:status IS NULL OR application.status = :status) "
-          + "AND (:trainingPathId IS NULL OR application.studyPlan.trainingPath.id = :trainingPathId) "
+          + "AND (:trainingPathId IS NULL OR application.trainingPathId = :trainingPathId) "
           + "AND (:open = false OR application.enrollmentPeriod.status = ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus.OPEN)")
   Page<EnrollmentApplication> findByInstitutionId(
       @Param("institutionId") UUID institutionId,
@@ -76,6 +93,7 @@ public interface EnrollmentApplicationRepository
         "institution",
         "applicantPerson",
         "studyPlan",
+        "trainingPath",
         "academicYear",
       })
   @Query(
@@ -83,7 +101,7 @@ public interface EnrollmentApplicationRepository
           + "WHERE application.deletedAt IS NULL "
           + "AND (:institutionId IS NULL OR application.institution.id = :institutionId) "
           + "AND (:status IS NULL OR application.status = :status) "
-          + "AND (:trainingPathId IS NULL OR application.studyPlan.trainingPath.id = :trainingPathId) "
+          + "AND (:trainingPathId IS NULL OR application.trainingPathId = :trainingPathId) "
           + "AND (:open = false OR application.enrollmentPeriod.status = ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus.OPEN)")
   Page<EnrollmentApplication> findByFilters(
       @Param("institutionId") @Nullable UUID institutionId,
@@ -121,6 +139,11 @@ public interface EnrollmentApplicationRepository
           + "AND application.id = :applicationId "
           + "AND application.deletedAt IS NULL")
   Optional<EnrollmentApplication> findByIdAndInstitutionIdForUpdate(
+      @Param("institutionId") UUID institutionId, @Param("applicationId") UUID applicationId);
+
+  @Query(
+      "SELECT application.status FROM EnrollmentApplication application WHERE application.institution.id = :institutionId AND application.id = :applicationId AND application.deletedAt IS NULL")
+  Optional<EnrollmentApplicationStatus> findStatusByInstitutionIdAndId(
       @Param("institutionId") UUID institutionId, @Param("applicationId") UUID applicationId);
 
   @EntityGraph(

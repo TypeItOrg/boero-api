@@ -25,6 +25,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.security.PermissionAuthori
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.GlobalExceptionHandler;
+import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.config.WebConfig;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
@@ -34,6 +35,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.PersonalDataDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.StartEnrollmentApplicationRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentDraftRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentApplicationService;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListAvailableEnrollmentTrainingPathsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationPeriodsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationShiftsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase;
@@ -107,6 +109,9 @@ class EnrollmentApplicationControllerWebMvcTest {
 
   @MockitoBean
   private ListEnrollmentApplicationPeriodsUseCase listEnrollmentApplicationPeriodsUseCase;
+
+  @MockitoBean
+  private ListAvailableEnrollmentTrainingPathsUseCase listAvailableEnrollmentTrainingPathsUseCase;
 
   @MockitoBean private JwtService jwtService;
   @MockitoBean private TokenBlacklistService tokenBlacklistService;
@@ -294,6 +299,35 @@ class EnrollmentApplicationControllerWebMvcTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].id").value(TRAINING_PATH_ID.toString()))
         .andExpect(jsonPath("$[0].name").value("Trayecto A"));
+  }
+
+  @Test
+  @DisplayName("Should list available training paths before starting an application")
+  void listsAvailableTrainingPathsForNewApplication() throws Exception {
+    when(listAvailableEnrollmentTrainingPathsUseCase.execute(any(), any()))
+        .thenReturn(
+            new PaginatedResponse<>(
+                List.of(
+                    new TrainingPathResponse(
+                        TRAINING_PATH_ID,
+                        INSTITUTION_ID,
+                        "Conservatorio",
+                        "Trayecto A",
+                        null,
+                        true,
+                        null)),
+                0,
+                20,
+                1,
+                1));
+
+    mockMvc
+        .perform(
+            get("/api/v1/enrollment-applications/options/training-paths")
+                .principal(applicantAuthentication()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].id").value(TRAINING_PATH_ID.toString()))
+        .andExpect(jsonPath("$.items[0].name").value("Trayecto A"));
   }
 
   @Test

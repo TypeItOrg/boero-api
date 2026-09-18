@@ -9,4 +9,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface CourseClassTeacherRepository extends JpaRepository<CourseClassTeacher, UUID> {
   @EntityGraph(attributePaths = "person")
   List<CourseClassTeacher> findByCourseClass_IdIn(List<UUID> courseClassIds);
+
+  boolean existsByCourseClass_Course_IdAndPerson_Id(UUID courseId, UUID personId);
 }

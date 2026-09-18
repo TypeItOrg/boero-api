@@ -7,7 +7,18 @@ import java.util.List;
 import java.util.UUID;
 
 public record CreateCourseRequest(
-    @NotNull UUID studyPlanId,
-    @NotNull UUID academicSpaceId,
+    UUID studyPlanSpaceId,
+    UUID instrumentId,
+    UUID studyPlanId,
+    UUID academicSpaceId,
     @NotNull UUID academicYearId,
-    @NotEmpty @Valid List<@NotNull @Valid CourseClassRequest> classes) {}
+    @NotEmpty @Valid List<@NotNull @Valid CourseClassRequest> classes) {
+
+  public CreateCourseRequest(
+      final UUID studyPlanId,
+      final UUID academicSpaceId,
+      final UUID academicYearId,
+      final List<CourseClassRequest> classes) {
+    this(null, null, studyPlanId, academicSpaceId, academicYearId, classes);
+  }
+}
