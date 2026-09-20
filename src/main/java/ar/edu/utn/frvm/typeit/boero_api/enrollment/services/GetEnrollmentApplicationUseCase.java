@@ -16,11 +16,12 @@ public class GetEnrollmentApplicationUseCase {
 
   @Transactional(readOnly = true)
   public EnrollmentApplicationResponse execute(final UUID institutionId, final UUID applicationId) {
+    // Course selections are always included: both callers (institutional and platform
+    // detail) already enforce their review permissions, and reviewers need the
+    // selections before approval to enroll from them.
     return enrollmentApplicationRepository
         .findByIdAndInstitutionId(institutionId, applicationId)
-        .map(
-            application ->
-                EnrollmentApplicationResponse.from(application, application.isApproved()))
+        .map(application -> EnrollmentApplicationResponse.from(application, true))
         .orElseThrow(EnrollmentApplicationNotFoundException::new);
   }
 }
