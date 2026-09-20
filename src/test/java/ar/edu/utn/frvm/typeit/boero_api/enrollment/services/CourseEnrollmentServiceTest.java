@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,14 +34,41 @@ class CourseEnrollmentServiceTest {
   void listOwn_returnsEmptyPageWithoutStudentRecord() {
     final Pageable pageable = PageRequest.of(0, 20);
     when(courseEnrollmentRepository.findByInstitutionIdAndStudentPersonId(
-            INSTITUTION_ID, PERSON_ID, pageable))
+            INSTITUTION_ID, PERSON_ID, null, null, pageable))
         .thenReturn(Page.empty(pageable));
 
-    final var response = service.listOwn(INSTITUTION_ID, PERSON_ID, pageable);
+    final var response = service.listOwn(INSTITUTION_ID, PERSON_ID, null, null, pageable);
 
     assertThat(response.items()).isEmpty();
     assertThat(response.totalItems()).isZero();
     verify(courseEnrollmentRepository)
-        .findByInstitutionIdAndStudentPersonId(INSTITUTION_ID, PERSON_ID, pageable);
+        .findByInstitutionIdAndStudentPersonId(INSTITUTION_ID, PERSON_ID, null, null, pageable);
+  }
+
+  @Test
+  @DisplayName("Should forward status filters when listing own enrollments")
+  void listOwn_forwardsStatusFilters() {
+    final Pageable pageable = PageRequest.of(0, 20);
+    when(courseEnrollmentRepository.findByInstitutionIdAndStudentPersonId(
+            eq(INSTITUTION_ID),
+            eq(PERSON_ID),
+            eq(
+                ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus
+                    .ENROLLED),
+            eq(
+                ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.AcademicEnrollmentStatus
+                    .IN_PROGRESS),
+            eq(pageable)))
+        .thenReturn(Page.empty(pageable));
+
+    final var response =
+        service.listOwn(
+            INSTITUTION_ID,
+            PERSON_ID,
+            ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus.ENROLLED,
+            ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.AcademicEnrollmentStatus.IN_PROGRESS,
+            pageable);
+
+    assertThat(response.items()).isEmpty();
   }
 }

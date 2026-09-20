@@ -1,11 +1,13 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces;
 
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.CourseEnrollment;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.AcademicEnrollmentStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus;
 import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -45,10 +47,14 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
         "courseClass"
       })
   @Query(
-      "SELECT enrollment FROM CourseEnrollment enrollment WHERE enrollment.institution.id = :institutionId AND enrollment.student.person.id = :personId")
+      "SELECT enrollment FROM CourseEnrollment enrollment WHERE enrollment.institution.id = :institutionId AND enrollment.student.person.id = :personId"
+          + " AND (:status IS NULL OR enrollment.status = :status)"
+          + " AND (:academicStatus IS NULL OR enrollment.academicStatus = :academicStatus)")
   Page<CourseEnrollment> findByInstitutionIdAndStudentPersonId(
       @Param("institutionId") UUID institutionId,
       @Param("personId") UUID personId,
+      @Param("status") @Nullable CourseEnrollmentStatus status,
+      @Param("academicStatus") @Nullable AcademicEnrollmentStatus academicStatus,
       Pageable pageable);
 
   @EntityGraph(
@@ -62,7 +68,15 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
         "course.instrument",
         "courseClass"
       })
-  Page<CourseEnrollment> findByInstitution_Id(UUID institutionId, Pageable pageable);
+  @Query(
+      "SELECT enrollment FROM CourseEnrollment enrollment WHERE enrollment.institution.id = :institutionId"
+          + " AND (:status IS NULL OR enrollment.status = :status)"
+          + " AND (:academicStatus IS NULL OR enrollment.academicStatus = :academicStatus)")
+  Page<CourseEnrollment> findByInstitution_Id(
+      UUID institutionId,
+      @Param("status") @Nullable CourseEnrollmentStatus status,
+      @Param("academicStatus") @Nullable AcademicEnrollmentStatus academicStatus,
+      Pageable pageable);
 
   @Query(
       "SELECT enrollment FROM CourseEnrollment enrollment WHERE enrollment.institution.id = :institutionId AND enrollment.student.id = :studentId AND enrollment.course.id = :courseId AND enrollment.status = :status")
