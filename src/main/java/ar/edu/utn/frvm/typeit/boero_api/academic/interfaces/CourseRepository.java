@@ -165,9 +165,13 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
         "academicYear",
         "instrument"
       })
+  // NOTE: the instrument search uses an explicit LEFT JOIN. Navigating
+  // course.instrument.name directly would add an implicit INNER JOIN and silently
+  // exclude every course without instrument, even when :search IS NULL.
   @Query(
       """
       SELECT course FROM Course course
+      LEFT JOIN course.instrument instrument
       WHERE course.institution.id = :institutionId
         AND course.studyPlanSpace.studyPlan.trainingPath.id = :trainingPathId
         AND course.academicYear.id = :academicYearId
@@ -175,7 +179,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
         AND course.deletedAt IS NULL
         AND (:search IS NULL OR UNACCENT_LOWER(course.studyPlanSpace.academicSpace.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
           OR UNACCENT_LOWER(course.studyPlanSpace.studyPlan.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
-          OR UNACCENT_LOWER(COALESCE(course.instrument.name, '')) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%')))
+          OR UNACCENT_LOWER(COALESCE(instrument.name, '')) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%')))
       ORDER BY course.studyPlanSpace.academicLevel.displayOrder NULLS LAST,
                course.studyPlanSpace.academicSpace.name,
                course.id
