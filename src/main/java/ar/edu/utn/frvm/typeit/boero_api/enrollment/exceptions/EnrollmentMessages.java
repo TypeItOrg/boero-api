@@ -15,6 +15,8 @@ public final class EnrollmentMessages {
       "Ya existe una solicitud de inscripción activa para ese trayecto formativo.";
   public static final String ATTACHMENT_ID_NOT_FOUND = "No se encontró el archivo adjunto con ID ";
   public static final String ACADEMIC_YEAR_ID_NOT_FOUND = "No se encontró el ciclo lectivo con ID ";
+  public static final String ACADEMIC_YEAR_AMBIGUOUS =
+      "La institución tiene más de un ciclo lectivo activo. Contactá a la administración.";
   public static final String INSTRUMENT_ID_NOT_FOUND = "Instrumento no encontrado: ";
   public static final String SPACE_ID_NOT_FOUND = "Espacio de plan de estudio no encontrado: ";
   public static final String APPLICANT_REQUIRED = "Los datos del aspirante son obligatorios";
