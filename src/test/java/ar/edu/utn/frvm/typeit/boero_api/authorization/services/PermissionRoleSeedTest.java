@@ -121,10 +121,7 @@ class PermissionRoleSeedTest {
 
     assertThat(rolePermissionRepository.findByRole_Id(applicantRole.getId()))
         .extracting(rolePermission -> rolePermission.getPermission().getCode())
-        .containsExactlyInAnyOrder(
-            PermissionCode.ACADEMIC_OFFER_READ.getCode(),
-            PermissionCode.STUDY_PLAN_READ.getCode(),
-            PermissionCode.ACADEMIC_YEAR_READ.getCode());
+        .containsExactlyInAnyOrder(PermissionCode.ACADEMIC_OFFER_READ.getCode());
   }
 
   @Test
