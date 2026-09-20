@@ -125,14 +125,11 @@ public interface EnrollmentApplicationRepository
   Optional<EnrollmentApplication> findByIdAndInstitutionId(
       @Param("institutionId") UUID institutionId, @Param("applicationId") UUID applicationId);
 
+  // NOTE: no @EntityGraph here. Combining PESSIMISTIC_WRITE with a fetch graph
+  // makes Hibernate 7 fail with UnknownTableReference for the @OneToOne(mappedBy)
+  // associations (educationBackground, healthInclusion, ...). Associations load
+  // lazily inside the caller's transaction instead.
   @Lock(LockModeType.PESSIMISTIC_WRITE)
-  @EntityGraph(
-      attributePaths = {
-        "institution",
-        "applicantPerson",
-        "studyPlan",
-        "academicYear",
-      })
   @Query(
       "SELECT application FROM EnrollmentApplication application "
           + "WHERE application.institution.id = :institutionId "
