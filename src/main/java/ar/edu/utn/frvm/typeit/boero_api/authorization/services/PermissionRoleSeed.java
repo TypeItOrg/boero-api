@@ -45,7 +45,8 @@ public class PermissionRoleSeed implements ApplicationRunner {
 
   private static final Map<SystemRoleCode, Set<PermissionCode>> INSTITUTIONAL_ROLE_PERMISSIONS =
       Map.of(
-          SystemRoleCode.APPLICANT, EnumSet.of(PermissionCode.ACADEMIC_OFFER_READ),
+          SystemRoleCode.APPLICANT,
+          EnumSet.of(PermissionCode.ACADEMIC_OFFER_READ),
           SystemRoleCode.STUDENT,
           EnumSet.of(PermissionCode.STUDY_PLAN_READ, PermissionCode.ACADEMIC_YEAR_READ),
           SystemRoleCode.ADMINISTRATIVE,

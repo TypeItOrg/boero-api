@@ -41,4 +41,9 @@ public class CourseClass extends Auditable {
   public static CourseClass create(final Institution institution, final Course course) {
     return CourseClass.builder().institution(institution).course(course).build();
   }
+
+  public String displayName() {
+    final String value = id.toString();
+    return "Clase " + value.substring(value.length() - 8);
+  }
 }

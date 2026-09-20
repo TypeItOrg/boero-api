@@ -1,27 +1,52 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads;
 
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplicationCourse;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.UUID;
 
+@Schema(
+    requiredProperties = {
+      "applicationId",
+      "applicationCourse",
+      "hasCapacity",
+      "applicationCourseId",
+      "courseId",
+      "waitlistNumber",
+      "applicantName",
+      "applicantDocumentNumber",
+      "requestedAt",
+      "waitlistedAt",
+      "originalReason",
+      "currentSituation",
+      "preferredShift",
+      "preferredTeacherId"
+    })
 public record CourseWaitlistEntryResponse(
+    UUID applicationId,
+    EnrollmentApplicationCourseResponse applicationCourse,
+    boolean hasCapacity,
     UUID applicationCourseId,
     UUID courseId,
     Integer waitlistNumber,
     String applicantName,
     String applicantDocumentNumber,
-    Instant requestedAt,
+    @Schema(nullable = true) Instant requestedAt,
     Instant waitlistedAt,
-    String originalReason,
+    @Schema(nullable = true) String originalReason,
     String currentSituation,
-    String preferredShift,
-    UUID preferredTeacherId) {
+    @Schema(nullable = true) String preferredShift,
+    @Schema(nullable = true) UUID preferredTeacherId) {
 
-  public static CourseWaitlistEntryResponse from(final EnrollmentApplicationCourse selection) {
+  public static CourseWaitlistEntryResponse from(
+      final EnrollmentApplicationCourse selection, final boolean hasCapacity) {
     final var application = selection.getEnrollmentApplication();
     final var person = application.getApplicantPerson();
     final var preference = application.getPreference();
     return new CourseWaitlistEntryResponse(
+        application.getId(),
+        EnrollmentApplicationCourseResponse.from(selection),
+        hasCapacity,
         selection.getId(),
         selection.getCourse().getId(),
         selection.getWaitlistNumber(),
