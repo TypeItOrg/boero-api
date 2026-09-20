@@ -2,4 +2,6 @@
 *.sh text eol=lf
 *.bat text eol=crlf
 *.jar binary
-*.sql -linguist-detectable
+
+* -linguist-detectable
+*.java linguist-detectable
