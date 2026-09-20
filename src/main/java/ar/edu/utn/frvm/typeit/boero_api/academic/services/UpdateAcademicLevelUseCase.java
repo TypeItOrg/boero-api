@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicLevel;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicConflictException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicIntegrityViolationTranslator;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicLevelNotFoundException;
@@ -7,7 +8,6 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicLevelRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicLevelResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.UpdateAcademicLevelRequest;
-import ar.edu.utn.frvm.typeit.boero_api.academic.validation.AcademicNameNormalizer;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -28,10 +28,7 @@ public class UpdateAcademicLevelUseCase {
             .findByIdAndStudyPlan_Institution_Id(id, institutionId)
             .orElseThrow(AcademicLevelNotFoundException::new);
     final var plan = studyPlanDraftGuard.lock(institutionId, level.getStudyPlan().getId());
-    final var name = AcademicNameNormalizer.display(request.name());
-    if (academicLevelRepository.existsByNormalizedNameAndIdNot(plan.getId(), name, id)) {
-      throw AcademicConflictException.forField("name", AcademicMessages.DUPLICATE_NAME);
-    }
+    final var name = AcademicLevel.derivedName(request.displayOrder());
     if (academicLevelRepository.existsByStudyPlan_IdAndDisplayOrderAndIdNot(
         plan.getId(), request.displayOrder(), id)) {
       throw AcademicConflictException.forField("displayOrder", AcademicMessages.DUPLICATE_ORDER);

@@ -53,6 +53,10 @@ public class AcademicLevel extends Auditable {
   @Column(length = 1000)
   private String description;
 
+  public static String derivedName(final int displayOrder) {
+    return AcademicNameNormalizer.display("Nivel " + displayOrder);
+  }
+
   public static AcademicLevel create(
       final StudyPlan studyPlan,
       final String name,
