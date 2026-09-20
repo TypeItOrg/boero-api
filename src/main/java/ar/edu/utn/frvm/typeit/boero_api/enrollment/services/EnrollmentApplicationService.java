@@ -410,8 +410,10 @@ public class EnrollmentApplicationService {
             application.addSelectedSpace(selectedSpace);
           }
         }
-      } else if (data.getCourses() != null
-          && courseSelectionsChanged(application, data.getCourses())) {
+      }
+
+      // Existing drafts can retain a legacy study plan and still select concrete courses.
+      if (data.getCourses() != null && courseSelectionsChanged(application, data.getCourses())) {
         updateCourseSelections(application, data.getCourses());
       }
     }
