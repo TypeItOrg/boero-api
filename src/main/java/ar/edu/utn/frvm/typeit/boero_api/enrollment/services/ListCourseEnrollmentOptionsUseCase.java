@@ -15,6 +15,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidati
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.CourseIndividualSlotRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentAssignmentOptionsResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentClassOptionResponse;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentTeacherOptionResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentDayOptionResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentScheduleOptionResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseIndividualSlotOptionResponse;
@@ -87,12 +88,18 @@ public class ListCourseEnrollmentOptionsUseCase {
                                               schedule.getId(), List.of())))
                               .toList()))
               .toList();
+      final var classTeachers = teachers.getOrDefault(courseClass.getId(), List.of());
       final var teacherIds =
-          teachers.getOrDefault(courseClass.getId(), List.of()).stream()
-              .map(teacher -> teacher.getPerson().getId())
+          classTeachers.stream().map(teacher -> teacher.getPerson().getId()).toList();
+      final var teacherOptions =
+          classTeachers.stream()
+              .map(
+                  teacher ->
+                      CourseEnrollmentTeacherOptionResponse.from(teacher.getPerson()))
               .toList();
       classOptions.add(
-          new CourseEnrollmentClassOptionResponse(courseClass.getId(), teacherIds, dayOptions));
+          new CourseEnrollmentClassOptionResponse(
+              courseClass.getId(), teacherIds, teacherOptions, dayOptions));
     }
 
     return new CourseEnrollmentAssignmentOptionsResponse(
