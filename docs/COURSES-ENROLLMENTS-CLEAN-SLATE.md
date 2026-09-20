@@ -23,23 +23,34 @@ pg_dump --format=custom --file=boero-dev-before-courses-reset.dump "$DATABASE_UR
 
 ## Dependencias que se pueden reiniciar
 
-En una transacción, y únicamente sobre la base de desarrollo confirmada, eliminar en este orden los datos operativos incompatibles:
+El bloque omite las tablas que todavía no existen antes de aplicar la migración. En una transacción, y únicamente sobre la base de desarrollo confirmada, eliminar en este orden los datos operativos incompatibles:
 
 ```sql
 BEGIN;
 
-DELETE FROM course_enrollment_schedules;
-DELETE FROM course_enrollment_histories;
-DELETE FROM enrollment_application_course_assignment_snapshots;
-DELETE FROM course_enrollments;
-DELETE FROM course_individual_slots;
-DELETE FROM enrollment_application_courses;
-DELETE FROM course_waitlist_sequences;
-DELETE FROM course_class_teachers;
-DELETE FROM course_class_schedules;
-DELETE FROM course_class_days;
-DELETE FROM course_classes;
-DELETE FROM courses;
+DO $$
+DECLARE table_name text;
+BEGIN
+    FOREACH table_name IN ARRAY ARRAY[
+        'course_enrollment_schedules',
+        'course_enrollment_histories',
+        'enrollment_application_course_assignment_snapshots',
+        'course_enrollments',
+        'course_individual_slots',
+        'enrollment_application_courses',
+        'course_waitlist_sequences',
+        'course_class_teachers',
+        'course_class_schedules',
+        'course_class_days',
+        'course_classes',
+        'courses'
+    ] LOOP
+        IF to_regclass('public.' || table_name) IS NOT NULL THEN
+            EXECUTE format('DELETE FROM public.%I', table_name);
+        END IF;
+    END LOOP;
+END $$;
+
 
 COMMIT;
 ```
