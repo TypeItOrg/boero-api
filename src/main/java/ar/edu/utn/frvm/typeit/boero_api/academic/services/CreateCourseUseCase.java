@@ -61,16 +61,10 @@ public class CreateCourseUseCase {
     if (year.getStatus() != AcademicYearStatus.ACTIVE) {
       throw new AcademicConflictException(AcademicMessages.COURSE_YEAR_NOT_ACTIVE);
     }
-    if (selection.studyPlanSpace() == null
-        && courseRepository.existsByInstitutionAndSpaceAndYear(
-            institutionId, space.getId(), year.getId())) {
-      throw new AcademicConflictException(AcademicMessages.COURSE_ALREADY_EXISTS);
-    }
     try {
       final var course =
-          selection.studyPlanSpace() == null
-              ? Course.create(institution, plan, space, year)
-              : Course.create(institution, selection.studyPlanSpace(), year, instrument);
+          Course.create(institution, selection.studyPlanSpace(), year, instrument);
+      courseRepository.save(course);
       courseClassAssembler.assemble(institution, course, space.getFormat(), request.classes());
       courseRepository.flush();
       return CourseResponse.from(course, courseTreeReader.read(course.getId()));
@@ -112,12 +106,13 @@ public class CreateCourseUseCase {
     if (matches.size() == 1) {
       return new CourseSelection(plan, space, matches.getFirst());
     }
-    if (!studyPlanSpaceRepository.existsByStudyPlan_IdAndAcademicSpace_Id(
-        plan.getId(), space.getId())) {
+    if (matches.isEmpty()
+        && !studyPlanSpaceRepository.existsByStudyPlan_IdAndAcademicSpace_Id(
+            plan.getId(), space.getId())) {
       throw new AcademicConflictException(AcademicMessages.COURSE_SPACE_NOT_IN_PLAN);
     }
 
-    return new CourseSelection(plan, space, null);
+    throw new AcademicConflictException(AcademicMessages.COURSE_SPACE_NOT_IN_PLAN);
   }
 
   private Instrument resolveInstrument(final UUID institutionId, final UUID instrumentId) {
