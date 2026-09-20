@@ -6,6 +6,8 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPermission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.AcademicEnrollmentStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentHistoryResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CreateManualCourseEnrollmentRequest;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -38,17 +41,23 @@ public class CourseEnrollmentController {
   @GetMapping(version = Version.V1)
   @RequiresPermission(PermissionCode.COURSE_ENROLLMENT_READ)
   public PaginatedResponse<CourseEnrollmentResponse> list(
-      @PathVariable final UUID institutionId, @PageableDefault(size = 20) final Pageable pageable) {
-    return courseEnrollmentService.listInstitutional(institutionId, pageable);
+      @PathVariable final UUID institutionId,
+      @RequestParam(required = false) final CourseEnrollmentStatus status,
+      @RequestParam(required = false) final AcademicEnrollmentStatus academicStatus,
+      @PageableDefault(size = 20) final Pageable pageable) {
+    return courseEnrollmentService.listInstitutional(institutionId, status, academicStatus, pageable);
   }
 
   @GetMapping(value = "/mine", version = Version.V1)
   public PaginatedResponse<CourseEnrollmentResponse> listMine(
       @PathVariable final UUID institutionId,
       final Authentication authentication,
+      @RequestParam(required = false) final CourseEnrollmentStatus status,
+      @RequestParam(required = false) final AcademicEnrollmentStatus academicStatus,
       @PageableDefault(size = 20) final Pageable pageable) {
     final var principal = (JwtAuthenticatedUser) authentication.getPrincipal();
-    return courseEnrollmentService.listOwn(institutionId, principal.personId(), pageable);
+    return courseEnrollmentService.listOwn(
+        institutionId, principal.personId(), status, academicStatus, pageable);
   }
 
   @GetMapping(value = "/{enrollmentId}", version = Version.V1)

@@ -48,6 +48,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Student;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.StudentRepository;
+import org.jspecify.annotations.Nullable;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -271,16 +272,25 @@ public class CourseEnrollmentService {
 
   @Transactional(readOnly = true)
   public PaginatedResponse<CourseEnrollmentResponse> listInstitutional(
-      final UUID institutionId, final Pageable pageable) {
-    return toPageResponse(courseEnrollmentRepository.findByInstitution_Id(institutionId, pageable));
+      final UUID institutionId,
+      final @Nullable CourseEnrollmentStatus status,
+      final @Nullable AcademicEnrollmentStatus academicStatus,
+      final Pageable pageable) {
+    return toPageResponse(
+        courseEnrollmentRepository.findByInstitution_Id(
+            institutionId, status, academicStatus, pageable));
   }
 
   @Transactional(readOnly = true)
   public PaginatedResponse<CourseEnrollmentResponse> listOwn(
-      final UUID institutionId, final UUID personId, final Pageable pageable) {
+      final UUID institutionId,
+      final UUID personId,
+      final @Nullable CourseEnrollmentStatus status,
+      final @Nullable AcademicEnrollmentStatus academicStatus,
+      final Pageable pageable) {
     return toPageResponse(
         courseEnrollmentRepository.findByInstitutionIdAndStudentPersonId(
-            institutionId, personId, pageable));
+            institutionId, personId, status, academicStatus, pageable));
   }
 
   @Transactional(readOnly = true)
