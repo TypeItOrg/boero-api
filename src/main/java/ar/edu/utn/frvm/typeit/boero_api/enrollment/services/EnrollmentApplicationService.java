@@ -204,17 +204,17 @@ public class EnrollmentApplicationService {
     final var openApplications =
         applicationRepository.findOpenByApplicantAndContext(
             personId, institutionId, trainingPath.getId(), academicYear.getId());
-    if (!openApplications.isEmpty()) {
-      final var draft =
-          openApplications.stream()
-              .filter(application -> application.getStatus() == EnrollmentApplicationStatus.DRAFT)
-              .findFirst();
-      if (draft.isPresent()) {
-        return EnrollmentApplicationResponse.from(draft.get());
-      }
-
-      throw new ActiveEnrollmentApplicationExistsException();
+    final var draft =
+        openApplications.stream()
+            .filter(application -> application.getStatus() == EnrollmentApplicationStatus.DRAFT)
+            .findFirst();
+    if (draft.isPresent()) {
+      return EnrollmentApplicationResponse.from(draft.get());
     }
+    // A SUBMITTED application no longer blocks a new draft for the same training
+    // path: blocking applies per course (requested selections and active enrollments)
+    // when courses are chosen or submitted, so applicants are never locked out for
+    // forgetting a course.
 
     final EnrollmentPeriod period =
         periodRepository
@@ -239,10 +239,16 @@ public class EnrollmentApplicationService {
                       EnrollmentMessages.ACADEMIC_YEAR_ID_NOT_FOUND + academicYearId));
     }
 
-    return academicYearRepository
-        .findByInstitutionIdAndStatus(institutionId, AcademicYearStatus.ACTIVE)
-        .orElseThrow(
-            () -> new EnrollmentValidationException(EnrollmentMessages.ACADEMIC_YEAR_ID_NOT_FOUND));
+    final var activeYears =
+        academicYearRepository.findAllByInstitutionIdAndStatus(
+            institutionId, AcademicYearStatus.ACTIVE);
+    if (activeYears.isEmpty()) {
+      throw new EnrollmentValidationException(EnrollmentMessages.ACADEMIC_YEAR_ID_NOT_FOUND);
+    }
+    if (activeYears.size() > 1) {
+      throw new EnrollmentValidationException(EnrollmentMessages.ACADEMIC_YEAR_AMBIGUOUS);
+    }
+    return activeYears.getFirst();
   }
 
   @Transactional
@@ -390,15 +396,11 @@ public class EnrollmentApplicationService {
                 application.getInstitution().getId(), application, data);
 
         if (!effectiveStudyPlan.getId().equals(application.getStudyPlan().getId())) {
-          boolean hasOtherActiveApplication =
-              applicationRepository
-                  .findActiveByApplicantPersonIdAndTrainingPathId(
-                      personId, effectiveStudyPlan.getTrainingPath().getId())
-                  .stream()
-                  .anyMatch(other -> !other.getId().equals(applicationId));
-
-          if (hasOtherActiveApplication) {
-            throw new ActiveEnrollmentApplicationExistsException();
+          // Changing plans only conflicts when a selected course is already requested
+          // or enrolled through another application; the per-course availability
+          // check below enforces that instead of blocking by training path.
+          for (final var selection : application.getCourseSelections()) {
+            validateCourseSelectionAvailability(application, selection.getCourse().getId());
           }
 
           application.changeStudyPlan(effectiveStudyPlan);
