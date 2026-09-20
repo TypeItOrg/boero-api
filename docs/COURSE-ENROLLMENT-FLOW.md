@@ -4,6 +4,8 @@ Las solicitudes nuevas se inician por trayecto y ciclo lectivo. El postulante o 
 
 El catálogo informa disponibilidad actual, sin reservar cupos. Una advertencia de falta de cupos permite continuar. Los períodos individuales se generan al crear los horarios y se consultan sin escrituras. Los cursos grupales usan el horario de la clase sin período individual.
 
+La instrumentalidad del espacio puede modificarse cuando todos sus cursos están eliminados lógicamente. Los cursos no eliminados, aunque estén inactivos, mantienen el bloqueo. Los cursos históricos conservan su instrumento y solo pueden restaurarse si este coincide con la instrumentalidad actual del espacio. Esta regla se valida en la aplicación y en PostgreSQL mediante `20260920040607__allow_instrumental_changes_after_course_deletion.sql`. El formato individual o grupal conserva su restricción mientras existan cursos, incluidos los eliminados, porque determina la estructura de sus horarios históricos.
+
 ## Resolución y estados
 
 | Entidad | Transición | Responsable y validaciones |
