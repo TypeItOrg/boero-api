@@ -9,6 +9,8 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicYearNotFound
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicYearStatusRequest;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CourseClosureService;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentInstitutionLock;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -21,10 +23,14 @@ public class UpdateAcademicYearStatusUseCase {
 
   private final AcademicYearRepository academicYearRepository;
   private final CourseRepository courseRepository;
+  private final CourseClosureService courseClosureService;
+
+  private final EnrollmentInstitutionLock enrollmentInstitutionLock;
 
   @Transactional
   public void execute(
       final UUID institutionId, final UUID id, final AcademicYearStatusRequest request) {
+    enrollmentInstitutionLock.lock(institutionId);
     final var academicYear =
         academicYearRepository
             .findByIdAndInstitution_IdForUpdate(id, institutionId)
@@ -49,6 +55,7 @@ public class UpdateAcademicYearStatusUseCase {
                 id, institutionId);
         for (final var course : courses) {
           course.close();
+          courseClosureService.close(institutionId, course.getId(), null);
         }
       }
       academicYearRepository.flush();

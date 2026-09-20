@@ -24,6 +24,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplicatio
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplicationCourse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplicationSpace;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationCourseStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
@@ -57,7 +58,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -65,7 +66,6 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
 import org.jspecify.annotations.Nullable;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -81,23 +81,26 @@ public class EnrollmentApplicationService {
   private final EnrollmentPeriodRepository periodRepository;
   private final PersonRepository personRepository;
   private final StudyPlanRepository studyPlanRepository;
-  @Autowired private TrainingPathRepository trainingPathRepository;
-  @Autowired private CourseRepository courseRepository;
-  @Autowired private CourseClassTeacherRepository courseClassTeacherRepository;
-  @Autowired private EnrollmentApplicationCourseRepository applicationCourseRepository;
-  @Autowired private CourseEnrollmentRepository courseEnrollmentRepository;
-  @Autowired private StudentRepository studentRepository;
+  private final TrainingPathRepository trainingPathRepository;
+  private final CourseRepository courseRepository;
+  private final CourseClassTeacherRepository courseClassTeacherRepository;
+  private final EnrollmentApplicationCourseRepository applicationCourseRepository;
+  private final CourseEnrollmentRepository courseEnrollmentRepository;
+  private final StudentRepository studentRepository;
   private final AcademicYearRepository academicYearRepository;
   private final StudyPlanSpaceRepository studyPlanSpaceRepository;
   private final InstrumentRepository instrumentRepository;
   private final EnrollmentDraftDataValidator enrollmentDraftDataValidator;
-  @Autowired private EnrollmentApplicationCourseApprovalService applicationCourseApprovalService;
+  private final EnrollmentApplicationCourseApprovalService applicationCourseApprovalService;
   private final BusinessDateProvider businessDateProvider;
   private final Clock clock;
+  private final EnrollmentInstitutionLock enrollmentInstitutionLock;
 
   @Transactional
   public EnrollmentApplicationResponse startOrGetApplication(
       UUID institutionId, UUID personId, StartEnrollmentApplicationRequest request) {
+
+    enrollmentInstitutionLock.lock(institutionId);
 
     Person person =
         personRepository
@@ -110,75 +113,7 @@ public class EnrollmentApplicationService {
       return startByTrainingPath(institutionId, personId, person, request);
     }
 
-    // Legacy path-based-on-plan flow retained while existing clients migrate.
-    Optional<EnrollmentApplication> existingDraft =
-        applicationRepository
-            .findByApplicantPersonIdAndStudyPlanIdAndAcademicYearIdAndStatusAndDeletedAtIsNull(
-                personId,
-                request.getStudyPlanId(),
-                request.getAcademicYearId(),
-                EnrollmentApplicationStatus.DRAFT)
-            .filter(app -> app.getInstitution().getId().equals(institutionId))
-            .filter(app -> app.getStudyPlan().getInstitution().getId().equals(institutionId));
-
-    if (existingDraft.isPresent()) {
-      return EnrollmentApplicationResponse.from(existingDraft.get());
-    }
-
-    StudyPlan requestedStudyPlan =
-        studyPlanRepository
-            .findAvailableOfferById(
-                institutionId, request.getStudyPlanId(), businessDateProvider.today())
-            .orElseThrow(
-                () ->
-                    new EnrollmentValidationException(
-                        EnrollmentMessages.ENROLLMENT_APPLICATION_TRAINING_PATH_INVALID));
-
-    // 2. Validar período de inscripción abierto
-    EnrollmentPeriod period =
-        periodRepository
-            .findActivePeriod(
-                institutionId,
-                request.getAcademicYearId(),
-                EnrollmentPeriodStatus.OPEN,
-                clock.instant())
-            .orElseThrow(EnrollmentPeriodClosedException::new);
-
-    // 3. Una única inscripción viva por trayecto: si ya tiene una solicitud
-    // no cancelada/rechazada en el trayecto del plan pedido (aunque sea para
-    // otro plan de estudio o ciclo lectivo), no se permite iniciar otra.
-    boolean hasActiveApplicationInTrainingPath =
-        !applicationRepository
-            .findActiveByApplicantPersonIdAndTrainingPathId(
-                personId, requestedStudyPlan.getTrainingPath().getId())
-            .isEmpty();
-
-    if (hasActiveApplicationInTrainingPath) {
-      throw new ActiveEnrollmentApplicationExistsException();
-    }
-
-    AcademicYear academicYear =
-        academicYearRepository
-            .findByIdAndInstitution_Id(request.getAcademicYearId(), institutionId)
-            .orElseThrow(
-                () ->
-                    new EnrollmentValidationException(
-                        EnrollmentMessages.ACADEMIC_YEAR_ID_NOT_FOUND
-                            + request.getAcademicYearId()));
-
-    EnrollmentApplication newApplication =
-        EnrollmentApplication.builder()
-            .institution(period.getInstitution())
-            .applicantPerson(person)
-            .studyPlan(requestedStudyPlan)
-            .academicYear(academicYear)
-            .enrollmentPeriod(period)
-            .status(EnrollmentApplicationStatus.DRAFT)
-            .build();
-
-    EnrollmentApplication saved = saveAndFlush(newApplication);
-
-    return EnrollmentApplicationResponse.from(saved);
+    throw new EnrollmentValidationException(EnrollmentMessages.COURSE_SELECTION_REQUIRED);
   }
 
   private EnrollmentApplicationResponse startByTrainingPath(
@@ -254,6 +189,11 @@ public class EnrollmentApplicationService {
   @Transactional
   public EnrollmentApplicationResponse updateDraft(
       UUID personId, UUID applicationId, UpdateEnrollmentDraftRequest request) {
+    final var institutionId =
+        applicationRepository
+            .findOwnedInstitutionId(applicationId, personId)
+            .orElseThrow(() -> new EnrollmentApplicationNotFoundException(applicationId));
+    enrollmentInstitutionLock.lock(institutionId);
     EnrollmentApplication application =
         applicationRepository
             .findOwnedForUpdate(applicationId, personId)
@@ -490,7 +430,6 @@ public class EnrollmentApplicationService {
           EnrollmentMessages.ENROLLMENT_APPLICATION_SPACES_DUPLICATED);
     }
 
-    final Set<UUID> requestedStudyPlanSpaceIds = new HashSet<>();
     final Map<UUID, EnrollmentApplicationCourse> existingByCourseId =
         application.getCourseSelections().stream()
             .collect(
@@ -508,7 +447,8 @@ public class EnrollmentApplicationService {
                   () ->
                       new EnrollmentValidationException(
                           EnrollmentMessages.SPACE_ID_NOT_FOUND + requestedSelection.courseId()));
-      if (!course.isActive()
+      if (!course.getAcademicYear().getId().equals(application.getAcademicYear().getId())
+          || !course.isActive()
           || course.getStudyPlanSpace() == null
           || !course
               .getStudyPlanSpace()
@@ -520,10 +460,6 @@ public class EnrollmentApplicationService {
             EnrollmentMessages.ENROLLMENT_APPLICATION_TRAINING_PATH_INVALID);
       }
       validateCourseSelectionAvailability(application, course.getId());
-      if (!requestedStudyPlanSpaceIds.add(course.getStudyPlanSpace().getId())) {
-        throw new EnrollmentValidationException(
-            EnrollmentMessages.ENROLLMENT_APPLICATION_SPACES_DUPLICATED);
-      }
 
       final var preferredTeacher =
           requestedSelection.preferredTeacherId() == null
@@ -568,7 +504,7 @@ public class EnrollmentApplicationService {
     }
     for (final CourseSelectionDto requestedSelection : requestedSelections) {
       if (!existingPreferredTeachers.containsKey(requestedSelection.courseId())
-          || !java.util.Objects.equals(
+          || !Objects.equals(
               existingPreferredTeachers.get(requestedSelection.courseId()),
               requestedSelection.preferredTeacherId())) {
         return true;
@@ -580,19 +516,15 @@ public class EnrollmentApplicationService {
 
   private void validateCourseSelectionAvailability(
       final EnrollmentApplication application, final UUID courseId) {
-    if (applicationCourseRepository != null
-        && applicationCourseRepository.existsBlockingCourseSelectionExcludingApplication(
-            application.getInstitution().getId(),
-            courseId,
-            application.getId(),
-            List.of(
-                EnrollmentApplicationCourseStatus.PENDING,
-                EnrollmentApplicationCourseStatus.WAITLISTED))) {
+    if (applicationCourseRepository.existsBlockingCourseSelectionExcludingApplication(
+        application.getInstitution().getId(),
+        courseId,
+        application.getId(),
+        application.getApplicantPerson().getId(),
+        List.of(
+            EnrollmentApplicationCourseStatus.PENDING,
+            EnrollmentApplicationCourseStatus.WAITLISTED))) {
       throw new EnrollmentValidationException(EnrollmentMessages.COURSE_ALREADY_REQUESTED);
-    }
-
-    if (studentRepository == null || courseEnrollmentRepository == null) {
-      return;
     }
 
     final var student =
@@ -604,7 +536,7 @@ public class EnrollmentApplicationService {
                 application.getInstitution().getId(),
                 student.get().getId(),
                 courseId,
-                ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus.ENROLLED)
+                CourseEnrollmentStatus.ENROLLED)
             .isPresent()) {
       throw new EnrollmentValidationException(EnrollmentMessages.COURSE_ALREADY_ENROLLED);
     }
@@ -615,6 +547,16 @@ public class EnrollmentApplicationService {
       return applicationRepository.saveAndFlush(application);
     } catch (DataIntegrityViolationException exception) {
       for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+        if (cause instanceof ConstraintViolationException violation
+            && "enrollment_application_courses_active_applicant_course_unique"
+                .equals(violation.getConstraintName())) {
+          throw new EnrollmentValidationException(EnrollmentMessages.COURSE_ALREADY_REQUESTED);
+        }
+        if (cause instanceof ConstraintViolationException violation
+            && "enrollment_application_courses_context_check"
+                .equals(violation.getConstraintName())) {
+          throw new EnrollmentValidationException(EnrollmentMessages.COURSE_NOT_ACTIVE);
+        }
         if (cause instanceof ConstraintViolationException violation
             && ("enrollment_apps_applicant_active_path_unique".equals(violation.getConstraintName())
                 || "enrollment_apps_applicant_active_draft_unique"
@@ -631,12 +573,22 @@ public class EnrollmentApplicationService {
 
   @Transactional
   public EnrollmentApplicationResponse cancelApplication(UUID personId, UUID applicationId) {
+    final var institutionId =
+        applicationRepository
+            .findOwnedInstitutionId(applicationId, personId)
+            .orElseThrow(() -> new EnrollmentApplicationNotFoundException(applicationId));
+    enrollmentInstitutionLock.lock(institutionId);
     EnrollmentApplication application =
         applicationRepository
             .findOwnedForUpdate(applicationId, personId)
             .orElseThrow(() -> new EnrollmentApplicationNotFoundException(applicationId));
 
     application.cancel();
+    for (final var selection : application.getCourseSelections()) {
+      if (selection.isPendingResolution()) {
+        selection.cancel(clock.instant(), personId);
+      }
+    }
     EnrollmentApplication saved = applicationRepository.save(application);
 
     return EnrollmentApplicationResponse.from(saved);
@@ -644,6 +596,11 @@ public class EnrollmentApplicationService {
 
   @Transactional
   public EnrollmentApplicationResponse submitApplication(UUID personId, UUID applicationId) {
+    final var institutionId =
+        applicationRepository
+            .findOwnedInstitutionId(applicationId, personId)
+            .orElseThrow(() -> new EnrollmentApplicationNotFoundException(applicationId));
+    enrollmentInstitutionLock.lock(institutionId);
     EnrollmentApplication application =
         applicationRepository
             .findOwnedForUpdate(applicationId, personId)
@@ -712,17 +669,11 @@ public class EnrollmentApplicationService {
       errors.put("academicBackground", EnrollmentMessages.EDUCATION_REQUIRED);
     }
 
-    // 3. Validar selección de cursos exactos o, mientras dure la transición, espacios antiguos.
+    // 3. Validar la selección de cursos concretos.
     final boolean hasCourseSelections =
         application.getCourseSelections() != null && !application.getCourseSelections().isEmpty();
-    final boolean hasLegacySpaceSelections =
-        application.getSelectedSpaces() != null && !application.getSelectedSpaces().isEmpty();
-    if (!hasCourseSelections && !hasLegacySpaceSelections) {
-      errors.put(
-          "academicSpaceSelection.studyPlanSpaceIds",
-          EnrollmentMessages.ENROLLMENT_APPLICATION_SPACES_REQUIRED);
-    } else if (!hasCourseSelections) {
-      enrollmentDraftDataValidator.validateSubmission(application);
+    if (!hasCourseSelections) {
+      errors.put("courses", EnrollmentMessages.ENROLLMENT_APPLICATION_SPACES_REQUIRED);
     }
 
     // 4. Validar preferencias
@@ -740,6 +691,24 @@ public class EnrollmentApplicationService {
     }
 
     if (application.getCourseSelections() != null && !application.getCourseSelections().isEmpty()) {
+      periodRepository
+          .findActivePeriod(
+              application.getInstitution().getId(),
+              application.getAcademicYear().getId(),
+              EnrollmentPeriodStatus.OPEN,
+              clock.instant())
+          .orElseThrow(EnrollmentPeriodClosedException::new);
+      updateCourseSelections(
+          application,
+          application.getCourseSelections().stream()
+              .map(
+                  selection ->
+                      new CourseSelectionDto(
+                          selection.getCourse().getId(),
+                          selection.getPreferredTeacher() == null
+                              ? null
+                              : selection.getPreferredTeacher().getId()))
+              .toList());
       applicationCourseApprovalService.markSubmitted(application);
     }
     application.submit();

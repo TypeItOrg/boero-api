@@ -58,7 +58,6 @@ public record EnrollmentDraftData(
   }
 
   public EnrollmentDraftData {
-    courses = courses == null ? new ArrayList<>() : courses;
     attachments = attachments == null ? new ArrayList<>() : attachments;
   }
 

@@ -8,6 +8,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.CourseEnrollmentSche
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.AcademicEnrollmentStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationCourseStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.CourseEnrollmentHistoryRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.CourseEnrollmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.CourseEnrollmentScheduleRepository;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,16 +34,18 @@ public class CourseClosureService {
   private final CourseEnrollmentHistoryRepository historyRepository;
   private final Clock clock;
 
+  private final EnrollmentInstitutionLock enrollmentInstitutionLock;
+
   @Transactional
   public void close(final UUID institutionId, final UUID courseId, final UUID authorityPersonId) {
+    enrollmentInstitutionLock.lock(institutionId);
     final var course =
         courseRepository
             .findByIdAndInstitution_IdForLifecycle(courseId, institutionId)
             .orElseThrow(CourseNotFoundException::new);
     for (final var selection :
         applicationCourseRepository.findByCourseIdAndInstitutionId(courseId, institutionId)) {
-      if (selection.getEnrollmentApplication().getStatus()
-          == ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus.DRAFT) {
+      if (selection.getEnrollmentApplication().getStatus() == EnrollmentApplicationStatus.DRAFT) {
         applicationCourseRepository.delete(selection);
       } else if (selection.getStatus() == EnrollmentApplicationCourseStatus.PENDING
           || selection.getStatus() == EnrollmentApplicationCourseStatus.WAITLISTED) {
@@ -60,9 +64,7 @@ public class CourseClosureService {
                 .findByCourseEnrollment_IdIn(
                     enrollments.stream().map(CourseEnrollment::getId).toList())
                 .stream()
-                .collect(
-                    java.util.stream.Collectors.groupingBy(
-                        schedule -> schedule.getCourseEnrollment().getId()));
+                .collect(Collectors.groupingBy(schedule -> schedule.getCourseEnrollment().getId()));
     final List<CourseEnrollmentHistory> histories = new ArrayList<>();
     for (final CourseEnrollment enrollment : enrollments) {
       final var previousAcademicStatus = enrollment.getAcademicStatus();

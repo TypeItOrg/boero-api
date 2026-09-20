@@ -141,12 +141,13 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
   @Query(
       """
       SELECT course FROM Course course
+      LEFT JOIN course.studyPlanSpace.academicLevel level
       WHERE course.institution.id = :institutionId
         AND course.studyPlanSpace.studyPlan.trainingPath.id = :trainingPathId
         AND course.academicYear.id = :academicYearId
         AND course.status = ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus.ACTIVE
         AND course.deletedAt IS NULL
-      ORDER BY course.studyPlanSpace.academicLevel.displayOrder NULLS LAST,
+      ORDER BY level.displayOrder NULLS LAST,
                course.studyPlanSpace.academicSpace.name,
                course.id
       """)
@@ -172,6 +173,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
       """
       SELECT course FROM Course course
       LEFT JOIN course.instrument instrument
+      LEFT JOIN course.studyPlanSpace.academicLevel level
       WHERE course.institution.id = :institutionId
         AND course.studyPlanSpace.studyPlan.trainingPath.id = :trainingPathId
         AND course.academicYear.id = :academicYearId
@@ -180,7 +182,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
         AND (:search IS NULL OR UNACCENT_LOWER(course.studyPlanSpace.academicSpace.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
           OR UNACCENT_LOWER(course.studyPlanSpace.studyPlan.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
           OR UNACCENT_LOWER(COALESCE(instrument.name, '')) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%')))
-      ORDER BY course.studyPlanSpace.academicLevel.displayOrder NULLS LAST,
+      ORDER BY level.displayOrder NULLS LAST,
                course.studyPlanSpace.academicSpace.name,
                course.id
       """)

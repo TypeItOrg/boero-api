@@ -95,9 +95,9 @@ public final class EnrollmentMessages {
   public static final String ENROLLMENT_APPLICATION_APPLICANT_REQUIRED =
       "Solo un postulante puede operar sobre solicitudes de inscripción.";
   public static final String ENROLLMENT_APPLICATION_SPACES_REQUIRED =
-      "Debe seleccionar al menos un espacio académico para enviar la inscripción.";
+      "Debe seleccionar al menos un curso para enviar la inscripción.";
   public static final String ENROLLMENT_APPLICATION_SPACES_DUPLICATED =
-      "No puede seleccionar más de un curso del mismo espacio curricular.";
+      "No puede seleccionar el mismo curso más de una vez.";
   public static final String PERSON_ID_NOT_FOUND = "No se encontró la persona con ID ";
   public static final String ENROLLMENT_APPLICATION_TEACHER_INVALID =
       "El docente preferido no dicta clases en el curso seleccionado.";
@@ -144,6 +144,13 @@ public final class EnrollmentMessages {
       "No existe un período de inscripción habilitado para el ciclo lectivo seleccionado.";
   public static final String REJECTION_REASON_REQUIRED =
       "Debe indicar un motivo para rechazar la solicitud.";
+
+  public static final String ACADEMIC_TRANSITION_INVALID =
+      "El resultado no es válido para el estado actual de la cursada.";
+  public static final String COURSE_CLASSES_HAVE_ENROLLMENTS =
+      "No se pueden reemplazar las clases de un curso con cursadas registradas.";
+  public static final String COURSE_SELECTION_REQUIRED =
+      "Seleccioná un trayecto y cursos para iniciar la solicitud.";
 
   private EnrollmentMessages() {}
 }

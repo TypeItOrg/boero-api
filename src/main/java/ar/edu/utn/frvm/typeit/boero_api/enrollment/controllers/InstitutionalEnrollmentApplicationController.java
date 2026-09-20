@@ -8,7 +8,9 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollApplicationCourseRequest;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationCourseResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.RejectEnrollmentApplicationCourseRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.RejectEnrollmentApplicationRequest;
@@ -100,27 +102,36 @@ public class InstitutionalEnrollmentApplicationController {
       value = "/{applicationId}/courses/{applicationCourseId}/enroll",
       version = Version.V1)
   @RequiresPermission(PermissionCode.ENROLLMENT_APPLICATION_COURSE_ENROLL)
-  public ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentResponse enrollCourse(
+  public CourseEnrollmentResponse enrollCourse(
       @PathVariable final UUID institutionId,
+      @PathVariable final UUID applicationId,
       @PathVariable final UUID applicationCourseId,
       @Valid @RequestBody final EnrollApplicationCourseRequest request,
       final Authentication authentication) {
     return courseEnrollmentService.enrollApplicationCourse(
-        institutionId, applicationCourseId, request, currentPersonId(authentication));
+        institutionId,
+        applicationId,
+        applicationCourseId,
+        request,
+        currentPersonId(authentication));
   }
 
   @PostMapping(
       value = "/{applicationId}/courses/{applicationCourseId}/reject",
       version = Version.V1)
   @RequiresPermission(PermissionCode.ENROLLMENT_APPLICATION_COURSE_REJECT)
-  public ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentApplicationCourseResponse
-      rejectCourse(
-          @PathVariable final UUID institutionId,
-          @PathVariable final UUID applicationCourseId,
-          @Valid @RequestBody final RejectEnrollmentApplicationCourseRequest request,
-          final Authentication authentication) {
+  public EnrollmentApplicationCourseResponse rejectCourse(
+      @PathVariable final UUID institutionId,
+      @PathVariable final UUID applicationId,
+      @PathVariable final UUID applicationCourseId,
+      @Valid @RequestBody final RejectEnrollmentApplicationCourseRequest request,
+      final Authentication authentication) {
     return rejectEnrollmentApplicationCourseUseCase.execute(
-        institutionId, applicationCourseId, request, currentPersonId(authentication));
+        institutionId,
+        applicationId,
+        applicationCourseId,
+        request,
+        currentPersonId(authentication));
   }
 
   private @Nullable UUID currentPersonId(final Authentication authentication) {

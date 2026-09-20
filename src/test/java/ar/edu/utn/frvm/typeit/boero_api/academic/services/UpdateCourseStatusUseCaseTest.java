@@ -17,11 +17,14 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearReposito
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseStatusRequest;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CourseClosureService;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentInstitutionLock;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,7 +59,11 @@ class UpdateCourseStatusUseCaseTest {
 
     final var useCase =
         new UpdateCourseStatusUseCase(
-            courseRepository, academicYearRepository, studyPlanRepository);
+            courseRepository,
+            academicYearRepository,
+            studyPlanRepository,
+            Mockito.mock(CourseClosureService.class),
+            Mockito.mock(EnrollmentInstitutionLock.class));
 
     assertThatThrownBy(
             () ->
@@ -83,7 +90,11 @@ class UpdateCourseStatusUseCaseTest {
 
     final var useCase =
         new UpdateCourseStatusUseCase(
-            courseRepository, academicYearRepository, studyPlanRepository);
+            courseRepository,
+            academicYearRepository,
+            studyPlanRepository,
+            Mockito.mock(CourseClosureService.class),
+            Mockito.mock(EnrollmentInstitutionLock.class));
 
     assertThatThrownBy(
             () ->

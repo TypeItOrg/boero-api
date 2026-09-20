@@ -1,12 +1,16 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads;
 
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 import lombok.Builder;
 
 @Builder
 public record StartEnrollmentApplicationRequest(
-    @Schema(nullable = true) UUID trainingPathId,
+    @NotNull(message = EnrollmentMessages.COURSE_SELECTION_REQUIRED)
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+        UUID trainingPathId,
     @Schema(nullable = true) UUID studyPlanId,
     @Schema(nullable = true) UUID academicYearId) {
   public StartEnrollmentApplicationRequest() {

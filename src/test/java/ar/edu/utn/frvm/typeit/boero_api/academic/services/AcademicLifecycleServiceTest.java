@@ -32,6 +32,8 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathReposito
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicLifecycleRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicYearStatusRequest;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.AccountType;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CourseClosureService;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentInstitutionLock;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import java.time.Clock;
 import java.time.Instant;
@@ -45,6 +47,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -234,7 +237,11 @@ class AcademicLifecycleServiceTest {
                 academicYearId, institutionId))
         .willReturn(List.of());
 
-    new UpdateAcademicYearStatusUseCase(academicYearRepository, courseRepository)
+    new UpdateAcademicYearStatusUseCase(
+            academicYearRepository,
+            courseRepository,
+            Mockito.mock(CourseClosureService.class),
+            Mockito.mock(EnrollmentInstitutionLock.class))
         .execute(
             institutionId,
             academicYearId,

@@ -4,10 +4,36 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.CourseEnrollment;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.AcademicEnrollmentStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentSource;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+@Schema(
+    requiredProperties = {
+      "id",
+      "institutionId",
+      "studentId",
+      "studentName",
+      "courseId",
+      "studyPlanSpaceId",
+      "academicSpaceName",
+      "academicLevelName",
+      "studyPlanName",
+      "trainingPathName",
+      "instrumentId",
+      "instrumentName",
+      "courseClassId",
+      "courseClassLabel",
+      "source",
+      "status",
+      "academicStatus",
+      "enrolledAt",
+      "completedAt",
+      "withdrawnAt",
+      "version",
+      "schedules"
+    })
 public record CourseEnrollmentResponse(
     UUID id,
     UUID institutionId,
@@ -16,18 +42,19 @@ public record CourseEnrollmentResponse(
     UUID courseId,
     UUID studyPlanSpaceId,
     String academicSpaceName,
-    String academicLevelName,
+    @Schema(nullable = true) String academicLevelName,
     String studyPlanName,
     String trainingPathName,
-    UUID instrumentId,
-    String instrumentName,
+    @Schema(nullable = true) UUID instrumentId,
+    @Schema(nullable = true) String instrumentName,
     UUID courseClassId,
+    String courseClassLabel,
     CourseEnrollmentSource source,
     CourseEnrollmentStatus status,
     AcademicEnrollmentStatus academicStatus,
     Instant enrolledAt,
-    Instant completedAt,
-    Instant withdrawnAt,
+    @Schema(nullable = true) Instant completedAt,
+    @Schema(nullable = true) Instant withdrawnAt,
     Long version,
     List<CourseEnrollmentScheduleResponse> schedules) {
 
@@ -51,6 +78,7 @@ public record CourseEnrollmentResponse(
         metadata.instrumentId(),
         metadata.instrumentName(),
         enrollment.getCourseClass().getId(),
+        enrollment.getCourseClass().displayName(),
         enrollment.getSource(),
         enrollment.getStatus(),
         enrollment.getAcademicStatus(),

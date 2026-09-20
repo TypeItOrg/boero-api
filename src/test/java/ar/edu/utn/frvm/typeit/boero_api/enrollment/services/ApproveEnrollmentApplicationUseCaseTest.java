@@ -30,6 +30,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -114,7 +115,9 @@ class ApproveEnrollmentApplicationUseCaseTest {
         studentRepository,
         personRepository,
         Clock.systemUTC(),
-        new BusinessDateProvider(Clock.systemUTC()));
+        new BusinessDateProvider(Clock.systemUTC()),
+        Mockito.mock(EnrollmentApplicationCourseApprovalService.class),
+        Mockito.mock(EnrollmentInstitutionLock.class));
   }
 
   private void stubApplication() {

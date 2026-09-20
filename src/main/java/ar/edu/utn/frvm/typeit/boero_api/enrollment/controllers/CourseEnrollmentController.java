@@ -14,12 +14,14 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CreateManualCourseEn
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateAcademicEnrollmentStatusRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.WithdrawCourseEnrollmentRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CourseEnrollmentService;
+import ar.edu.utn.frvm.typeit.boero_api.security.handlers.SecurityErrorMessages;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -45,7 +47,8 @@ public class CourseEnrollmentController {
       @RequestParam(required = false) final CourseEnrollmentStatus status,
       @RequestParam(required = false) final AcademicEnrollmentStatus academicStatus,
       @PageableDefault(size = 20) final Pageable pageable) {
-    return courseEnrollmentService.listInstitutional(institutionId, status, academicStatus, pageable);
+    return courseEnrollmentService.listInstitutional(
+        institutionId, status, academicStatus, pageable);
   }
 
   @GetMapping(value = "/mine", version = Version.V1)
@@ -55,7 +58,9 @@ public class CourseEnrollmentController {
       @RequestParam(required = false) final CourseEnrollmentStatus status,
       @RequestParam(required = false) final AcademicEnrollmentStatus academicStatus,
       @PageableDefault(size = 20) final Pageable pageable) {
-    final var principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    if (!(authentication.getPrincipal() instanceof JwtAuthenticatedUser principal)) {
+      throw new AccessDeniedException(SecurityErrorMessages.DEFAULT_FORBIDDEN_MESSAGE);
+    }
     return courseEnrollmentService.listOwn(
         institutionId, principal.personId(), status, academicStatus, pageable);
   }
@@ -107,6 +112,8 @@ public class CourseEnrollmentController {
   }
 
   private UUID currentPersonId(final Authentication authentication) {
-    return ((JwtAuthenticatedUser) authentication.getPrincipal()).personId();
+    return authentication.getPrincipal() instanceof JwtAuthenticatedUser principal
+        ? principal.personId()
+        : null;
   }
 }

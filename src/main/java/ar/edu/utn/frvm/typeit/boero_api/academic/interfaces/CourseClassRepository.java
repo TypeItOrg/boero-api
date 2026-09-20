@@ -12,6 +12,8 @@ import org.springframework.data.repository.query.Param;
 public interface CourseClassRepository extends JpaRepository<CourseClass, UUID> {
   List<CourseClass> findByCourse_IdOrderByIdAsc(UUID courseId);
 
+  List<CourseClass> findByInstitution_IdAndCourse_IdIn(UUID institutionId, List<UUID> courseIds);
+
   @Query(
       "SELECT courseClass FROM CourseClass courseClass WHERE courseClass.id = :id AND courseClass.course.id = :courseId AND courseClass.institution.id = :institutionId")
   Optional<CourseClass> findByIdAndCourseIdAndInstitutionId(

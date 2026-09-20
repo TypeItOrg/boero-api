@@ -28,12 +28,15 @@ public class RejectEnrollmentApplicationUseCase {
     this.applicationCourseRepository = applicationCourseRepository;
   }
 
+  private final EnrollmentInstitutionLock enrollmentInstitutionLock;
+
   @Transactional
   public EnrollmentApplicationResponse execute(
       final UUID institutionId,
       final UUID applicationId,
       final RejectEnrollmentApplicationRequest request,
       final UUID resolvedByPersonId) {
+    enrollmentInstitutionLock.lock(institutionId);
     final var application =
         enrollmentApplicationRepository
             .findByIdAndInstitutionIdForUpdate(institutionId, applicationId)

@@ -25,9 +25,9 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
 /**
- * Guards against the Hibernate 7 failure combining PESSIMISTIC_WRITE with a fetch graph
- * on EnrollmentApplication ("Unable to determine TableReference ... educationBackground"),
- * which broke the approve/reject flows with a 500.
+ * Guards against the Hibernate 7 failure combining PESSIMISTIC_WRITE with a fetch graph on
+ * EnrollmentApplication ("Unable to determine TableReference ... educationBackground"), which broke
+ * the approve/reject flows with a 500.
  */
 @DataJpaTest
 @Import(JpaAuditingTestConfig.class)
@@ -37,11 +37,13 @@ class EnrollmentApplicationLockingTest {
   @Autowired private EnrollmentApplicationRepository applicationRepository;
 
   @Test
-  @DisplayName("Should lock an application for update without resolving one-to-one table references")
+  @DisplayName(
+      "Should lock an application for update without resolving one-to-one table references")
   void findByIdAndInstitutionIdForUpdate_doesNotFailOnOneToOneAssociations() {
     Institution institution = createInstitution(entityManager, "boero-locking");
     Person person = persist(entityManager, InstitutionalTestData.person(institution, "12345678"));
-    TrainingPath trainingPath = persist(entityManager, TrainingPath.create(institution, "CAV", null));
+    TrainingPath trainingPath =
+        persist(entityManager, TrainingPath.create(institution, "CAV", null));
     AcademicYear academicYear =
         persist(
             entityManager,

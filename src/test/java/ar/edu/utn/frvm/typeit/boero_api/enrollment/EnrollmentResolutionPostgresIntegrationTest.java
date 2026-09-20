@@ -15,6 +15,8 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.MissingRejectionRe
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.RejectEnrollmentApplicationRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ApproveEnrollmentApplicationUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentApplicationCourseApprovalService;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentInstitutionLock;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.RejectEnrollmentApplicationUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
@@ -38,6 +40,7 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -55,6 +58,7 @@ import org.testcontainers.utility.DockerImageName;
 @IntegrationTest
 @Import({
   JpaAuditingTestConfig.class,
+  EnrollmentInstitutionLock.class,
   ApproveEnrollmentApplicationUseCase.class,
   RejectEnrollmentApplicationUseCase.class
 })
@@ -63,6 +67,8 @@ class EnrollmentResolutionPostgresIntegrationTest {
   @Container
   static final PostgreSQLContainer<?> POSTGRES =
       new PostgreSQLContainer<>(DockerImageName.parse("postgres:18-alpine"));
+
+  @MockitoBean private EnrollmentApplicationCourseApprovalService applicationCourseApprovalService;
 
   @Autowired private EntityManager entityManager;
   @Autowired private EnrollmentApplicationRepository enrollmentApplicationRepository;

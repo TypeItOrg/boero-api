@@ -9,20 +9,22 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassRepositor
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassScheduleRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassTeacherRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.CourseEnrollmentSchedule;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.CourseIndividualSlot;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.CourseEnrollmentScheduleRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.CourseIndividualSlotRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentAssignmentOptionsResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentClassOptionResponse;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentTeacherOptionResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentDayOptionResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentScheduleOptionResponse;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentTeacherOptionResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseIndividualSlotOptionResponse;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -39,8 +41,9 @@ public class ListCourseEnrollmentOptionsUseCase {
   private final CourseClassScheduleRepository courseClassScheduleRepository;
   private final CourseClassTeacherRepository courseClassTeacherRepository;
   private final CourseIndividualSlotRepository courseIndividualSlotRepository;
+  private final CourseEnrollmentScheduleRepository assignmentRepository;
 
-  @Transactional
+  @Transactional(readOnly = true)
   public CourseEnrollmentAssignmentOptionsResponse execute(
       final UUID institutionId, final UUID courseId) {
     final Course course =
@@ -70,6 +73,21 @@ public class ListCourseEnrollmentOptionsUseCase {
     final Map<UUID, List<CourseIndividualSlot>> slotsBySchedule =
         loadIndividualSlots(course, schedulesByDay);
 
+    final var assignments =
+        allDays.isEmpty()
+            ? List.<CourseEnrollmentSchedule>of()
+            : assignmentRepository.findActiveByDays(
+                institutionId, allDays.stream().map(day -> day.getId()).toList());
+    final var occupiedSlots =
+        assignments.stream()
+            .filter(value -> value.getIndividualSlot() != null)
+            .map(value -> value.getIndividualSlot().getId())
+            .collect(Collectors.toSet());
+    final var occupiedByDay =
+        assignments.stream()
+            .collect(
+                Collectors.groupingBy(
+                    value -> value.getSchedule().getDay().getId(), Collectors.counting()));
     final List<CourseEnrollmentClassOptionResponse> classOptions = new ArrayList<>();
     for (final var courseClass : classes) {
       final var days = daysByClass.getOrDefault(courseClass.getId(), List.of());
@@ -84,22 +102,25 @@ public class ListCourseEnrollmentOptionsUseCase {
                                   schedule ->
                                       toScheduleOption(
                                           schedule,
-                                          slotsBySchedule.getOrDefault(
-                                              schedule.getId(), List.of())))
-                              .toList()))
+                                          slotsBySchedule.getOrDefault(schedule.getId(), List.of()),
+                                          occupiedSlots))
+                              .toList(),
+                          occupiedByDay.getOrDefault(day.getId(), 0L)))
               .toList();
       final var classTeachers = teachers.getOrDefault(courseClass.getId(), List.of());
       final var teacherIds =
           classTeachers.stream().map(teacher -> teacher.getPerson().getId()).toList();
       final var teacherOptions =
           classTeachers.stream()
-              .map(
-                  teacher ->
-                      CourseEnrollmentTeacherOptionResponse.from(teacher.getPerson()))
+              .map(teacher -> CourseEnrollmentTeacherOptionResponse.from(teacher.getPerson()))
               .toList();
       classOptions.add(
           new CourseEnrollmentClassOptionResponse(
-              courseClass.getId(), teacherIds, teacherOptions, dayOptions));
+              courseClass.getId(),
+              courseClass.displayName(),
+              teacherIds,
+              teacherOptions,
+              dayOptions));
     }
 
     return new CourseEnrollmentAssignmentOptionsResponse(
@@ -121,45 +142,20 @@ public class ListCourseEnrollmentOptionsUseCase {
             .findBySchedule_IdIn(schedules.stream().map(value -> value.getId()).toList())
             .stream()
             .collect(Collectors.groupingBy(value -> value.getSchedule().getId()));
-    final List<CourseIndividualSlot> generated = new ArrayList<>();
-    for (final var schedule : schedules) {
-      if (slotsBySchedule.containsKey(schedule.getId())) {
-        continue;
-      }
-
-      final var slots = generateSlots(course, schedule);
-      slotsBySchedule.put(schedule.getId(), slots);
-      generated.addAll(slots);
-    }
-    if (!generated.isEmpty()) {
-      courseIndividualSlotRepository.saveAll(generated);
-    }
-
     return slotsBySchedule;
   }
 
-  private List<CourseIndividualSlot> generateSlots(
-      final Course course, final CourseClassSchedule schedule) {
-    final Integer durationMinutes = schedule.getDay().getPeriodDurationMinutes();
-    final int totalMinutes = schedule.durationMinutes();
-    if (durationMinutes == null || durationMinutes <= 0 || totalMinutes % durationMinutes != 0) {
-      return List.of();
-    }
-
-    final List<CourseIndividualSlot> generated = new ArrayList<>();
-    LocalTime start = schedule.getStartTime();
-    while (start.isBefore(schedule.getEndTime())) {
-      final LocalTime end = start.plusMinutes(durationMinutes);
-      generated.add(CourseIndividualSlot.create(course.getInstitution(), schedule, start, end));
-      start = end;
-    }
-
-    return generated;
-  }
-
   private CourseEnrollmentScheduleOptionResponse toScheduleOption(
-      final CourseClassSchedule schedule, final List<CourseIndividualSlot> slots) {
+      final CourseClassSchedule schedule,
+      final List<CourseIndividualSlot> slots,
+      final Set<UUID> occupiedSlots) {
     return CourseEnrollmentScheduleOptionResponse.from(
-        schedule, slots.stream().map(CourseIndividualSlotOptionResponse::from).toList());
+        schedule,
+        slots.stream()
+            .map(
+                slot ->
+                    CourseIndividualSlotOptionResponse.from(
+                        slot, !occupiedSlots.contains(slot.getId())))
+            .toList());
   }
 }

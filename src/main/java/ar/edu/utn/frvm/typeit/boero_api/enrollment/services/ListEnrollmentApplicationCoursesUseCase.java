@@ -18,6 +18,7 @@ public class ListEnrollmentApplicationCoursesUseCase {
 
   private final EnrollmentApplicationRepository applicationRepository;
   private final CourseRepository courseRepository;
+  private final CourseCapacityService capacityService;
 
   @Transactional(readOnly = true)
   public Page<EnrollmentCourseOptionResponse> execute(
@@ -35,13 +36,20 @@ public class ListEnrollmentApplicationCoursesUseCase {
       return Page.empty(pageable);
     }
 
-    return courseRepository
-        .findActiveByTrainingPathAndAcademicYear(
+    final var courses =
+        courseRepository.findActiveByTrainingPathAndAcademicYear(
             application.getInstitution().getId(),
             application.getTrainingPath().getId(),
             application.getAcademicYear().getId(),
             search == null || search.isBlank() ? null : search.trim(),
-            pageable)
-        .map(EnrollmentCourseOptionResponse::from);
+            pageable);
+    final var coursesWithCapacity =
+        capacityService.findCoursesWithCapacity(
+            application.getInstitution().getId(), courses.getContent());
+
+    return courses.map(
+        course ->
+            EnrollmentCourseOptionResponse.from(
+                course, coursesWithCapacity.contains(course.getId())));
   }
 }

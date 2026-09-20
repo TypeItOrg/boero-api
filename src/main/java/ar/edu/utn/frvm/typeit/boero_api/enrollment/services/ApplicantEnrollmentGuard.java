@@ -22,7 +22,9 @@ public class ApplicantEnrollmentGuard {
   public Person requireApplicant(final JwtAuthenticatedUser principal) {
     final boolean isApplicant =
         personRoleAssignmentRepository.existsByPerson_IdAndInstitution_IdAndRole_Code(
-            principal.personId(), principal.institutionId(), SystemRoleCode.APPLICANT.name());
+                principal.personId(), principal.institutionId(), SystemRoleCode.APPLICANT.name())
+            || personRoleAssignmentRepository.existsByPerson_IdAndInstitution_IdAndRole_Code(
+                principal.personId(), principal.institutionId(), SystemRoleCode.STUDENT.name());
 
     if (!isApplicant) {
       throw new AccessDeniedException(DEFAULT_FORBIDDEN_MESSAGE);

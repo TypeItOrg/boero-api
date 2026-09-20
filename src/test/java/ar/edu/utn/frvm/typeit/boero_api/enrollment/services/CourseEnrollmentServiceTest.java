@@ -52,9 +52,7 @@ class CourseEnrollmentServiceTest {
     when(courseEnrollmentRepository.findByInstitutionIdAndStudentPersonId(
             eq(INSTITUTION_ID),
             eq(PERSON_ID),
-            eq(
-                ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus
-                    .ENROLLED),
+            eq(ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus.ENROLLED),
             eq(
                 ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.AcademicEnrollmentStatus
                     .IN_PROGRESS),

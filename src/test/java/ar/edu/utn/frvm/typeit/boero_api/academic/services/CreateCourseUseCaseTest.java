@@ -66,7 +66,8 @@ class CreateCourseUseCaseTest {
   private final Institution institution = Institution.builder().id(INSTITUTION_ID).build();
 
   private void stubInstitution() {
-    given(institutionRepository.findById(INSTITUTION_ID)).willReturn(Optional.of(institution));
+    given(institutionRepository.findByIdForUpdate(INSTITUTION_ID))
+        .willReturn(Optional.of(institution));
   }
 
   private void stubPlan(final StudyPlanStatus status) {
@@ -203,7 +204,7 @@ class CreateCourseUseCaseTest {
   @Test
   @DisplayName("Should reject when the institution does not exist")
   void rejectsUnknownInstitution() {
-    given(institutionRepository.findById(INSTITUTION_ID)).willReturn(Optional.empty());
+    given(institutionRepository.findByIdForUpdate(INSTITUTION_ID)).willReturn(Optional.empty());
 
     assertThatThrownBy(() -> useCase.execute(INSTITUTION_ID, request()))
         .isInstanceOf(InstitutionNotFoundException.class);
