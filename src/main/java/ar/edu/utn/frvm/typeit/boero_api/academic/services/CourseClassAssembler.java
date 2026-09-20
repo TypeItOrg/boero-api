@@ -18,6 +18,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseClassRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseClassScheduleRequest;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CourseIndividualSlotFactory;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.PersonNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
@@ -43,6 +44,7 @@ public class CourseClassAssembler {
   private final CourseClassTeacherRepository courseClassTeacherRepository;
   private final PersonRoleAssignmentRepository personRoleAssignmentRepository;
   private final PersonRepository personRepository;
+  private final CourseIndividualSlotFactory slotFactory;
 
   public List<CourseClass> assemble(
       final Institution institution,
@@ -87,14 +89,6 @@ public class CourseClassAssembler {
     if (request.capacity() != null && request.capacity() <= 0) {
       throw invalid(AcademicMessages.COURSE_SCHEDULE_INVALID);
     }
-    if (individual) {
-      for (final var schedule : request.schedules()) {
-        final int duration = durationMinutes(schedule.startTime(), schedule.endTime());
-        if (duration % periodDurationMinutes != 0) {
-          throw invalid(AcademicMessages.COURSE_PERIOD_DURATION_NOT_DIVISIBLE);
-        }
-      }
-    }
     final Integer capacity =
         individual ? Integer.valueOf(totalMinutes / periodDurationMinutes) : request.capacity();
     final var day =
@@ -102,9 +96,11 @@ public class CourseClassAssembler {
             CourseClassDay.create(
                 institution, courseClass, request.dayOfWeek(), capacity, periodDurationMinutes));
     for (final var scheduleRequest : request.schedules()) {
-      courseClassScheduleRepository.save(
-          CourseClassSchedule.create(
-              institution, day, scheduleRequest.startTime(), scheduleRequest.endTime()));
+      final var schedule =
+          courseClassScheduleRepository.save(
+              CourseClassSchedule.create(
+                  institution, day, scheduleRequest.startTime(), scheduleRequest.endTime()));
+      slotFactory.createFor(schedule);
     }
   }
 
