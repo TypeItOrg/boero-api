@@ -120,6 +120,8 @@ public final class AcademicMessages {
       "El recurso no puede restaurarse porque su elemento superior no está disponible.";
   public static final String RESTORE_CONFLICT =
       "El recurso no puede restaurarse porque sus datos ya están en uso.";
+  public static final String COURSE_RESTORE_INSTRUMENT_MISMATCH =
+      "El curso no puede restaurarse porque su instrumento no coincide con la instrumentalidad actual del espacio académico.";
   public static final String ACADEMIC_LIFECYCLE_ACTOR_NOT_FOUND =
       "No fue posible identificar al actor de la operación.";
 

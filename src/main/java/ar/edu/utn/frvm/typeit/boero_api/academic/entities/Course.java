@@ -3,6 +3,8 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.entities;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus;
+import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicConflictException;
+import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.InvalidAcademicStateException;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
@@ -211,6 +213,9 @@ public class Course extends SoftDeletable {
     }
     if (isDeleted()) {
       ensureParentsActive();
+      if (getAcademicSpace().isInstrumental() != (instrument != null)) {
+        throw new AcademicConflictException(AcademicMessages.COURSE_RESTORE_INSTRUMENT_MISMATCH);
+      }
     }
     return super.restore();
   }

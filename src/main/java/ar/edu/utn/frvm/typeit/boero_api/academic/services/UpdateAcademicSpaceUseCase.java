@@ -29,14 +29,12 @@ public class UpdateAcademicSpaceUseCase {
     final var name = AcademicNameNormalizer.display(request.name());
     final boolean formatChanged = space.getFormat() != request.format();
     final boolean instrumentalChanged = space.isInstrumental() != request.instrumental();
-    final boolean hasCourses =
-        (formatChanged || instrumentalChanged)
-            && academicSpaceRepository.existsInCourse(institutionId, id);
-    if (formatChanged && hasCourses) {
+    if (formatChanged && academicSpaceRepository.existsInCourse(institutionId, id)) {
       throw AcademicConflictException.forField(
           "format", AcademicMessages.ACADEMIC_SPACE_FORMAT_HAS_COURSES);
     }
-    if (instrumentalChanged && hasCourses) {
+    if (instrumentalChanged
+        && academicSpaceRepository.existsInNonDeletedCourse(institutionId, id)) {
       throw AcademicConflictException.forField(
           "instrumental", AcademicMessages.ACADEMIC_SPACE_INSTRUMENTAL_HAS_COURSES);
     }
