@@ -13,6 +13,9 @@ public record EnrollmentCourseOptionResponse(
     String format,
     UUID instrumentId,
     String instrumentName,
+    String requirementType,
+    String approvalMode,
+    boolean instrumental,
     boolean hasCapacity) {
 
   public static EnrollmentCourseOptionResponse from(final Course course) {
@@ -27,6 +30,9 @@ public record EnrollmentCourseOptionResponse(
         metadata.format(),
         metadata.instrumentId(),
         metadata.instrumentName(),
+        metadata.requirementType(),
+        metadata.approvalMode(),
+        metadata.instrumental(),
         true);
   }
 }

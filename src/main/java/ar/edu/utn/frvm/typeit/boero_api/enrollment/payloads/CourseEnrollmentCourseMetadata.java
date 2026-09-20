@@ -12,7 +12,10 @@ public record CourseEnrollmentCourseMetadata(
     String trainingPathName,
     String format,
     UUID instrumentId,
-    String instrumentName) {
+    String instrumentName,
+    String requirementType,
+    String approvalMode,
+    boolean instrumental) {
 
   public static CourseEnrollmentCourseMetadata from(final Course course) {
     final var space = course.getStudyPlanSpace();
@@ -29,6 +32,9 @@ public record CourseEnrollmentCourseMetadata(
         plan.getTrainingPath().getName(),
         academicSpace.getFormat().name(),
         instrument == null ? null : instrument.getId(),
-        instrument == null ? null : instrument.getName());
+        instrument == null ? null : instrument.getName(),
+        space.getRequirementType() == null ? null : space.getRequirementType().name(),
+        space.getApprovalMode() == null ? null : space.getApprovalMode().name(),
+        academicSpace.isInstrumental());
   }
 }
