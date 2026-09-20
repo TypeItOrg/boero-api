@@ -12,9 +12,10 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearReposito
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseStatusRequest;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CourseClosureService;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentInstitutionLock;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,12 +26,13 @@ public class UpdateCourseStatusUseCase {
   private final AcademicYearRepository academicYearRepository;
   private final StudyPlanRepository studyPlanRepository;
 
-  @Autowired
-  private ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CourseClosureService
-      courseClosureService;
+  private final CourseClosureService courseClosureService;
+
+  private final EnrollmentInstitutionLock enrollmentInstitutionLock;
 
   @Transactional
   public void execute(final UUID institutionId, final UUID id, final CourseStatusRequest request) {
+    enrollmentInstitutionLock.lock(institutionId);
     final var context =
         courseRepository
             .findAcademicContextByIdAndInstitution_Id(id, institutionId)
@@ -67,7 +69,7 @@ public class UpdateCourseStatusUseCase {
     }
     course.updateStatus(request.status());
     courseRepository.flush();
-    if (request.status() == CourseStatus.CLOSED && courseClosureService != null) {
+    if (request.status() == CourseStatus.CLOSED) {
       courseClosureService.close(institutionId, id, null);
     }
   }

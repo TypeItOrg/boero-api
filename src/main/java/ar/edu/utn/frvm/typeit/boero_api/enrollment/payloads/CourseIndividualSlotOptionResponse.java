@@ -1,13 +1,17 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads;
 
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.CourseIndividualSlot;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalTime;
 import java.util.UUID;
 
-public record CourseIndividualSlotOptionResponse(UUID id, LocalTime startTime, LocalTime endTime) {
+@Schema(requiredProperties = {"id", "startTime", "endTime", "available"})
+public record CourseIndividualSlotOptionResponse(
+    UUID id, LocalTime startTime, LocalTime endTime, boolean available) {
 
-  public static CourseIndividualSlotOptionResponse from(final CourseIndividualSlot slot) {
+  public static CourseIndividualSlotOptionResponse from(
+      final CourseIndividualSlot slot, final boolean available) {
     return new CourseIndividualSlotOptionResponse(
-        slot.getId(), slot.getStartTime(), slot.getEndTime());
+        slot.getId(), slot.getStartTime(), slot.getEndTime(), available);
   }
 }

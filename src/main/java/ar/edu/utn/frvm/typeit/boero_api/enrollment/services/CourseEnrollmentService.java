@@ -5,6 +5,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.CourseClass;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.CourseClassDay;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.CourseClassSchedule;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseDay;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.CourseNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassDayRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassRepository;
@@ -25,6 +26,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.AcademicEnrollmentStatu
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentSource;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseWithdrawalType;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationCourseStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
@@ -48,7 +50,6 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Student;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.StudentRepository;
-import org.jspecify.annotations.Nullable;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -58,8 +59,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
+import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -137,6 +140,7 @@ public class CourseEnrollmentService {
   @Transactional
   public CourseEnrollmentResponse enrollApplicationCourse(
       final UUID institutionId,
+      final UUID applicationId,
       final UUID applicationCourseId,
       final EnrollApplicationCourseRequest request,
       final UUID authorityPersonId) {
@@ -145,21 +149,20 @@ public class CourseEnrollmentService {
         applicationCourseRepository
             .findByIdAndInstitutionIdForUpdate(applicationCourseId, institutionId)
             .orElseThrow(EnrollmentApplicationNotFoundException::new);
+    if (!applicationCourse.getEnrollmentApplication().getId().equals(applicationId)) {
+      throw new EnrollmentApplicationNotFoundException();
+    }
     if (!applicationCourse.getEnrollmentApplication().isApproved()) {
       throw new EnrollmentValidationException(EnrollmentMessages.PARENT_NOT_APPROVED);
     }
-    if (applicationCourse.getStatus()
-        == ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationCourseStatus
-            .ENROLLED) {
+    if (applicationCourse.getStatus() == EnrollmentApplicationCourseStatus.ENROLLED) {
       final var existing =
           courseEnrollmentRepository
-              .findByApplicationIdAndCourseId(
-                  institutionId,
-                  applicationCourse.getEnrollmentApplication().getId(),
-                  applicationCourse.getCourse().getId())
+              .findByInstitution_IdAndApplicationCourse_Id(institutionId, applicationCourse.getId())
               .orElseThrow(EnrollmentApplicationNotFoundException::new);
       return toResponse(existing);
     }
+    applicationCourse.ensurePendingResolution();
     ensureExpectedVersion(applicationCourse.getVersion(), request.expectedVersion());
 
     final Course course = findActiveCourse(institutionId, applicationCourse.getCourse().getId());
@@ -181,6 +184,7 @@ public class CourseEnrollmentService {
             CourseEnrollmentSource.APPLICATION,
             applicationCourse.getEnrollmentApplication(),
             clock.instant());
+    enrollment.assignApplicationCourse(applicationCourse);
     courseEnrollmentRepository.save(enrollment);
     persistAssignments(institution, enrollment, assignments);
     applicationCourse.enroll(clock.instant(), authorityPersonId);
@@ -369,7 +373,7 @@ public class CourseEnrollmentService {
         courseClassScheduleRepository
             .findByDay_IdIn(days.stream().map(CourseClassDay::getId).toList())
             .stream()
-            .collect(java.util.stream.Collectors.toMap(CourseClassSchedule::getId, value -> value));
+            .collect(Collectors.toMap(CourseClassSchedule::getId, value -> value));
     final Set<UUID> selectedDays = new HashSet<>();
     final Set<UUID> selectedSlots = new HashSet<>();
     final List<ResolvedAssignment> assignments = new ArrayList<>();
@@ -415,22 +419,8 @@ public class CourseEnrollmentService {
     if (individualSlotId == null) {
       throw new EnrollmentValidationException(EnrollmentMessages.COURSE_ASSIGNMENT_INVALID);
     }
-    var slots = courseIndividualSlotRepository.findBySchedule_IdOrderByStartTime(schedule.getId());
-    if (slots.isEmpty()) {
-      final Integer durationMinutes = schedule.getDay().getPeriodDurationMinutes();
-      final int totalMinutes = schedule.durationMinutes();
-      if (durationMinutes == null || durationMinutes <= 0 || totalMinutes % durationMinutes != 0) {
-        throw new EnrollmentValidationException(EnrollmentMessages.COURSE_ASSIGNMENT_INVALID);
-      }
-      final List<CourseIndividualSlot> generated = new ArrayList<>();
-      LocalTime start = schedule.getStartTime();
-      while (start.isBefore(schedule.getEndTime())) {
-        final LocalTime end = start.plusMinutes(durationMinutes);
-        generated.add(CourseIndividualSlot.create(institution, schedule, start, end));
-        start = end;
-      }
-      slots = courseIndividualSlotRepository.saveAll(generated);
-    }
+    final var slots =
+        courseIndividualSlotRepository.findBySchedule_IdOrderByStartTime(schedule.getId());
 
     return slots.stream()
         .filter(slot -> slot.getId().equals(individualSlotId))
@@ -464,7 +454,8 @@ public class CourseEnrollmentService {
                   .findActiveByIndividualSlot(institutionId, assignment.slot().getId())
                   .size();
       final Integer capacity = assignment.day().getCapacity();
-      if (capacity != null && activeOccupancy >= capacity) {
+      if (assignment.slot() != null && activeOccupancy > 0
+          || assignment.slot() == null && capacity != null && activeOccupancy >= capacity) {
         throw new EnrollmentValidationException(EnrollmentMessages.COURSE_CAPACITY_EXCEEDED);
       }
     }
@@ -630,13 +621,24 @@ public class CourseEnrollmentService {
     } catch (DataIntegrityViolationException exception) {
       final String constraintName = constraintName(exception);
 
-      if ("course_enrollment_schedules_active_slot_unique".equals(constraintName)) {
+      if ("course_enrollment_schedules_active_slot_unique".equals(constraintName)
+          || "course_enrollment_schedules_capacity_check".equals(constraintName)) {
         throw new EnrollmentValidationException(EnrollmentMessages.COURSE_CAPACITY_EXCEEDED);
       }
-      if ("course_enrollments_active_student_course_unique".equals(constraintName)) {
+      if ("course_enrollments_active_student_course_unique".equals(constraintName)
+          || "course_enrollments_application_course_unique".equals(constraintName)) {
         throw new EnrollmentValidationException(EnrollmentMessages.COURSE_ALREADY_ENROLLED);
       }
 
+      if ("course_enrollment_schedules_context_check".equals(constraintName)
+          || "course_enrollment_schedules_active_day_unique".equals(constraintName)
+          || "course_enrollment_schedules_group_assignment_unique".equals(constraintName)
+          || "course_enrollment_schedules_matching_slot_fk".equals(constraintName)) {
+        throw new EnrollmentValidationException(EnrollmentMessages.COURSE_ASSIGNMENT_INVALID);
+      }
+      if ("course_enrollments_origin_check".equals(constraintName)) {
+        throw new EnrollmentValidationException(EnrollmentMessages.PARENT_NOT_APPROVED);
+      }
       throw exception;
     }
   }
@@ -659,6 +661,13 @@ public class CourseEnrollmentService {
     return CourseEnrollmentResponse.from(enrollment, schedules);
   }
 
+  @Transactional(readOnly = true)
+  public PaginatedResponse<CourseEnrollmentResponse> listForTeacherClass(
+      final UUID institutionId, final UUID personId, final UUID classId, final Pageable pageable) {
+    return toPageResponse(
+        courseEnrollmentRepository.findForTeacherClass(institutionId, personId, classId, pageable));
+  }
+
   private PaginatedResponse<CourseEnrollmentResponse> toPageResponse(
       final Page<CourseEnrollment> enrollments) {
     final List<UUID> enrollmentIds =
@@ -671,11 +680,10 @@ public class CourseEnrollmentService {
     final Map<UUID, List<CourseEnrollmentScheduleResponse>> schedulesByEnrollment =
         courseEnrollmentScheduleRepository.findByCourseEnrollment_IdIn(enrollmentIds).stream()
             .collect(
-                java.util.stream.Collectors.groupingBy(
+                Collectors.groupingBy(
                     schedule -> schedule.getCourseEnrollment().getId(),
-                    java.util.stream.Collectors.mapping(
-                        CourseEnrollmentScheduleResponse::from,
-                        java.util.stream.Collectors.toList())));
+                    Collectors.mapping(
+                        CourseEnrollmentScheduleResponse::from, Collectors.toList())));
     return PaginatedResponse.from(
         enrollments.map(
             enrollment ->
@@ -688,7 +696,7 @@ public class CourseEnrollmentService {
       CourseClassSchedule schedule,
       CourseClassDay day,
       CourseIndividualSlot slot,
-      ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseDay dayOfWeek,
+      CourseDay dayOfWeek,
       LocalTime startTime,
       LocalTime endTime) {}
 }

@@ -104,4 +104,24 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
       "SELECT COUNT(enrollment) > 0 FROM CourseEnrollment enrollment WHERE enrollment.institution.id = :institutionId AND enrollment.course.id = :courseId")
   boolean existsByCourseIncludingHistorical(
       @Param("institutionId") UUID institutionId, @Param("courseId") UUID courseId);
+
+  @EntityGraph(
+      attributePaths = {
+        "student.person",
+        "course.studyPlanSpace.academicSpace",
+        "course.studyPlanSpace.academicLevel",
+        "course.studyPlanSpace.studyPlan.trainingPath",
+        "course.instrument",
+        "courseClass"
+      })
+  @Query(
+      "SELECT enrollment FROM CourseEnrollment enrollment WHERE enrollment.institution.id = :institutionId AND enrollment.courseClass.id = :classId AND EXISTS (SELECT assignment.id FROM CourseClassTeacher assignment WHERE assignment.institution.id = :institutionId AND assignment.person.id = :personId AND assignment.courseClass.id = enrollment.courseClass.id) ORDER BY enrollment.enrolledAt DESC, enrollment.id DESC")
+  Page<CourseEnrollment> findForTeacherClass(
+      @Param("institutionId") UUID institutionId,
+      @Param("personId") UUID personId,
+      @Param("classId") UUID classId,
+      Pageable pageable);
+
+  Optional<CourseEnrollment> findByInstitution_IdAndApplicationCourse_Id(
+      UUID institutionId, UUID applicationCourseId);
 }

@@ -82,9 +82,7 @@ class AcademicLevelUseCasesTest {
     given(academicLevelRepository.findByIdAndStudyPlan_Institution_Id(LEVEL_ID, INSTITUTION_ID))
         .willReturn(Optional.of(level));
     given(studyPlanDraftGuard.lock(INSTITUTION_ID, PLAN_ID)).willReturn(plan);
-    given(
-            academicLevelRepository.existsByStudyPlan_IdAndDisplayOrderAndIdNot(
-                PLAN_ID, 3, LEVEL_ID))
+    given(academicLevelRepository.existsByStudyPlan_IdAndDisplayOrderAndIdNot(PLAN_ID, 3, LEVEL_ID))
         .willReturn(false);
 
     updateUseCase.execute(INSTITUTION_ID, LEVEL_ID, new UpdateAcademicLevelRequest(3, null));
@@ -102,9 +100,7 @@ class AcademicLevelUseCasesTest {
     given(academicLevelRepository.findByIdAndStudyPlan_Institution_Id(LEVEL_ID, INSTITUTION_ID))
         .willReturn(Optional.of(level));
     given(studyPlanDraftGuard.lock(INSTITUTION_ID, PLAN_ID)).willReturn(plan);
-    given(
-            academicLevelRepository.existsByStudyPlan_IdAndDisplayOrderAndIdNot(
-                PLAN_ID, 2, LEVEL_ID))
+    given(academicLevelRepository.existsByStudyPlan_IdAndDisplayOrderAndIdNot(PLAN_ID, 2, LEVEL_ID))
         .willReturn(true);
 
     assertThatThrownBy(

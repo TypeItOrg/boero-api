@@ -28,9 +28,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 
 /**
- * Reproduces the report where non-instrumental courses never reach the enrollment wizard
- * while instrumental ones do. If the {@code instrument} fetch join excludes courses
- * without instrument, this test fails and pinpoints a code bug instead of data.
+ * Reproduces the report where non-instrumental courses never reach the enrollment wizard while
+ * instrumental ones do. If the {@code instrument} fetch join excludes courses without instrument,
+ * this test fails and pinpoints a code bug instead of data.
  */
 @DataJpaTest
 @Import(JpaAuditingTestConfig.class)
@@ -46,8 +46,7 @@ class CourseInstrumentFilterTest {
     TrainingPath trainingPath = persist(TrainingPath.create(institution, "CAV", null));
     StudyPlan plan =
         persist(
-            StudyPlan.create(
-                institution, trainingPath, "Plan", LocalDate.of(2026, 1, 1), null));
+            StudyPlan.create(institution, trainingPath, "Plan", LocalDate.of(2026, 1, 1), null));
     AcademicLevel level = persist(AcademicLevel.create(plan, "Nivel 1", 1, null));
     AcademicSpace instrumentalSpace =
         persist(
@@ -88,8 +87,7 @@ class CourseInstrumentFilterTest {
                 ApprovalMode.PROMOTION));
     Instrument instrument = persist(Instrument.create(institution, "Guitarra", null));
     AcademicYear academicYear =
-        persist(
-            AcademicYear.create(institution, 2026, null, null, LocalDate.of(2026, 1, 15)));
+        persist(AcademicYear.create(institution, 2026, null, null, LocalDate.of(2026, 1, 15)));
     academicYear.transitionTo(AcademicYearStatus.ACTIVE);
     Course instrumentalCourse =
         persist(Course.create(institution, instrumentalPlacement, academicYear, instrument));
@@ -99,7 +97,10 @@ class CourseInstrumentFilterTest {
 
     final var result =
         courseRepository.findActiveByTrainingPathAndAcademicYear(
-            institution.getId(), trainingPath.getId(), academicYear.getId(), null,
+            institution.getId(),
+            trainingPath.getId(),
+            academicYear.getId(),
+            null,
             PageRequest.of(0, 50));
 
     assertThat(result.getContent())

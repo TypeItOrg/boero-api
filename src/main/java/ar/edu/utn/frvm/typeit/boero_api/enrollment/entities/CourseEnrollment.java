@@ -7,6 +7,8 @@ import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.AcademicEnrollmentStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentSource;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Student;
 import jakarta.persistence.Column;
@@ -64,6 +66,10 @@ public class CourseEnrollment extends Auditable {
   @JoinColumn(name = "enrollment_application_id")
   private EnrollmentApplication enrollmentApplication;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "enrollment_application_course_id")
+  private EnrollmentApplicationCourse applicationCourse;
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 40)
   @Builder.Default
@@ -114,6 +120,15 @@ public class CourseEnrollment extends Auditable {
         .build();
   }
 
+  public void assignApplicationCourse(final EnrollmentApplicationCourse selection) {
+    if (enrollmentApplication == null
+        || !selection.getEnrollmentApplication().getId().equals(enrollmentApplication.getId())
+        || !selection.getCourse().getId().equals(course.getId())) {
+      throw new EnrollmentValidationException(EnrollmentMessages.COURSE_APPLICATION_NOT_FOUND);
+    }
+    applicationCourse = selection;
+  }
+
   public void complete(final Instant completedAt) {
     status = CourseEnrollmentStatus.COMPLETED;
     this.completedAt = completedAt;
@@ -131,6 +146,12 @@ public class CourseEnrollment extends Auditable {
   }
 
   public void updateAcademicStatus(final AcademicEnrollmentStatus target, final String reason) {
+    if (status == CourseEnrollmentStatus.WITHDRAWN
+        || status == CourseEnrollmentStatus.ADMINISTRATIVELY_WITHDRAWN
+        || status == CourseEnrollmentStatus.COMPLETED
+            && target == AcademicEnrollmentStatus.IN_PROGRESS) {
+      throw new EnrollmentValidationException(EnrollmentMessages.ACADEMIC_TRANSITION_INVALID);
+    }
     academicStatus = target;
     actionReason = reason;
   }

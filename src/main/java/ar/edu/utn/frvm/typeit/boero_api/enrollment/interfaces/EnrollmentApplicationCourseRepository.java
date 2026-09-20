@@ -58,11 +58,12 @@ public interface EnrollmentApplicationCourseRepository
       @Param("statuses") List<EnrollmentApplicationCourseStatus> statuses);
 
   @Query(
-      "SELECT COUNT(selection) > 0 FROM EnrollmentApplicationCourse selection WHERE selection.institution.id = :institutionId AND selection.course.id = :courseId AND selection.enrollmentApplication.id <> :applicationId AND selection.status IN :statuses")
+      "SELECT COUNT(selection) > 0 FROM EnrollmentApplicationCourse selection WHERE selection.institution.id = :institutionId AND selection.course.id = :courseId AND selection.enrollmentApplication.id <> :applicationId AND selection.enrollmentApplication.applicantPerson.id = :personId AND selection.enrollmentApplication.deletedAt IS NULL AND selection.enrollmentApplication.status NOT IN (ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus.CANCELLED, ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus.REJECTED) AND selection.status IN :statuses")
   boolean existsBlockingCourseSelectionExcludingApplication(
       @Param("institutionId") UUID institutionId,
       @Param("courseId") UUID courseId,
       @Param("applicationId") UUID applicationId,
+      @Param("personId") UUID personId,
       @Param("statuses") List<EnrollmentApplicationCourseStatus> statuses);
 
   @Query(

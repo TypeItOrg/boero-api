@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidEnrollmentApplicationStateException;
@@ -12,7 +13,6 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.StudentReposito
 import java.time.Clock;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,30 +25,21 @@ public class ApproveEnrollmentApplicationUseCase {
   private final PersonRepository personRepository;
   private final Clock clock;
   private final BusinessDateProvider businessDateProvider;
-  private EnrollmentApplicationCourseApprovalService applicationCourseApprovalService;
+  private final EnrollmentApplicationCourseApprovalService applicationCourseApprovalService;
 
-  @Autowired(required = false)
-  public void setApplicationCourseApprovalService(
-      final EnrollmentApplicationCourseApprovalService applicationCourseApprovalService) {
-    this.applicationCourseApprovalService = applicationCourseApprovalService;
-  }
+  private final EnrollmentInstitutionLock enrollmentInstitutionLock;
 
   @Transactional
   public EnrollmentApplicationResponse execute(
       final UUID institutionId, final UUID applicationId, final UUID resolvedByPersonId) {
+    enrollmentInstitutionLock.lock(institutionId);
     final var currentStatus =
         enrollmentApplicationRepository.findStatusByInstitutionIdAndId(
             institutionId, applicationId);
     if (currentStatus.isPresent()
-        && (currentStatus.get()
-                == ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus
-                    .APPROVED
-            || currentStatus.get()
-                == ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus
-                    .REJECTED
-            || currentStatus.get()
-                == ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus
-                    .CANCELLED)) {
+        && (currentStatus.get() == EnrollmentApplicationStatus.APPROVED
+            || currentStatus.get() == EnrollmentApplicationStatus.REJECTED
+            || currentStatus.get() == EnrollmentApplicationStatus.CANCELLED)) {
       throw new InvalidEnrollmentApplicationStateException(
           EnrollmentMessages.APPLICATION_ALREADY_RESOLVED);
     }
@@ -62,7 +53,7 @@ public class ApproveEnrollmentApplicationUseCase {
         .orElseThrow(EnrollmentApplicationNotFoundException::new);
     application.approve(clock.instant(), resolvedByPersonId);
 
-    if (applicationCourseApprovalService != null && application.getStudyPlan() == null) {
+    if (application.getStudyPlan() == null) {
       applicationCourseApprovalService.process(application);
     }
 

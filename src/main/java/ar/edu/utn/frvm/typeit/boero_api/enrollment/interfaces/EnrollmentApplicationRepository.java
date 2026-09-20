@@ -179,4 +179,9 @@ public interface EnrollmentApplicationRepository
       @Param("institutionId") UUID institutionId,
       @Param("personId") UUID personId,
       @Param("applicationId") UUID applicationId);
+
+  @Query(
+      "SELECT application.institution.id FROM EnrollmentApplication application WHERE application.id = :applicationId AND application.applicantPerson.id = :personId AND application.deletedAt IS NULL")
+  Optional<UUID> findOwnedInstitutionId(
+      @Param("applicationId") UUID applicationId, @Param("personId") UUID personId);
 }

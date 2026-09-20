@@ -18,7 +18,8 @@ public record EnrollmentCourseOptionResponse(
     boolean instrumental,
     boolean hasCapacity) {
 
-  public static EnrollmentCourseOptionResponse from(final Course course) {
+  public static EnrollmentCourseOptionResponse from(
+      final Course course, final boolean hasCapacity) {
     final var metadata = CourseEnrollmentCourseMetadata.from(course);
     return new EnrollmentCourseOptionResponse(
         metadata.courseId(),
@@ -33,6 +34,6 @@ public record EnrollmentCourseOptionResponse(
         metadata.requirementType(),
         metadata.approvalMode(),
         metadata.instrumental(),
-        true);
+        hasCapacity);
   }
 }

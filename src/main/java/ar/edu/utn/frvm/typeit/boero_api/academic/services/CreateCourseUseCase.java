@@ -44,7 +44,7 @@ public class CreateCourseUseCase {
   public CourseResponse execute(final UUID institutionId, final CreateCourseRequest request) {
     final var institution =
         institutionRepository
-            .findById(institutionId)
+            .findByIdForUpdate(institutionId)
             .orElseThrow(InstitutionNotFoundException::new);
     final var selection = resolveSelection(institutionId, request);
     final var plan = selection.plan();
@@ -62,8 +62,7 @@ public class CreateCourseUseCase {
       throw new AcademicConflictException(AcademicMessages.COURSE_YEAR_NOT_ACTIVE);
     }
     try {
-      final var course =
-          Course.create(institution, selection.studyPlanSpace(), year, instrument);
+      final var course = Course.create(institution, selection.studyPlanSpace(), year, instrument);
       courseRepository.save(course);
       courseClassAssembler.assemble(institution, course, space.getFormat(), request.classes());
       courseRepository.flush();

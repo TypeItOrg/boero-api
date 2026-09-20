@@ -20,12 +20,16 @@ public class RejectEnrollmentApplicationCourseUseCase {
   private final EnrollmentApplicationCourseRepository applicationCourseRepository;
   private final Clock clock;
 
+  private final EnrollmentInstitutionLock enrollmentInstitutionLock;
+
   @Transactional
   public EnrollmentApplicationCourseResponse execute(
       final UUID institutionId,
+      final UUID applicationId,
       final UUID applicationCourseId,
       final RejectEnrollmentApplicationCourseRequest request,
       final UUID resolvedByPersonId) {
+    enrollmentInstitutionLock.lock(institutionId);
     final EnrollmentApplicationCourse selection =
         applicationCourseRepository
             .findByIdAndInstitutionIdForUpdate(applicationCourseId, institutionId)
@@ -33,6 +37,12 @@ public class RejectEnrollmentApplicationCourseUseCase {
                 () ->
                     new EnrollmentValidationException(
                         EnrollmentMessages.COURSE_APPLICATION_NOT_FOUND));
+    if (!selection.getEnrollmentApplication().getId().equals(applicationId)) {
+      throw new EnrollmentValidationException(EnrollmentMessages.COURSE_APPLICATION_NOT_FOUND);
+    }
+    if (!selection.getEnrollmentApplication().isApproved()) {
+      throw new EnrollmentValidationException(EnrollmentMessages.PARENT_NOT_APPROVED);
+    }
     if (request.expectedVersion() != null && request.expectedVersion() != selection.getVersion()) {
       throw new EnrollmentValidationException(EnrollmentMessages.COURSE_ENROLLMENT_VERSION_STALE);
     }

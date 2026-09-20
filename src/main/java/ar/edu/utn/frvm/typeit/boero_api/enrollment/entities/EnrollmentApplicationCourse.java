@@ -5,6 +5,8 @@ import ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationCourseStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.WaitlistReason;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import jakarta.persistence.Column;
@@ -105,6 +107,18 @@ public class EnrollmentApplicationCourse extends Auditable {
         .build();
   }
 
+  public boolean isPendingResolution() {
+    return status == EnrollmentApplicationCourseStatus.PENDING
+        || status == EnrollmentApplicationCourseStatus.WAITLISTED;
+  }
+
+  public void ensurePendingResolution() {
+    if (!isPendingResolution()) {
+      throw new EnrollmentValidationException(
+          EnrollmentMessages.COURSE_APPLICATION_ALREADY_RESOLVED);
+    }
+  }
+
   public void markRequested(final Instant requestedAt, final boolean submittedWithCapacity) {
     this.requestedAt = requestedAt;
     this.submittedWithCapacity = submittedWithCapacity;
@@ -116,6 +130,7 @@ public class EnrollmentApplicationCourse extends Auditable {
 
   public void waitlist(
       final int waitlistNumber, final WaitlistReason reason, final Instant waitlistedAt) {
+    ensurePendingResolution();
     status = EnrollmentApplicationCourseStatus.WAITLISTED;
     this.waitlistNumber = waitlistNumber;
     this.waitlistReason = reason;
@@ -123,6 +138,7 @@ public class EnrollmentApplicationCourse extends Auditable {
   }
 
   public void enroll(final Instant resolvedAt, final UUID resolvedByPersonId) {
+    ensurePendingResolution();
     status = EnrollmentApplicationCourseStatus.ENROLLED;
     this.resolvedAt = resolvedAt;
     this.resolvedByPersonId = resolvedByPersonId;
@@ -133,6 +149,7 @@ public class EnrollmentApplicationCourse extends Auditable {
       final String reasonText,
       final Instant resolvedAt,
       final UUID resolvedByPersonId) {
+    ensurePendingResolution();
     status = EnrollmentApplicationCourseStatus.REJECTED;
     this.resolutionReasonCode = reasonCode;
     this.resolutionReasonText = reasonText;
@@ -141,6 +158,7 @@ public class EnrollmentApplicationCourse extends Auditable {
   }
 
   public void cancel(final Instant resolvedAt, final UUID resolvedByPersonId) {
+    ensurePendingResolution();
     status = EnrollmentApplicationCourseStatus.CANCELLED;
     this.resolvedAt = resolvedAt;
     this.resolvedByPersonId = resolvedByPersonId;

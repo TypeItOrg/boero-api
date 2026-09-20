@@ -164,7 +164,7 @@ class EnrollmentApplicationControllerWebMvcTest {
         .thenReturn(response);
 
     StartEnrollmentApplicationRequest request =
-        new StartEnrollmentApplicationRequest(STUDY_PLAN_ID, ACADEMIC_YEAR_ID);
+        new StartEnrollmentApplicationRequest(STUDY_PLAN_ID, null, ACADEMIC_YEAR_ID);
 
     mockMvc
         .perform(
