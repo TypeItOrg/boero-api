@@ -21,6 +21,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseClassDayRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseClassRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseClassScheduleRequest;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CourseIndividualSlotFactory;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -63,7 +65,8 @@ class CourseClassAssemblerTest {
             courseClassScheduleRepository,
             courseClassTeacherRepository,
             personRoleAssignmentRepository,
-            personRepository);
+            personRepository,
+            Mockito.mock(CourseIndividualSlotFactory.class));
     given(courseClassRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));
     given(courseClassDayRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));
     given(courseClassScheduleRepository.save(any()))
