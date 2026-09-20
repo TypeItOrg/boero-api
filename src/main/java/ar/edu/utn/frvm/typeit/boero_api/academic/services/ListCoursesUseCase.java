@@ -1,10 +1,13 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus;
+import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages;
+import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.validation.AcademicNameNormalizer;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -46,17 +49,32 @@ public class ListCoursesUseCase {
             .map(CourseResponse::from));
   }
 
+  private static final Map<String, String> SORT_FIELDS =
+      Map.of(
+          "institution.name",
+          "institution.name",
+          "academicSpace.name",
+          "studyPlanSpace.academicSpace.name",
+          "trainingPathName",
+          "studyPlanSpace.studyPlan.trainingPath.name",
+          "studyPlanName",
+          "studyPlanSpace.studyPlan.name",
+          "academicYear",
+          "academicYear.year");
+
   private static Pageable mapSort(final Pageable pageable) {
     final Sort sort =
-        Sort.by(
-            pageable.getSort().stream()
-                .map(
-                    order ->
-                        order.getProperty().equals("academicSpace.name")
-                            ? order.withProperty("studyPlanSpace.academicSpace.name")
-                            : order)
-                .toList());
+        Sort.by(pageable.getSort().stream().map(ListCoursesUseCase::mapOrder).toList());
     return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+  }
+
+  private static Sort.Order mapOrder(final Sort.Order order) {
+    final String property = SORT_FIELDS.get(order.getProperty());
+    if (property == null) {
+      throw new AcademicValidationException(
+          AcademicMessages.INVALID_SORT_FIELD, Map.of("sort", order.getProperty()));
+    }
+    return order.withProperty(property);
   }
 
   public PaginatedResponse<CourseResponse> execute(
