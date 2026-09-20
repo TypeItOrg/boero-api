@@ -7,7 +7,6 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicLevelRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicLevelResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreateAcademicLevelRequest;
-import ar.edu.utn.frvm.typeit.boero_api.academic.validation.AcademicNameNormalizer;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -24,10 +23,7 @@ public class CreateAcademicLevelUseCase {
   public AcademicLevelResponse execute(
       final UUID institutionId, final UUID studyPlanId, final CreateAcademicLevelRequest request) {
     final var plan = studyPlanDraftGuard.lock(institutionId, studyPlanId);
-    final var name = AcademicNameNormalizer.display(request.name());
-    if (academicLevelRepository.existsByNormalizedName(studyPlanId, name)) {
-      throw AcademicConflictException.forField("name", AcademicMessages.DUPLICATE_NAME);
-    }
+    final var name = AcademicLevel.derivedName(request.displayOrder());
     if (academicLevelRepository.existsByStudyPlan_IdAndDisplayOrder(
         studyPlanId, request.displayOrder())) {
       throw AcademicConflictException.forField("displayOrder", AcademicMessages.DUPLICATE_ORDER);
