@@ -57,11 +57,34 @@ class EnrollmentPeriodUseCasesTest {
   void setUp() {
     createUseCase =
         new CreateEnrollmentPeriodUseCase(
-            periodRepository, institutionRepository, academicYearRepository);
-    getUseCase = new GetEnrollmentPeriodUseCase(periodRepository);
-    updateUseCase = new UpdateEnrollmentPeriodUseCase(periodRepository);
-    updateStatusUseCase = new UpdateEnrollmentPeriodStatusUseCase(periodRepository);
-    deleteUseCase = new DeleteEnrollmentPeriodUseCase(periodRepository, Clock.systemUTC());
+            org.mockito.Mockito.mock(EnrollmentPeriodAccessService.class),
+            periodRepository,
+            org.mockito.Mockito.mock(EnrollmentInstitutionLock.class),
+            org.mockito.Mockito.mock(EnrollmentPeriodScopeService.class),
+            institutionRepository,
+            academicYearRepository);
+    getUseCase =
+        new GetEnrollmentPeriodUseCase(
+            org.mockito.Mockito.mock(EnrollmentPeriodAccessService.class), periodRepository);
+    updateUseCase =
+        new UpdateEnrollmentPeriodUseCase(
+            org.mockito.Mockito.mock(EnrollmentPeriodAccessService.class),
+            periodRepository,
+            org.mockito.Mockito.mock(EnrollmentInstitutionLock.class),
+            org.mockito.Mockito.mock(EnrollmentPeriodScopeService.class));
+    updateStatusUseCase =
+        new UpdateEnrollmentPeriodStatusUseCase(
+            org.mockito.Mockito.mock(EnrollmentPeriodAccessService.class),
+            periodRepository,
+            org.mockito.Mockito.mock(EnrollmentInstitutionLock.class),
+            org.mockito.Mockito.mock(EnrollmentPeriodScopeService.class));
+    deleteUseCase =
+        new DeleteEnrollmentPeriodUseCase(
+            org.mockito.Mockito.mock(EnrollmentPeriodAccessService.class),
+            periodRepository,
+            org.mockito.Mockito.mock(EnrollmentInstitutionLock.class),
+            org.mockito.Mockito.mock(EnrollmentPeriodScopeService.class),
+            Clock.systemUTC());
 
     institutionId = UUID.randomUUID();
     academicYearId = UUID.randomUUID();

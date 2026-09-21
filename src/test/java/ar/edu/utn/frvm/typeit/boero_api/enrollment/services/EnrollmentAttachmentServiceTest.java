@@ -75,7 +75,9 @@ class EnrollmentAttachmentServiceTest {
             localStorageService,
             authorizationService,
             authorityResolver,
-            Clock.systemUTC());
+            Clock.systemUTC(),
+            Mockito.mock(EnrollmentApplicationPeriodService.class),
+            Mockito.mock(EnrollmentInstitutionLock.class));
 
     Institution institution = Mockito.mock(Institution.class);
     Mockito.lenient().when(institution.getId()).thenReturn(institutionId);

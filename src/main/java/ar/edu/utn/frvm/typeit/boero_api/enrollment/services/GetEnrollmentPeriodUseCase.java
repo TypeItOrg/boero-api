@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class GetEnrollmentPeriodUseCase {
+  private final EnrollmentPeriodAccessService periodAccess;
 
   private final EnrollmentPeriodRepository periodRepository;
 
@@ -21,6 +22,6 @@ public class GetEnrollmentPeriodUseCase {
             .findByIdAndInstitutionIdAndDeletedAtIsNull(periodId, institutionId)
             .orElseThrow(EnrollmentPeriodNotFoundException::new);
 
-    return EnrollmentPeriodResponse.from(period);
+    return periodAccess.response(period);
   }
 }

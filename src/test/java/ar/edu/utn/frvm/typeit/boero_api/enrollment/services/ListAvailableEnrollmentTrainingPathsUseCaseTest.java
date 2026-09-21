@@ -54,6 +54,7 @@ class ListAvailableEnrollmentTrainingPathsUseCaseTest {
     final var pageable = PageRequest.of(0, 20);
     final var useCase =
         new ListAvailableEnrollmentTrainingPathsUseCase(
+            java.time.Clock.systemUTC(),
             new ApplicantEnrollmentGuard(personRepository, personRoleAssignmentRepository),
             trainingPathRepository);
 
@@ -68,7 +69,7 @@ class ListAvailableEnrollmentTrainingPathsUseCaseTest {
     given(trainingPathRepository.findAvailableForEnrollment(principal.institutionId(), pageable))
         .willReturn(new PageImpl<>(java.util.List.of(trainingPath), pageable, 1));
 
-    final var response = useCase.execute(principal, pageable);
+    final var response = useCase.execute(principal, null, pageable);
 
     assertThat(response.items()).hasSize(1);
     assertThat(response.items().getFirst().name()).isEqualTo("Guitarra");

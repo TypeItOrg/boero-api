@@ -10,8 +10,12 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.CourseNotFoundExcept
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassDayRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassScheduleRepository;
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassTeacherRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AssignPersonSystemRoleUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
@@ -40,6 +44,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.InstitutionEnrollm
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentHistoryResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentScheduleResponse;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentTeacherOptionResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseScheduleAssignmentRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CreateManualCourseEnrollmentRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollApplicationCourseRequest;
@@ -72,11 +77,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class CourseEnrollmentService {
+  private final AcademicAccessGuard accessGuard;
 
   private final InstitutionRepository institutionRepository;
+  private final AcademicEligibilityService academicEligibilityService;
   private final InstitutionEnrollmentLockRepository institutionEnrollmentLockRepository;
   private final CourseRepository courseRepository;
   private final CourseClassRepository courseClassRepository;
+  private final CourseClassTeacherRepository courseClassTeacherRepository;
   private final CourseClassDayRepository courseClassDayRepository;
   private final CourseClassScheduleRepository courseClassScheduleRepository;
   private final CourseIndividualSlotRepository courseIndividualSlotRepository;
@@ -96,6 +104,12 @@ public class CourseEnrollmentService {
       final UUID institutionId,
       final CreateManualCourseEnrollmentRequest request,
       final UUID authorityPersonId) {
+    accessGuard.require(
+        PermissionCode.COURSE_ENROLLMENT_CREATE,
+        institutionId,
+        ScopedResource.COURSE,
+        request.courseId());
+
     final Institution institution = lockInstitution(institutionId);
     final Student student =
         studentRepository
@@ -106,6 +120,7 @@ public class CourseEnrollmentService {
     final CourseClass courseClass = findCourseClass(institutionId, course, request.courseClassId());
     final var assignments =
         resolveAssignments(institution, course, courseClass, request.assignments());
+    academicEligibilityService.requireEligible(institutionId, student.getPerson().getId(), course);
     ensureNoActiveEnrollment(institutionId, student.getId(), course.getId());
     ensureCapacityAndCompatibility(institutionId, student, course, assignments);
 
@@ -144,6 +159,12 @@ public class CourseEnrollmentService {
       final UUID applicationCourseId,
       final EnrollApplicationCourseRequest request,
       final UUID authorityPersonId) {
+    accessGuard.require(
+        PermissionCode.ENROLLMENT_APPLICATION_COURSE_ENROLL,
+        institutionId,
+        ScopedResource.ENROLLMENT_APPLICATION_COURSE,
+        applicationCourseId);
+
     final Institution institution = lockInstitution(institutionId);
     final EnrollmentApplicationCourse applicationCourse =
         applicationCourseRepository
@@ -172,6 +193,7 @@ public class CourseEnrollmentService {
     final Student student =
         getOrCreateStudent(
             institution, applicationCourse.getEnrollmentApplication().getApplicantPerson());
+    academicEligibilityService.requireEligible(institutionId, student.getPerson().getId(), course);
     ensureNoActiveEnrollment(institutionId, student.getId(), course.getId());
     ensureCapacityAndCompatibility(institutionId, student, course, assignments);
 
@@ -217,6 +239,12 @@ public class CourseEnrollmentService {
       final UUID enrollmentId,
       final WithdrawCourseEnrollmentRequest request,
       final UUID authorityPersonId) {
+    accessGuard.require(
+        PermissionCode.COURSE_ENROLLMENT_WITHDRAW,
+        institutionId,
+        ScopedResource.COURSE_ENROLLMENT,
+        enrollmentId);
+
     final Institution institution = lockInstitution(institutionId);
     final CourseEnrollment enrollment = findEnrollment(institutionId, enrollmentId);
     ensureExpectedVersion(enrollment.getVersion(), request.expectedVersion());
@@ -253,6 +281,12 @@ public class CourseEnrollmentService {
       final UUID enrollmentId,
       final UpdateAcademicEnrollmentStatusRequest request,
       final UUID authorityPersonId) {
+    accessGuard.require(
+        PermissionCode.COURSE_ENROLLMENT_ACADEMIC_STATUS_UPDATE,
+        institutionId,
+        ScopedResource.COURSE_ENROLLMENT,
+        enrollmentId);
+
     final Institution institution = lockInstitution(institutionId);
     final CourseEnrollment enrollment = findEnrollment(institutionId, enrollmentId);
     ensureExpectedVersion(enrollment.getVersion(), request.expectedVersion());
@@ -299,6 +333,12 @@ public class CourseEnrollmentService {
 
   @Transactional(readOnly = true)
   public CourseEnrollmentResponse get(final UUID institutionId, final UUID enrollmentId) {
+    accessGuard.require(
+        PermissionCode.COURSE_ENROLLMENT_READ,
+        institutionId,
+        ScopedResource.COURSE_ENROLLMENT,
+        enrollmentId);
+
     final var enrollment =
         courseEnrollmentRepository
             .findByIdAndInstitutionId(enrollmentId, institutionId)
@@ -312,6 +352,12 @@ public class CourseEnrollmentService {
   @Transactional(readOnly = true)
   public List<CourseEnrollmentHistoryResponse> history(
       final UUID institutionId, final UUID enrollmentId) {
+    accessGuard.require(
+        PermissionCode.COURSE_ENROLLMENT_READ,
+        institutionId,
+        ScopedResource.COURSE_ENROLLMENT,
+        enrollmentId);
+
     courseEnrollmentRepository
         .findByIdAndInstitutionId(enrollmentId, institutionId)
         .orElseThrow(
@@ -621,6 +667,9 @@ public class CourseEnrollmentService {
     } catch (DataIntegrityViolationException exception) {
       final String constraintName = constraintName(exception);
 
+      if ("course_enrollment_academic_requirements_check".equals(constraintName)) {
+        throw new EnrollmentValidationException(EnrollmentMessages.ACADEMIC_REQUIREMENTS_PENDING);
+      }
       if ("course_enrollment_schedules_active_slot_unique".equals(constraintName)
           || "course_enrollment_schedules_capacity_check".equals(constraintName)) {
         throw new EnrollmentValidationException(EnrollmentMessages.COURSE_CAPACITY_EXCEEDED);
@@ -658,7 +707,14 @@ public class CourseEnrollmentService {
         courseEnrollmentScheduleRepository.findByCourseEnrollment_Id(enrollment.getId()).stream()
             .map(CourseEnrollmentScheduleResponse::from)
             .toList();
-    return CourseEnrollmentResponse.from(enrollment, schedules);
+    final var teachers =
+        courseClassTeacherRepository
+            .findByCourseClass_IdIn(List.of(enrollment.getCourseClass().getId()))
+            .stream()
+            .map(assignment -> CourseEnrollmentTeacherOptionResponse.from(assignment.getPerson()))
+            .toList();
+
+    return CourseEnrollmentResponse.from(enrollment, schedules, teachers);
   }
 
   @Transactional(readOnly = true)
@@ -677,6 +733,21 @@ public class CourseEnrollmentService {
           enrollments.map(enrollment -> CourseEnrollmentResponse.from(enrollment, List.of())));
     }
 
+    final var classIds =
+        enrollments.getContent().stream()
+            .map(enrollment -> enrollment.getCourseClass().getId())
+            .distinct()
+            .toList();
+    final var teachersByClass =
+        courseClassTeacherRepository.findByCourseClass_IdIn(classIds).stream()
+            .collect(
+                Collectors.groupingBy(
+                    assignment -> assignment.getCourseClass().getId(),
+                    Collectors.mapping(
+                        assignment ->
+                            CourseEnrollmentTeacherOptionResponse.from(assignment.getPerson()),
+                        Collectors.toList())));
+
     final Map<UUID, List<CourseEnrollmentScheduleResponse>> schedulesByEnrollment =
         courseEnrollmentScheduleRepository.findByCourseEnrollment_IdIn(enrollmentIds).stream()
             .collect(
@@ -689,7 +760,8 @@ public class CourseEnrollmentService {
             enrollment ->
                 CourseEnrollmentResponse.from(
                     enrollment,
-                    schedulesByEnrollment.getOrDefault(enrollment.getId(), List.of()))));
+                    schedulesByEnrollment.getOrDefault(enrollment.getId(), List.of()),
+                    teachersByClass.getOrDefault(enrollment.getCourseClass().getId(), List.of()))));
   }
 
   private record ResolvedAssignment(

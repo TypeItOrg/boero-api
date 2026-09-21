@@ -86,20 +86,24 @@ public class EnrollmentApplicationController {
   @GetMapping(value = "/options/periods", version = Version.V1)
   public PaginatedResponse<EnrollmentPeriodResponse> listAvailablePeriods(
       final Authentication authentication,
+      @RequestParam(required = false) final UUID trainingPathId,
+      @RequestParam(required = false) final String search,
       @PageableDefault(sort = "startDate", direction = Sort.Direction.ASC)
           final Pageable pageable) {
     final var principal = requireInstitutionalUser(authentication);
 
-    return listEnrollmentApplicationPeriodsUseCase.execute(principal, pageable);
+    return listEnrollmentApplicationPeriodsUseCase.execute(
+        principal, trainingPathId, search, pageable);
   }
 
   @GetMapping(value = "/options/training-paths", version = Version.V1)
   public PaginatedResponse<TrainingPathResponse> listAvailableTrainingPaths(
       final Authentication authentication,
+      @RequestParam(required = false) final UUID periodId,
       @PageableDefault(sort = "name") final Pageable pageable) {
     final var principal = requireInstitutionalUser(authentication);
 
-    return listAvailableEnrollmentTrainingPathsUseCase.execute(principal, pageable);
+    return listAvailableEnrollmentTrainingPathsUseCase.execute(principal, periodId, pageable);
   }
 
   @GetMapping(value = "/{applicationId}", version = Version.V1)
@@ -180,12 +184,14 @@ public class EnrollmentApplicationController {
       final Authentication authentication,
       @PathVariable final UUID applicationId,
       @RequestParam(required = false) final String search,
+      @RequestParam(required = false) final UUID studyPlanSpaceId,
+      @RequestParam(required = false) final Integer academicYear,
       @PageableDefault(size = 50, sort = "studyPlanSpace.academicSpace.name")
           final Pageable pageable) {
     final var principal = requireInstitutionalUser(authentication);
     return PaginatedResponse.from(
         listEnrollmentApplicationCoursesUseCase.execute(
-            principal.personId(), applicationId, search, pageable));
+            principal.personId(), applicationId, search, studyPlanSpaceId, academicYear, pageable));
   }
 
   @GetMapping(

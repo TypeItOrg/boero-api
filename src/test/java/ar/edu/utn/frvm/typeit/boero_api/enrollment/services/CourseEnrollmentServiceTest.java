@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.CourseEnrollmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.CourseEnrollmentScheduleRepository;
 import java.util.UUID;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class CourseEnrollmentServiceTest {
+  @org.mockito.Mock private AcademicAccessGuard accessGuard;
 
   private static final UUID INSTITUTION_ID = UUID.randomUUID();
   private static final UUID PERSON_ID = UUID.randomUUID();

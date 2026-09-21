@@ -18,6 +18,8 @@ public class ListEnrollmentApplicationCoursesUseCase {
 
   private final EnrollmentApplicationRepository applicationRepository;
   private final CourseRepository courseRepository;
+  private final java.time.Clock clock;
+  private final AcademicEligibilityService eligibilityService;
   private final CourseCapacityService capacityService;
 
   @Transactional(readOnly = true)
@@ -25,6 +27,8 @@ public class ListEnrollmentApplicationCoursesUseCase {
       final UUID personId,
       final UUID applicationId,
       final @Nullable String search,
+      final @Nullable UUID studyPlanSpaceId,
+      final @Nullable Integer academicYear,
       final Pageable pageable) {
     final var application =
         applicationRepository
@@ -32,24 +36,35 @@ public class ListEnrollmentApplicationCoursesUseCase {
             .filter(candidate -> candidate.getDeletedAt() == null)
             .filter(candidate -> candidate.getApplicantPerson().getId().equals(personId))
             .orElseThrow(EnrollmentApplicationNotFoundException::new);
-    if (application.getTrainingPath() == null || application.getAcademicYear() == null) {
+    if (application.getTrainingPath() == null) {
       return Page.empty(pageable);
     }
 
     final var courses =
-        courseRepository.findActiveByTrainingPathAndAcademicYear(
+        courseRepository.findOpenForEnrollment(
             application.getInstitution().getId(),
             application.getTrainingPath().getId(),
-            application.getAcademicYear().getId(),
+            application.getEnrollmentPeriod() == null
+                ? null
+                : application.getEnrollmentPeriod().getId(),
+            clock.instant(),
+            studyPlanSpaceId,
+            academicYear,
             search == null || search.isBlank() ? null : search.trim(),
             pageable);
     final var coursesWithCapacity =
         capacityService.findCoursesWithCapacity(
             application.getInstitution().getId(), courses.getContent());
 
+    final var eligibility =
+        eligibilityService.evaluateCourses(
+            application.getInstitution().getId(), personId, courses.getContent());
+
     return courses.map(
         course ->
             EnrollmentCourseOptionResponse.from(
-                course, coursesWithCapacity.contains(course.getId())));
+                course,
+                coursesWithCapacity.contains(course.getId()),
+                eligibility.get(course.getId())));
   }
 }

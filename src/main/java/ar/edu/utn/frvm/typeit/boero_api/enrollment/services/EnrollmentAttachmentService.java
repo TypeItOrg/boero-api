@@ -2,11 +2,12 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedPlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
-import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorityResolver;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalAuthoritySnapshot;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.PermissionAccess;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentAttachment;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
@@ -51,6 +52,8 @@ public class EnrollmentAttachmentService {
   private final AuthorizationService authorizationService;
   private final AuthorityResolver authorityResolver;
   private final Clock clock;
+  private final EnrollmentApplicationPeriodService applicationPeriodService;
+  private final EnrollmentInstitutionLock institutionLock;
 
   public record AttachmentContentResult(Resource resource, EnrollmentAttachment attachment) {}
 
@@ -65,6 +68,7 @@ public class EnrollmentAttachmentService {
 
     EnrollmentApplication application = lockApplication(applicationId, authentication);
     ensureCanModify(application, authentication);
+    applicationPeriodService.requireOpen(application);
 
     if (application.getStatus() != EnrollmentApplicationStatus.DRAFT) {
       throw new ApplicationNotEditableException(applicationId);
@@ -145,6 +149,7 @@ public class EnrollmentAttachmentService {
 
     EnrollmentApplication application = lockApplication(applicationId, authentication);
     ensureCanModify(application, authentication);
+    applicationPeriodService.requireOpen(application);
 
     if (application.getStatus() != EnrollmentApplicationStatus.DRAFT) {
       throw new ApplicationNotEditableException(applicationId);
@@ -201,6 +206,15 @@ public class EnrollmentAttachmentService {
       throw new AccessDeniedException(EnrollmentMessages.ATTACHMENT_ACCESS_DENIED);
     }
 
+    final UUID resolvedInstitutionId =
+        institutionId == null
+            ? applicationRepository
+                .findById(applicationId)
+                .map(app -> app.getInstitution().getId())
+                .orElseThrow(() -> new EnrollmentApplicationNotFoundException(applicationId))
+            : institutionId;
+    institutionLock.lock(resolvedInstitutionId);
+
     return applicationRepository
         .findForAttachmentUpdate(applicationId, institutionId)
         .orElseThrow(() -> new EnrollmentApplicationNotFoundException(applicationId));
@@ -235,6 +249,19 @@ public class EnrollmentAttachmentService {
       return;
     }
 
+    denyAttachmentAccess(application, authentication);
+  }
+
+  private void denyAttachmentAccess(
+      EnrollmentApplication application, Authentication authentication) {
+    if (authentication != null
+        && authentication.getPrincipal() instanceof JwtAuthenticatedUser user
+        && authorityResolver
+            .resolvePersonAuthorities(user.personId(), user.institutionId())
+            .permissions()
+            .contains(PermissionCode.ENROLLMENT_APPLICATION_READ)) {
+      throw new EnrollmentApplicationNotFoundException(application.getId());
+    }
     throw new AccessDeniedException(EnrollmentMessages.ATTACHMENT_ACCESS_DENIED);
   }
 
@@ -243,7 +270,7 @@ public class EnrollmentAttachmentService {
       return;
     }
 
-    throw new AccessDeniedException(EnrollmentMessages.ATTACHMENT_MODIFY_DENIED);
+    denyAttachmentAccess(application, authentication);
   }
 
   private boolean isAuthorized(EnrollmentApplication application, Authentication authentication) {
@@ -262,26 +289,19 @@ public class EnrollmentAttachmentService {
         return true;
       }
 
-      if (application.getInstitution() != null) {
+      if (application.getInstitution() != null
+          && user.institutionId().equals(application.getInstitution().getId())) {
         InstitutionalAuthoritySnapshot snapshot =
             authorityResolver.resolvePersonAuthorities(
                 user.personId(), application.getInstitution().getId());
 
-        return isAdministrativeRole(snapshot);
+        return snapshot
+            .permissionScopes()
+            .getOrDefault(PermissionCode.ENROLLMENT_APPLICATION_READ, PermissionAccess.none())
+            .includes(application.getTrainingPathId());
       }
     }
 
     return false;
-  }
-
-  private boolean isAdministrativeRole(InstitutionalAuthoritySnapshot snapshot) {
-    if (snapshot == null) {
-      return false;
-    }
-
-    return snapshot.roles().contains("ADMINISTRATIVE")
-        || snapshot.roles().contains("INSTITUTIONAL_AUTHORITY")
-        || snapshot.roles().contains(SystemRoleCode.ADMINISTRATIVE.name())
-        || snapshot.roles().contains(SystemRoleCode.INSTITUTIONAL_AUTHORITY.name());
   }
 }

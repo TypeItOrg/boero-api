@@ -69,7 +69,7 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
         "courseClass"
       })
   @Query(
-      "SELECT enrollment FROM CourseEnrollment enrollment WHERE enrollment.institution.id = :institutionId"
+      "SELECT enrollment FROM CourseEnrollment enrollment WHERE enrollment.institution.id = :institutionId AND (:#{@scopedAuthorization.unrestricted('COURSE_ENROLLMENT_READ')} = true OR enrollment.course.studyPlanSpace.studyPlan.trainingPath.id IN :#{@scopedAuthorization.paths('COURSE_ENROLLMENT_READ')})"
           + " AND (:status IS NULL OR enrollment.status = :status)"
           + " AND (:academicStatus IS NULL OR enrollment.academicStatus = :academicStatus)")
   Page<CourseEnrollment> findByInstitution_Id(
@@ -124,4 +124,16 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
 
   Optional<CourseEnrollment> findByInstitution_IdAndApplicationCourse_Id(
       UUID institutionId, UUID applicationCourseId);
+
+  @EntityGraph(attributePaths = {"course", "course.studyPlanSpace"})
+  @Query(
+      """
+      SELECT enrollment FROM CourseEnrollment enrollment
+      WHERE enrollment.institution.id = :institutionId AND enrollment.student.person.id = :personId
+        AND enrollment.course.studyPlanSpace.id IN :spaceIds
+        AND enrollment.status IN (ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus.ENROLLED,
+          ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus.COMPLETED)
+      """)
+  List<CourseEnrollment> findAcademicEvidence(
+      UUID institutionId, UUID personId, java.util.Collection<UUID> spaceIds);
 }

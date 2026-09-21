@@ -26,7 +26,12 @@ public record EnrollmentApplicationCourseResponse(
     UUID resolvedByPersonId,
     String resolutionReasonCode,
     String resolutionReasonText,
-    long version) {
+    long version,
+    boolean withinPeriodScope,
+    boolean periodOpen,
+    UUID enrollmentPeriodId,
+    Instant enrollmentDeadline,
+    int academicYear) {
 
   public static EnrollmentApplicationCourseResponse from(
       final EnrollmentApplicationCourse selection) {
@@ -54,6 +59,12 @@ public record EnrollmentApplicationCourseResponse(
         selection.getResolvedByPersonId(),
         selection.getResolutionReasonCode(),
         selection.getResolutionReasonText(),
-        selection.getVersion());
+        selection.getVersion(),
+        selection.getCourse().getStudyPlanSpace() != null
+            && selection.getEnrollmentPeriod().includes(selection.getCourse().getStudyPlanSpace()),
+        selection.getEnrollmentPeriod().isOpenAt(Instant.now()),
+        selection.getEnrollmentPeriod().getId(),
+        selection.getEnrollmentPeriod().getEndDate(),
+        course.getAcademicYear().getYear());
   }
 }

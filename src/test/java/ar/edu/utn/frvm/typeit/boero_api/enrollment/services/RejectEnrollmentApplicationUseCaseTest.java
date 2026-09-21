@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
@@ -114,6 +115,7 @@ class RejectEnrollmentApplicationUseCaseTest {
 
   private RejectEnrollmentApplicationUseCase useCase() {
     return new RejectEnrollmentApplicationUseCase(
+        org.mockito.Mockito.mock(AcademicAccessGuard.class),
         enrollmentApplicationRepository,
         Clock.systemUTC(),
         Mockito.mock(EnrollmentInstitutionLock.class));

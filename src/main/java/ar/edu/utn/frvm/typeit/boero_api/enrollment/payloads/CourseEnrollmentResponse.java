@@ -21,10 +21,12 @@ import java.util.UUID;
       "academicLevelName",
       "studyPlanName",
       "trainingPathName",
+      "trainingPathId",
       "instrumentId",
       "instrumentName",
       "courseClassId",
       "courseClassLabel",
+      "teachers",
       "source",
       "status",
       "academicStatus",
@@ -45,10 +47,12 @@ public record CourseEnrollmentResponse(
     @Schema(nullable = true) String academicLevelName,
     String studyPlanName,
     String trainingPathName,
+    UUID trainingPathId,
     @Schema(nullable = true) UUID instrumentId,
     @Schema(nullable = true) String instrumentName,
     UUID courseClassId,
     String courseClassLabel,
+    List<CourseEnrollmentTeacherOptionResponse> teachers,
     CourseEnrollmentSource source,
     CourseEnrollmentStatus status,
     AcademicEnrollmentStatus academicStatus,
@@ -60,6 +64,13 @@ public record CourseEnrollmentResponse(
 
   public static CourseEnrollmentResponse from(
       final CourseEnrollment enrollment, final List<CourseEnrollmentScheduleResponse> schedules) {
+    return from(enrollment, schedules, List.of());
+  }
+
+  public static CourseEnrollmentResponse from(
+      final CourseEnrollment enrollment,
+      final List<CourseEnrollmentScheduleResponse> schedules,
+      final List<CourseEnrollmentTeacherOptionResponse> teachers) {
     final var course = enrollment.getCourse();
     final var metadata = CourseEnrollmentCourseMetadata.from(course);
     final var student = enrollment.getStudent();
@@ -75,10 +86,12 @@ public record CourseEnrollmentResponse(
         metadata.academicLevelName(),
         metadata.studyPlanName(),
         metadata.trainingPathName(),
+        course.getStudyPlan().getTrainingPath().getId(),
         metadata.instrumentId(),
         metadata.instrumentName(),
         enrollment.getCourseClass().getId(),
         enrollment.getCourseClass().displayName(),
+        teachers,
         enrollment.getSource(),
         enrollment.getStatus(),
         enrollment.getAcademicStatus(),

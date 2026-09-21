@@ -11,16 +11,20 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentHistoryResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CreateManualCourseEnrollmentRequest;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.OwnWeeklySchedulesResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateAcademicEnrollmentStatusRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.WithdrawCourseEnrollmentRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CourseEnrollmentService;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListOwnWeeklySchedulesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.security.handlers.SecurityErrorMessages;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,6 +43,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class CourseEnrollmentController {
 
   private final CourseEnrollmentService courseEnrollmentService;
+  private final ListOwnWeeklySchedulesUseCase listOwnWeeklySchedulesUseCase;
 
   @GetMapping(version = Version.V1)
   @RequiresPermission(PermissionCode.COURSE_ENROLLMENT_READ)
@@ -63,6 +68,19 @@ public class CourseEnrollmentController {
     }
     return courseEnrollmentService.listOwn(
         institutionId, principal.personId(), status, academicStatus, pageable);
+  }
+
+  @GetMapping(value = "/mine/schedules", version = Version.V1)
+  public OwnWeeklySchedulesResponse ownWeeklySchedules(
+      @PathVariable final UUID institutionId,
+      final Authentication authentication,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          final LocalDate week) {
+    if (!(authentication.getPrincipal() instanceof JwtAuthenticatedUser principal)) {
+      throw new AccessDeniedException(SecurityErrorMessages.DEFAULT_FORBIDDEN_MESSAGE);
+    }
+
+    return listOwnWeeklySchedulesUseCase.execute(institutionId, principal.personId(), week);
   }
 
   @GetMapping(value = "/{enrollmentId}", version = Version.V1)

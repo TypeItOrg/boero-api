@@ -1,5 +1,8 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
@@ -19,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ApproveEnrollmentApplicationUseCase {
+  private final AcademicAccessGuard accessGuard;
 
   private final EnrollmentApplicationRepository enrollmentApplicationRepository;
   private final StudentRepository studentRepository;
@@ -32,6 +36,12 @@ public class ApproveEnrollmentApplicationUseCase {
   @Transactional
   public EnrollmentApplicationResponse execute(
       final UUID institutionId, final UUID applicationId, final UUID resolvedByPersonId) {
+    accessGuard.require(
+        PermissionCode.ENROLLMENT_APPLICATION_APPROVE,
+        institutionId,
+        ScopedResource.ENROLLMENT_APPLICATION,
+        applicationId);
+
     enrollmentInstitutionLock.lock(institutionId);
     final var currentStatus =
         enrollmentApplicationRepository.findStatusByInstitutionIdAndId(
