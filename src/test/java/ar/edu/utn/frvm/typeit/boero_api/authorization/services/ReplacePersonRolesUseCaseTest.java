@@ -6,15 +6,18 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.AccessScope;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.InstitutionalAuthorityRoleImmutableException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RoleRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.AssignRoleRequest;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.ReplacePersonRolesRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
@@ -31,6 +34,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ReplacePersonRolesUseCaseTest {
+  @org.mockito.Spy
+  private PersonRoleResponseFactory responseFactory =
+      new PersonRoleResponseFactory(org.mockito.Mockito.mock(TrainingPathRepository.class));
+
+  @Mock private RoleAssignmentScopeValidator roleAssignmentScopeValidator;
+  @Mock private RoleAdministrationLock roleAdministrationLock;
 
   @Mock private InstitutionPersonResolver institutionPersonResolver;
   @Mock private RoleRepository roleRepository;
@@ -58,7 +67,10 @@ class ReplacePersonRolesUseCaseTest {
                 replacePersonRolesUseCase.execute(
                     institutionId,
                     personId,
-                    new ReplacePersonRolesRequest(Set.of(student.getId())),
+                    new ReplacePersonRolesRequest(
+                        Set.of(student.getId()).stream()
+                            .map(id -> new AssignRoleRequest(id, AccessScope.INSTITUTION, Set.of()))
+                            .toList()),
                     false,
                     Set.of(
                         PermissionCode.INSTITUTION_ROLE_ASSIGN,
@@ -72,6 +84,8 @@ class ReplacePersonRolesUseCaseTest {
   @Test
   @DisplayName("Should preserve institutional authority when adding another role")
   void execute_preservesInstitutionalAuthorityWhenAddingRole() {
+    when(roleAssignmentScopeValidator.freshPermissions())
+        .thenReturn(Set.of(PermissionCode.INSTITUTION_ROLE_ASSIGN));
     UUID institutionId = UUID.randomUUID();
     UUID personId = UUID.randomUUID();
     Person person = personWith(institutionId, personId);
@@ -86,7 +100,10 @@ class ReplacePersonRolesUseCaseTest {
     replacePersonRolesUseCase.execute(
         institutionId,
         personId,
-        new ReplacePersonRolesRequest(Set.of(authority.getId(), student.getId())),
+        new ReplacePersonRolesRequest(
+            Set.of(authority.getId(), student.getId()).stream()
+                .map(id -> new AssignRoleRequest(id, AccessScope.INSTITUTION, Set.of()))
+                .toList()),
         false,
         Set.of(PermissionCode.INSTITUTION_ROLE_ASSIGN));
 
@@ -113,7 +130,10 @@ class ReplacePersonRolesUseCaseTest {
                 replacePersonRolesUseCase.execute(
                     institutionId,
                     personId,
-                    new ReplacePersonRolesRequest(Set.of(authority.getId(), applicant.getId())),
+                    new ReplacePersonRolesRequest(
+                        Set.of(authority.getId(), applicant.getId()).stream()
+                            .map(id -> new AssignRoleRequest(id, AccessScope.INSTITUTION, Set.of()))
+                            .toList()),
                     false,
                     Set.of(PermissionCode.INSTITUTION_ROLE_ASSIGN)))
         .isInstanceOf(InstitutionalAuthorityRoleImmutableException.class);
@@ -138,7 +158,10 @@ class ReplacePersonRolesUseCaseTest {
     replacePersonRolesUseCase.execute(
         institutionId,
         personId,
-        new ReplacePersonRolesRequest(Set.of(applicant.getId())),
+        new ReplacePersonRolesRequest(
+            Set.of(applicant.getId()).stream()
+                .map(id -> new AssignRoleRequest(id, AccessScope.INSTITUTION, Set.of()))
+                .toList()),
         true,
         Set.of());
 

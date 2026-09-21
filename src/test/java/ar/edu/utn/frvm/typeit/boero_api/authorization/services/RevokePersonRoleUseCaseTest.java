@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
@@ -26,6 +27,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RevokePersonRoleUseCaseTest {
+  @Mock private SessionRevocationService sessionRevocationService;
+  @Mock private RoleAssignmentScopeValidator roleAssignmentScopeValidator;
+  @Mock private RoleAdministrationLock roleAdministrationLock;
 
   @Mock private InstitutionPersonResolver institutionPersonResolver;
   @Mock private RoleRepository roleRepository;

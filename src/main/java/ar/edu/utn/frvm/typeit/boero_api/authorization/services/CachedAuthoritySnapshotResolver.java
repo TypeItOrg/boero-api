@@ -1,12 +1,15 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.authorization.cache.AuthorizationCacheNames;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.AccessScope;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PlatformAccountRoleRepository;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -28,16 +31,32 @@ public class CachedAuthoritySnapshotResolver {
       key = "#personId + '-' + #institutionId")
   @Transactional(readOnly = true)
   public InstitutionalAuthoritySnapshot resolveForPerson(UUID personId, UUID institutionId) {
+    return resolveFreshForPerson(personId, institutionId);
+  }
+
+  @Transactional(readOnly = true)
+  public InstitutionalAuthoritySnapshot resolveFreshForPerson(UUID personId, UUID institutionId) {
     List<PersonRoleAssignmentRepository.AuthorityRow> rows =
         personRoleAssignmentRepository.findAuthoritiesByPersonIdAndInstitutionId(
             personId, institutionId);
 
-    Set<PermissionCode> permissions =
-        rows.stream()
-            .map(PersonRoleAssignmentRepository.AuthorityRow::getPermissionCode)
-            .filter(code -> code != null)
-            .map(PermissionCode::fromCode)
-            .collect(Collectors.toCollection(() -> EnumSet.noneOf(PermissionCode.class)));
+    Map<PermissionCode, PermissionAccess> scopes = new EnumMap<>(PermissionCode.class);
+    for (var row : rows) {
+      if (row.getPermissionCode() == null) {
+        continue;
+      }
+      PermissionCode permission = PermissionCode.fromCode(row.getPermissionCode());
+      PermissionAccess access;
+      if (row.getAccessScope() == AccessScope.INSTITUTION) {
+        access = PermissionAccess.institution();
+      } else if (permission.supportsTrainingPaths() && row.getTrainingPathId() != null) {
+        access = new PermissionAccess(AccessScope.TRAINING_PATHS, Set.of(row.getTrainingPathId()));
+      } else {
+        continue;
+      }
+      scopes.merge(permission, access, PermissionAccess::union);
+    }
+    Set<PermissionCode> permissions = scopes.keySet();
     List<String> roles =
         rows.stream()
             .map(PersonRoleAssignmentRepository.AuthorityRow::getRoleName)
@@ -45,7 +64,7 @@ public class CachedAuthoritySnapshotResolver {
             .sorted(String.CASE_INSENSITIVE_ORDER)
             .toList();
 
-    return new InstitutionalAuthoritySnapshot(permissions, roles);
+    return new InstitutionalAuthoritySnapshot(permissions, roles, scopes);
   }
 
   @Cacheable(value = AuthorizationCacheNames.PLATFORM_AUTHORITIES, key = "#platformAccountId")

@@ -8,17 +8,21 @@ import static ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorMessages.V
 import static ar.edu.utn.frvm.typeit.boero_api.security.handlers.SecurityErrorMessages.DEFAULT_FORBIDDEN_MESSAGE;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.InvalidAccessScopeException;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.DisabledException;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -40,6 +44,26 @@ public class GlobalExceptionHandler {
         .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
         .message(INTERNAL_SERVER_ERROR_MESSAGE)
         .build();
+  }
+
+  @ExceptionHandler({DataIntegrityViolationException.class, TransactionSystemException.class})
+  public ResponseEntity<ExceptionPayload> handlePersistenceException(
+      final RuntimeException exception) {
+    final var scopeConstraints =
+        Set.of(
+            "person_role_assignments_access_scope_check",
+            "person_role_assignment_scope_consistency",
+            "role_scope_assignment_tenant_fk",
+            "person_role_assignments_role_institution_fk",
+            "role_scope_training_path_tenant_fk",
+            "person_role_assignment_training_paths_pkey");
+    for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+      if (cause instanceof org.hibernate.exception.ConstraintViolationException violation
+          && scopeConstraints.contains(violation.getConstraintName())) {
+        return handleApplicationException(new InvalidAccessScopeException());
+      }
+    }
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(handleException(exception));
   }
 
   @ExceptionHandler(ApplicationException.class)

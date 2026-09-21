@@ -37,5 +37,9 @@ public final class AuthorizationMessages {
       "La anotación RequiresInstitutionAccess se utilizó en un método sin un parámetro UUID "
           + "llamado institutionId.";
 
+  public static final String INVALID_ACCESS_SCOPE =
+      "El alcance debe ser institucional o incluir trayectos válidos de la misma institución.";
+  public static final String SCOPED_RESOURCE_NOT_FOUND = "Recurso no encontrado.";
+
   private AuthorizationMessages() {}
 }

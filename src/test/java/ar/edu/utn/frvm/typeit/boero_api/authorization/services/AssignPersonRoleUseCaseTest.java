@@ -5,8 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.AccessScope;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.PersonNotFoundInInstitutionException;
@@ -17,6 +19,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.AssignRoleRequest
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,6 +30,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AssignPersonRoleUseCaseTest {
+  @org.mockito.Spy
+  private PersonRoleResponseFactory responseFactory =
+      new PersonRoleResponseFactory(org.mockito.Mockito.mock(TrainingPathRepository.class));
+
+  @Mock private RoleAssignmentScopeValidator roleAssignmentScopeValidator;
+  @Mock private RoleAdministrationLock roleAdministrationLock;
 
   @Mock private InstitutionPersonResolver institutionPersonResolver;
   @Mock private RoleRepository roleRepository;
@@ -55,7 +64,10 @@ class AssignPersonRoleUseCaseTest {
 
     var response =
         assignPersonRoleUseCase.execute(
-            institutionId, personId, new AssignRoleRequest(role.getId()), false);
+            institutionId,
+            personId,
+            new AssignRoleRequest(role.getId(), AccessScope.INSTITUTION, Set.of()),
+            false);
 
     verify(assignPersonSystemRoleUseCase).execute(person, role, true);
     assertThat(response.technicalCode()).isEqualTo(SystemRoleCode.TEACHER);
@@ -74,7 +86,10 @@ class AssignPersonRoleUseCaseTest {
     assertThatThrownBy(
             () ->
                 assignPersonRoleUseCase.execute(
-                    institutionId, personId, new AssignRoleRequest(UUID.randomUUID()), false))
+                    institutionId,
+                    personId,
+                    new AssignRoleRequest(UUID.randomUUID(), AccessScope.INSTITUTION, Set.of()),
+                    false))
         .isInstanceOf(PersonNotFoundInInstitutionException.class);
   }
 
@@ -95,7 +110,10 @@ class AssignPersonRoleUseCaseTest {
     assertThatThrownBy(
             () ->
                 assignPersonRoleUseCase.execute(
-                    institutionId, personId, new AssignRoleRequest(roleId), false))
+                    institutionId,
+                    personId,
+                    new AssignRoleRequest(roleId, AccessScope.INSTITUTION, Set.of()),
+                    false))
         .isInstanceOf(RoleNotAssignableException.class);
   }
 

@@ -1,21 +1,38 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.payloads;
 
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import lombok.Builder;
 
 @Builder
+@io.swagger.v3.oas.annotations.media.Schema(
+    requiredProperties = {
+      "id",
+      "name",
+      "technicalCode",
+      "editable",
+      "deletable",
+      "assignmentCount",
+      "permissions",
+      "protectedPermissions",
+      "supportsTrainingPathScope",
+      "inactivePermissionDescriptionsWhenScoped"
+    })
 public record InstitutionRoleResponse(
     UUID id,
     String name,
-    SystemRoleCode technicalCode,
+    @io.swagger.v3.oas.annotations.media.Schema(nullable = true) SystemRoleCode technicalCode,
     boolean editable,
     boolean deletable,
     long assignmentCount,
     Set<String> permissions,
-    Set<String> protectedPermissions) {
+    Set<String> protectedPermissions,
+    boolean supportsTrainingPathScope,
+    List<String> inactivePermissionDescriptionsWhenScoped) {
 
   public static InstitutionRoleResponse from(
       Role role, long assignmentCount, Set<String> permissions) {
@@ -33,6 +50,17 @@ public record InstitutionRoleResponse(
         .editable(!authority)
         .deletable(!role.isSystem() && assignmentCount == 0)
         .assignmentCount(assignmentCount)
+        .supportsTrainingPathScope(
+            permissions.stream()
+                .map(PermissionCode::fromCode)
+                .anyMatch(PermissionCode::supportsTrainingPaths))
+        .inactivePermissionDescriptionsWhenScoped(
+            permissions.stream()
+                .map(PermissionCode::fromCode)
+                .filter(permission -> !permission.supportsTrainingPaths())
+                .map(PermissionCode::getDescription)
+                .sorted()
+                .toList())
         .permissions(permissions)
         .protectedPermissions(protectedPermissions)
         .build();

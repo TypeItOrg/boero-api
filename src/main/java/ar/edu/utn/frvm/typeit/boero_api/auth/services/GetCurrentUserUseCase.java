@@ -4,6 +4,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidCredentialsException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
+import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.UserPayload;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.UserResponse;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorityResolver;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,9 @@ public class GetCurrentUserUseCase {
     var authorities =
         authorityResolver.resolvePersonAuthorities(principal.personId(), principal.institutionId());
 
-    return UserResponse.from(
-        user, principal.personId(), authorities.permissions(), authorities.roles());
+    var payload =
+        UserPayload.from(
+            user, principal.personId(), authorities.permissions(), authorities.roles());
+    return new UserResponse(payload.withScopes(authorities.permissionScopes()));
   }
 }
