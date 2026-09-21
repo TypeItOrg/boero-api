@@ -1,6 +1,8 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces;
 
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.CourseEnrollmentSchedule;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -10,6 +12,38 @@ import org.springframework.data.repository.query.Param;
 
 public interface CourseEnrollmentScheduleRepository
     extends JpaRepository<CourseEnrollmentSchedule, UUID> {
+
+  @Query(
+      """
+      SELECT assignment FROM CourseEnrollmentSchedule assignment
+      WHERE assignment.institution.id = :institutionId
+        AND assignment.courseEnrollment.student.person.id = :personId
+        AND assignment.createdAt < :until
+        AND assignment.courseEnrollment.enrolledAt < :until
+        AND (assignment.releasedAt IS NULL OR assignment.releasedAt > :since)
+        AND (assignment.courseEnrollment.completedAt IS NULL OR assignment.courseEnrollment.completedAt > :since)
+        AND (assignment.courseEnrollment.withdrawnAt IS NULL OR assignment.courseEnrollment.withdrawnAt > :since)
+        AND assignment.courseEnrollment.course.academicYear.startDate <= :weekEnd
+        AND assignment.courseEnrollment.course.academicYear.endDate >= :weekStart
+      ORDER BY assignment.dayOfWeek, assignment.startTime, assignment.id
+      """)
+  @EntityGraph(
+      attributePaths = {
+        "courseEnrollment.student.person",
+        "courseEnrollment.courseClass",
+        "courseEnrollment.course.academicYear",
+        "courseEnrollment.course.instrument",
+        "courseEnrollment.course.studyPlanSpace.academicSpace",
+        "courseEnrollment.course.studyPlanSpace.academicLevel",
+        "courseEnrollment.course.studyPlanSpace.studyPlan.trainingPath"
+      })
+  List<CourseEnrollmentSchedule> findOwnInWeek(
+      @Param("institutionId") UUID institutionId,
+      @Param("personId") UUID personId,
+      @Param("weekStart") LocalDate weekStart,
+      @Param("weekEnd") LocalDate weekEnd,
+      @Param("since") Instant since,
+      @Param("until") Instant until);
 
   List<CourseEnrollmentSchedule> findByCourseEnrollment_Id(UUID courseEnrollmentId);
 

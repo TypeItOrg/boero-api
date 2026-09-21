@@ -38,8 +38,11 @@ public class ListEnrollmentApplicationStudyPlanSpacesUseCase {
     final var effectiveStudyPlan =
         enrollmentEffectiveStudyPlanResolver.resolve(principal.institutionId(), application);
     final var studyPlanSpaces =
-        studyPlanSpaceRepository.findEligibleByStudyPlanId(
-            principal.institutionId(), effectiveStudyPlan.getId());
+        studyPlanSpaceRepository
+            .findEligibleByStudyPlanId(principal.institutionId(), effectiveStudyPlan.getId())
+            .stream()
+            .filter(application.getEnrollmentPeriod()::includes)
+            .toList();
     final var allowedInstrumentsByStudyPlanSpaceId =
         studyPlanSpaceInstrumentRepository
             .findActiveByStudyPlanSpaceIds(

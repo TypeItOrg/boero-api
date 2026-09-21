@@ -17,7 +17,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Builder;
 
-@Builder
+@Builder(toBuilder = true)
 @Schema(
     requiredProperties = {
       "applicationId",
@@ -43,7 +43,9 @@ import lombok.Builder;
       "createdAt",
       "updatedAt",
       "spaces",
-      "courses"
+      "courses",
+      "enrollmentPeriod",
+      "periodOpen"
     })
 public record EnrollmentApplicationResponse(
     @Schema(nullable = true) UUID applicationId,
@@ -69,7 +71,9 @@ public record EnrollmentApplicationResponse(
     @Schema(nullable = true) Instant createdAt,
     @Schema(nullable = true) Instant updatedAt,
     @Schema(nullable = true) List<EnrollmentApplicationSpaceResponse> spaces,
-    @Schema(nullable = true) List<EnrollmentApplicationCourseResponse> courses) {
+    @Schema(nullable = true) List<EnrollmentApplicationCourseResponse> courses,
+    @Schema(nullable = true) EnrollmentPeriodResponse enrollmentPeriod,
+    boolean periodOpen) {
   public EnrollmentApplicationResponse() {
     this(
         null,
@@ -95,7 +99,9 @@ public record EnrollmentApplicationResponse(
         null,
         null,
         new ArrayList<>(),
-        new ArrayList<>());
+        new ArrayList<>(),
+        null,
+        false);
   }
 
   public EnrollmentApplicationResponse {
@@ -227,13 +233,24 @@ public record EnrollmentApplicationResponse(
             application.getStudyPlan() == null ? null : application.getStudyPlan().getName())
         .trainingPathName(trainingPath == null ? null : trainingPath.getName())
         .academicYearId(
-            application.getAcademicYear() == null ? null : application.getAcademicYear().getId())
+            application.commonAcademicYear() == null
+                ? null
+                : application.commonAcademicYear().getId())
         .academicYear(
-            application.getAcademicYear() == null ? null : application.getAcademicYear().getYear())
+            application.commonAcademicYear() == null
+                ? null
+                : application.commonAcademicYear().getYear())
         .enrollmentPeriodId(
             application.getEnrollmentPeriod() == null
                 ? null
                 : application.getEnrollmentPeriod().getId())
+        .enrollmentPeriod(
+            application.getEnrollmentPeriod() == null
+                ? null
+                : EnrollmentPeriodResponse.from(application.getEnrollmentPeriod()))
+        .periodOpen(
+            application.getEnrollmentPeriod() != null
+                && application.getEnrollmentPeriod().isOpenAt(Instant.now()))
         .status(application.getStatus())
         .isEditable(application.isEditable())
         .data(
@@ -285,13 +302,24 @@ public record EnrollmentApplicationResponse(
         .trainingPathName(
             application.getTrainingPath() != null ? application.getTrainingPath().getName() : null)
         .academicYearId(
-            application.getAcademicYear() != null ? application.getAcademicYear().getId() : null)
+            application.commonAcademicYear() != null
+                ? application.commonAcademicYear().getId()
+                : null)
         .academicYear(
-            application.getAcademicYear() != null ? application.getAcademicYear().getYear() : null)
+            application.commonAcademicYear() != null
+                ? application.commonAcademicYear().getYear()
+                : null)
         .enrollmentPeriodId(
             application.getEnrollmentPeriod() != null
                 ? application.getEnrollmentPeriod().getId()
                 : null)
+        .enrollmentPeriod(
+            application.getEnrollmentPeriod() == null
+                ? null
+                : EnrollmentPeriodResponse.from(application.getEnrollmentPeriod()))
+        .periodOpen(
+            application.getEnrollmentPeriod() != null
+                && application.getEnrollmentPeriod().isOpenAt(Instant.now()))
         .status(application.getStatus())
         .isEditable(application.isEditable())
         .data(buildDraftData(application))

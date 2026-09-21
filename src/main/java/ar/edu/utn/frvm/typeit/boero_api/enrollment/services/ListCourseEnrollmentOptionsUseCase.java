@@ -9,6 +9,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassRepositor
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassScheduleRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassTeacherRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.CourseEnrollmentSchedule;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.CourseIndividualSlot;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
@@ -34,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ListCourseEnrollmentOptionsUseCase {
+  private final AcademicAccessGuard accessGuard;
 
   private final CourseRepository courseRepository;
   private final CourseClassRepository courseClassRepository;
@@ -46,6 +50,14 @@ public class ListCourseEnrollmentOptionsUseCase {
   @Transactional(readOnly = true)
   public CourseEnrollmentAssignmentOptionsResponse execute(
       final UUID institutionId, final UUID courseId) {
+    accessGuard.requireAny(
+        java.util.Set.of(
+            PermissionCode.COURSE_ENROLLMENT_READ,
+            PermissionCode.COURSE_ENROLLMENT_CREATE,
+            PermissionCode.ENROLLMENT_APPLICATION_COURSE_ENROLL),
+        institutionId,
+        ScopedResource.COURSE,
+        courseId);
     final Course course =
         courseRepository
             .findByIdAndInstitution_Id(courseId, institutionId)

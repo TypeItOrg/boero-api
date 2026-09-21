@@ -22,6 +22,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.InstrumentRepository
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ScopedAuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantEducationBackground;
@@ -115,8 +116,10 @@ class EnrollmentApplicationServiceTest {
         .thenReturn(Optional.of(institutionId));
     service =
         new EnrollmentApplicationService(
+            Mockito.mock(ScopedAuthorizationService.class),
             applicationRepository,
-            periodRepository,
+            Mockito.mock(EnrollmentApplicationPeriodService.class),
+            Mockito.mock(EnrollmentApplicationResponseFactory.class),
             personRepository,
             studyPlanRepository,
             trainingPathRepository,
@@ -125,14 +128,14 @@ class EnrollmentApplicationServiceTest {
             applicationCourseRepository,
             courseEnrollmentRepository,
             studentRepository,
-            academicYearRepository,
             studyPlanSpaceRepository,
             instrumentRepository,
             enrollmentDraftDataValidator,
             applicationCourseApprovalService,
             new BusinessDateProvider(Clock.systemUTC()),
             Clock.systemUTC(),
-            Mockito.mock(EnrollmentInstitutionLock.class));
+            Mockito.mock(EnrollmentInstitutionLock.class),
+            Mockito.mock(AcademicEligibilityService.class));
   }
 
   @Test

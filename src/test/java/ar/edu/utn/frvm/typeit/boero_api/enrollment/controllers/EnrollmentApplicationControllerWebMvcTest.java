@@ -304,7 +304,7 @@ class EnrollmentApplicationControllerWebMvcTest {
   @Test
   @DisplayName("Should list available training paths before starting an application")
   void listsAvailableTrainingPathsForNewApplication() throws Exception {
-    when(listAvailableEnrollmentTrainingPathsUseCase.execute(any(), any()))
+    when(listAvailableEnrollmentTrainingPathsUseCase.execute(any(), any(), any()))
         .thenReturn(
             new PaginatedResponse<>(
                 List.of(

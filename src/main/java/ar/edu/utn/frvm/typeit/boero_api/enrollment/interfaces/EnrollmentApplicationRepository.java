@@ -21,6 +21,33 @@ public interface EnrollmentApplicationRepository
         JpaSpecificationExecutor<EnrollmentApplication> {
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
+  java.util.Optional<EnrollmentApplication>
+      findByInstitution_IdAndApplicantPerson_IdAndTrainingPathIdAndEnrollmentPeriod_IdAndStatusAndDeletedAtIsNull(
+          UUID institutionId,
+          UUID personId,
+          UUID trainingPathId,
+          UUID periodId,
+          EnrollmentApplicationStatus status);
+
+  @Query(
+      value =
+          """
+          SELECT EXISTS (
+            SELECT 1 FROM enrollment_applications application
+            WHERE application.status = 'SUBMITTED' AND application.deleted_at IS NULL
+              AND (application.enrollment_period_id = :periodId OR EXISTS (
+                SELECT 1 FROM enrollment_application_courses selection
+                WHERE selection.enrollment_application_id = application.enrollment_application_id
+                  AND selection.enrollment_period_id = :periodId)))
+          """,
+      nativeQuery = true)
+  boolean existsSubmittedByPeriod(@Param("periodId") UUID periodId);
+
+  @Query(
+      "SELECT app FROM EnrollmentApplication app WHERE app.institution.id = :institutionId AND app.applicantPerson.id = :personId AND app.trainingPathId = :trainingPathId AND app.status = ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus.DRAFT AND app.deletedAt IS NULL ORDER BY CASE WHEN app.enrollmentPeriod IS NULL THEN 0 ELSE 1 END, app.updatedAt DESC, app.id DESC")
+  List<EnrollmentApplication> findDraftsForTrainingPath(
+      UUID institutionId, UUID personId, UUID trainingPathId, Pageable pageable);
+
   @Query(
       "SELECT app FROM EnrollmentApplication app WHERE app.id = :id AND app.applicantPerson.id = :personId AND app.deletedAt IS NULL")
   Optional<EnrollmentApplication> findOwnedForUpdate(
@@ -78,7 +105,7 @@ public interface EnrollmentApplicationRepository
       "SELECT application FROM EnrollmentApplication application "
           + "WHERE application.institution.id = :institutionId "
           + "AND application.deletedAt IS NULL "
-          + "AND (:status IS NULL OR application.status = :status) "
+          + "AND (:#{@scopedAuthorization.unrestricted('ENROLLMENT_APPLICATION_READ')} = true OR application.trainingPathId IN :#{@scopedAuthorization.paths('ENROLLMENT_APPLICATION_READ')}) AND (:status IS NULL OR application.status = :status) "
           + "AND (:trainingPathId IS NULL OR application.trainingPathId = :trainingPathId) "
           + "AND (:open = false OR application.enrollmentPeriod.status = ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus.OPEN)")
   Page<EnrollmentApplication> findByInstitutionId(

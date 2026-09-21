@@ -43,7 +43,8 @@ public class ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase {
         studyPlanSpaceRepository.findEligibleByIdInAndStudyPlanId(
             principal.institutionId(), effectiveStudyPlan.getId(), List.of(studyPlanSpaceId));
 
-    if (eligibleSpaces.isEmpty()) {
+    if (eligibleSpaces.isEmpty()
+        || !application.getEnrollmentPeriod().includes(eligibleSpaces.getFirst())) {
       throw new EnrollmentValidationException(
           EnrollmentMessages.ENROLLMENT_APPLICATION_STUDY_PLAN_SPACE_INVALID,
           Map.of(

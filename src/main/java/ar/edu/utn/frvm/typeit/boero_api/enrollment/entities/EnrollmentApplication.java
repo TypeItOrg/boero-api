@@ -100,12 +100,12 @@ public class EnrollmentApplication extends SoftDeletable {
     }
   }
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "academic_year_id", nullable = false)
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "academic_year_id")
   private AcademicYear academicYear;
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "enrollment_period_id", nullable = false)
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "enrollment_period_id")
   private EnrollmentPeriod enrollmentPeriod;
 
   @Enumerated(EnumType.STRING)
@@ -262,6 +262,42 @@ public class EnrollmentApplication extends SoftDeletable {
         .studyPlan(studyPlan)
         .academicYear(academicYear)
         .enrollmentPeriod(enrollmentPeriod)
+        .status(EnrollmentApplicationStatus.DRAFT)
+        .build();
+  }
+
+  public AcademicYear commonAcademicYear() {
+    if (academicYear != null) {
+      return academicYear;
+    }
+    if (courseSelections.isEmpty()) {
+      return null;
+    }
+    final var year = courseSelections.getFirst().getCourse().getAcademicYear();
+    return courseSelections.stream()
+            .allMatch(
+                selection -> selection.getCourse().getAcademicYear().getId().equals(year.getId()))
+        ? year
+        : null;
+  }
+
+  public void useCoursePeriods() {
+    if (status != EnrollmentApplicationStatus.DRAFT) {
+      throw new IllegalStateException("Only drafts can change their enrollment scope");
+    }
+    enrollmentPeriod = null;
+    academicYear = null;
+  }
+
+  public static EnrollmentApplication createForTrainingPath(
+      final Institution institution,
+      final Person applicantPerson,
+      final TrainingPath trainingPath) {
+    return EnrollmentApplication.builder()
+        .institution(institution)
+        .applicantPerson(applicantPerson)
+        .trainingPathId(trainingPath.getId())
+        .trainingPath(trainingPath)
         .status(EnrollmentApplicationStatus.DRAFT)
         .build();
   }

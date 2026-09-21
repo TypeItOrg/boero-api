@@ -1,11 +1,13 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.entities;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidEnrollmentPeriodDatesException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -14,8 +16,11 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -57,6 +62,38 @@ public class EnrollmentPeriod extends SoftDeletable {
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 20)
   private EnrollmentPeriodStatus status;
+
+  @OneToMany(mappedBy = "period", cascade = CascadeType.ALL, orphanRemoval = true)
+  @org.hibernate.annotations.BatchSize(size = 50)
+  @Builder.Default
+  private List<EnrollmentPeriodOffering> offerings = new ArrayList<>();
+
+  @Column(name = "scope_configured", nullable = false)
+  private boolean scopeConfigured;
+
+  public void markScopeConfigured() {
+    scopeConfigured = true;
+  }
+
+  public boolean isOpenAt(final Instant now) {
+    return getDeletedAt() == null
+        && status == EnrollmentPeriodStatus.OPEN
+        && !now.isBefore(startDate)
+        && !now.isAfter(endDate)
+        && scopeConfigured;
+  }
+
+  public boolean includes(final StudyPlanSpace space) {
+    return scopeConfigured
+        && offerings.stream()
+            .anyMatch(
+                offering ->
+                    offering.getStudyPlan().getId().equals(space.getStudyPlan().getId())
+                        && offering.includes(
+                            space.getAcademicLevel() == null
+                                ? null
+                                : space.getAcademicLevel().getId()));
+  }
 
   public void updateDetails(final String name, final Instant startDate, final Instant endDate) {
     if (startDate.isAfter(endDate)) {

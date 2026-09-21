@@ -1,8 +1,11 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ScopedAuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriodOffering;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentPeriodRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentPeriodResponse;
@@ -27,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ListEnrollmentPeriodsUseCase {
+  private final EnrollmentPeriodAccessService periodAccess;
 
   private static final Map<EnrollmentPeriodStatus, String> STATUS_LABELS =
       Map.of(
@@ -35,6 +39,7 @@ public class ListEnrollmentPeriodsUseCase {
           EnrollmentPeriodStatus.CLOSED, "Cerrado");
 
   private final EnrollmentPeriodRepository periodRepository;
+  private final ScopedAuthorizationService scopedAuthorization;
 
   @Transactional(readOnly = true)
   public PaginatedResponse<EnrollmentPeriodResponse> execute(
@@ -48,10 +53,10 @@ public class ListEnrollmentPeriodsUseCase {
         periodRepository.findAll(
             byFilters(institutionId, academicYearId, status, search, deleted), pageable);
 
-    return PaginatedResponse.from(page.map(EnrollmentPeriodResponse::from));
+    return PaginatedResponse.from(page.map(periodAccess::response));
   }
 
-  private static Specification<EnrollmentPeriod> byFilters(
+  private Specification<EnrollmentPeriod> byFilters(
       final UUID institutionId,
       final @Nullable UUID academicYearId,
       final @Nullable EnrollmentPeriodStatus status,
@@ -59,6 +64,21 @@ public class ListEnrollmentPeriodsUseCase {
       final boolean deleted) {
     return (root, query, criteriaBuilder) -> {
       final List<Predicate> predicates = new ArrayList<>();
+      var access = scopedAuthorization.managementAccess(PermissionCode.ENROLLMENT_PERIOD_READ);
+      if (!access.institutional()) {
+        var offered = query.subquery(UUID.class);
+        var offering = offered.from(EnrollmentPeriodOffering.class);
+        offered
+            .select(offering.get("id"))
+            .where(
+                criteriaBuilder.equal(offering.get("period").get("id"), root.get("id")),
+                offering
+                    .get("studyPlan")
+                    .get("trainingPath")
+                    .get("id")
+                    .in(access.trainingPathIds()));
+        predicates.add(criteriaBuilder.exists(offered));
+      }
       predicates.add(criteriaBuilder.equal(root.get("institution").get("id"), institutionId));
       predicates.add(
           deleted

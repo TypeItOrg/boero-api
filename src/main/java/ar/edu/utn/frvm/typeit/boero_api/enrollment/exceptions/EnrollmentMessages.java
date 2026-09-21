@@ -1,6 +1,22 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions;
 
 public final class EnrollmentMessages {
+  public static final String PERIOD_SCOPE_INVALID =
+      "Seleccioná planes publicados y al menos un nivel o espacios sin nivel de la misma institución.";
+  public static final String PERIOD_SCOPE_REQUIRED =
+      "El período todavía no tiene una oferta configurada.";
+  public static final String PERIOD_SCOPE_OVERLAP =
+      "Ya existe un período planificado o abierto para ese plan y nivel en las fechas seleccionadas.";
+  public static final String PERIOD_SCOPE_SHRINK =
+      "Un período con solicitudes enviadas solo permite ampliar su oferta.";
+  public static final String COURSE_OUTSIDE_PERIOD =
+      "El curso no está habilitado por el período de esta solicitud.";
+  public static final String ACADEMIC_REQUIREMENTS_PENDING =
+      "No se puede solicitar ni matricular este curso sin cumplir sus correlatividades.";
+
+  public static final String SCHEDULE_WEEK_INVALID =
+      "La fecha debe estar entre los años 1900 y 2100.";
+
   public static final String PERIOD_NOT_FOUND = "Período de inscripción no encontrado.";
   public static final String S3_BUCKET_REQUIRED =
       "Debe configurar el bucket de almacenamiento de inscripciones.";

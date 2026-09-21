@@ -1,6 +1,5 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.controllers;
 
-import ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListCoursesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresAnyPermission;
@@ -34,7 +33,6 @@ public class CourseEnrollmentCourseOptionsController {
   public PaginatedResponse<CourseResponse> list(
       @PathVariable final UUID institutionId,
       @PageableDefault(size = 100) final Pageable pageable) {
-    return listCoursesUseCase.execute(
-        institutionId, null, CourseStatus.ACTIVE, null, null, null, null, false, pageable);
+    return listCoursesUseCase.enrollmentOptions(institutionId, pageable);
   }
 }

@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class GetMyEnrollmentApplicationUseCase {
 
+  private final EnrollmentApplicationResponseFactory responseFactory;
   private final EnrollmentApplicationRepository enrollmentApplicationRepository;
 
   @Transactional(readOnly = true)
@@ -19,7 +20,7 @@ public class GetMyEnrollmentApplicationUseCase {
       final UUID institutionId, final UUID personId, final UUID applicationId) {
     return enrollmentApplicationRepository
         .findByIdAndApplicantPersonIdAndInstitutionId(institutionId, personId, applicationId)
-        .map(EnrollmentApplicationResponse::from)
+        .map(responseFactory::from)
         .orElseThrow(EnrollmentApplicationNotFoundException::new);
   }
 }

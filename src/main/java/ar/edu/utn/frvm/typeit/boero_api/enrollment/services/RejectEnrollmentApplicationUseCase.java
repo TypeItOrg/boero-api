@@ -1,5 +1,8 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationCourseStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationCourseRepository;
@@ -17,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class RejectEnrollmentApplicationUseCase {
+  private final AcademicAccessGuard accessGuard;
 
   private final EnrollmentApplicationRepository enrollmentApplicationRepository;
   private final Clock clock;
@@ -36,6 +40,12 @@ public class RejectEnrollmentApplicationUseCase {
       final UUID applicationId,
       final RejectEnrollmentApplicationRequest request,
       final UUID resolvedByPersonId) {
+    accessGuard.require(
+        PermissionCode.ENROLLMENT_APPLICATION_REJECT,
+        institutionId,
+        ScopedResource.ENROLLMENT_APPLICATION,
+        applicationId);
+
     enrollmentInstitutionLock.lock(institutionId);
     final var application =
         enrollmentApplicationRepository

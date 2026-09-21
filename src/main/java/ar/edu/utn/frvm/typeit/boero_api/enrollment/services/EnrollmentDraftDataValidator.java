@@ -75,6 +75,16 @@ public class EnrollmentDraftDataValidator {
           data.getInstrumentSelection().getStudyPlanSpaceInstrumentIds());
     }
 
+    if (application.getEnrollmentPeriod().getOfferings().stream()
+        .noneMatch(
+            offering -> offering.getStudyPlan().getId().equals(effectiveStudyPlan.getId()))) {
+      throw new EnrollmentValidationException(EnrollmentMessages.COURSE_OUTSIDE_PERIOD);
+    }
+    if (!selectedSpaceIds.isEmpty()
+        && studyPlanSpaceRepository.findAllById(selectedSpaceIds).stream()
+            .anyMatch(space -> !application.getEnrollmentPeriod().includes(space))) {
+      throw new EnrollmentValidationException(EnrollmentMessages.COURSE_OUTSIDE_PERIOD);
+    }
     return effectiveStudyPlan;
   }
 

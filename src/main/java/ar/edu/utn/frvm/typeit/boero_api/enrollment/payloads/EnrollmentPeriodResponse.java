@@ -4,6 +4,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Schema(
@@ -16,7 +17,13 @@ import java.util.UUID;
       "startDate",
       "endDate",
       "status",
-      "deletedAt"
+      "deletedAt",
+      "scopeConfigured",
+      "offerings",
+      "limitedView",
+      "canUpdate",
+      "canChangeStatus",
+      "canDelete"
     })
 public record EnrollmentPeriodResponse(
     UUID id,
@@ -27,7 +34,13 @@ public record EnrollmentPeriodResponse(
     Instant startDate,
     Instant endDate,
     EnrollmentPeriodStatus status,
-    @Schema(nullable = true) Instant deletedAt) {
+    @Schema(nullable = true) Instant deletedAt,
+    boolean scopeConfigured,
+    List<EnrollmentPeriodOfferingResponse> offerings,
+    boolean limitedView,
+    boolean canUpdate,
+    boolean canChangeStatus,
+    boolean canDelete) {
 
   public static EnrollmentPeriodResponse from(final EnrollmentPeriod period) {
     return new EnrollmentPeriodResponse(
@@ -39,6 +52,12 @@ public record EnrollmentPeriodResponse(
         period.getStartDate(),
         period.getEndDate(),
         period.getStatus(),
-        period.getDeletedAt());
+        period.getDeletedAt(),
+        period.isScopeConfigured(),
+        period.getOfferings().stream().map(EnrollmentPeriodOfferingResponse::from).toList(),
+        false,
+        false,
+        false,
+        false);
   }
 }

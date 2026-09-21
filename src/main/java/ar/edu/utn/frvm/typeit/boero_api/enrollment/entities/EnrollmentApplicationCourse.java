@@ -52,6 +52,17 @@ public class EnrollmentApplicationCourse extends Auditable {
   @JoinColumn(name = "course_id", nullable = false)
   private Course course;
 
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "enrollment_period_id", nullable = false)
+  private EnrollmentPeriod enrollmentPeriod;
+
+  public void assignPeriod(final EnrollmentPeriod period) {
+    if (enrollmentPeriod != null && !enrollmentPeriod.getId().equals(period.getId())) {
+      throw new EnrollmentValidationException(EnrollmentMessages.COURSE_OUTSIDE_PERIOD);
+    }
+    enrollmentPeriod = period;
+  }
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "preferred_teacher_id")
   private Person preferredTeacher;
@@ -102,6 +113,7 @@ public class EnrollmentApplicationCourse extends Auditable {
         .institution(institution)
         .enrollmentApplication(application)
         .course(course)
+        .enrollmentPeriod(application.getEnrollmentPeriod())
         .preferredTeacher(preferredTeacher)
         .status(EnrollmentApplicationCourseStatus.PENDING)
         .build();

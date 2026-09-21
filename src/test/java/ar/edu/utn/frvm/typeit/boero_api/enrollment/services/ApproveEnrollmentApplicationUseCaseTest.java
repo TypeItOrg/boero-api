@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
@@ -111,6 +112,7 @@ class ApproveEnrollmentApplicationUseCaseTest {
 
   private ApproveEnrollmentApplicationUseCase useCase() {
     return new ApproveEnrollmentApplicationUseCase(
+        org.mockito.Mockito.mock(AcademicAccessGuard.class),
         enrollmentApplicationRepository,
         studentRepository,
         personRepository,
