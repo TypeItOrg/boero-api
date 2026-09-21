@@ -28,7 +28,7 @@ public class CourseTreeReader {
 
   @Transactional(readOnly = true)
   public List<CourseClassResponse> read(final UUID courseId) {
-    return readClasses(courseClassRepository.findByCourse_IdOrderByIdAsc(courseId));
+    return readClasses(courseClassRepository.findByCourse_IdOrderByClassNumberAsc(courseId));
   }
 
   @Transactional(readOnly = true)

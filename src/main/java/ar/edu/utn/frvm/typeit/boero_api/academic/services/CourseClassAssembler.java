@@ -55,8 +55,8 @@ public class CourseClassAssembler {
     validateUniqueDays(requests);
     validateSchedules(requests);
     final List<CourseClass> classes = new ArrayList<>(requests.size());
-    for (final var request : requests) {
-      classes.add(assembleClass(institution, course, spaceFormat, request));
+    for (int index = 0; index < requests.size(); index++) {
+      classes.add(assembleClass(institution, course, spaceFormat, requests.get(index), index + 1));
     }
     return classes;
   }
@@ -65,8 +65,10 @@ public class CourseClassAssembler {
       final Institution institution,
       final Course course,
       final AcademicSpaceFormat spaceFormat,
-      final CourseClassRequest request) {
-    final var courseClass = courseClassRepository.save(CourseClass.create(institution, course));
+      final CourseClassRequest request,
+      final int classNumber) {
+    final var courseClass =
+        courseClassRepository.save(CourseClass.create(institution, course, classNumber));
     persistTeachers(institution, courseClass, request.teacherIds());
     for (final var dayRequest : request.days()) {
       assembleDay(institution, courseClass, spaceFormat, dayRequest);
