@@ -149,7 +149,7 @@ class CreateCourseUseCaseTest {
     given(courseRepository.save(any(Course.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
     final var expectedClasses =
-        List.of(new CourseClassResponse(UUID.randomUUID(), List.of(), List.of()));
+        List.of(new CourseClassResponse(UUID.randomUUID(), 1, List.of(), List.of()));
     given(courseTreeReader.read(any())).willReturn(expectedClasses);
 
     final var response = useCase.execute(INSTITUTION_ID, request());

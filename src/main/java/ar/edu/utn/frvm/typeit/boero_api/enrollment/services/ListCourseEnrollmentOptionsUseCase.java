@@ -66,7 +66,7 @@ public class ListCourseEnrollmentOptionsUseCase {
       throw new EnrollmentValidationException(EnrollmentMessages.COURSE_NOT_ACTIVE);
     }
 
-    final var classes = courseClassRepository.findByCourse_IdOrderByIdAsc(courseId);
+    final var classes = courseClassRepository.findByCourse_IdOrderByClassNumberAsc(courseId);
     final var classIds = classes.stream().map(value -> value.getId()).toList();
     final var teachers =
         courseClassTeacherRepository.findByCourseClass_IdIn(classIds).stream()

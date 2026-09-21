@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface CourseClassRepository extends JpaRepository<CourseClass, UUID> {
-  List<CourseClass> findByCourse_IdOrderByIdAsc(UUID courseId);
+  List<CourseClass> findByCourse_IdOrderByClassNumberAsc(UUID courseId);
 
   List<CourseClass> findByInstitution_IdAndCourse_IdIn(UUID institutionId, List<UUID> courseIds);
 

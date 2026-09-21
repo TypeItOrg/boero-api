@@ -38,12 +38,19 @@ public class CourseClass extends Auditable {
   @JoinColumn(name = "course_id", nullable = false)
   private Course course;
 
-  public static CourseClass create(final Institution institution, final Course course) {
-    return CourseClass.builder().institution(institution).course(course).build();
+  @Column(name = "class_number", nullable = false, updatable = false)
+  private Integer classNumber;
+
+  public static CourseClass create(
+      final Institution institution, final Course course, final int classNumber) {
+    return CourseClass.builder()
+        .institution(institution)
+        .course(course)
+        .classNumber(classNumber)
+        .build();
   }
 
   public String displayName() {
-    final String value = id.toString();
-    return "Clase " + value.substring(value.length() - 8);
+    return "Clase " + classNumber;
   }
 }
