@@ -64,11 +64,7 @@ public class UpdateStudyPlanStatusUseCase {
           && request.effectiveTo().isBefore(plan.getEffectiveFrom())) {
         throw new AcademicValidationException(AcademicMessages.STUDY_PLAN_END_DATE_INVALID);
       }
-      if (courseRepository
-          .existsByInstitution_IdAndStudyPlan_IdAndStatusNotClosedAndDeletedAtIsNull(
-              institutionId, id)) {
-        throw new AcademicConflictException(AcademicMessages.STUDY_PLAN_HAS_ACTIVE_COURSES);
-      }
+      requireAllCoursesClosed(institutionId, id);
       plan.deactivate(request.effectiveTo());
       studyPlanRepository.flush();
       return;
@@ -95,6 +91,9 @@ public class UpdateStudyPlanStatusUseCase {
       if (!plan.getEffectiveFrom().isAfter(lockedPrevious.getEffectiveFrom())) {
         throw new AcademicConflictException(AcademicMessages.STUDY_PLAN_VERSION_DATE_OVERLAP);
       }
+
+      requireAllCoursesClosed(plan.getInstitution().getId(), lockedPrevious.getId());
+
       final var newVersionEnd = plan.getEffectiveFrom().minusDays(1);
       final var previousEnd = lockedPrevious.getEffectiveTo();
       lockedPrevious.deactivate(
@@ -105,6 +104,13 @@ public class UpdateStudyPlanStatusUseCase {
         || lockedPrevious.getEffectiveTo() == null
         || !plan.getEffectiveFrom().isAfter(lockedPrevious.getEffectiveTo())) {
       throw new AcademicConflictException(AcademicMessages.STUDY_PLAN_VERSION_DATE_OVERLAP);
+    }
+  }
+
+  private void requireAllCoursesClosed(final UUID institutionId, final UUID studyPlanId) {
+    if (courseRepository.existsByInstitution_IdAndStudyPlan_IdAndStatusNotClosedAndDeletedAtIsNull(
+        institutionId, studyPlanId)) {
+      throw new AcademicConflictException(AcademicMessages.STUDY_PLAN_HAS_ACTIVE_COURSES);
     }
   }
 }
