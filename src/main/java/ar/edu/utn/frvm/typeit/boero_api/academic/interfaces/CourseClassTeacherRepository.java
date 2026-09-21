@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.interfaces;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.CourseClass;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.CourseClassTeacher;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -42,6 +43,28 @@ public interface CourseClassTeacherRepository extends JpaRepository<CourseClassT
       @Param("institutionId") UUID institutionId,
       @Param("personId") UUID personId,
       Pageable pageable);
+
+  @Query(
+      """
+      SELECT DISTINCT courseClass FROM CourseClassTeacher assignment
+      JOIN assignment.courseClass courseClass
+      JOIN FETCH courseClass.course course
+      JOIN FETCH course.academicYear academicYear
+      JOIN FETCH course.studyPlanSpace placement
+      JOIN FETCH placement.academicSpace
+      LEFT JOIN FETCH course.instrument
+      WHERE assignment.institution.id = :institutionId
+        AND assignment.person.id = :personId
+        AND course.deletedAt IS NULL
+        AND academicYear.startDate <= :weekEnd
+        AND academicYear.endDate >= :weekStart
+      ORDER BY courseClass.id
+      """)
+  List<CourseClass> findAssignedClassesInWeek(
+      @Param("institutionId") UUID institutionId,
+      @Param("personId") UUID personId,
+      @Param("weekStart") LocalDate weekStart,
+      @Param("weekEnd") LocalDate weekEnd);
 
   boolean existsByInstitution_IdAndPerson_IdAndCourseClass_Id(
       UUID institutionId, UUID personId, UUID classId);

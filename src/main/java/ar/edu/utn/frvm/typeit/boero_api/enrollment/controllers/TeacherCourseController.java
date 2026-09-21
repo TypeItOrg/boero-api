@@ -8,11 +8,14 @@ import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CourseEnrollmentResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.TeacherCourseClassResponse;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.TeacherWeeklySchedulesResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.TeacherCourseService;
+import java.time.LocalDate;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +33,15 @@ public class TeacherCourseController {
       final Authentication authentication,
       @PageableDefault(size = 20) final Pageable pageable) {
     return service.list(institutionId, personId(authentication), pageable);
+  }
+
+  @GetMapping(value = "/schedules", version = Version.V1)
+  public TeacherWeeklySchedulesResponse schedules(
+      @PathVariable final UUID institutionId,
+      final Authentication authentication,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          final LocalDate week) {
+    return service.weeklySchedules(institutionId, personId(authentication), week);
   }
 
   @GetMapping(value = "/{classId}/enrollments", version = Version.V1)
