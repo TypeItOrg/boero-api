@@ -35,4 +35,4 @@ Para futuras migraciones durante desarrollo, detener el consumidor de Flyway ant
 - `RoleScopePostgresIntegrationTest`: paginación y búsquedas, separación por permiso, restricciones PostgreSQL, opciones por operación, cambios de alcance con caché y sesiones, delegación concurrente y acceso ajeno a inscripciones, adjuntos y cursadas.
 - UI: validación de asignaciones, edición de roles, permisos por trayecto, opciones, colecciones y listas de espera; compilación de producción y lint de archivos modificados.
 
-La comprobación en navegador cubrió la selección de dos trayectos sin guardar cambios de permisos sobre usuarios existentes y el acceso propio de estudiante a sus materias. La separación entre identidades limitadas se comprobó en integración; no constituye una prueba de navegador de todo el flujo con dos sesiones limitadas.
+La comprobación ampliada en navegador del 21/09/2026 cubrió responsive, guardado y reversión de una asignación temporal autorizada, sesión limitada, acceso directo fuera de alcance, filtros, permisos institucionales inactivos y revocación de sesión. Ver [resultados y límites de la prueba](training-path-browser-qa-2026-09-21.md).
