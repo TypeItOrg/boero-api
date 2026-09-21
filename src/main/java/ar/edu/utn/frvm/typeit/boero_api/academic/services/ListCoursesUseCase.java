@@ -49,6 +49,16 @@ public class ListCoursesUseCase {
             .map(CourseResponse::from));
   }
 
+  @Transactional(readOnly = true)
+  public PaginatedResponse<CourseResponse> enrollmentOptions(
+      UUID institutionId, Pageable pageable) {
+    return PaginatedResponse.from(
+        courseRepository
+            .findEnrollmentOptions(
+                institutionId, null, CourseStatus.ACTIVE, null, null, null, null, false, pageable)
+            .map(CourseResponse::from));
+  }
+
   private static final Map<String, String> SORT_FIELDS =
       Map.of(
           "institution.name",

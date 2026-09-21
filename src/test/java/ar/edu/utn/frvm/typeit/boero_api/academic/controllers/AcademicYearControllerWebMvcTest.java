@@ -18,6 +18,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.services.GetAcademicYearUseCase
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListAcademicSpacesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListAcademicYearsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListInstrumentsUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListShiftsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListStudyPlansUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListTrainingPathsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.UpdateAcademicYearStatusUseCase;
@@ -64,6 +65,7 @@ class AcademicYearControllerWebMvcTest {
   @MockitoBean private ListAcademicYearsUseCase listAcademicYearsUseCase;
   @MockitoBean private ListAcademicSpacesUseCase listAcademicSpacesUseCase;
   @MockitoBean private ListInstrumentsUseCase listInstrumentsUseCase;
+  @MockitoBean private ListShiftsUseCase listShiftsUseCase;
   @MockitoBean private ListStudyPlansUseCase listStudyPlansUseCase;
   @MockitoBean private ListTrainingPathsUseCase listTrainingPathsUseCase;
   @MockitoBean private GetAcademicYearUseCase getAcademicYearUseCase;

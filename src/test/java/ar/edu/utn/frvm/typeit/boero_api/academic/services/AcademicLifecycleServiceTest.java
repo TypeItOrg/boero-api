@@ -32,6 +32,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathReposito
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicLifecycleRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicYearStatusRequest;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.AccountType;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CourseClosureService;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentInstitutionLock;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
@@ -53,6 +54,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AcademicLifecycleServiceTest {
+  @org.mockito.Mock private AcademicAccessGuard accessGuard;
   @Spy private Clock clock = Clock.systemUTC();
 
   @Mock private AcademicYearRepository academicYearRepository;

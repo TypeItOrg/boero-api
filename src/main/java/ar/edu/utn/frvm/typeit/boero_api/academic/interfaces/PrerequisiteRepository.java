@@ -9,6 +9,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface PrerequisiteRepository extends JpaRepository<Prerequisite, UUID> {
+  @org.springframework.data.jpa.repository.EntityGraph(
+      attributePaths = {
+        "targetStudyPlanSpace",
+        "requiredStudyPlanSpace",
+        "requiredStudyPlanSpace.academicSpace"
+      })
+  List<Prerequisite> findByTargetStudyPlanSpace_IdIn(java.util.Collection<UUID> targetIds);
+
   void deleteByStudyPlan_Id(UUID studyPlanId);
 
   List<Prerequisite> findByStudyPlan_Id(UUID studyPlanId);

@@ -13,6 +13,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.PrerequisiteReposito
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreatePrerequisiteRequest;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +44,7 @@ class CreatePrerequisiteUseCaseTest {
     final var bRequiresC = prerequisite(plan, b, c);
     final var useCase =
         new CreatePrerequisiteUseCase(
+            org.mockito.Mockito.mock(AcademicAccessGuard.class),
             prerequisiteRepository,
             studyPlanSpaceRepository,
             new StudyPlanDraftGuard(studyPlanRepository),

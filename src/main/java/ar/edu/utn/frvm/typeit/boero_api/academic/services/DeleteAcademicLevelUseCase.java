@@ -5,6 +5,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicLevelNotFoun
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicLevelRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,12 +16,19 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class DeleteAcademicLevelUseCase {
+  private final AcademicAccessGuard accessGuard;
   private final AcademicLevelRepository academicLevelRepository;
   private final StudyPlanSpaceRepository studyPlanSpaceRepository;
   private final StudyPlanDraftGuard studyPlanDraftGuard;
 
   @Transactional
   public void execute(final UUID institutionId, final UUID id) {
+    accessGuard.require(
+        PermissionCode.STUDY_PLAN_CURRICULUM_UPDATE,
+        institutionId,
+        ScopedResource.ACADEMIC_LEVEL,
+        id);
+
     final var level =
         academicLevelRepository
             .findByIdAndStudyPlan_Institution_Id(id, institutionId)

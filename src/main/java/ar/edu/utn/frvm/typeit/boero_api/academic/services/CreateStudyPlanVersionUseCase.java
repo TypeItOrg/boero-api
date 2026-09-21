@@ -16,6 +16,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceReposi
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreateStudyPlanVersionRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.validation.AcademicNameNormalizer;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -27,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class CreateStudyPlanVersionUseCase {
+  private final AcademicAccessGuard accessGuard;
   private final StudyPlanRepository studyPlanRepository;
   private final AcademicLevelRepository academicLevelRepository;
   private final StudyPlanSpaceRepository studyPlanSpaceRepository;
@@ -36,6 +40,9 @@ public class CreateStudyPlanVersionUseCase {
   @Transactional
   public StudyPlanResponse execute(
       final UUID institutionId, final UUID sourceId, final CreateStudyPlanVersionRequest request) {
+    accessGuard.require(
+        PermissionCode.STUDY_PLAN_CREATE, institutionId, ScopedResource.STUDY_PLAN, sourceId);
+
     final var source =
         studyPlanRepository
             .findByIdAndInstitution_IdForUpdate(sourceId, institutionId)

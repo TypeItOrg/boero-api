@@ -12,6 +12,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequiredCondition;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequirementStage;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.PrerequisiteNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.PrerequisiteRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -20,7 +21,9 @@ import org.junit.jupiter.api.Test;
 class GetPrerequisiteUseCaseTest {
 
   private final PrerequisiteRepository prerequisiteRepository = mock(PrerequisiteRepository.class);
-  private final GetPrerequisiteUseCase useCase = new GetPrerequisiteUseCase(prerequisiteRepository);
+  private final GetPrerequisiteUseCase useCase =
+      new GetPrerequisiteUseCase(
+          org.mockito.Mockito.mock(AcademicAccessGuard.class), prerequisiteRepository);
 
   @Test
   @DisplayName("Should return a prerequisite that belongs to the institution")

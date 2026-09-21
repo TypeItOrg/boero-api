@@ -1,7 +1,9 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Course;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Instrument;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus;
@@ -19,6 +21,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreateCourseRequest;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import java.util.UUID;
@@ -30,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class CreateCourseUseCase {
+  private final AcademicAccessGuard accessGuard;
   private final InstitutionRepository institutionRepository;
   private final StudyPlanRepository studyPlanRepository;
   private final AcademicSpaceRepository academicSpaceRepository;
@@ -42,13 +48,19 @@ public class CreateCourseUseCase {
 
   @Transactional
   public CourseResponse execute(final UUID institutionId, final CreateCourseRequest request) {
+    accessGuard.require(
+        PermissionCode.COURSE_CREATE,
+        institutionId,
+        ScopedResource.STUDY_PLAN_SPACE,
+        request.studyPlanSpaceId());
+
     final var institution =
         institutionRepository
             .findByIdForUpdate(institutionId)
             .orElseThrow(InstitutionNotFoundException::new);
     final var selection = resolveSelection(institutionId, request);
     final var plan = selection.plan();
-    if (plan.getStatus() != StudyPlanStatus.ACTIVE) {
+    if (plan.getStatus() == StudyPlanStatus.DRAFT) {
       throw new AcademicConflictException(AcademicMessages.COURSE_STUDY_PLAN_NOT_ACTIVE);
     }
     final var space = selection.space();
@@ -92,7 +104,7 @@ public class CreateCourseUseCase {
         studyPlanRepository
             .findByIdAndInstitution_IdForUpdate(request.studyPlanId(), institutionId)
             .orElseThrow(StudyPlanNotFoundException::new);
-    if (plan.getStatus() != StudyPlanStatus.ACTIVE) {
+    if (plan.getStatus() == StudyPlanStatus.DRAFT) {
       throw new AcademicConflictException(AcademicMessages.COURSE_STUDY_PLAN_NOT_ACTIVE);
     }
     final var space =
@@ -138,7 +150,5 @@ public class CreateCourseUseCase {
   }
 
   private record CourseSelection(
-      ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan plan,
-      ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace space,
-      StudyPlanSpace studyPlanSpace) {}
+      StudyPlan plan, AcademicSpace space, StudyPlanSpace studyPlanSpace) {}
 }

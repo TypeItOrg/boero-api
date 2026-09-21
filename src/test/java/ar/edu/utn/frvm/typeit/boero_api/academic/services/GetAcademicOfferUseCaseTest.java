@@ -15,6 +15,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequirementType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicLevelRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import java.time.Clock;
 import java.time.Instant;
@@ -74,6 +75,7 @@ class GetAcademicOfferUseCaseTest {
 
   private GetAcademicOfferUseCase useCase() {
     return new GetAcademicOfferUseCase(
+        org.mockito.Mockito.mock(AcademicAccessGuard.class),
         new BusinessDateProvider(CLOCK),
         studyPlanRepository,
         academicLevelRepository,

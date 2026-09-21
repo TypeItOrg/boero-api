@@ -26,6 +26,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseClassResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreateCourseRequest;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
@@ -44,6 +45,7 @@ import org.mockito.quality.Strictness;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CreateCourseUseCaseTest {
+  @org.mockito.Mock private AcademicAccessGuard accessGuard;
 
   private static final UUID INSTITUTION_ID =
       UUID.fromString("66666666-6666-6666-6666-666666666666");

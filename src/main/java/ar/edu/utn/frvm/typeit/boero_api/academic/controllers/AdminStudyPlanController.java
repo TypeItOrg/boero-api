@@ -92,7 +92,12 @@ public class AdminStudyPlanController {
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           final LocalDate validOn,
       @RequestParam(defaultValue = "false") final boolean deleted,
+      @RequestParam(defaultValue = "false") final boolean published,
       @PageableDefault(sort = "name", direction = Sort.Direction.ASC) final Pageable pageable) {
+    if (published) {
+      return listStudyPlansUseCase.published(institutionId, trainingPathId, search, pageable);
+    }
+
     if (trainingPathId == null && validOn == null) {
       return listStudyPlansUseCase.execute(
           institutionId, search, status, null, null, deleted, pageable);

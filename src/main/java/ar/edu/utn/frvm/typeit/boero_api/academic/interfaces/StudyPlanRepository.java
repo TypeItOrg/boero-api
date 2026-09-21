@@ -6,6 +6,7 @@ import jakarta.persistence.LockModeType;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -25,7 +26,8 @@ public interface StudyPlanRepository
   @Query(
       """
       SELECT plan FROM StudyPlan plan
-      WHERE plan.institution.id = :institutionId
+      WHERE (:#{@scopedAuthorization.unrestricted('ACADEMIC_OFFER_READ')} = true OR plan.trainingPath.id IN :#{@scopedAuthorization.paths('ACADEMIC_OFFER_READ')})
+        AND plan.institution.id = :institutionId
         AND plan.deletedAt IS NULL
         AND plan.status = ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus.ACTIVE
         AND plan.trainingPath.active = true
@@ -57,6 +59,8 @@ public interface StudyPlanRepository
       @Param("validOn") LocalDate validOn);
 
   @EntityGraph(attributePaths = {"institution", "trainingPath"})
+  @Query(
+      "SELECT plan FROM StudyPlan plan WHERE plan.trainingPath.id = :trainingPathId AND plan.institution.id = :institutionId AND plan.deletedAt IS NULL AND (:#{@scopedAuthorization.unrestricted('STUDY_PLAN_READ')} = true OR plan.trainingPath.id IN :#{@scopedAuthorization.paths('STUDY_PLAN_READ')})")
   Page<StudyPlan> findByTrainingPath_IdAndInstitution_IdAndDeletedAtIsNull(
       UUID trainingPathId, UUID institutionId, Pageable pageable);
 
@@ -88,7 +92,7 @@ public interface StudyPlanRepository
           SELECT space.id FROM StudyPlanSpace space
           WHERE space.studyPlan.id = plan.id
             AND space.institution.id = :institutionId
-            AND space.academicSpace.id = :academicSpaceId
+            AND space.academicSpace.id = :academicSpaceId AND (:#{@scopedAuthorization.unrestricted('STUDY_PLAN_READ')} = true OR plan.trainingPath.id IN :#{@scopedAuthorization.paths('STUDY_PLAN_READ')})
         )
       """)
   Page<StudyPlan> findByAcademicSpaceIdAndInstitutionId(
@@ -150,4 +154,22 @@ public interface StudyPlanRepository
       @Param("name") String name,
       @Param("versionNumber") int versionNumber,
       @Param("id") UUID id);
+
+  @EntityGraph(attributePaths = {"institution", "trainingPath"})
+  @Query(
+      """
+      SELECT plan FROM StudyPlan plan
+      WHERE (:#{@scopedAuthorization.unrestricted('STUDY_PLAN_READ')} = true OR plan.trainingPath.id IN :#{@scopedAuthorization.paths('STUDY_PLAN_READ')})
+        AND (:institutionId IS NULL OR plan.institution.id = :institutionId)
+        AND plan.deletedAt IS NULL AND plan.status <> ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus.DRAFT
+        AND plan.trainingPath.active = true AND plan.trainingPath.deletedAt IS NULL
+        AND (:trainingPathId IS NULL OR plan.trainingPath.id = :trainingPathId)
+        AND (:search IS NULL OR UNACCENT_LOWER(plan.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
+          OR UNACCENT_LOWER(plan.trainingPath.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%')))
+      """)
+  Page<StudyPlan> findPublished(
+      @Nullable UUID institutionId,
+      @Nullable UUID trainingPathId,
+      @Nullable String search,
+      Pageable pageable);
 }

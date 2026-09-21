@@ -8,6 +8,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicOfferDetailRes
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicOfferLevelResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicOfferSpaceResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicOfferSummaryResponse;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class GetAcademicOfferUseCase {
+  private final AcademicAccessGuard accessGuard;
   private final BusinessDateProvider businessDateProvider;
 
   private final StudyPlanRepository studyPlanRepository;
@@ -28,6 +32,9 @@ public class GetAcademicOfferUseCase {
 
   @Transactional(readOnly = true)
   public AcademicOfferDetailResponse execute(final UUID institutionId, final UUID studyPlanId) {
+    accessGuard.require(
+        PermissionCode.ACADEMIC_OFFER_READ, institutionId, ScopedResource.STUDY_PLAN, studyPlanId);
+
     final var plan =
         studyPlanRepository
             .findAvailableOfferById(institutionId, studyPlanId, businessDateProvider.today())

@@ -8,6 +8,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.UpdateStudyPlanRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.validation.AcademicNameNormalizer;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -17,11 +20,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class UpdateStudyPlanUseCase {
+  private final AcademicAccessGuard accessGuard;
   private final StudyPlanRepository studyPlanRepository;
 
   @Transactional
   public StudyPlanResponse execute(
       final UUID institutionId, final UUID id, final UpdateStudyPlanRequest request) {
+    accessGuard.require(
+        PermissionCode.STUDY_PLAN_UPDATE, institutionId, ScopedResource.STUDY_PLAN, id);
+
     final var plan =
         studyPlanRepository
             .findByIdAndInstitution_IdForUpdate(id, institutionId)
