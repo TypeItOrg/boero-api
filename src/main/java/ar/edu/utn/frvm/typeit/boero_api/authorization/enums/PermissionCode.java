@@ -387,6 +387,48 @@ public enum PermissionCode {
   private final PermissionGroup group;
   private final String description;
 
+  public boolean supportsTrainingPaths() {
+    return switch (this) {
+      case TRAINING_PATH_READ,
+          TRAINING_PATH_UPDATE,
+          TRAINING_PATH_STATUS_UPDATE,
+          TRAINING_PATH_DELETE,
+          TRAINING_PATH_RESTORE,
+          STUDY_PLAN_READ,
+          STUDY_PLAN_CREATE,
+          STUDY_PLAN_UPDATE,
+          STUDY_PLAN_STATUS_UPDATE,
+          STUDY_PLAN_CURRICULUM_UPDATE,
+          STUDY_PLAN_DELETE,
+          STUDY_PLAN_RESTORE,
+          ACADEMIC_OFFER_READ,
+          COURSE_READ,
+          COURSE_CREATE,
+          COURSE_UPDATE,
+          COURSE_STATUS_UPDATE,
+          COURSE_DELETE,
+          COURSE_RESTORE,
+          ENROLLMENT_PERIOD_READ,
+          ENROLLMENT_PERIOD_CREATE,
+          ENROLLMENT_PERIOD_UPDATE,
+          ENROLLMENT_PERIOD_STATUS_UPDATE,
+          ENROLLMENT_PERIOD_DELETE,
+          ENROLLMENT_APPLICATION_READ,
+          ENROLLMENT_APPLICATION_APPROVE,
+          ENROLLMENT_APPLICATION_REJECT,
+          COURSE_ENROLLMENT_READ,
+          COURSE_ENROLLMENT_CREATE,
+          COURSE_ENROLLMENT_WITHDRAW,
+          COURSE_ENROLLMENT_ACADEMIC_STATUS_UPDATE,
+          ENROLLMENT_APPLICATION_COURSE_READ,
+          ENROLLMENT_APPLICATION_COURSE_ENROLL,
+          ENROLLMENT_APPLICATION_COURSE_REJECT,
+          COURSE_WAITLIST_READ ->
+          true;
+      default -> false;
+    };
+  }
+
   public boolean isConfigurable() {
     return group != PermissionGroup.GRADES;
   }

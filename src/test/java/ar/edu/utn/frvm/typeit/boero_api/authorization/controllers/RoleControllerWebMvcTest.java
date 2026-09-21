@@ -207,7 +207,10 @@ class RoleControllerWebMvcTest {
                     PERSON_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
-                .content("{\"roleId\":\"" + ROLE_ID + "\"}"))
+                .content(
+                    "{\"roleId\":\""
+                        + ROLE_ID
+                        + "\",\"accessScope\":\"INSTITUTION\",\"trainingPathIds\":[]}"))
         .andExpect(status().isForbidden());
   }
 
@@ -230,7 +233,10 @@ class RoleControllerWebMvcTest {
                     PERSON_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
-                .content("{\"roleId\":\"" + ROLE_ID + "\"}"))
+                .content(
+                    "{\"roleId\":\""
+                        + ROLE_ID
+                        + "\",\"accessScope\":\"INSTITUTION\",\"trainingPathIds\":[]}"))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.technicalCode").value("TEACHER"));
   }
@@ -354,7 +360,10 @@ class RoleControllerWebMvcTest {
                     PERSON_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
-                .content("{\"roleId\":\"" + ROLE_ID + "\"}"))
+                .content(
+                    "{\"roleId\":\""
+                        + ROLE_ID
+                        + "\",\"accessScope\":\"INSTITUTION\",\"trainingPathIds\":[]}"))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.technicalCode").value("TEACHER"));
   }
@@ -403,6 +412,47 @@ class RoleControllerWebMvcTest {
 
   private void stubPermission(PermissionCode permission, boolean allowed) {
     when(authorizationService.hasPermission(any(), eq(permission))).thenReturn(allowed);
+  }
+
+  @Test
+  void rejectsLegacyRoleWriteWithoutExplicitScope() throws Exception {
+    var authentication =
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+    mockMvc
+        .perform(
+            post(
+                    "/api/v1/institutions/{institutionId}/people/{personId}/roles",
+                    INSTITUTION_ID,
+                    PERSON_ID)
+                .principal(authentication)
+                .contentType(APPLICATION_JSON)
+                .content("{\"roleId\":\"" + ROLE_ID + "\"}"))
+        .andExpect(status().isBadRequest());
+    org.mockito.Mockito.verifyNoInteractions(assignPersonRoleUseCase);
+  }
+
+  @Test
+  void rejectsDuplicatedTrainingPathsBeforeCallingTheUseCase() throws Exception {
+    var authentication =
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+    mockMvc
+        .perform(
+            post(
+                    "/api/v1/institutions/{institutionId}/people/{personId}/roles",
+                    INSTITUTION_ID,
+                    PERSON_ID)
+                .principal(authentication)
+                .contentType(APPLICATION_JSON)
+                .content(
+                    "{\"roleId\":\""
+                        + ROLE_ID
+                        + "\",\"accessScope\":\"TRAINING_PATHS\",\"trainingPathIds\":[\""
+                        + INSTITUTION_ID
+                        + "\",\""
+                        + INSTITUTION_ID
+                        + "\"]}"))
+        .andExpect(status().isBadRequest());
+    org.mockito.Mockito.verifyNoInteractions(assignPersonRoleUseCase);
   }
 
   private void stubAnyRolePermission(boolean allowed) {

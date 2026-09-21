@@ -149,6 +149,10 @@ enum SearchDefinition {
     return permission != null && permissions.contains(permission);
   }
 
+  PermissionCode permission() {
+    return permission;
+  }
+
   String selectSql() {
     return selectSql;
   }

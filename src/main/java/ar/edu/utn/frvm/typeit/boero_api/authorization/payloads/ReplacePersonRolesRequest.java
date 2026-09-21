@@ -1,13 +1,13 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.payloads;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import java.util.Set;
-import java.util.UUID;
+import java.util.List;
 
-public record ReplacePersonRolesRequest(@NotEmpty Set<@NotNull UUID> roleIds) {
-
+public record ReplacePersonRolesRequest(
+    @NotEmpty List<@NotNull @Valid AssignRoleRequest> assignments) {
   public ReplacePersonRolesRequest {
-    roleIds = roleIds == null ? Set.of() : Set.copyOf(roleIds);
+    assignments = assignments == null ? List.of() : List.copyOf(assignments);
   }
 }

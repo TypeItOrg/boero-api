@@ -8,6 +8,18 @@ import java.util.stream.Collectors;
 import lombok.Builder;
 
 @Builder
+@io.swagger.v3.oas.annotations.media.Schema(
+    requiredProperties = {
+      "code",
+      "description",
+      "scope",
+      "group",
+      "groupDisplayName",
+      "groupDescription",
+      "configurable",
+      "supportsTrainingPaths",
+      "requiredPermissions"
+    })
 public record PermissionCatalogItemResponse(
     String code,
     String description,
@@ -16,6 +28,7 @@ public record PermissionCatalogItemResponse(
     String groupDisplayName,
     String groupDescription,
     boolean configurable,
+    boolean supportsTrainingPaths,
     Set<String> requiredPermissions) {
 
   public static PermissionCatalogItemResponse from(PermissionCode permission) {
@@ -27,6 +40,7 @@ public record PermissionCatalogItemResponse(
         .groupDisplayName(permission.getGroup().getDisplayName())
         .groupDescription(permission.getGroup().getDescription())
         .configurable(permission.isConfigurable())
+        .supportsTrainingPaths(permission.supportsTrainingPaths())
         .requiredPermissions(
             permission.requiredPermissions().stream()
                 .map(PermissionCode::getCode)

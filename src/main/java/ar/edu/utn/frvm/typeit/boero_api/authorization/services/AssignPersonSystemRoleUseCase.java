@@ -52,6 +52,9 @@ public class AssignPersonSystemRoleUseCase {
 
   @Transactional
   public void execute(Person person, Role role, boolean revokeSessions) {
+    institutionRepository
+        .findByIdForUpdate(person.getInstitution().getId())
+        .orElseThrow(InstitutionNotFoundException::new);
     SystemRoleCode technicalCode = role.isSystem() ? SystemRoleCode.valueOf(role.getCode()) : null;
     assign(person, role, technicalCode, revokeSessions);
     authorizationCacheInvalidator.evictPerson(person.getId(), person.getInstitution().getId());
