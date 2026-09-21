@@ -5,7 +5,6 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.CourseEnrollment;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.CourseEnrollmentHistory;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.CourseEnrollmentSchedule;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.AcademicEnrollmentStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationCourseStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
@@ -69,9 +68,6 @@ public class CourseClosureService {
     for (final CourseEnrollment enrollment : enrollments) {
       final var previousAcademicStatus = enrollment.getAcademicStatus();
       enrollment.complete(clock.instant());
-      if (previousAcademicStatus == AcademicEnrollmentStatus.IN_PROGRESS) {
-        enrollment.updateAcademicStatus(AcademicEnrollmentStatus.PENDING_RESULT, "COURSE_FINISHED");
-      }
       for (final CourseEnrollmentSchedule schedule :
           schedulesByEnrollment.getOrDefault(enrollment.getId(), List.of())) {
         if (schedule.getReleasedAt() == null) {

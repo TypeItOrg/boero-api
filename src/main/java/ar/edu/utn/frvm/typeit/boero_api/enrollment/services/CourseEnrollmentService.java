@@ -292,7 +292,10 @@ public class CourseEnrollmentService {
     ensureExpectedVersion(enrollment.getVersion(), request.expectedVersion());
     final var previousStatus = enrollment.getStatus();
     final var previousAcademicStatus = enrollment.getAcademicStatus();
-    enrollment.updateAcademicStatus(request.status(), request.reason());
+    enrollment.recordAcademicResult(request.status(), clock.instant(), request.reason());
+    if (previousStatus == CourseEnrollmentStatus.ENROLLED) {
+      releaseSchedules(enrollment);
+    }
     recordHistory(
         institution,
         enrollment,

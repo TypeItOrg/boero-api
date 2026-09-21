@@ -777,7 +777,7 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
           final var instrument =
               individual ? persist(Instrument.create(institution, "Guitarra", null)) : null;
           final var course = persist(Course.create(institution, placement, year, instrument));
-          final var courseClass = persist(CourseClass.create(institution, course));
+          final var courseClass = persist(CourseClass.create(institution, course, 1));
           final var day =
               persist(
                   CourseClassDay.create(
@@ -840,7 +840,7 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
           final var course =
               persist(
                   Course.create(institution, placement, previous.getAcademicYear(), instrument));
-          final var courseClass = persist(CourseClass.create(institution, course));
+          final var courseClass = persist(CourseClass.create(institution, course, 1));
           final var day =
               persist(
                   CourseClassDay.create(
