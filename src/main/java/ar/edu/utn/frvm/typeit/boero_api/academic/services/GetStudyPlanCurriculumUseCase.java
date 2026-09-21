@@ -11,6 +11,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.PrerequisiteResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanCurriculumResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceResponse;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -22,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class GetStudyPlanCurriculumUseCase {
+  private final AcademicAccessGuard accessGuard;
   private final StudyPlanRepository studyPlanRepository;
   private final AcademicLevelRepository academicLevelRepository;
   private final StudyPlanSpaceRepository studyPlanSpaceRepository;
@@ -29,6 +33,9 @@ public class GetStudyPlanCurriculumUseCase {
 
   @Transactional(readOnly = true)
   public StudyPlanCurriculumResponse execute(final UUID institutionId, final UUID studyPlanId) {
+    accessGuard.require(
+        PermissionCode.STUDY_PLAN_READ, institutionId, ScopedResource.STUDY_PLAN, studyPlanId);
+
     final var plan =
         studyPlanRepository
             .findByIdAndInstitution_Id(studyPlanId, institutionId)

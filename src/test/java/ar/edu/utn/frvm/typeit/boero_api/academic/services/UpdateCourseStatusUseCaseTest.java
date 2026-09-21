@@ -17,6 +17,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearReposito
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseStatusRequest;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CourseClosureService;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentInstitutionLock;
 import java.util.Optional;
@@ -59,6 +60,7 @@ class UpdateCourseStatusUseCaseTest {
 
     final var useCase =
         new UpdateCourseStatusUseCase(
+            org.mockito.Mockito.mock(AcademicAccessGuard.class),
             courseRepository,
             academicYearRepository,
             studyPlanRepository,
@@ -90,6 +92,7 @@ class UpdateCourseStatusUseCaseTest {
 
     final var useCase =
         new UpdateCourseStatusUseCase(
+            org.mockito.Mockito.mock(AcademicAccessGuard.class),
             courseRepository,
             academicYearRepository,
             studyPlanRepository,

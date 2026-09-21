@@ -12,6 +12,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearReposito
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseStatusRequest;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CourseClosureService;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentInstitutionLock;
 import java.util.UUID;
@@ -22,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class UpdateCourseStatusUseCase {
+  private final AcademicAccessGuard accessGuard;
   private final CourseRepository courseRepository;
   private final AcademicYearRepository academicYearRepository;
   private final StudyPlanRepository studyPlanRepository;
@@ -32,6 +36,9 @@ public class UpdateCourseStatusUseCase {
 
   @Transactional
   public void execute(final UUID institutionId, final UUID id, final CourseStatusRequest request) {
+    accessGuard.require(
+        PermissionCode.COURSE_STATUS_UPDATE, institutionId, ScopedResource.COURSE, id);
+
     enrollmentInstitutionLock.lock(institutionId);
     final var context =
         courseRepository
@@ -50,7 +57,7 @@ public class UpdateCourseStatusUseCase {
             .findByIdAndInstitution_IdForUpdate(id, institutionId)
             .orElseThrow(CourseNotFoundException::new);
     if (request.status() == CourseStatus.ACTIVE) {
-      if (studyPlan.getStatus() != StudyPlanStatus.ACTIVE) {
+      if (studyPlan.getStatus() == StudyPlanStatus.DRAFT) {
         throw new AcademicConflictException(AcademicMessages.COURSE_STUDY_PLAN_NOT_ACTIVE);
       }
       if (academicYear.getStatus() != AcademicYearStatus.ACTIVE) {

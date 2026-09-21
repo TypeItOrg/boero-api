@@ -10,6 +10,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanStatusRequest;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class UpdateStudyPlanStatusUseCase {
+  private final AcademicAccessGuard accessGuard;
   private final BusinessDateProvider businessDateProvider;
 
   private final StudyPlanRepository studyPlanRepository;
@@ -28,6 +32,9 @@ public class UpdateStudyPlanStatusUseCase {
   @Transactional
   public void execute(
       final UUID institutionId, final UUID id, final StudyPlanStatusRequest request) {
+    accessGuard.require(
+        PermissionCode.STUDY_PLAN_STATUS_UPDATE, institutionId, ScopedResource.STUDY_PLAN, id);
+
     final var plan =
         studyPlanRepository
             .findByIdAndInstitution_IdForUpdate(id, institutionId)

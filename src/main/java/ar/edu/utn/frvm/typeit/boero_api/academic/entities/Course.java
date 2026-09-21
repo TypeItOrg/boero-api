@@ -227,7 +227,10 @@ public class Course extends SoftDeletable {
   }
 
   private void ensureParentsActive() {
-    if (getStudyPlan().getStatus() != StudyPlanStatus.ACTIVE) {
+    if (getStudyPlan().getStatus() == StudyPlanStatus.DRAFT
+        || getStudyPlan().getDeletedAt() != null
+        || !getStudyPlan().getTrainingPath().isActive()
+        || getStudyPlan().getTrainingPath().getDeletedAt() != null) {
       throw new InvalidAcademicStateException();
     }
     ensureAcademicYearActive();

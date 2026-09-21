@@ -26,6 +26,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.ShiftRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicLifecycleRequest;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.logging.RequestLoggingFilter;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
@@ -43,6 +46,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class AcademicLifecycleService {
+  private final AcademicAccessGuard accessGuard;
   private final Clock clock;
 
   private final AcademicYearRepository academicYearRepository;
@@ -89,6 +93,9 @@ public class AcademicLifecycleService {
   @Transactional
   public void deleteTrainingPath(
       final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+    accessGuard.require(
+        PermissionCode.TRAINING_PATH_DELETE, institutionId, ScopedResource.TRAINING_PATH, id);
+
     final var path =
         trainingPathRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
@@ -109,6 +116,9 @@ public class AcademicLifecycleService {
   @Transactional
   public void restoreTrainingPath(
       final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+    accessGuard.require(
+        PermissionCode.TRAINING_PATH_RESTORE, institutionId, ScopedResource.TRAINING_PATH, id);
+
     final var path =
         trainingPathRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
@@ -119,6 +129,9 @@ public class AcademicLifecycleService {
   @Transactional
   public void deleteStudyPlan(
       final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+    accessGuard.require(
+        PermissionCode.STUDY_PLAN_DELETE, institutionId, ScopedResource.STUDY_PLAN, id);
+
     final var plan =
         studyPlanRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
@@ -136,6 +149,9 @@ public class AcademicLifecycleService {
   @Transactional
   public void restoreStudyPlan(
       final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+    accessGuard.require(
+        PermissionCode.STUDY_PLAN_RESTORE, institutionId, ScopedResource.STUDY_PLAN, id);
+
     final var plan =
         studyPlanRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
@@ -233,6 +249,8 @@ public class AcademicLifecycleService {
   @Transactional
   public void deleteCourse(
       final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+    accessGuard.require(PermissionCode.COURSE_DELETE, institutionId, ScopedResource.COURSE, id);
+
     lockCourseParents(institutionId, id);
     final var course =
         courseRepository
@@ -265,6 +283,8 @@ public class AcademicLifecycleService {
   @Transactional
   public void restoreCourse(
       final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+    accessGuard.require(PermissionCode.COURSE_RESTORE, institutionId, ScopedResource.COURSE, id);
+
     final var parents = lockCourseParents(institutionId, id);
     final var course =
         courseRepository

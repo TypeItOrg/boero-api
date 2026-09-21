@@ -13,6 +13,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicConflictExce
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicLevelRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreateAcademicLevelRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.UpdateAcademicLevelRequest;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -28,6 +29,7 @@ import org.mockito.quality.Strictness;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class AcademicLevelUseCasesTest {
+  @org.mockito.Mock private AcademicAccessGuard accessGuard;
 
   private static final UUID INSTITUTION_ID =
       UUID.fromString("66666666-6666-6666-6666-666666666666");

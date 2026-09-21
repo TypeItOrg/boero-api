@@ -37,7 +37,7 @@ public final class AcademicMessages {
   public static final String STUDY_PLAN_HAS_ACTIVE_COURSES =
       "El plan de estudio no puede desactivarse porque tiene cursos que no están cerrados asociados.";
   public static final String COURSE_STUDY_PLAN_NOT_ACTIVE =
-      "El plan de estudio seleccionado debe estar activo.";
+      "El plan de estudio seleccionado debe estar publicado y no eliminado.";
   public static final String COURSE_YEAR_NOT_ACTIVE =
       "El ciclo lectivo seleccionado debe estar activo.";
   public static final String COURSE_SPACE_NOT_IN_PLAN =

@@ -138,7 +138,7 @@ public interface StudyPlanSpaceRepository extends JpaRepository<StudyPlanSpace, 
       JOIN space.studyPlan plan
       WHERE space.institution.id = :institutionId
         AND space.academicSpace.id = :academicSpaceId
-        AND plan.deletedAt IS NULL
+        AND plan.deletedAt IS NULL AND (:#{@scopedAuthorization.unrestricted('STUDY_PLAN_READ')} = true OR plan.trainingPath.id IN :#{@scopedAuthorization.paths('STUDY_PLAN_READ')})
       """)
   AcademicSpaceUsageSummaryProjection summarizeUsage(
       @Param("institutionId") UUID institutionId, @Param("academicSpaceId") UUID academicSpaceId);

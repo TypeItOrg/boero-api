@@ -7,6 +7,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.PrerequisiteRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceInstrumentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class DeleteStudyPlanSpaceUseCase {
+  private final AcademicAccessGuard accessGuard;
   private final StudyPlanSpaceRepository studyPlanSpaceRepository;
   private final PrerequisiteRepository prerequisiteRepository;
   private final StudyPlanSpaceInstrumentRepository studyPlanSpaceInstrumentRepository;
@@ -24,6 +28,12 @@ public class DeleteStudyPlanSpaceUseCase {
 
   @Transactional
   public void execute(final UUID institutionId, final UUID id) {
+    accessGuard.require(
+        PermissionCode.STUDY_PLAN_CURRICULUM_UPDATE,
+        institutionId,
+        ScopedResource.STUDY_PLAN_SPACE,
+        id);
+
     final var existing =
         studyPlanSpaceRepository
             .findByIdAndInstitution_Id(id, institutionId)

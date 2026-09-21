@@ -7,11 +7,13 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicSpaceResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicYearResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.InstrumentResponse;
+import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.ShiftResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.TrainingPathResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListAcademicSpacesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListAcademicYearsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListInstrumentsUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListShiftsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListStudyPlansUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListTrainingPathsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPlatformRole;
@@ -44,6 +46,20 @@ public class PlatformAcademicCollectionController {
   private final ListStudyPlansUseCase listStudyPlansUseCase;
   private final ListAcademicSpacesUseCase listAcademicSpacesUseCase;
   private final ListInstrumentsUseCase listInstrumentsUseCase;
+  private final ListShiftsUseCase listShiftsUseCase;
+
+  @GetMapping(value = "/shifts", version = Version.V1)
+  public PaginatedResponse<ShiftResponse> listShifts(
+      @RequestParam(required = false) final UUID institutionId,
+      @RequestParam(required = false) @Size(max = 100) final String search,
+      @RequestParam(required = false) final Boolean active,
+      @RequestParam(defaultValue = "false") final boolean deleted,
+      @PageableDefault(
+              sort = {"institution.name", "name"},
+              direction = Sort.Direction.ASC)
+          final Pageable pageable) {
+    return listShiftsUseCase.execute(institutionId, search, active, deleted, pageable);
+  }
 
   @GetMapping(value = "/academic-years", version = Version.V1)
   public PaginatedResponse<AcademicYearResponse> listAcademicYears(

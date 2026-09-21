@@ -96,7 +96,15 @@ class ShiftControllerWebMvcTest {
   @DisplayName("Should create a shift under the institution route")
   void create_returnsCreatedShift() throws Exception {
     when(createShiftUseCase.execute(eq(INSTITUTION_ID), any()))
-        .thenReturn(new ShiftResponse(SHIFT_ID, INSTITUTION_ID, "Turno mañana", null, true, null));
+        .thenReturn(
+            new ShiftResponse(
+                SHIFT_ID,
+                INSTITUTION_ID,
+                "Institución de prueba",
+                "Turno mañana",
+                null,
+                true,
+                null));
 
     mockMvc
         .perform(
@@ -133,7 +141,13 @@ class ShiftControllerWebMvcTest {
                 .items(
                     List.of(
                         new ShiftResponse(
-                            SHIFT_ID, INSTITUTION_ID, "Turno mañana", null, true, null)))
+                            SHIFT_ID,
+                            INSTITUTION_ID,
+                            "Institución de prueba",
+                            "Turno mañana",
+                            null,
+                            true,
+                            null)))
                 .page(0)
                 .size(20)
                 .totalItems(1)
@@ -176,7 +190,15 @@ class ShiftControllerWebMvcTest {
   @DisplayName("Should return a single shift by id")
   void get_returnsShiftById() throws Exception {
     when(getShiftUseCase.execute(INSTITUTION_ID, SHIFT_ID))
-        .thenReturn(new ShiftResponse(SHIFT_ID, INSTITUTION_ID, "Turno tarde", null, false, null));
+        .thenReturn(
+            new ShiftResponse(
+                SHIFT_ID,
+                INSTITUTION_ID,
+                "Institución de prueba",
+                "Turno tarde",
+                null,
+                false,
+                null));
 
     mockMvc
         .perform(
@@ -191,7 +213,14 @@ class ShiftControllerWebMvcTest {
   void update_returnsUpdatedShift() throws Exception {
     when(updateShiftUseCase.execute(eq(INSTITUTION_ID), eq(SHIFT_ID), any()))
         .thenReturn(
-            new ShiftResponse(SHIFT_ID, INSTITUTION_ID, "Turno noche", "De 20 a 24", true, null));
+            new ShiftResponse(
+                SHIFT_ID,
+                INSTITUTION_ID,
+                "Institución de prueba",
+                "Turno noche",
+                "De 20 a 24",
+                true,
+                null));
 
     mockMvc
         .perform(
@@ -253,7 +282,15 @@ class ShiftControllerWebMvcTest {
   @DisplayName("Should create a shift under the platform administration route")
   void create_viaAdminRoute() throws Exception {
     when(createShiftUseCase.execute(eq(INSTITUTION_ID), any()))
-        .thenReturn(new ShiftResponse(SHIFT_ID, INSTITUTION_ID, "Turno mañana", null, true, null));
+        .thenReturn(
+            new ShiftResponse(
+                SHIFT_ID,
+                INSTITUTION_ID,
+                "Institución de prueba",
+                "Turno mañana",
+                null,
+                true,
+                null));
 
     mockMvc
         .perform(
