@@ -6,5 +6,6 @@ public enum AcademicEnrollmentStatus {
   REGULARIZED,
   PROMOTED,
   PASSED,
-  FAILED
+  FAILED,
+  NOT_APPLICABLE
 }

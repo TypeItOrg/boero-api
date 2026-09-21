@@ -132,6 +132,9 @@ public class CourseEnrollment extends Auditable {
   public void complete(final Instant completedAt) {
     status = CourseEnrollmentStatus.COMPLETED;
     this.completedAt = completedAt;
+    if (academicStatus == AcademicEnrollmentStatus.IN_PROGRESS) {
+      academicStatus = AcademicEnrollmentStatus.PENDING_RESULT;
+    }
   }
 
   public void withdraw(
@@ -140,17 +143,24 @@ public class CourseEnrollment extends Auditable {
       final UUID authorityPersonId,
       final String reason) {
     status = target;
+    academicStatus = AcademicEnrollmentStatus.NOT_APPLICABLE;
     this.withdrawnAt = withdrawnAt;
     this.actionAuthorityPersonId = authorityPersonId;
     this.actionReason = reason;
   }
 
-  public void updateAcademicStatus(final AcademicEnrollmentStatus target, final String reason) {
+  public void recordAcademicResult(
+      final AcademicEnrollmentStatus target, final Instant completedAt, final String reason) {
     if (status == CourseEnrollmentStatus.WITHDRAWN
         || status == CourseEnrollmentStatus.ADMINISTRATIVELY_WITHDRAWN
-        || status == CourseEnrollmentStatus.COMPLETED
-            && target == AcademicEnrollmentStatus.IN_PROGRESS) {
+        || target == AcademicEnrollmentStatus.IN_PROGRESS
+        || target == AcademicEnrollmentStatus.PENDING_RESULT
+        || target == AcademicEnrollmentStatus.NOT_APPLICABLE) {
       throw new EnrollmentValidationException(EnrollmentMessages.ACADEMIC_TRANSITION_INVALID);
+    }
+    if (status == CourseEnrollmentStatus.ENROLLED) {
+      status = CourseEnrollmentStatus.COMPLETED;
+      this.completedAt = completedAt;
     }
     academicStatus = target;
     actionReason = reason;
