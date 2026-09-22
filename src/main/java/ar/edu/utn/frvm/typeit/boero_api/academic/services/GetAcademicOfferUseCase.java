@@ -12,6 +12,8 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentPeriodRepository;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -25,6 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class GetAcademicOfferUseCase {
   private final AcademicAccessGuard accessGuard;
   private final BusinessDateProvider businessDateProvider;
+  private final Clock clock;
+  private final EnrollmentPeriodRepository enrollmentPeriodRepository;
 
   private final StudyPlanRepository studyPlanRepository;
   private final AcademicLevelRepository academicLevelRepository;
@@ -56,7 +60,13 @@ public class GetAcademicOfferUseCase {
             .toList();
     final var unassignedSpaces =
         spaces.stream().filter(space -> space.academicLevelId() == null).toList();
+    final boolean enrollmentOpen =
+        enrollmentPeriodRepository
+            .findStudyPlanIdsWithOpenEnrollment(
+                institutionId, List.of(studyPlanId), clock.instant())
+            .contains(studyPlanId);
+
     return new AcademicOfferDetailResponse(
-        AcademicOfferSummaryResponse.from(plan), levels, unassignedSpaces);
+        AcademicOfferSummaryResponse.from(plan, enrollmentOpen), levels, unassignedSpaces);
   }
 }

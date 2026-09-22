@@ -76,7 +76,8 @@ class SearchRepository {
     final String sql =
         "SELECT entity.* FROM ("
             + definition.selectSql()
-            + ") entity ORDER BY entity.score DESC, entity.title, entity.id LIMIT :size OFFSET :offset";
+            + ") entity ORDER BY entity.score DESC, entity.title, entity.id LIMIT :size OFFSET"
+            + " :offset";
     return jdbcTemplate.query(
         sql,
         parameters(searchQuery, null)
@@ -124,7 +125,9 @@ class SearchRepository {
               + parameter
               + "))";
       case COURSE ->
-          " AND entity.id IN (SELECT c.course_id FROM courses c JOIN study_plan_spaces s ON s.study_plan_space_id = c.study_plan_space_id JOIN study_plans p ON p.study_plan_id = s.study_plan_id WHERE p.training_path_id IN (:"
+          " AND entity.id IN (SELECT c.course_id FROM courses c JOIN study_plan_spaces s ON"
+              + " s.study_plan_space_id = c.study_plan_space_id JOIN study_plans p ON"
+              + " p.study_plan_id = s.study_plan_id WHERE p.training_path_id IN (:"
               + parameter
               + "))";
       default -> " AND false";
@@ -158,7 +161,8 @@ class SearchRepository {
         resultSet.getString("title"),
         resultSet.getString("subtitle"),
         resultSet.getString("status"),
-        resultSet.getString("category"));
+        resultSet.getString("category"),
+        resultSet.getObject("study_plan_version", Integer.class));
   }
 
   private record SearchRow(SearchEntityType entityType, SearchResultResponse result) {}

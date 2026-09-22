@@ -17,6 +17,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentPeriodRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -41,6 +42,7 @@ class GetAcademicOfferUseCaseTest {
   private static final UUID LEVEL_ID = UUID.randomUUID();
 
   @Mock private StudyPlanRepository studyPlanRepository;
+  @Mock private EnrollmentPeriodRepository enrollmentPeriodRepository;
   @Mock private AcademicLevelRepository academicLevelRepository;
   @Mock private StudyPlanSpaceRepository studyPlanSpaceRepository;
   @Mock private StudyPlan studyPlan;
@@ -77,6 +79,8 @@ class GetAcademicOfferUseCaseTest {
     return new GetAcademicOfferUseCase(
         org.mockito.Mockito.mock(AcademicAccessGuard.class),
         new BusinessDateProvider(CLOCK),
+        CLOCK,
+        enrollmentPeriodRepository,
         studyPlanRepository,
         academicLevelRepository,
         studyPlanSpaceRepository);

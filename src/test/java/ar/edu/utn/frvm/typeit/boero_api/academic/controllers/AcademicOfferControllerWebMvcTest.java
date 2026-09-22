@@ -249,7 +249,8 @@ class AcademicOfferControllerWebMvcTest {
         null,
         UUID.fromString("66666666-6666-6666-6666-666666666666"),
         "CAVI",
-        "Ciclo artístico vocacional infantil");
+        "Ciclo artístico vocacional infantil",
+        false);
   }
 
   private static TestingAuthenticationToken authentication(final Object principal) {
