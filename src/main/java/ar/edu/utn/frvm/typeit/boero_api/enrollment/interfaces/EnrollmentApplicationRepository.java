@@ -107,7 +107,13 @@ public interface EnrollmentApplicationRepository
           + "AND application.deletedAt IS NULL "
           + "AND (:#{@scopedAuthorization.unrestricted('ENROLLMENT_APPLICATION_READ')} = true OR application.trainingPathId IN :#{@scopedAuthorization.paths('ENROLLMENT_APPLICATION_READ')}) AND (:status IS NULL OR application.status = :status) "
           + "AND (:trainingPathId IS NULL OR application.trainingPathId = :trainingPathId) "
-          + "AND (:open = false OR application.enrollmentPeriod.status = ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus.OPEN)")
+          + "AND (:open = false OR EXISTS ("
+          + "SELECT period.id FROM EnrollmentPeriod period "
+          + "WHERE period.id = application.enrollmentPeriod.id "
+          + "AND period.status = ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus.OPEN) "
+          + "OR EXISTS (SELECT selection.id FROM EnrollmentApplicationCourse selection "
+          + "WHERE selection.enrollmentApplication.id = application.id "
+          + "AND selection.enrollmentPeriod.status = ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus.OPEN))")
   Page<EnrollmentApplication> findByInstitutionId(
       @Param("institutionId") UUID institutionId,
       @Param("status") @Nullable EnrollmentApplicationStatus status,
@@ -129,7 +135,13 @@ public interface EnrollmentApplicationRepository
           + "AND (:institutionId IS NULL OR application.institution.id = :institutionId) "
           + "AND (:status IS NULL OR application.status = :status) "
           + "AND (:trainingPathId IS NULL OR application.trainingPathId = :trainingPathId) "
-          + "AND (:open = false OR application.enrollmentPeriod.status = ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus.OPEN)")
+          + "AND (:open = false OR EXISTS ("
+          + "SELECT period.id FROM EnrollmentPeriod period "
+          + "WHERE period.id = application.enrollmentPeriod.id "
+          + "AND period.status = ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus.OPEN) "
+          + "OR EXISTS (SELECT selection.id FROM EnrollmentApplicationCourse selection "
+          + "WHERE selection.enrollmentApplication.id = application.id "
+          + "AND selection.enrollmentPeriod.status = ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus.OPEN))")
   Page<EnrollmentApplication> findByFilters(
       @Param("institutionId") @Nullable UUID institutionId,
       @Param("status") @Nullable EnrollmentApplicationStatus status,
