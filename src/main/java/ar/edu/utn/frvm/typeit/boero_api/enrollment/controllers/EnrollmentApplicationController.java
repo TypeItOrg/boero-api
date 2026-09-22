@@ -127,7 +127,7 @@ public class EnrollmentApplicationController {
   public ResponseEntity<EnrollmentApplicationResponse> updateDraft(
       Authentication authentication,
       @PathVariable UUID applicationId,
-      @RequestBody UpdateEnrollmentDraftRequest request) {
+      @Valid @RequestBody UpdateEnrollmentDraftRequest request) {
     JwtAuthenticatedUser principal = requireInstitutionalUser(authentication);
     EnrollmentApplicationResponse response =
         applicationService.updateDraft(principal.personId(), applicationId, request);

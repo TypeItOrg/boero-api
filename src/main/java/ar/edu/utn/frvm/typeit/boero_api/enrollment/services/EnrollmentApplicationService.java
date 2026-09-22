@@ -23,6 +23,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplicatio
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplicationCourse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplicationSpace;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EducationLevel;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationCourseStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.ActiveEnrollmentApplicationExistsException;
@@ -188,21 +189,14 @@ public class EnrollmentApplicationService {
           bg.setSecondarySchool(academicBg.getSecondarySchool());
         }
 
-        if (academicBg.getSchoolOrigin() != null) {
-          bg.setSchoolOrigin(academicBg.getSchoolOrigin());
-        }
-
-        if (academicBg.getCurrentGradeYear() != null) {
-          bg.setCurrentGradeYear(academicBg.getCurrentGradeYear());
-        }
-
-        if (academicBg.getSecondaryCompleted() != null) {
-          bg.setSecondaryCompleted(academicBg.getSecondaryCompleted());
-        }
-
-        if (academicBg.getSecondaryDegreeTitle() != null) {
-          bg.setSecondaryDegreeTitle(academicBg.getSecondaryDegreeTitle());
-        }
+        bg.updateSchooling(
+            academicBg.getCurrentlyStudying(),
+            academicBg.getEducationLevel(),
+            academicBg.getSchoolOrigin(),
+            academicBg.getCurrentGradeYear(),
+            academicBg.getLevelCompleted(),
+            academicBg.getSecondaryCompleted(),
+            academicBg.getSecondaryDegreeTitle());
       }
 
       // 3. Salud e Inclusión
@@ -648,10 +642,40 @@ public class EnrollmentApplicationService {
     // 2. Validar antecedentes académicos
     ApplicantEducationBackground edu = application.getEducationBackground();
 
-    if (edu == null
-        || ((edu.getSecondarySchool() == null || edu.getSecondarySchool().isBlank())
-            && (edu.getSchoolOrigin() == null || edu.getSchoolOrigin().isBlank()))) {
-      errors.put("academicBackground", EnrollmentMessages.EDUCATION_REQUIRED);
+    if (edu == null || edu.getCurrentlyStudying() == null) {
+      errors.put(
+          "academicBackground.currentlyStudying", EnrollmentMessages.CURRENTLY_STUDYING_REQUIRED);
+    } else if (edu.getEducationLevel() == null) {
+      errors.put("academicBackground.educationLevel", EnrollmentMessages.EDUCATION_LEVEL_REQUIRED);
+    } else {
+      final boolean currentlyStudying = Boolean.TRUE.equals(edu.getCurrentlyStudying());
+      final EducationLevel educationLevel = edu.getEducationLevel();
+
+      if (currentlyStudying && educationLevel == EducationLevel.NO_SCHOOLING) {
+        errors.put(
+            "academicBackground.educationLevel",
+            EnrollmentMessages.CURRENT_EDUCATION_LEVEL_INVALID);
+      }
+
+      if (currentlyStudying && (edu.getSchoolOrigin() == null || edu.getSchoolOrigin().isBlank())) {
+        errors.put(
+            "academicBackground.schoolOrigin", EnrollmentMessages.EDUCATION_INSTITUTION_REQUIRED);
+      }
+
+      if (!currentlyStudying
+          && educationLevel != EducationLevel.NO_SCHOOLING
+          && educationLevel != EducationLevel.SECONDARY
+          && edu.getLevelCompleted() == null) {
+        errors.put(
+            "academicBackground.levelCompleted", EnrollmentMessages.EDUCATION_COMPLETION_REQUIRED);
+      }
+
+      if (educationLevel.requiresSecondaryCompletionAnswer()
+          && edu.getSecondaryCompleted() == null) {
+        errors.put(
+            "academicBackground.secondaryCompleted",
+            EnrollmentMessages.SECONDARY_COMPLETION_REQUIRED);
+      }
     }
 
     // 3. Validar la selección de cursos concretos.

@@ -44,6 +44,8 @@ public class ListEnrollmentApplicationCoursesUseCase {
         courseRepository.findOpenForEnrollment(
             application.getInstitution().getId(),
             application.getTrainingPath().getId(),
+            application.getId(),
+            personId,
             application.getEnrollmentPeriod() == null
                 ? null
                 : application.getEnrollmentPeriod().getId(),

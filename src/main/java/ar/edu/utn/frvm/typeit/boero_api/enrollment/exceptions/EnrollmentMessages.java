@@ -48,6 +48,16 @@ public final class EnrollmentMessages {
   public static final String RESPONSIBLE_PHONE_REQUIRED =
       "El teléfono del responsable es obligatorio";
   public static final String EDUCATION_REQUIRED = "Los antecedentes educativos son obligatorios";
+  public static final String CURRENTLY_STUDYING_REQUIRED =
+      "Indicá si actualmente asistís a una institución educativa";
+  public static final String EDUCATION_LEVEL_REQUIRED = "El nivel educativo es obligatorio";
+  public static final String CURRENT_EDUCATION_LEVEL_INVALID =
+      "Seleccioná un nivel educativo para indicar que estudiás actualmente";
+  public static final String EDUCATION_INSTITUTION_REQUIRED =
+      "La institución educativa actual es obligatoria";
+  public static final String EDUCATION_COMPLETION_REQUIRED =
+      "Indicá si completaste el máximo nivel alcanzado";
+  public static final String SECONDARY_COMPLETION_REQUIRED = "Indicá si completaste el secundario";
   public static final String SHIFT_REQUIRED = "El turno preferido es obligatorio";
   public static final String PREVIOUS_TEACHER_REQUIRED =
       "El docente previo es obligatorio para aspirantes reingresantes";

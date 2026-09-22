@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Builder;
@@ -21,7 +22,12 @@ import lombok.Builder;
     })
 public record EnrollmentDraftData(
     @Schema(nullable = true) PersonalDataDto personalData,
-    @Schema(nullable = true) AcademicBackgroundDto academicBackground,
+    @Schema(
+            nullable = true,
+            description =
+                "Si se incluye, la escolaridad adaptable se reemplaza como una fotografía completa: los campos nulos eliminan respuestas anteriores. Si se omite, se conserva sin cambios.")
+        @Valid
+        AcademicBackgroundDto academicBackground,
     @Schema(nullable = true) HealthInclusionDto healthInclusion,
     @Schema(nullable = true) ResponsibleDto responsible,
     @Schema(nullable = true) PreferenceDto preference,

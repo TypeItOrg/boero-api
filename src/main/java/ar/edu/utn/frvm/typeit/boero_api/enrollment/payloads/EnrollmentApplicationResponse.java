@@ -29,6 +29,7 @@ import lombok.Builder;
       "trainingPathId",
       "studyPlanId",
       "studyPlanName",
+      "studyPlanVersion",
       "trainingPathName",
       "academicYearId",
       "academicYear",
@@ -57,6 +58,7 @@ public record EnrollmentApplicationResponse(
     @Schema(nullable = true) UUID trainingPathId,
     @Schema(nullable = true) UUID studyPlanId,
     @Schema(nullable = true) String studyPlanName,
+    @Schema(nullable = true) Integer studyPlanVersion,
     @Schema(nullable = true) String trainingPathName,
     @Schema(nullable = true) UUID academicYearId,
     @Schema(nullable = true) Integer academicYear,
@@ -76,6 +78,7 @@ public record EnrollmentApplicationResponse(
     boolean periodOpen) {
   public EnrollmentApplicationResponse() {
     this(
+        null,
         null,
         null,
         null,
@@ -231,6 +234,10 @@ public record EnrollmentApplicationResponse(
         .studyPlanId(application.getStudyPlan() == null ? null : application.getStudyPlan().getId())
         .studyPlanName(
             application.getStudyPlan() == null ? null : application.getStudyPlan().getName())
+        .studyPlanVersion(
+            application.getStudyPlan() == null
+                ? null
+                : application.getStudyPlan().getVersionNumber())
         .trainingPathName(trainingPath == null ? null : trainingPath.getName())
         .academicYearId(
             application.commonAcademicYear() == null
@@ -299,6 +306,10 @@ public record EnrollmentApplicationResponse(
         .studyPlanId(application.getStudyPlan() != null ? application.getStudyPlan().getId() : null)
         .studyPlanName(
             application.getStudyPlan() != null ? application.getStudyPlan().getName() : null)
+        .studyPlanVersion(
+            application.getStudyPlan() == null
+                ? null
+                : application.getStudyPlan().getVersionNumber())
         .trainingPathName(
             application.getTrainingPath() != null ? application.getTrainingPath().getName() : null)
         .academicYearId(
@@ -387,9 +398,12 @@ public record EnrollmentApplicationResponse(
       academicBgDto =
           AcademicBackgroundDto.builder()
               .secondarySchool(bg.getSecondarySchool())
+              .currentlyStudying(bg.getCurrentlyStudying())
+              .educationLevel(bg.getEducationLevel())
               .schoolOrigin(bg.getSchoolOrigin())
               .currentGradeYear(bg.getCurrentGradeYear())
-              .secondaryCompleted(bg.isSecondaryCompleted())
+              .levelCompleted(bg.getLevelCompleted())
+              .secondaryCompleted(bg.getSecondaryCompleted())
               .secondaryDegreeTitle(bg.getSecondaryDegreeTitle())
               .build();
     }
