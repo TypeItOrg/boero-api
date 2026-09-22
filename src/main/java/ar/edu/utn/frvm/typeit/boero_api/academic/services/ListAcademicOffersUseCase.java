@@ -6,8 +6,11 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicOfferSummaryResponse;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentPeriodRepository;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -28,16 +31,27 @@ public class ListAcademicOffersUseCase {
           "effectiveFrom", "effectiveFrom",
           "effectiveTo", "effectiveTo");
   private final BusinessDateProvider businessDateProvider;
+  private final Clock clock;
+  private final EnrollmentPeriodRepository enrollmentPeriodRepository;
 
   private final StudyPlanRepository studyPlanRepository;
 
   @Transactional(readOnly = true)
   public PaginatedResponse<AcademicOfferSummaryResponse> execute(
       final UUID institutionId, final Pageable pageable) {
+    final var plans =
+        studyPlanRepository.findAvailableOffers(
+            institutionId, businessDateProvider.today(), mapSort(pageable));
+    final var planIds = plans.stream().map(plan -> plan.getId()).toList();
+    final Set<UUID> openPlanIds =
+        planIds.isEmpty()
+            ? Set.of()
+            : enrollmentPeriodRepository.findStudyPlanIdsWithOpenEnrollment(
+                institutionId, planIds, clock.instant());
+
     return PaginatedResponse.from(
-        studyPlanRepository
-            .findAvailableOffers(institutionId, businessDateProvider.today(), mapSort(pageable))
-            .map(AcademicOfferSummaryResponse::from));
+        plans.map(
+            plan -> AcademicOfferSummaryResponse.from(plan, openPlanIds.contains(plan.getId()))));
   }
 
   private static Pageable mapSort(final Pageable pageable) {

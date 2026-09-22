@@ -14,7 +14,8 @@ import java.util.UUID;
       "effectiveTo",
       "trainingPathId",
       "trainingPathName",
-      "trainingPathDescription"
+      "trainingPathDescription",
+      "enrollmentOpen"
     })
 public record AcademicOfferSummaryResponse(
     UUID studyPlanId,
@@ -24,9 +25,11 @@ public record AcademicOfferSummaryResponse(
     @Schema(nullable = true) LocalDate effectiveTo,
     UUID trainingPathId,
     String trainingPathName,
-    @Schema(nullable = true) String trainingPathDescription) {
+    @Schema(nullable = true) String trainingPathDescription,
+    boolean enrollmentOpen) {
 
-  public static AcademicOfferSummaryResponse from(final StudyPlan plan) {
+  public static AcademicOfferSummaryResponse from(
+      final StudyPlan plan, final boolean enrollmentOpen) {
     final var trainingPath = plan.getTrainingPath();
     return new AcademicOfferSummaryResponse(
         plan.getId(),
@@ -36,6 +39,7 @@ public record AcademicOfferSummaryResponse(
         plan.getEffectiveTo(),
         trainingPath.getId(),
         trainingPath.getName(),
-        trainingPath.getDescription());
+        trainingPath.getDescription(),
+        enrollmentOpen);
   }
 }

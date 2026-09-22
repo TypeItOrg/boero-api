@@ -11,6 +11,7 @@ import java.util.UUID;
     requiredProperties = {
       "studyPlanId",
       "name",
+      "versionNumber",
       "trainingPathName",
       "effectiveFrom",
       "effectiveTo",
@@ -20,6 +21,7 @@ import java.util.UUID;
 public record AcademicSpaceUsagePlanResponse(
     UUID studyPlanId,
     String name,
+    int versionNumber,
     String trainingPathName,
     @Schema(nullable = true) LocalDate effectiveFrom,
     @Schema(nullable = true) LocalDate effectiveTo,
@@ -31,6 +33,7 @@ public record AcademicSpaceUsagePlanResponse(
     return new AcademicSpaceUsagePlanResponse(
         plan.getId(),
         plan.getName(),
+        plan.getVersionNumber(),
         plan.getTrainingPath().getName(),
         plan.getEffectiveFrom(),
         plan.getEffectiveTo(),

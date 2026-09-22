@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentPeriodRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -34,6 +35,8 @@ class ListAcademicOffersUseCaseTest {
   private static final UUID INSTITUTION_ID = UUID.randomUUID();
 
   @Mock private StudyPlanRepository studyPlanRepository;
+  @Mock private EnrollmentPeriodRepository enrollmentPeriodRepository;
+  @Mock private Clock clock;
 
   @Spy
   private BusinessDateProvider businessDateProvider =

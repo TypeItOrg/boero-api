@@ -378,6 +378,23 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
               OR selection.academicLevel IS NULL AND course.studyPlanSpace.academicLevel IS NULL))
         AND (:studyPlanSpaceId IS NULL OR course.studyPlanSpace.id = :studyPlanSpaceId)
         AND (:academicYear IS NULL OR course.academicYear.year = :academicYear)
+        AND NOT EXISTS (SELECT requested.id FROM EnrollmentApplicationCourse requested
+          WHERE requested.institution.id = :institutionId
+            AND requested.course.id = course.id
+            AND requested.enrollmentApplication.id <> :applicationId
+            AND requested.enrollmentApplication.applicantPerson.id = :personId
+            AND requested.enrollmentApplication.deletedAt IS NULL
+            AND requested.enrollmentApplication.status NOT IN (
+              ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus.CANCELLED,
+              ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus.REJECTED)
+            AND requested.status IN (
+              ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationCourseStatus.PENDING,
+              ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationCourseStatus.WAITLISTED))
+        AND NOT EXISTS (SELECT enrollment.id FROM CourseEnrollment enrollment
+          WHERE enrollment.institution.id = :institutionId
+            AND enrollment.course.id = course.id
+            AND enrollment.student.person.id = :personId
+            AND enrollment.status = ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus.ENROLLED)
         AND (:search IS NULL OR UNACCENT_LOWER(course.studyPlanSpace.academicSpace.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
           OR UNACCENT_LOWER(course.studyPlanSpace.studyPlan.name) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
           OR UNACCENT_LOWER(COALESCE(instrument.name, '')) LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%')))
@@ -386,6 +403,8 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
   Page<Course> findOpenForEnrollment(
       UUID institutionId,
       UUID trainingPathId,
+      UUID applicationId,
+      UUID personId,
       @Nullable UUID periodId,
       java.time.Instant now,
       @Nullable UUID studyPlanSpaceId,
