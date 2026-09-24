@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -21,6 +22,7 @@ import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantEducationBackground;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantPreference;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantResponsible;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplicationSpace;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
@@ -29,6 +31,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.ActiveEnrollmentApplicationExistsException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.ApplicationNotEditableException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentPeriodClosedException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationRepository;
@@ -44,6 +47,8 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.StartEnrollmentAppli
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentDraftRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.UnauthorizedGuardianshipException;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonGuardianRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
 import java.time.Clock;
 import java.time.Instant;
@@ -71,6 +76,7 @@ class EnrollmentApplicationServiceTest {
   @Mock private EnrollmentApplicationRepository applicationRepository;
   @Mock private EnrollmentPeriodRepository periodRepository;
   @Mock private PersonRepository personRepository;
+  @Mock private PersonGuardianRepository personGuardianRepository;
   @Mock private StudyPlanRepository studyPlanRepository;
   @Mock private AcademicYearRepository academicYearRepository;
 
@@ -96,6 +102,7 @@ class EnrollmentApplicationServiceTest {
             applicationRepository,
             periodRepository,
             personRepository,
+            personGuardianRepository,
             studyPlanRepository,
             academicYearRepository,
             studyPlanSpaceRepository,
@@ -331,7 +338,7 @@ class EnrollmentApplicationServiceTest {
             .status(EnrollmentApplicationStatus.DRAFT)
             .build();
 
-    when(applicationRepository.findOwnedForUpdate(applicationId, personId))
+    when(applicationRepository.findAccessibleForUpdate(applicationId, personId))
         .thenReturn(Optional.of(application));
     when(applicationRepository.saveAndFlush(any(EnrollmentApplication.class)))
         .thenReturn(application);
@@ -395,7 +402,7 @@ class EnrollmentApplicationServiceTest {
     Instrument instrument = Mockito.mock(Instrument.class);
     when(instrument.getId()).thenReturn(instrumentId);
 
-    when(applicationRepository.findOwnedForUpdate(applicationId, personId))
+    when(applicationRepository.findAccessibleForUpdate(applicationId, personId))
         .thenReturn(Optional.of(application));
     when(applicationRepository.saveAndFlush(any(EnrollmentApplication.class)))
         .thenReturn(application);
@@ -463,7 +470,7 @@ class EnrollmentApplicationServiceTest {
             .build();
     application.addSelectedSpace(previouslySelected);
 
-    when(applicationRepository.findOwnedForUpdate(applicationId, personId))
+    when(applicationRepository.findAccessibleForUpdate(applicationId, personId))
         .thenReturn(Optional.of(application));
     when(applicationRepository.saveAndFlush(any(EnrollmentApplication.class)))
         .thenReturn(application);
@@ -496,7 +503,7 @@ class EnrollmentApplicationServiceTest {
             .status(EnrollmentApplicationStatus.SUBMITTED)
             .build();
 
-    when(applicationRepository.findOwnedForUpdate(applicationId, personId))
+    when(applicationRepository.findAccessibleForUpdate(applicationId, personId))
         .thenReturn(Optional.of(application));
 
     UpdateEnrollmentDraftRequest request =
@@ -540,7 +547,7 @@ class EnrollmentApplicationServiceTest {
             .status(EnrollmentApplicationStatus.DRAFT)
             .build();
 
-    when(applicationRepository.findOwnedForUpdate(applicationId, personId))
+    when(applicationRepository.findAccessibleForUpdate(applicationId, personId))
         .thenReturn(Optional.of(application));
     when(applicationRepository.save(any(EnrollmentApplication.class))).thenReturn(application);
 
@@ -562,7 +569,7 @@ class EnrollmentApplicationServiceTest {
             .status(EnrollmentApplicationStatus.SUBMITTED)
             .build();
 
-    when(applicationRepository.findOwnedForUpdate(applicationId, personId))
+    when(applicationRepository.findAccessibleForUpdate(applicationId, personId))
         .thenReturn(Optional.of(application));
 
     assertThatThrownBy(() -> service.cancelApplication(personId, applicationId))
@@ -616,7 +623,84 @@ class EnrollmentApplicationServiceTest {
     application.addSelectedSpace(
         EnrollmentApplicationSpace.builder().studyPlanSpace(selectedStudyPlanSpace).build());
 
-    when(applicationRepository.findOwnedForUpdate(applicationId, personId))
+    when(applicationRepository.findAccessibleForUpdate(applicationId, personId))
+        .thenReturn(Optional.of(application));
+    when(applicationRepository.save(any(EnrollmentApplication.class))).thenReturn(application);
+
+    EnrollmentApplicationResponse response = service.submitApplication(personId, applicationId);
+
+    assertThat(response.getStatus()).isEqualTo(EnrollmentApplicationStatus.SUBMITTED);
+  }
+
+  @Test
+  @DisplayName("Should forbid starting an application for a person the caller does not guard")
+  void startOrGetApplication_forUnguardedPerson_isForbidden() {
+    UUID dependentId = UUID.randomUUID();
+    when(personGuardianRepository.existsByInstitution_IdAndTutorPerson_IdAndDependentPerson_Id(
+            institutionId, personId, dependentId))
+        .thenReturn(false);
+
+    assertThatThrownBy(
+            () ->
+                service.startOrGetApplication(
+                    institutionId,
+                    personId,
+                    StartEnrollmentApplicationRequest.builder()
+                        .studyPlanId(studyPlanId)
+                        .academicYearId(academicYearId)
+                        .applicantPersonId(dependentId)
+                        .build()))
+        .isInstanceOf(UnauthorizedGuardianshipException.class);
+    verify(applicationRepository, never()).saveAndFlush(any(EnrollmentApplication.class));
+  }
+
+  @Test
+  @DisplayName("Should not require an own email to submit a minor's application")
+  void submitApplication_minorWithoutEmail_doesNotRequireEmail() {
+    Person person = Mockito.mock(Person.class);
+    // The caller (personId) is the tutor; the applicant is a different person.
+    when(person.getId()).thenReturn(UUID.randomUUID());
+    when(person.getFirstName()).thenReturn("Mateo");
+    when(person.getLastName()).thenReturn("González");
+    when(person.getDocumentNumber()).thenReturn("54123456");
+    when(person.getBirthDate()).thenReturn(LocalDate.now().minusYears(8));
+
+    Institution institution = Mockito.mock(Institution.class);
+    when(institution.getId()).thenReturn(institutionId);
+    StudyPlan studyPlan = Mockito.mock(StudyPlan.class);
+    when(studyPlan.getId()).thenReturn(studyPlanId);
+    AcademicYear academicYear = Mockito.mock(AcademicYear.class);
+    when(academicYear.getId()).thenReturn(academicYearId);
+    EnrollmentPeriod period = Mockito.mock(EnrollmentPeriod.class);
+    when(period.getId()).thenReturn(periodId);
+
+    EnrollmentApplication application =
+        EnrollmentApplication.builder()
+            .id(applicationId)
+            .institution(institution)
+            .applicantPerson(person)
+            .studyPlan(studyPlan)
+            .academicYear(academicYear)
+            .enrollmentPeriod(period)
+            .educationBackground(
+                ApplicantEducationBackground.builder().secondarySchool("Escuela 1").build())
+            .preference(ApplicantPreference.builder().preferredShift("TARDE").build())
+            .responsible(
+                ApplicantResponsible.builder()
+                    .fullName("Carlos González")
+                    .documentNumber("35123456")
+                    .phoneNumber("3534112233")
+                    .build())
+            .status(EnrollmentApplicationStatus.DRAFT)
+            .build();
+    StudyPlanSpace selectedStudyPlanSpace = Mockito.mock(StudyPlanSpace.class);
+    AcademicSpace selectedAcademicSpace = Mockito.mock(AcademicSpace.class);
+    when(selectedAcademicSpace.getName()).thenReturn("Espacio académico");
+    when(selectedStudyPlanSpace.getAcademicSpace()).thenReturn(selectedAcademicSpace);
+    application.addSelectedSpace(
+        EnrollmentApplicationSpace.builder().studyPlanSpace(selectedStudyPlanSpace).build());
+
+    when(applicationRepository.findAccessibleForUpdate(applicationId, personId))
         .thenReturn(Optional.of(application));
     when(applicationRepository.save(any(EnrollmentApplication.class))).thenReturn(application);
 
@@ -629,6 +713,8 @@ class EnrollmentApplicationServiceTest {
   @DisplayName("Should require at least one selected study plan space to submit")
   void submitApplication_requiresSelectedSpaces() {
     Person person = Mockito.mock(Person.class);
+    when(person.getId()).thenReturn(personId);
+    when(person.getBirthDate()).thenReturn(LocalDate.of(2000, 1, 1));
     when(person.getFirstName()).thenReturn("Juan");
     when(person.getLastName()).thenReturn("Pérez");
     when(person.getDocumentNumber()).thenReturn("12345678");
@@ -647,7 +733,7 @@ class EnrollmentApplicationServiceTest {
             .status(EnrollmentApplicationStatus.DRAFT)
             .build();
 
-    when(applicationRepository.findOwnedForUpdate(applicationId, personId))
+    when(applicationRepository.findAccessibleForUpdate(applicationId, personId))
         .thenReturn(Optional.of(application));
 
     assertThatThrownBy(() -> service.submitApplication(personId, applicationId))
@@ -664,6 +750,7 @@ class EnrollmentApplicationServiceTest {
       "Should throw EnrollmentValidationException reporting each missing field when mandatory fields are missing upon submission")
   void submitApplication_missingFields() {
     Person person = Mockito.mock(Person.class);
+    when(person.getId()).thenReturn(personId);
     when(person.getFirstName()).thenReturn("");
     when(person.getLastName()).thenReturn(null);
     when(person.getDocumentNumber()).thenReturn(null);
@@ -676,7 +763,7 @@ class EnrollmentApplicationServiceTest {
             .status(EnrollmentApplicationStatus.DRAFT)
             .build();
 
-    when(applicationRepository.findOwnedForUpdate(applicationId, personId))
+    when(applicationRepository.findAccessibleForUpdate(applicationId, personId))
         .thenReturn(Optional.of(application));
 
     assertThatThrownBy(() -> service.submitApplication(personId, applicationId))
@@ -690,6 +777,7 @@ class EnrollmentApplicationServiceTest {
                       "personalData.firstName",
                       "personalData.lastName",
                       "personalData.documentNumber",
+                      "personalData.birthDate",
                       "personalData.email");
               assertThat(fieldErrors)
                   .containsKeys("academicBackground", "preference.preferredShift");
@@ -704,7 +792,6 @@ class EnrollmentApplicationServiceTest {
     when(person.getFirstName()).thenReturn("Juan");
     when(person.getLastName()).thenReturn("Pérez");
     when(person.getDocumentNumber()).thenReturn("12345678");
-    when(person.getEmail()).thenReturn("juan@example.com");
     when(person.getBirthDate()).thenReturn(LocalDate.now().minusYears(16));
 
     ApplicantEducationBackground edu =
@@ -720,7 +807,7 @@ class EnrollmentApplicationServiceTest {
             .status(EnrollmentApplicationStatus.DRAFT)
             .build();
 
-    when(applicationRepository.findOwnedForUpdate(applicationId, personId))
+    when(applicationRepository.findAccessibleForUpdate(applicationId, personId))
         .thenReturn(Optional.of(application));
 
     assertThatThrownBy(() -> service.submitApplication(personId, applicationId))
@@ -728,6 +815,46 @@ class EnrollmentApplicationServiceTest {
         .asInstanceOf(InstanceOfAssertFactories.type(EnrollmentValidationException.class))
         .extracting(EnrollmentValidationException::fieldErrors)
         .satisfies(fieldErrors -> assertThat(fieldErrors).containsKey("responsible"));
+  }
+
+  @Test
+  @DisplayName("Should reject a minor who applies for themself")
+  void submitApplication_selfServiceMinor_reportsError() {
+    assertBirthDateError(
+        personId, LocalDate.now().minusYears(16), EnrollmentMessages.APPLICANT_MUST_BE_ADULT);
+  }
+
+  @Test
+  @DisplayName("Should reject a tutor submitting for an applicant who is already an adult")
+  void submitApplication_tutorForAdult_reportsError() {
+    assertBirthDateError(
+        UUID.randomUUID(),
+        LocalDate.now().minusYears(30),
+        EnrollmentMessages.DEPENDENT_MUST_BE_MINOR);
+  }
+
+  private void assertBirthDateError(
+      final UUID applicantId, final LocalDate birthDate, final String expectedMessage) {
+    Person person = Mockito.mock(Person.class);
+    when(person.getId()).thenReturn(applicantId);
+    when(person.getBirthDate()).thenReturn(birthDate);
+
+    EnrollmentApplication application =
+        EnrollmentApplication.builder()
+            .id(applicationId)
+            .applicantPerson(person)
+            .status(EnrollmentApplicationStatus.DRAFT)
+            .build();
+    when(applicationRepository.findAccessibleForUpdate(applicationId, personId))
+        .thenReturn(Optional.of(application));
+
+    assertThatThrownBy(() -> service.submitApplication(personId, applicationId))
+        .isInstanceOf(EnrollmentValidationException.class)
+        .asInstanceOf(InstanceOfAssertFactories.type(EnrollmentValidationException.class))
+        .extracting(EnrollmentValidationException::fieldErrors)
+        .satisfies(
+            fieldErrors ->
+                assertThat(fieldErrors).containsEntry("personalData.birthDate", expectedMessage));
   }
 
   @Test

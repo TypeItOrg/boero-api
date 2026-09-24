@@ -63,6 +63,11 @@ public class EnrollmentApplication extends SoftDeletable {
   @JoinColumn(name = "applicant_person_id", nullable = false)
   private Person applicantPerson;
 
+  /** Who physically submitted the application: the tutor when acting for a dependent. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "submitted_by_person_id")
+  private Person submittedByPerson;
+
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "study_plan_id", nullable = false)
   private StudyPlan studyPlan;

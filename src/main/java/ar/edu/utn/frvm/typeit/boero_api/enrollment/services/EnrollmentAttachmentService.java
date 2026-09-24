@@ -258,7 +258,10 @@ public class EnrollmentAttachmentService {
     if (authentication.getPrincipal() instanceof JwtAuthenticatedUser user) {
       UUID applicantPersonId = application.getApplicantPerson().getId();
 
-      if (user.personId() != null && user.personId().equals(applicantPersonId)) {
+      if (user.personId() != null
+          && (user.personId().equals(applicantPersonId)
+              || applicationRepository.isAccessibleByPerson(
+                  application.getId(), user.personId()))) {
         return true;
       }
 

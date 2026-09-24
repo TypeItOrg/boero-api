@@ -10,6 +10,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
+import ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantEducationBackground;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantHealthInclusion;
@@ -37,6 +38,8 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.ResponsibleDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.StartEnrollmentApplicationRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentDraftRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.UnauthorizedGuardianshipException;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonGuardianRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
 import jakarta.persistence.criteria.Predicate;
 import java.time.Clock;
@@ -68,6 +71,7 @@ public class EnrollmentApplicationService {
   private final EnrollmentApplicationRepository applicationRepository;
   private final EnrollmentPeriodRepository periodRepository;
   private final PersonRepository personRepository;
+  private final PersonGuardianRepository personGuardianRepository;
   private final StudyPlanRepository studyPlanRepository;
   private final AcademicYearRepository academicYearRepository;
   private final StudyPlanSpaceRepository studyPlanSpaceRepository;
@@ -79,10 +83,23 @@ public class EnrollmentApplicationService {
   @Transactional
   public EnrollmentApplicationResponse startOrGetApplication(
       UUID institutionId, UUID personId, StartEnrollmentApplicationRequest request) {
+    // Without applicantPersonId the caller applies for themself. Otherwise they act as a tutor of
+    // that person, which must be backed by an existing guardianship link. No application exists
+    // yet here, so the link is checked per person pair; afterwards the same person_guardians rows
+    // back EnrollmentApplicationRepository.ACCESSIBLE_BY_PERSON.
+    final UUID applicantPersonId =
+        request.getApplicantPersonId() != null ? request.getApplicantPersonId() : personId;
+    final boolean actingForDependent = !applicantPersonId.equals(personId);
+
+    if (actingForDependent
+        && !personGuardianRepository.existsByInstitution_IdAndTutorPerson_IdAndDependentPerson_Id(
+            institutionId, personId, applicantPersonId)) {
+      throw new UnauthorizedGuardianshipException();
+    }
 
     Person person =
         personRepository
-            .findByIdAndInstitution_Id(personId, institutionId)
+            .findByIdAndInstitution_Id(applicantPersonId, institutionId)
             .orElseThrow(
                 () ->
                     new EnrollmentValidationException(
@@ -91,7 +108,7 @@ public class EnrollmentApplicationService {
     Optional<EnrollmentApplication> existingDraft =
         applicationRepository
             .findByApplicantPersonIdAndStudyPlanIdAndAcademicYearIdAndStatusAndDeletedAtIsNull(
-                personId,
+                applicantPersonId,
                 request.getStudyPlanId(),
                 request.getAcademicYearId(),
                 EnrollmentApplicationStatus.DRAFT)
@@ -127,7 +144,7 @@ public class EnrollmentApplicationService {
     boolean hasActiveApplicationInTrainingPath =
         !applicationRepository
             .findActiveByApplicantPersonIdAndTrainingPathId(
-                personId, requestedStudyPlan.getTrainingPath().getId())
+                applicantPersonId, requestedStudyPlan.getTrainingPath().getId())
             .isEmpty();
 
     if (hasActiveApplicationInTrainingPath) {
@@ -143,19 +160,44 @@ public class EnrollmentApplicationService {
                         EnrollmentMessages.ACADEMIC_YEAR_ID_NOT_FOUND
                             + request.getAcademicYearId()));
 
+    final Person submitter =
+        actingForDependent
+            ? personRepository
+                .findByIdAndInstitution_Id(personId, institutionId)
+                .orElseThrow(
+                    () ->
+                        new EnrollmentValidationException(
+                            EnrollmentMessages.ENROLLMENT_APPLICATION_APPLICANT_REQUIRED))
+            : person;
+
     EnrollmentApplication newApplication =
         EnrollmentApplication.builder()
             .institution(period.getInstitution())
             .applicantPerson(person)
+            .submittedByPerson(submitter)
             .studyPlan(requestedStudyPlan)
             .academicYear(academicYear)
             .enrollmentPeriod(period)
             .status(EnrollmentApplicationStatus.DRAFT)
             .build();
 
+    if (actingForDependent) {
+      // The tutor is the natural legal responsible; saves them retyping their own data.
+      newApplication.setResponsible(responsibleFrom(submitter));
+    }
+
     EnrollmentApplication saved = saveAndFlush(newApplication);
 
     return EnrollmentApplicationResponse.from(saved);
+  }
+
+  private ApplicantResponsible responsibleFrom(final Person tutor) {
+    return ApplicantResponsible.builder()
+        .fullName(tutor.getFirstName() + " " + tutor.getLastName())
+        .documentNumber(tutor.getDocumentNumber())
+        .phoneNumber(tutor.getPhoneNumber())
+        .email(tutor.getEmail())
+        .build();
   }
 
   @Transactional
@@ -163,7 +205,7 @@ public class EnrollmentApplicationService {
       UUID personId, UUID applicationId, UpdateEnrollmentDraftRequest request) {
     EnrollmentApplication application =
         applicationRepository
-            .findOwnedForUpdate(applicationId, personId)
+            .findAccessibleForUpdate(applicationId, personId)
             .orElseThrow(() -> new EnrollmentApplicationNotFoundException(applicationId));
 
     if (application.getStatus() != EnrollmentApplicationStatus.DRAFT) {
@@ -305,7 +347,8 @@ public class EnrollmentApplicationService {
         boolean hasOtherActiveApplication =
             applicationRepository
                 .findActiveByApplicantPersonIdAndTrainingPathId(
-                    personId, effectiveStudyPlan.getTrainingPath().getId())
+                    application.getApplicantPerson().getId(),
+                    effectiveStudyPlan.getTrainingPath().getId())
                 .stream()
                 .anyMatch(other -> !other.getId().equals(applicationId));
 
@@ -407,7 +450,7 @@ public class EnrollmentApplicationService {
   public EnrollmentApplicationResponse cancelApplication(UUID personId, UUID applicationId) {
     EnrollmentApplication application =
         applicationRepository
-            .findOwnedForUpdate(applicationId, personId)
+            .findAccessibleForUpdate(applicationId, personId)
             .orElseThrow(() -> new EnrollmentApplicationNotFoundException(applicationId));
 
     application.cancel();
@@ -420,7 +463,7 @@ public class EnrollmentApplicationService {
   public EnrollmentApplicationResponse submitApplication(UUID personId, UUID applicationId) {
     EnrollmentApplication application =
         applicationRepository
-            .findOwnedForUpdate(applicationId, personId)
+            .findAccessibleForUpdate(applicationId, personId)
             .orElseThrow(() -> new EnrollmentApplicationNotFoundException(applicationId));
 
     if (application.getStatus() != EnrollmentApplicationStatus.DRAFT) {
@@ -447,31 +490,46 @@ public class EnrollmentApplicationService {
         errors.put("personalData.documentNumber", EnrollmentMessages.DOCUMENT_REQUIRED);
       }
 
-      if (applicant.getEmail() == null || applicant.getEmail().isBlank()) {
+      // Who is logged in decides the rule: someone applying for themself must be an adult, while a
+      // tutor (access is already guaranteed by the lookup above) can only act for a minor.
+      final boolean selfService = personId.equals(applicant.getId());
+
+      if (applicant.getBirthDate() == null) {
+        errors.put("personalData.birthDate", EnrollmentMessages.BIRTH_DATE_REQUIRED);
+      } else {
+        final boolean minor =
+            Period.between(applicant.getBirthDate(), businessDateProvider.today()).getYears()
+                < PersonFieldConstraints.ADULT_AGE;
+
+        if (selfService && minor) {
+          errors.put("personalData.birthDate", EnrollmentMessages.APPLICANT_MUST_BE_ADULT);
+        } else if (!selfService && !minor) {
+          errors.put("personalData.birthDate", EnrollmentMessages.DEPENDENT_MUST_BE_MINOR);
+        }
+      }
+
+      // A minor has no email of their own: the contact goes in the responsible's data.
+      if (selfService && (applicant.getEmail() == null || applicant.getEmail().isBlank())) {
         errors.put("personalData.email", EnrollmentMessages.EMAIL_REQUIRED);
       }
 
-      if (applicant.getBirthDate() != null) {
-        int age = Period.between(applicant.getBirthDate(), businessDateProvider.today()).getYears();
+      if (!selfService) {
+        ApplicantResponsible resp = application.getResponsible();
 
-        if (age < 18) {
-          ApplicantResponsible resp = application.getResponsible();
+        if (resp == null) {
+          errors.put("responsible", EnrollmentMessages.RESPONSIBLE_REQUIRED);
+        } else {
+          if (resp.getFullName() == null || resp.getFullName().isBlank()) {
+            errors.put("responsible.fullName", EnrollmentMessages.RESPONSIBLE_NAME_REQUIRED);
+          }
 
-          if (resp == null) {
-            errors.put("responsible", EnrollmentMessages.RESPONSIBLE_REQUIRED);
-          } else {
-            if (resp.getFullName() == null || resp.getFullName().isBlank()) {
-              errors.put("responsible.fullName", EnrollmentMessages.RESPONSIBLE_NAME_REQUIRED);
-            }
+          if (resp.getDocumentNumber() == null || resp.getDocumentNumber().isBlank()) {
+            errors.put(
+                "responsible.documentNumber", EnrollmentMessages.RESPONSIBLE_DOCUMENT_REQUIRED);
+          }
 
-            if (resp.getDocumentNumber() == null || resp.getDocumentNumber().isBlank()) {
-              errors.put(
-                  "responsible.documentNumber", EnrollmentMessages.RESPONSIBLE_DOCUMENT_REQUIRED);
-            }
-
-            if (resp.getPhoneNumber() == null || resp.getPhoneNumber().isBlank()) {
-              errors.put("responsible.phoneNumber", EnrollmentMessages.RESPONSIBLE_PHONE_REQUIRED);
-            }
+          if (resp.getPhoneNumber() == null || resp.getPhoneNumber().isBlank()) {
+            errors.put("responsible.phoneNumber", EnrollmentMessages.RESPONSIBLE_PHONE_REQUIRED);
           }
         }
       }
@@ -544,7 +602,10 @@ public class EnrollmentApplicationService {
             .filter(app -> app.getDeletedAt() == null)
             .filter(
                 app ->
-                    (personId != null && app.getApplicantPerson().getId().equals(personId))
+                    (personId != null
+                            && (app.getApplicantPerson().getId().equals(personId)
+                                || applicationRepository.isAccessibleByPerson(
+                                    app.getId(), personId)))
                         || (institutionId != null
                             && app.getInstitution().getId().equals(institutionId)))
             .orElseThrow(() -> new EnrollmentApplicationNotFoundException(applicationId));

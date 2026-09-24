@@ -23,6 +23,7 @@ import lombok.Builder;
       "applicationId",
       "institutionId",
       "personId",
+      "submittedByPersonId",
       "applicantFirstName",
       "applicantLastName",
       "applicantDocumentNumber",
@@ -47,6 +48,7 @@ public record EnrollmentApplicationResponse(
     @Schema(nullable = true) UUID applicationId,
     @Schema(nullable = true) UUID institutionId,
     @Schema(nullable = true) UUID personId,
+    @Schema(nullable = true) UUID submittedByPersonId,
     @Schema(nullable = true) String applicantFirstName,
     @Schema(nullable = true) String applicantLastName,
     @Schema(nullable = true) String applicantDocumentNumber,
@@ -68,6 +70,7 @@ public record EnrollmentApplicationResponse(
     @Schema(nullable = true) List<EnrollmentApplicationSpaceResponse> spaces) {
   public EnrollmentApplicationResponse() {
     this(
+        null,
         null,
         null,
         null,
@@ -106,6 +109,10 @@ public record EnrollmentApplicationResponse(
 
   public UUID getPersonId() {
     return personId;
+  }
+
+  public UUID getSubmittedByPersonId() {
+    return submittedByPersonId;
   }
 
   public String getApplicantFirstName() {
@@ -188,6 +195,10 @@ public record EnrollmentApplicationResponse(
         .personId(
             application.getApplicantPerson() != null
                 ? application.getApplicantPerson().getId()
+                : null)
+        .submittedByPersonId(
+            application.getSubmittedByPerson() != null
+                ? application.getSubmittedByPerson().getId()
                 : null)
         .applicantFirstName(
             application.getApplicantPerson() != null
