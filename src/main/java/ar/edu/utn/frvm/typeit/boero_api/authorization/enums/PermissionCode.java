@@ -340,7 +340,12 @@ public enum PermissionCode {
       "institution:enrollment-application:reject",
       PermissionScope.INSTITUTION,
       PermissionGroup.ENROLLMENT,
-      "Rechazar solicitudes de inscripción");
+      "Rechazar solicitudes de inscripción"),
+  GUARDIAN_DEPENDENT_MANAGE(
+      "institution:guardian-dependent:manage",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Gestionar personas a cargo");
 
   private final String code;
   private final PermissionScope scope;
