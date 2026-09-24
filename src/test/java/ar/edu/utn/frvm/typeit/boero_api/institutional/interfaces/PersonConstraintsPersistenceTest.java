@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces;
 
 import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.createInstitution;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
@@ -54,8 +55,8 @@ class PersonConstraintsPersistenceTest {
   }
 
   @Test
-  @DisplayName("Should reject persist when email is missing (Bean Validation)")
-  void shouldRejectPersistWhenEmailIsMissing() {
+  @DisplayName("Should accept persist without email so dependents do not need their own")
+  void shouldAcceptPersistWhenEmailIsMissing() {
     Institution institution = createInstitution(entityManager, "person-bv-email");
     Person person =
         Person.builder()
@@ -63,6 +64,25 @@ class PersonConstraintsPersistenceTest {
             .firstName("Ana")
             .lastName("Garcia")
             .documentNumber("12345678")
+            .build();
+
+    entityManager.persist(person);
+    entityManager.flush();
+
+    assertThat(person.getId()).isNotNull();
+  }
+
+  @Test
+  @DisplayName("Should reject persist when email is blank (Bean Validation)")
+  void shouldRejectPersistWhenEmailIsBlank() {
+    Institution institution = createInstitution(entityManager, "person-bv-blank-email");
+    Person person =
+        Person.builder()
+            .institution(institution)
+            .firstName("Ana")
+            .lastName("Garcia")
+            .documentNumber("12345678")
+            .email("   ")
             .build();
 
     assertPersistFlushFailsBeanValidation(person);
