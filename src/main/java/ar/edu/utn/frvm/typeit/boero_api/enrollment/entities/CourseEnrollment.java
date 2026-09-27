@@ -28,6 +28,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "course_enrollments")
@@ -64,7 +65,7 @@ public class CourseEnrollment extends Auditable {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "enrollment_application_id")
-  private EnrollmentApplication enrollmentApplication;
+  private @Nullable EnrollmentApplication enrollmentApplication;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "enrollment_application_course_id")
@@ -90,7 +91,7 @@ public class CourseEnrollment extends Auditable {
   private Instant withdrawnAt;
 
   @Column(name = "action_authority_person_id")
-  private UUID actionAuthorityPersonId;
+  private @Nullable UUID actionAuthorityPersonId;
 
   @Column(name = "action_reason")
   private String actionReason;
@@ -105,7 +106,7 @@ public class CourseEnrollment extends Auditable {
       final Course course,
       final CourseClass courseClass,
       final CourseEnrollmentSource source,
-      final EnrollmentApplication application,
+      final @Nullable EnrollmentApplication application,
       final Instant enrolledAt) {
     return CourseEnrollment.builder()
         .institution(institution)
@@ -140,7 +141,7 @@ public class CourseEnrollment extends Auditable {
   public void withdraw(
       final CourseEnrollmentStatus target,
       final Instant withdrawnAt,
-      final UUID authorityPersonId,
+      final @Nullable UUID authorityPersonId,
       final String reason) {
     status = target;
     academicStatus = AcademicEnrollmentStatus.NOT_APPLICABLE;

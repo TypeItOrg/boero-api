@@ -84,7 +84,7 @@ class EnrollmentPeriodControllerWebMvcTest {
   void create_success() throws Exception {
     var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     when(authorizationService.hasPermission(any(), eq(PermissionCode.ENROLLMENT_PERIOD_CREATE)))
         .thenReturn(true);
 
@@ -140,7 +140,7 @@ class EnrollmentPeriodControllerWebMvcTest {
   void create_forbidden() throws Exception {
     var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     when(authorizationService.hasPermission(any(), eq(PermissionCode.ENROLLMENT_PERIOD_CREATE)))
         .thenReturn(false);
 
@@ -174,7 +174,7 @@ class EnrollmentPeriodControllerWebMvcTest {
   void updateStatus_success() throws Exception {
     var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     when(authorizationService.hasPermission(
             any(), eq(PermissionCode.ENROLLMENT_PERIOD_STATUS_UPDATE)))
         .thenReturn(true);
@@ -200,7 +200,7 @@ class EnrollmentPeriodControllerWebMvcTest {
   void delete_success() throws Exception {
     var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     when(authorizationService.hasPermission(any(), eq(PermissionCode.ENROLLMENT_PERIOD_DELETE)))
         .thenReturn(true);
 

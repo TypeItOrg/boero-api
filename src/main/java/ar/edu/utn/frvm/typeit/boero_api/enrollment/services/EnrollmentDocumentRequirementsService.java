@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -107,7 +108,7 @@ public class EnrollmentDocumentRequirementsService {
   }
 
   public List<EnrollmentDocumentRequirementResponse> responses(
-      EnrollmentApplication application, Authentication authentication) {
+      EnrollmentApplication application, @Nullable Authentication authentication) {
     var current = current(application);
     boolean editable = editable(application);
     boolean upload =
@@ -125,8 +126,12 @@ public class EnrollmentDocumentRequirementsService {
                 application, authentication, PermissionCode.ENROLLMENT_ATTACHMENT_REVIEW);
     return application.getDocumentRequirements().stream()
         .sorted(
-            Comparator.comparingInt(EnrollmentDocumentRequirement::getDisplayOrder)
-                .thenComparing(EnrollmentDocumentRequirement::getId))
+            Comparator.comparingInt(
+                    (EnrollmentDocumentRequirement mappedEnrollmentDocumentRequirement) ->
+                        mappedEnrollmentDocumentRequirement.getDisplayOrder())
+                .thenComparing(
+                    (EnrollmentDocumentRequirement mappedEnrollmentDocumentRequirement) ->
+                        mappedEnrollmentDocumentRequirement.getId()))
         .map(
             value -> {
               var file = current.get(value.getId());

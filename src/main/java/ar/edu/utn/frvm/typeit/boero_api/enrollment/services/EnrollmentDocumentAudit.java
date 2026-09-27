@@ -7,6 +7,7 @@ import java.sql.Timestamp;
 import java.time.Clock;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.MDC;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
@@ -20,8 +21,8 @@ public class EnrollmentDocumentAudit {
   private final JdbcTemplate jdbc;
   private final Clock clock;
 
-  public record Actor(UUID id, String accountType, String requestId) {
-    public static Actor from(final Authentication authentication) {
+  public record Actor(@Nullable UUID id, String accountType, @Nullable String requestId) {
+    public static Actor from(final @Nullable Authentication authentication) {
       final String requestId = MDC.get("requestId");
       if (authentication != null
           && authentication.getPrincipal() instanceof JwtAuthenticatedUser user) {
@@ -38,9 +39,9 @@ public class EnrollmentDocumentAudit {
   @Transactional(propagation = Propagation.MANDATORY)
   public void record(
       final Actor actor,
-      final UUID institutionId,
-      final UUID applicationId,
-      final UUID attachmentId,
+      final @Nullable UUID institutionId,
+      final @Nullable UUID applicationId,
+      final @Nullable UUID attachmentId,
       final EnrollmentDocumentAction action,
       final String result) {
     jdbc.update(
@@ -63,10 +64,10 @@ public class EnrollmentDocumentAudit {
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void recordIndependent(
-      final Authentication authentication,
-      final UUID institutionId,
-      final UUID applicationId,
-      final UUID attachmentId,
+      final @Nullable Authentication authentication,
+      final @Nullable UUID institutionId,
+      final @Nullable UUID applicationId,
+      final @Nullable UUID attachmentId,
       final EnrollmentDocumentAction action,
       final String result) {
     record(Actor.from(authentication), institutionId, applicationId, attachmentId, action, result);

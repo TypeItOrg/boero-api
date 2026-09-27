@@ -17,6 +17,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.StudentReposito
 import java.time.Clock;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,18 +42,21 @@ public class ApproveEnrollmentApplicationUseCase {
 
   @Transactional
   public EnrollmentApplicationResponse execute(
-      final UUID institutionId, final UUID applicationId, final UUID resolvedByPersonId) {
+      final UUID institutionId, final UUID applicationId, final @Nullable UUID resolvedByPersonId) {
     return approve(institutionId, applicationId, resolvedByPersonId, false);
   }
 
   @Transactional
   public EnrollmentApplicationResponse executeProvisionally(
-      UUID institutionId, UUID applicationId, UUID resolvedByPersonId) {
+      UUID institutionId, UUID applicationId, @Nullable UUID resolvedByPersonId) {
     return approve(institutionId, applicationId, resolvedByPersonId, true);
   }
 
   private EnrollmentApplicationResponse approve(
-      UUID institutionId, UUID applicationId, UUID resolvedByPersonId, boolean provisional) {
+      UUID institutionId,
+      UUID applicationId,
+      @Nullable UUID resolvedByPersonId,
+      boolean provisional) {
     accessGuard.require(
         PermissionCode.ENROLLMENT_APPLICATION_APPROVE,
         institutionId,

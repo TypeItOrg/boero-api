@@ -4,6 +4,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.DocumentRequirementLeve
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(
     requiredProperties = {
@@ -28,7 +29,7 @@ public record EnrollmentDocumentRequirementResponse(
     List<String> allowedFormats,
     int displayOrder,
     String status,
-    @Schema(nullable = true) EnrollmentAttachmentResponse currentAttachment,
+    @Schema(nullable = true) @Nullable EnrollmentAttachmentResponse currentAttachment,
     boolean canUpload,
     boolean canReplace,
     boolean canWithdraw,

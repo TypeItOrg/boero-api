@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -125,8 +126,7 @@ class EnrollmentDraftDataValidatorTest {
         .isInstanceOf(EnrollmentValidationException.class)
         .extracting(
             ex ->
-                ((EnrollmentValidationException) ex)
-                    .fieldErrors()
+                requireNonNull(((EnrollmentValidationException) ex).fieldErrors())
                     .containsKey("academicSpaceSelection.studyPlanSpaceIds"))
         .isEqualTo(true);
     verify(studyPlanSpaceRepository, never())
@@ -153,8 +153,7 @@ class EnrollmentDraftDataValidatorTest {
         .isInstanceOf(EnrollmentValidationException.class)
         .extracting(
             ex ->
-                ((EnrollmentValidationException) ex)
-                    .fieldErrors()
+                requireNonNull(((EnrollmentValidationException) ex).fieldErrors())
                     .containsKey("academicSpaceSelection.studyPlanSpaceIds"))
         .isEqualTo(true);
   }
@@ -217,8 +216,7 @@ class EnrollmentDraftDataValidatorTest {
         .isInstanceOf(EnrollmentValidationException.class)
         .extracting(
             ex ->
-                ((EnrollmentValidationException) ex)
-                    .fieldErrors()
+                requireNonNull(((EnrollmentValidationException) ex).fieldErrors())
                     .containsKey("instrumentSelection.studyPlanSpaceInstrumentIds"))
         .isEqualTo(true);
   }
@@ -248,8 +246,7 @@ class EnrollmentDraftDataValidatorTest {
         .isInstanceOf(EnrollmentValidationException.class)
         .extracting(
             ex ->
-                ((EnrollmentValidationException) ex)
-                    .fieldErrors()
+                requireNonNull(((EnrollmentValidationException) ex).fieldErrors())
                     .containsKey("instrumentSelection.studyPlanSpaceInstrumentIds"))
         .isEqualTo(true);
   }
@@ -290,7 +287,7 @@ class EnrollmentDraftDataValidatorTest {
   }
 
   private void configureOffering(final StudyPlan plan, final UUID spaceId) {
-    final var period = application.getEnrollmentPeriod();
+    final var period = requireNonNull(application.getEnrollmentPeriod());
     final var offering = EnrollmentPeriodOffering.create(period, plan);
     offering.selectLevels(List.of(), true);
     period.getOfferings().add(offering);

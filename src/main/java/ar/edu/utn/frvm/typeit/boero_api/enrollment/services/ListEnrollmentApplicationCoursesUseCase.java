@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationRepository;
@@ -67,6 +69,6 @@ public class ListEnrollmentApplicationCoursesUseCase {
             EnrollmentCourseOptionResponse.from(
                 course,
                 coursesWithCapacity.contains(course.getId()),
-                eligibility.get(course.getId())));
+                requireNonNull(eligibility.get(course.getId()))));
   }
 }

@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Builder;
+import org.jspecify.annotations.Nullable;
 
 @Builder(toBuilder = true)
 @Schema(
@@ -54,32 +55,32 @@ import lombok.Builder;
       "admissionHistory"
     })
 public record EnrollmentApplicationResponse(
-    @Schema(nullable = true) UUID applicationId,
-    @Schema(nullable = true) UUID institutionId,
-    @Schema(nullable = true) UUID personId,
-    @Schema(nullable = true) String applicantFirstName,
-    @Schema(nullable = true) String applicantLastName,
-    @Schema(nullable = true) String applicantDocumentNumber,
-    @Schema(nullable = true) UUID trainingPathId,
-    @Schema(nullable = true) UUID studyPlanId,
-    @Schema(nullable = true) String studyPlanName,
-    @Schema(nullable = true) Integer studyPlanVersion,
-    @Schema(nullable = true) String trainingPathName,
-    @Schema(nullable = true) UUID academicYearId,
-    @Schema(nullable = true) Integer academicYear,
-    @Schema(nullable = true) UUID enrollmentPeriodId,
-    @Schema(nullable = true) EnrollmentApplicationStatus status,
+    @Schema(nullable = true) @Nullable UUID applicationId,
+    @Schema(nullable = true) @Nullable UUID institutionId,
+    @Schema(nullable = true) @Nullable UUID personId,
+    @Schema(nullable = true) @Nullable String applicantFirstName,
+    @Schema(nullable = true) @Nullable String applicantLastName,
+    @Schema(nullable = true) @Nullable String applicantDocumentNumber,
+    @Schema(nullable = true) @Nullable UUID trainingPathId,
+    @Schema(nullable = true) @Nullable UUID studyPlanId,
+    @Schema(nullable = true) @Nullable String studyPlanName,
+    @Schema(nullable = true) @Nullable Integer studyPlanVersion,
+    @Schema(nullable = true) @Nullable String trainingPathName,
+    @Schema(nullable = true) @Nullable UUID academicYearId,
+    @Schema(nullable = true) @Nullable Integer academicYear,
+    @Schema(nullable = true) @Nullable UUID enrollmentPeriodId,
+    @Schema(nullable = true) @Nullable EnrollmentApplicationStatus status,
     @JsonProperty("isEditable") boolean isEditable,
-    @Schema(nullable = true) EnrollmentDraftData data,
-    @Schema(nullable = true) String secondarySchool,
-    @Schema(nullable = true) String rejectionReason,
-    @Schema(nullable = true) Instant resolvedAt,
-    @Schema(nullable = true) UUID resolvedByPersonId,
-    @Schema(nullable = true) Instant createdAt,
-    @Schema(nullable = true) Instant updatedAt,
-    @Schema(nullable = true) List<EnrollmentApplicationSpaceResponse> spaces,
-    @Schema(nullable = true) List<EnrollmentApplicationCourseResponse> courses,
-    @Schema(nullable = true) EnrollmentPeriodResponse enrollmentPeriod,
+    @Schema(nullable = true) @Nullable EnrollmentDraftData data,
+    @Schema(nullable = true) @Nullable String secondarySchool,
+    @Schema(nullable = true) @Nullable String rejectionReason,
+    @Schema(nullable = true) @Nullable Instant resolvedAt,
+    @Schema(nullable = true) @Nullable UUID resolvedByPersonId,
+    @Schema(nullable = true) @Nullable Instant createdAt,
+    @Schema(nullable = true) @Nullable Instant updatedAt,
+    @Schema(nullable = true) @Nullable List<EnrollmentApplicationSpaceResponse> spaces,
+    @Schema(nullable = true) @Nullable List<EnrollmentApplicationCourseResponse> courses,
+    @Schema(nullable = true) @Nullable EnrollmentPeriodResponse enrollmentPeriod,
     boolean periodOpen,
     boolean canReadAttachments,
     List<EnrollmentDocumentRequirementResponse> documents,
@@ -129,95 +130,95 @@ public record EnrollmentApplicationResponse(
     courses = courses == null ? new ArrayList<>() : courses;
   }
 
-  public UUID getApplicationId() {
+  public @Nullable UUID getApplicationId() {
     return applicationId;
   }
 
-  public UUID getInstitutionId() {
+  public @Nullable UUID getInstitutionId() {
     return institutionId;
   }
 
-  public UUID getPersonId() {
+  public @Nullable UUID getPersonId() {
     return personId;
   }
 
-  public String getApplicantFirstName() {
+  public @Nullable String getApplicantFirstName() {
     return applicantFirstName;
   }
 
-  public String getApplicantLastName() {
+  public @Nullable String getApplicantLastName() {
     return applicantLastName;
   }
 
-  public String getApplicantDocumentNumber() {
+  public @Nullable String getApplicantDocumentNumber() {
     return applicantDocumentNumber;
   }
 
-  public UUID getTrainingPathId() {
+  public @Nullable UUID getTrainingPathId() {
     return trainingPathId;
   }
 
-  public UUID getStudyPlanId() {
+  public @Nullable UUID getStudyPlanId() {
     return studyPlanId;
   }
 
-  public String getStudyPlanName() {
+  public @Nullable String getStudyPlanName() {
     return studyPlanName;
   }
 
-  public String getTrainingPathName() {
+  public @Nullable String getTrainingPathName() {
     return trainingPathName;
   }
 
-  public UUID getAcademicYearId() {
+  public @Nullable UUID getAcademicYearId() {
     return academicYearId;
   }
 
-  public Integer getAcademicYear() {
+  public @Nullable Integer getAcademicYear() {
     return academicYear;
   }
 
-  public UUID getEnrollmentPeriodId() {
+  public @Nullable UUID getEnrollmentPeriodId() {
     return enrollmentPeriodId;
   }
 
-  public EnrollmentApplicationStatus getStatus() {
+  public @Nullable EnrollmentApplicationStatus getStatus() {
     return status;
   }
 
-  public EnrollmentDraftData getData() {
+  public @Nullable EnrollmentDraftData getData() {
     return data;
   }
 
-  public String getSecondarySchool() {
+  public @Nullable String getSecondarySchool() {
     return secondarySchool;
   }
 
-  public String getRejectionReason() {
+  public @Nullable String getRejectionReason() {
     return rejectionReason;
   }
 
-  public Instant getResolvedAt() {
+  public @Nullable Instant getResolvedAt() {
     return resolvedAt;
   }
 
-  public UUID getResolvedByPersonId() {
+  public @Nullable UUID getResolvedByPersonId() {
     return resolvedByPersonId;
   }
 
-  public Instant getCreatedAt() {
+  public @Nullable Instant getCreatedAt() {
     return createdAt;
   }
 
-  public Instant getUpdatedAt() {
+  public @Nullable Instant getUpdatedAt() {
     return updatedAt;
   }
 
-  public List<EnrollmentApplicationSpaceResponse> getSpaces() {
+  public @Nullable List<EnrollmentApplicationSpaceResponse> getSpaces() {
     return spaces;
   }
 
-  public List<EnrollmentApplicationCourseResponse> getCourses() {
+  public @Nullable List<EnrollmentApplicationCourseResponse> getCourses() {
     return courses;
   }
 

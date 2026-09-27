@@ -103,7 +103,7 @@ public class CourseEnrollmentService {
   public CourseEnrollmentResponse createManual(
       final UUID institutionId,
       final CreateManualCourseEnrollmentRequest request,
-      final UUID authorityPersonId) {
+      final @Nullable UUID authorityPersonId) {
     accessGuard.require(
         PermissionCode.COURSE_ENROLLMENT_CREATE,
         institutionId,
@@ -158,7 +158,7 @@ public class CourseEnrollmentService {
       final UUID applicationId,
       final UUID applicationCourseId,
       final EnrollApplicationCourseRequest request,
-      final UUID authorityPersonId) {
+      final @Nullable UUID authorityPersonId) {
     accessGuard.require(
         PermissionCode.ENROLLMENT_APPLICATION_COURSE_ENROLL,
         institutionId,
@@ -238,7 +238,7 @@ public class CourseEnrollmentService {
       final UUID institutionId,
       final UUID enrollmentId,
       final WithdrawCourseEnrollmentRequest request,
-      final UUID authorityPersonId) {
+      final @Nullable UUID authorityPersonId) {
     accessGuard.require(
         PermissionCode.COURSE_ENROLLMENT_WITHDRAW,
         institutionId,
@@ -280,7 +280,7 @@ public class CourseEnrollmentService {
       final UUID institutionId,
       final UUID enrollmentId,
       final UpdateAcademicEnrollmentStatusRequest request,
-      final UUID authorityPersonId) {
+      final @Nullable UUID authorityPersonId) {
     accessGuard.require(
         PermissionCode.COURSE_ENROLLMENT_ACADEMIC_STATUS_UPDATE,
         institutionId,
@@ -420,9 +420,13 @@ public class CourseEnrollmentService {
     final var days = courseClassDayRepository.findByCourseClass_IdIn(List.of(courseClass.getId()));
     final var schedules =
         courseClassScheduleRepository
-            .findByDay_IdIn(days.stream().map(CourseClassDay::getId).toList())
+            .findByDay_IdIn(
+                days.stream().map(mappedCourseClassDay -> mappedCourseClassDay.getId()).toList())
             .stream()
-            .collect(Collectors.toMap(CourseClassSchedule::getId, value -> value));
+            .collect(
+                Collectors.toMap(
+                    mappedCourseClassSchedule -> mappedCourseClassSchedule.getId(),
+                    value -> value));
     final Set<UUID> selectedDays = new HashSet<>();
     final Set<UUID> selectedSlots = new HashSet<>();
     final List<ResolvedAssignment> assignments = new ArrayList<>();
@@ -442,7 +446,7 @@ public class CourseEnrollmentService {
           individual
               ? resolveIndividualSlot(institution, schedule, request.individualSlotId())
               : null;
-      if (individual && !selectedSlots.add(slot.getId())) {
+      if (slot != null && !selectedSlots.add(slot.getId())) {
         throw new EnrollmentValidationException(EnrollmentMessages.COURSE_ASSIGNMENT_INVALID);
       }
       if (!individual && request.individualSlotId() != null) {
@@ -464,7 +468,7 @@ public class CourseEnrollmentService {
   private CourseIndividualSlot resolveIndividualSlot(
       final Institution institution,
       final CourseClassSchedule schedule,
-      final UUID individualSlotId) {
+      final @Nullable UUID individualSlotId) {
     if (individualSlotId == null) {
       throw new EnrollmentValidationException(EnrollmentMessages.COURSE_ASSIGNMENT_INVALID);
     }
@@ -569,7 +573,7 @@ public class CourseEnrollmentService {
       final EnrollmentApplicationCourse applicationCourse,
       final CourseClass courseClass,
       final List<ResolvedAssignment> assignments,
-      final UUID authorityPersonId) {
+      final @Nullable UUID authorityPersonId) {
     final Course course = applicationCourse.getCourse();
     final var space = course.getStudyPlanSpace();
     final var level = space.getAcademicLevel();
@@ -637,13 +641,13 @@ public class CourseEnrollmentService {
   private void recordHistory(
       final Institution institution,
       final CourseEnrollment enrollment,
-      final CourseEnrollmentStatus previousStatus,
+      final @Nullable CourseEnrollmentStatus previousStatus,
       final CourseEnrollmentStatus newStatus,
-      final AcademicEnrollmentStatus previousAcademicStatus,
+      final @Nullable AcademicEnrollmentStatus previousAcademicStatus,
       final AcademicEnrollmentStatus newAcademicStatus,
       final String operation,
-      final String reason,
-      final UUID authorityPersonId) {
+      final @Nullable String reason,
+      final @Nullable UUID authorityPersonId) {
     courseEnrollmentHistoryRepository.save(
         CourseEnrollmentHistory.create(
             institution,
@@ -658,7 +662,8 @@ public class CourseEnrollmentService {
             clock.instant()));
   }
 
-  private void ensureExpectedVersion(final long actualVersion, final Long expectedVersion) {
+  private void ensureExpectedVersion(
+      final long actualVersion, final @Nullable Long expectedVersion) {
     if (expectedVersion != null && expectedVersion != actualVersion) {
       throw new EnrollmentValidationException(EnrollmentMessages.COURSE_ENROLLMENT_VERSION_STALE);
     }
@@ -695,7 +700,7 @@ public class CourseEnrollmentService {
     }
   }
 
-  private String constraintName(final DataIntegrityViolationException exception) {
+  private @Nullable String constraintName(final DataIntegrityViolationException exception) {
     for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
       if (cause instanceof ConstraintViolationException violation) {
         return violation.getConstraintName();
@@ -730,7 +735,9 @@ public class CourseEnrollmentService {
   private PaginatedResponse<CourseEnrollmentResponse> toPageResponse(
       final Page<CourseEnrollment> enrollments) {
     final List<UUID> enrollmentIds =
-        enrollments.getContent().stream().map(CourseEnrollment::getId).toList();
+        enrollments.getContent().stream()
+            .map(mappedCourseEnrollment -> mappedCourseEnrollment.getId())
+            .toList();
     if (enrollmentIds.isEmpty()) {
       return PaginatedResponse.from(
           enrollments.map(enrollment -> CourseEnrollmentResponse.from(enrollment, List.of())));
@@ -770,7 +777,7 @@ public class CourseEnrollmentService {
   private record ResolvedAssignment(
       CourseClassSchedule schedule,
       CourseClassDay day,
-      CourseIndividualSlot slot,
+      @Nullable CourseIndividualSlot slot,
       CourseDay dayOfWeek,
       LocalTime startTime,
       LocalTime endTime) {}

@@ -27,7 +27,7 @@ public class ListEnrollmentApplicationsUseCase {
 
   private final EnrollmentDocumentAudit audit;
 
-  private void requireDocumentFilter(boolean pending, UUID institutionId) {
+  private void requireDocumentFilter(boolean pending, @Nullable UUID institutionId) {
     var access = authorization.managementAccess(PermissionCode.ENROLLMENT_ATTACHMENT_READ);
     if (pending && !access.institutional() && access.trainingPathIds().isEmpty()) {
       audit.recordIndependent(
@@ -44,8 +44,8 @@ public class ListEnrollmentApplicationsUseCase {
   @Transactional(readOnly = true)
   public Page<EnrollmentApplicationResponse> execute(
       final UUID institutionId,
-      @Nullable final EnrollmentApplicationStatus status,
-      @Nullable final UUID trainingPathId,
+      final @Nullable EnrollmentApplicationStatus status,
+      final @Nullable UUID trainingPathId,
       final boolean open,
       final boolean pendingDocuments,
       final Pageable pageable) {
@@ -58,9 +58,9 @@ public class ListEnrollmentApplicationsUseCase {
 
   @Transactional(readOnly = true)
   public Page<EnrollmentApplicationResponse> executeForPlatform(
-      @Nullable final UUID institutionId,
-      @Nullable final EnrollmentApplicationStatus status,
-      @Nullable final UUID trainingPathId,
+      final @Nullable UUID institutionId,
+      final @Nullable EnrollmentApplicationStatus status,
+      final @Nullable UUID trainingPathId,
       final boolean open,
       final boolean pendingDocuments,
       final Pageable pageable) {

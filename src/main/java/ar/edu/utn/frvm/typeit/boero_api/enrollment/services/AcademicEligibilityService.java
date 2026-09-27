@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Course;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Prerequisite;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequiredCondition;
@@ -99,7 +101,11 @@ public class AcademicEligibilityService {
       result.put(
           course.getId(),
           new AcademicEligibilityResponse(
-              evaluated.stream().allMatch(AcademicRequirementResponse::satisfied), evaluated));
+              evaluated.stream()
+                  .allMatch(
+                      mappedAcademicRequirementResponse ->
+                          mappedAcademicRequirementResponse.satisfied()),
+              evaluated));
     }
     return result;
   }
@@ -107,7 +113,8 @@ public class AcademicEligibilityService {
   @Transactional(readOnly = true)
   public AcademicEligibilityResponse evaluate(
       final UUID institutionId, final UUID personId, final Course course) {
-    return evaluateCourses(institutionId, personId, List.of(course)).get(course.getId());
+    return requireNonNull(
+        evaluateCourses(institutionId, personId, List.of(course)).get(course.getId()));
   }
 
   @Transactional(propagation = Propagation.MANDATORY)

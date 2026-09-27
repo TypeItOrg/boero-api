@@ -1,7 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Course;
-import ar.edu.utn.frvm.typeit.boero_api.academic.entities.CourseClassDay;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassDayRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassRepository;
@@ -34,7 +33,8 @@ public class CourseCapacityService {
   }
 
   public Set<UUID> findCoursesWithCapacity(final UUID institutionId, final List<Course> courses) {
-    final var activeCourses = courses.stream().filter(Course::isActive).toList();
+    final var activeCourses =
+        courses.stream().filter(mappedCourse -> mappedCourse.isActive()).toList();
     if (activeCourses.isEmpty()) {
       return Set.of();
     }
@@ -42,14 +42,16 @@ public class CourseCapacityService {
     final var groupCourseIds =
         activeCourses.stream()
             .filter(course -> course.getAcademicSpace().getFormat() == AcademicSpaceFormat.GRUPAL)
-            .map(Course::getId)
+            .map(mappedCourse -> mappedCourse.getId())
             .collect(Collectors.toSet());
     final var classes =
         courseClassRepository.findByInstitution_IdAndCourse_IdIn(
-            institutionId, activeCourses.stream().map(Course::getId).toList());
+            institutionId,
+            activeCourses.stream().map(mappedCourse -> mappedCourse.getId()).toList());
     final var classIds = classes.stream().map(value -> value.getId()).toList();
     final var days = courseClassDayRepository.findByCourseClass_IdIn(classIds);
-    final var dayIds = days.stream().map(CourseClassDay::getId).toList();
+    final var dayIds =
+        days.stream().map(mappedCourseClassDay -> mappedCourseClassDay.getId()).toList();
     if (dayIds.isEmpty()) {
       return Set.of();
     }

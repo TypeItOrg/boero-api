@@ -23,6 +23,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "enrollment_attachments")
@@ -61,12 +62,12 @@ public class EnrollmentAttachment extends SoftDeletable {
   @Column(nullable = false)
   private String uploaderType;
 
-  private UUID reviewedBy;
-  private String reviewerType;
-  private Instant reviewedAt;
+  private @Nullable UUID reviewedBy;
+  private @Nullable String reviewerType;
+  private @Nullable Instant reviewedAt;
 
   @Column(length = 2000)
-  private String observation;
+  private @Nullable String observation;
 
   public boolean isCurrent() {
     return versionStatus == DocumentVersionStatus.CURRENT;
@@ -125,6 +126,8 @@ public class EnrollmentAttachment extends SoftDeletable {
     return storagePath;
   }
 
+  // Lombok initializes the entity at build(); builder fields are intentionally incomplete.
+  @SuppressWarnings("NullAway.Init")
   public static class EnrollmentAttachmentBuilder {
     public EnrollmentAttachmentBuilder filePath(String filePath) {
       this.storagePath = filePath;

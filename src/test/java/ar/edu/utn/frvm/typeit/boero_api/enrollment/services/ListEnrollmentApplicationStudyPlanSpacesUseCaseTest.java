@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -60,7 +61,7 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
     final var studyPlanSpace =
         StudyPlanSpace.create(
             application.getInstitution(),
-            application.getStudyPlan(),
+            requireNonNull(application.getStudyPlan()),
             academicSpace,
             null,
             RequirementType.REQUIRED,
@@ -88,7 +89,7 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
         .willReturn(Optional.of(application));
     given(
             studyPlanSpaceRepository.findEligibleByStudyPlanId(
-                principal.institutionId(), application.getStudyPlan().getId()))
+                principal.institutionId(), requireNonNull(application.getStudyPlan()).getId()))
         .willReturn(List.of(persistedStudyPlanSpace));
     given(
             studyPlanSpaceInstrumentRepository.findActiveByStudyPlanSpaceIds(
@@ -98,7 +99,8 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
     final var response = useCase.execute(principal, application.getId());
 
     assertThat(response).hasSize(1);
-    assertThat(response.getFirst().studyPlanId()).isEqualTo(application.getStudyPlan().getId());
+    assertThat(response.getFirst().studyPlanId())
+        .isEqualTo(requireNonNull(application.getStudyPlan()).getId());
     assertThat(response.getFirst().academicSpaceName()).isEqualTo("Armonia I");
   }
 

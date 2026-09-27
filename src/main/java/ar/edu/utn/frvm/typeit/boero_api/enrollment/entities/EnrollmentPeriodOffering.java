@@ -19,6 +19,7 @@ import java.util.Objects;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "enrollment_period_offerings")
@@ -75,7 +76,7 @@ public class EnrollmentPeriodOffering {
     }
   }
 
-  public boolean includes(final UUID levelId) {
+  public boolean includes(final @Nullable UUID levelId) {
     return levels.stream().anyMatch(level -> Objects.equals(level.levelId(), levelId));
   }
 }

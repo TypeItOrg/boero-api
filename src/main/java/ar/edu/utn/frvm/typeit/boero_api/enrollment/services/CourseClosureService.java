@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +37,8 @@ public class CourseClosureService {
   private final EnrollmentInstitutionLock enrollmentInstitutionLock;
 
   @Transactional
-  public void close(final UUID institutionId, final UUID courseId, final UUID authorityPersonId) {
+  public void close(
+      final UUID institutionId, final UUID courseId, final @Nullable UUID authorityPersonId) {
     enrollmentInstitutionLock.lock(institutionId);
     final var course =
         courseRepository
@@ -61,7 +63,9 @@ public class CourseClosureService {
             ? Map.of()
             : scheduleRepository
                 .findByCourseEnrollment_IdIn(
-                    enrollments.stream().map(CourseEnrollment::getId).toList())
+                    enrollments.stream()
+                        .map(mappedCourseEnrollment -> mappedCourseEnrollment.getId())
+                        .toList())
                 .stream()
                 .collect(Collectors.groupingBy(schedule -> schedule.getCourseEnrollment().getId()));
     final List<CourseEnrollmentHistory> histories = new ArrayList<>();

@@ -74,7 +74,8 @@ public class ListCourseEnrollmentOptionsUseCase {
     final var daysByClass =
         courseClassDayRepository.findByCourseClass_IdIn(classIds).stream()
             .collect(Collectors.groupingBy(value -> value.getCourseClass().getId()));
-    final var allDays = daysByClass.values().stream().flatMap(List::stream).toList();
+    final var allDays =
+        daysByClass.values().stream().flatMap(mappedList -> mappedList.stream()).toList();
     final Map<UUID, List<CourseClassSchedule>> schedulesByDay =
         allDays.isEmpty()
             ? Map.of()
@@ -145,7 +146,8 @@ public class ListCourseEnrollmentOptionsUseCase {
       return Map.of();
     }
 
-    final var schedules = schedulesByDay.values().stream().flatMap(List::stream).toList();
+    final var schedules =
+        schedulesByDay.values().stream().flatMap(mappedList -> mappedList.stream()).toList();
     if (schedules.isEmpty()) {
       return Map.of();
     }

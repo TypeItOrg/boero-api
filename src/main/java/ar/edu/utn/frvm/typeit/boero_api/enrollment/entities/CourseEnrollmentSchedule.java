@@ -22,6 +22,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "course_enrollment_schedules")
@@ -50,7 +51,7 @@ public class CourseEnrollmentSchedule extends Auditable {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "course_individual_slot_id")
-  private CourseIndividualSlot individualSlot;
+  private @Nullable CourseIndividualSlot individualSlot;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "day_of_week", nullable = false, length = 20)
@@ -69,7 +70,7 @@ public class CourseEnrollmentSchedule extends Auditable {
       final Institution institution,
       final CourseEnrollment courseEnrollment,
       final CourseClassSchedule schedule,
-      final CourseIndividualSlot individualSlot,
+      final @Nullable CourseIndividualSlot individualSlot,
       final CourseDay dayOfWeek,
       final LocalTime startTime,
       final LocalTime endTime) {

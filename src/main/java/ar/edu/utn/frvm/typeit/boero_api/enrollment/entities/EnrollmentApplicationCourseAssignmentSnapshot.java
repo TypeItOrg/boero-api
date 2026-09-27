@@ -23,6 +23,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "enrollment_application_course_assignment_snapshots")
@@ -58,7 +59,7 @@ public class EnrollmentApplicationCourseAssignmentSnapshot extends Auditable {
   private CourseClassSchedule schedule;
 
   @Column(name = "course_individual_slot_id")
-  private UUID individualSlotId;
+  private @Nullable UUID individualSlotId;
 
   @Column(name = "course_name", nullable = false)
   private String courseName;
@@ -73,10 +74,10 @@ public class EnrollmentApplicationCourseAssignmentSnapshot extends Auditable {
   private String academicSpaceName;
 
   @Column(name = "academic_level_name")
-  private String academicLevelName;
+  private @Nullable String academicLevelName;
 
   @Column(name = "instrument_name")
-  private String instrumentName;
+  private @Nullable String instrumentName;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "day_of_week", nullable = false, length = 20)
@@ -92,7 +93,7 @@ public class EnrollmentApplicationCourseAssignmentSnapshot extends Auditable {
   private Instant assignedAt;
 
   @Column(name = "assigned_by_person_id")
-  private UUID assignedByPersonId;
+  private @Nullable UUID assignedByPersonId;
 
   @Column(nullable = false, length = 80)
   private String operation;

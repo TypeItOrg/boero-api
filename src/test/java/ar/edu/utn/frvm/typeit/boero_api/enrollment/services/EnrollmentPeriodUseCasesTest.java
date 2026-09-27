@@ -65,7 +65,6 @@ class EnrollmentPeriodUseCasesTest {
     createUseCase =
         new CreateEnrollmentPeriodUseCase(
             periodAccess,
-            periodRepository,
             org.mockito.Mockito.mock(EnrollmentInstitutionLock.class),
             scopeService,
             institutionRepository,

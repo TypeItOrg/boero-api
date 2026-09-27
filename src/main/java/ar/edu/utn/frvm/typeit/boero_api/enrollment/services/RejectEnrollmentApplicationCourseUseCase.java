@@ -13,6 +13,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.RejectEnrollmentAppl
 import java.time.Clock;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +33,7 @@ public class RejectEnrollmentApplicationCourseUseCase {
       final UUID applicationId,
       final UUID applicationCourseId,
       final RejectEnrollmentApplicationCourseRequest request,
-      final UUID resolvedByPersonId) {
+      final @Nullable UUID resolvedByPersonId) {
     accessGuard.require(
         PermissionCode.ENROLLMENT_APPLICATION_COURSE_REJECT,
         institutionId,

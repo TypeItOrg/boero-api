@@ -1,30 +1,33 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplicationCourse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationCourseStatus;
 import java.time.Instant;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 public record EnrollmentApplicationCourseResponse(
     UUID applicationCourseId,
     UUID courseId,
     UUID studyPlanSpaceId,
     String academicSpaceName,
-    String academicLevelName,
+    @Nullable String academicLevelName,
     String studyPlanName,
     int studyPlanVersion,
     String trainingPathName,
-    UUID instrumentId,
-    String instrumentName,
-    UUID preferredTeacherId,
+    @Nullable UUID instrumentId,
+    @Nullable String instrumentName,
+    @Nullable UUID preferredTeacherId,
     EnrollmentApplicationCourseStatus status,
     Instant requestedAt,
     Boolean submittedWithCapacity,
     Integer waitlistNumber,
     Instant waitlistedAt,
-    String waitlistReason,
+    @Nullable String waitlistReason,
     Instant resolvedAt,
-    UUID resolvedByPersonId,
+    @Nullable UUID resolvedByPersonId,
     String resolutionReasonCode,
     String resolutionReasonText,
     long version,
@@ -63,10 +66,11 @@ public record EnrollmentApplicationCourseResponse(
         selection.getResolutionReasonText(),
         selection.getVersion(),
         selection.getCourse().getStudyPlanSpace() != null
-            && selection.getEnrollmentPeriod().includes(selection.getCourse().getStudyPlanSpace()),
-        selection.getEnrollmentPeriod().isOpenAt(Instant.now()),
-        selection.getEnrollmentPeriod().getId(),
-        selection.getEnrollmentPeriod().getEndDate(),
+            && requireNonNull(selection.getEnrollmentPeriod())
+                .includes(selection.getCourse().getStudyPlanSpace()),
+        requireNonNull(selection.getEnrollmentPeriod()).isOpenAt(Instant.now()),
+        requireNonNull(selection.getEnrollmentPeriod()).getId(),
+        requireNonNull(selection.getEnrollmentPeriod()).getEndDate(),
         course.getAcademicYear().getYear());
   }
 }

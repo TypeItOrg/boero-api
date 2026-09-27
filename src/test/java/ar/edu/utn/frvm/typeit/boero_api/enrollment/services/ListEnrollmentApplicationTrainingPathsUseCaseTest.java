@@ -79,8 +79,7 @@ class ListEnrollmentApplicationTrainingPathsUseCaseTest {
   private ListEnrollmentApplicationTrainingPathsUseCase useCase() {
     return new ListEnrollmentApplicationTrainingPathsUseCase(
         new ApplicantEnrollmentGuard(personRepository, personRoleAssignmentRepository),
-        enrollmentApplicationRepository,
-        trainingPathRepository);
+        enrollmentApplicationRepository);
   }
 
   private void givenApplicant(final JwtAuthenticatedUser principal, final Person person) {

@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
-import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.TrainingPathResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
@@ -17,7 +18,6 @@ public class ListEnrollmentApplicationTrainingPathsUseCase {
 
   private final ApplicantEnrollmentGuard applicantEnrollmentGuard;
   private final EnrollmentApplicationRepository enrollmentApplicationRepository;
-  private final TrainingPathRepository trainingPathRepository;
 
   @Transactional(readOnly = true)
   public List<TrainingPathResponse> execute(
@@ -32,7 +32,7 @@ public class ListEnrollmentApplicationTrainingPathsUseCase {
             .orElseThrow(EnrollmentApplicationNotFoundException::new);
 
     if (application.getEnrollmentPeriod() == null) {
-      return List.of(TrainingPathResponse.from(application.getTrainingPath()));
+      return List.of(TrainingPathResponse.from(requireNonNull(application.getTrainingPath())));
     }
     return application.getEnrollmentPeriod().getOfferings().stream()
         .map(offering -> offering.getStudyPlan().getTrainingPath())

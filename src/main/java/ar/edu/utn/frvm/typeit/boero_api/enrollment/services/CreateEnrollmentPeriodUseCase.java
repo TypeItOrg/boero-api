@@ -6,7 +6,6 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidEnrollmentPeriodDatesException;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentPeriodRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CreateEnrollmentPeriodRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentPeriodResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
@@ -21,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class CreateEnrollmentPeriodUseCase {
   private final EnrollmentPeriodAccessService periodAccess;
 
-  private final EnrollmentPeriodRepository periodRepository;
   private final EnrollmentInstitutionLock institutionLock;
   private final EnrollmentPeriodScopeService scopeService;
   private final InstitutionRepository institutionRepository;

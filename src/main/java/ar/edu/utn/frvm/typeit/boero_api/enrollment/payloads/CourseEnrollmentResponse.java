@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(
     requiredProperties = {
@@ -45,13 +46,13 @@ public record CourseEnrollmentResponse(
     UUID courseId,
     UUID studyPlanSpaceId,
     String academicSpaceName,
-    @Schema(nullable = true) String academicLevelName,
+    @Schema(nullable = true) @Nullable String academicLevelName,
     String studyPlanName,
     int studyPlanVersion,
     String trainingPathName,
     UUID trainingPathId,
-    @Schema(nullable = true) UUID instrumentId,
-    @Schema(nullable = true) String instrumentName,
+    @Schema(nullable = true) @Nullable UUID instrumentId,
+    @Schema(nullable = true) @Nullable String instrumentName,
     UUID courseClassId,
     String courseClassLabel,
     List<CourseEnrollmentTeacherOptionResponse> teachers,
@@ -59,8 +60,8 @@ public record CourseEnrollmentResponse(
     CourseEnrollmentStatus status,
     AcademicEnrollmentStatus academicStatus,
     Instant enrolledAt,
-    @Schema(nullable = true) Instant completedAt,
-    @Schema(nullable = true) Instant withdrawnAt,
+    @Schema(nullable = true) @Nullable Instant completedAt,
+    @Schema(nullable = true) @Nullable Instant withdrawnAt,
     Long version,
     List<CourseEnrollmentScheduleResponse> schedules) {
 

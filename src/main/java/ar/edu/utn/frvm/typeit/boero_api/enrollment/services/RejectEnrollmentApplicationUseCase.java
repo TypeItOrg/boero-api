@@ -13,6 +13,7 @@ import java.time.Clock;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +42,7 @@ public class RejectEnrollmentApplicationUseCase {
       final UUID institutionId,
       final UUID applicationId,
       final RejectEnrollmentApplicationRequest request,
-      final UUID resolvedByPersonId) {
+      final @Nullable UUID resolvedByPersonId) {
     accessGuard.require(
         PermissionCode.ENROLLMENT_APPLICATION_REJECT,
         institutionId,

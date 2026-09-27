@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -267,10 +268,11 @@ class EnrollmentResolutionPostgresIntegrationTest {
                     .setParameter("academicYearId", academicYearId)
                     .setParameter(
                         "periodId",
-                        enrollmentApplicationRepository
-                            .findById(applicationId)
-                            .orElseThrow()
-                            .getEnrollmentPeriod()
+                        requireNonNull(
+                                enrollmentApplicationRepository
+                                    .findById(applicationId)
+                                    .orElseThrow()
+                                    .getEnrollmentPeriod())
                             .getId())
                     .executeUpdate())
         .isInstanceOf(PersistenceException.class)
@@ -303,10 +305,11 @@ class EnrollmentResolutionPostgresIntegrationTest {
                     .setParameter("academicYearId", academicYearId)
                     .setParameter(
                         "periodId",
-                        enrollmentApplicationRepository
-                            .findById(applicationId)
-                            .orElseThrow()
-                            .getEnrollmentPeriod()
+                        requireNonNull(
+                                enrollmentApplicationRepository
+                                    .findById(applicationId)
+                                    .orElseThrow()
+                                    .getEnrollmentPeriod())
                             .getId())
                     .executeUpdate())
         .isInstanceOf(PersistenceException.class)

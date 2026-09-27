@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -129,7 +130,7 @@ public class CourseEnrollmentController {
         institutionId, enrollmentId, request, currentPersonId(authentication));
   }
 
-  private UUID currentPersonId(final Authentication authentication) {
+  private @Nullable UUID currentPersonId(final Authentication authentication) {
     return authentication.getPrincipal() instanceof JwtAuthenticatedUser principal
         ? principal.personId()
         : null;

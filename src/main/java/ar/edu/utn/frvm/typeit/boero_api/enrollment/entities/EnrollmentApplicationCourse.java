@@ -26,6 +26,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "enrollment_application_courses")
@@ -54,7 +55,7 @@ public class EnrollmentApplicationCourse extends Auditable {
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "enrollment_period_id", nullable = false)
-  private EnrollmentPeriod enrollmentPeriod;
+  private @Nullable EnrollmentPeriod enrollmentPeriod;
 
   public void assignPeriod(final EnrollmentPeriod period) {
     if (enrollmentPeriod != null && !enrollmentPeriod.getId().equals(period.getId())) {
@@ -65,7 +66,7 @@ public class EnrollmentApplicationCourse extends Auditable {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "preferred_teacher_id")
-  private Person preferredTeacher;
+  private @Nullable Person preferredTeacher;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
@@ -92,7 +93,7 @@ public class EnrollmentApplicationCourse extends Auditable {
   private Instant resolvedAt;
 
   @Column(name = "resolved_by_person_id")
-  private UUID resolvedByPersonId;
+  private @Nullable UUID resolvedByPersonId;
 
   @Column(name = "resolution_reason_code", length = 80)
   private String resolutionReasonCode;
@@ -108,7 +109,7 @@ public class EnrollmentApplicationCourse extends Auditable {
       final Institution institution,
       final EnrollmentApplication application,
       final Course course,
-      final Person preferredTeacher) {
+      final @Nullable Person preferredTeacher) {
     return EnrollmentApplicationCourse.builder()
         .institution(institution)
         .enrollmentApplication(application)
@@ -136,7 +137,7 @@ public class EnrollmentApplicationCourse extends Auditable {
     this.submittedWithCapacity = submittedWithCapacity;
   }
 
-  public void changePreferredTeacher(final Person preferredTeacher) {
+  public void changePreferredTeacher(final @Nullable Person preferredTeacher) {
     this.preferredTeacher = preferredTeacher;
   }
 
@@ -149,7 +150,7 @@ public class EnrollmentApplicationCourse extends Auditable {
     this.waitlistedAt = waitlistedAt;
   }
 
-  public void enroll(final Instant resolvedAt, final UUID resolvedByPersonId) {
+  public void enroll(final Instant resolvedAt, final @Nullable UUID resolvedByPersonId) {
     ensurePendingResolution();
     status = EnrollmentApplicationCourseStatus.ENROLLED;
     this.resolvedAt = resolvedAt;
@@ -160,7 +161,7 @@ public class EnrollmentApplicationCourse extends Auditable {
       final String reasonCode,
       final String reasonText,
       final Instant resolvedAt,
-      final UUID resolvedByPersonId) {
+      final @Nullable UUID resolvedByPersonId) {
     ensurePendingResolution();
     status = EnrollmentApplicationCourseStatus.REJECTED;
     this.resolutionReasonCode = reasonCode;
@@ -169,7 +170,7 @@ public class EnrollmentApplicationCourse extends Auditable {
     this.resolvedByPersonId = resolvedByPersonId;
   }
 
-  public void cancel(final Instant resolvedAt, final UUID resolvedByPersonId) {
+  public void cancel(final Instant resolvedAt, final @Nullable UUID resolvedByPersonId) {
     ensurePendingResolution();
     status = EnrollmentApplicationCourseStatus.CANCELLED;
     this.resolvedAt = resolvedAt;

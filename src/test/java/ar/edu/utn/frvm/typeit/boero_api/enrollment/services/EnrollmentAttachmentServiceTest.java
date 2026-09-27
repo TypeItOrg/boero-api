@@ -135,7 +135,7 @@ class EnrollmentAttachmentServiceTest {
             .sessionId(UUID.randomUUID())
             .tokenId("jti")
             .build();
-    return new TestingAuthenticationToken(principal, null, "ROLE_USER");
+    return new TestingAuthenticationToken(principal, "", "ROLE_USER");
   }
 
   @Test

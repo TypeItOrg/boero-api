@@ -6,6 +6,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.DocumentVersionStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(
     requiredProperties = {
@@ -34,13 +35,13 @@ public record EnrollmentAttachmentResponse(
     Instant createdAt,
     DocumentVersionStatus versionStatus,
     DocumentReviewStatus reviewStatus,
-    @Schema(nullable = true) UUID uploadedBy,
+    @Schema(nullable = true) @Nullable UUID uploadedBy,
     String uploaderType,
-    @Schema(nullable = true) UUID reviewedBy,
-    @Schema(nullable = true) String reviewerType,
-    @Schema(nullable = true) Instant reviewedAt,
-    @Schema(nullable = true) String observation,
-    @Schema(nullable = true) String storagePath) {
+    @Schema(nullable = true) @Nullable UUID reviewedBy,
+    @Schema(nullable = true) @Nullable String reviewerType,
+    @Schema(nullable = true) @Nullable Instant reviewedAt,
+    @Schema(nullable = true) @Nullable String observation,
+    @Schema(nullable = true) @Nullable String storagePath) {
   public static EnrollmentAttachmentResponse from(EnrollmentAttachment value) {
     return new EnrollmentAttachmentResponse(
         value.getId(),

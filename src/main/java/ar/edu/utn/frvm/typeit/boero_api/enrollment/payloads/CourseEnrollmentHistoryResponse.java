@@ -5,16 +5,17 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.AcademicEnrollmentStatu
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentStatus;
 import java.time.Instant;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 public record CourseEnrollmentHistoryResponse(
     UUID id,
-    CourseEnrollmentStatus previousStatus,
+    @Nullable CourseEnrollmentStatus previousStatus,
     CourseEnrollmentStatus newStatus,
-    AcademicEnrollmentStatus previousAcademicStatus,
+    @Nullable AcademicEnrollmentStatus previousAcademicStatus,
     AcademicEnrollmentStatus newAcademicStatus,
     String operation,
-    String reason,
-    UUID authorityPersonId,
+    @Nullable String reason,
+    @Nullable UUID authorityPersonId,
     Instant changedAt) {
 
   public static CourseEnrollmentHistoryResponse from(final CourseEnrollmentHistory history) {

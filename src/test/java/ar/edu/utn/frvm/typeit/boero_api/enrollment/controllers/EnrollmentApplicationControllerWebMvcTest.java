@@ -128,7 +128,7 @@ class EnrollmentApplicationControllerWebMvcTest {
             .sessionId(UUID.randomUUID())
             .tokenId("jti")
             .build();
-    return new TestingAuthenticationToken(principal, null);
+    return new TestingAuthenticationToken(principal, "");
   }
 
   private EnrollmentApplicationResponse createMockResponse(EnrollmentApplicationStatus status) {

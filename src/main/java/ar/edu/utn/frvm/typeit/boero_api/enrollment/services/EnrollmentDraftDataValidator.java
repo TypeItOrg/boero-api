@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.TrainingPathNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceInstrumentRepository;
@@ -17,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -37,9 +40,9 @@ public class EnrollmentDraftDataValidator {
   public StudyPlan validate(
       final UUID institutionId,
       final EnrollmentApplication application,
-      final EnrollmentDraftData data) {
+      final @Nullable EnrollmentDraftData data) {
     if (data == null) {
-      return application.getStudyPlan();
+      return requireNonNull(application.getStudyPlan());
     }
 
     UUID trainingPathId = null;
@@ -75,14 +78,15 @@ public class EnrollmentDraftDataValidator {
           data.getInstrumentSelection().getStudyPlanSpaceInstrumentIds());
     }
 
-    if (application.getEnrollmentPeriod().getOfferings().stream()
+    if (requireNonNull(application.getEnrollmentPeriod()).getOfferings().stream()
         .noneMatch(
             offering -> offering.getStudyPlan().getId().equals(effectiveStudyPlan.getId()))) {
       throw new EnrollmentValidationException(EnrollmentMessages.COURSE_OUTSIDE_PERIOD);
     }
     if (!selectedSpaceIds.isEmpty()
         && studyPlanSpaceRepository.findAllById(selectedSpaceIds).stream()
-            .anyMatch(space -> !application.getEnrollmentPeriod().includes(space))) {
+            .anyMatch(
+                space -> !requireNonNull(application.getEnrollmentPeriod()).includes(space))) {
       throw new EnrollmentValidationException(EnrollmentMessages.COURSE_OUTSIDE_PERIOD);
     }
     return effectiveStudyPlan;
@@ -94,7 +98,7 @@ public class EnrollmentDraftDataValidator {
     final var selectedIds =
         validateStudyPlanSpaces(
             institutionId,
-            application.getStudyPlan().getId(),
+            requireNonNull(application.getStudyPlan()).getId(),
             spaces.stream().map(space -> space.getStudyPlanSpace().getId()).toList());
     final Map<UUID, UUID> selectedInstruments = new HashMap<>();
 

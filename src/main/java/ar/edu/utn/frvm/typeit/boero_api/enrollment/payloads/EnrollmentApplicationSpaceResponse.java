@@ -3,6 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.UUID;
 import lombok.Builder;
+import org.jspecify.annotations.Nullable;
 
 @Builder
 @Schema(
@@ -14,32 +15,32 @@ import lombok.Builder;
       "instrumentName"
     })
 public record EnrollmentApplicationSpaceResponse(
-    @Schema(nullable = true) UUID studyPlanSpaceId,
-    @Schema(nullable = true) String spaceName,
-    @Schema(nullable = true) String academicLevelName,
-    @Schema(nullable = true) UUID instrumentId,
-    @Schema(nullable = true) String instrumentName) {
+    @Schema(nullable = true) @Nullable UUID studyPlanSpaceId,
+    @Schema(nullable = true) @Nullable String spaceName,
+    @Schema(nullable = true) @Nullable String academicLevelName,
+    @Schema(nullable = true) @Nullable UUID instrumentId,
+    @Schema(nullable = true) @Nullable String instrumentName) {
   public EnrollmentApplicationSpaceResponse() {
     this(null, null, null, null, null);
   }
 
-  public UUID getStudyPlanSpaceId() {
+  public @Nullable UUID getStudyPlanSpaceId() {
     return studyPlanSpaceId;
   }
 
-  public String getSpaceName() {
+  public @Nullable String getSpaceName() {
     return spaceName;
   }
 
-  public String getAcademicLevelName() {
+  public @Nullable String getAcademicLevelName() {
     return academicLevelName;
   }
 
-  public UUID getInstrumentId() {
+  public @Nullable UUID getInstrumentId() {
     return instrumentId;
   }
 
-  public String getInstrumentName() {
+  public @Nullable String getInstrumentName() {
     return instrumentName;
   }
 }

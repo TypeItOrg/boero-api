@@ -2,20 +2,21 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Course;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 public record CourseEnrollmentCourseMetadata(
     UUID courseId,
     UUID studyPlanSpaceId,
     String academicSpaceName,
-    String academicLevelName,
+    @Nullable String academicLevelName,
     String studyPlanName,
     int studyPlanVersion,
     String trainingPathName,
     String format,
-    UUID instrumentId,
-    String instrumentName,
-    String requirementType,
-    String approvalMode,
+    @Nullable UUID instrumentId,
+    @Nullable String instrumentName,
+    @Nullable String requirementType,
+    @Nullable String approvalMode,
     boolean instrumental) {
 
   public static CourseEnrollmentCourseMetadata from(final Course course) {

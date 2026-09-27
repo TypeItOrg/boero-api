@@ -3,6 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Course;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(
     requiredProperties = {
@@ -27,15 +28,15 @@ public record EnrollmentCourseOptionResponse(
     UUID courseId,
     UUID studyPlanSpaceId,
     String academicSpaceName,
-    @Schema(nullable = true) String academicLevelName,
+    @Schema(nullable = true) @Nullable String academicLevelName,
     String studyPlanName,
     int studyPlanVersion,
     String trainingPathName,
     String format,
-    @Schema(nullable = true) UUID instrumentId,
-    @Schema(nullable = true) String instrumentName,
-    String requirementType,
-    String approvalMode,
+    @Schema(nullable = true) @Nullable UUID instrumentId,
+    @Schema(nullable = true) @Nullable String instrumentName,
+    @Nullable String requirementType,
+    @Nullable String approvalMode,
     boolean instrumental,
     boolean hasCapacity,
     AcademicEligibilityResponse eligibility,

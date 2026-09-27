@@ -21,7 +21,7 @@ public class ListMyEnrollmentApplicationsUseCase {
   public Page<EnrollmentApplicationResponse> execute(
       final UUID institutionId,
       final UUID personId,
-      @Nullable final EnrollmentApplicationStatus status,
+      final @Nullable EnrollmentApplicationStatus status,
       final Pageable pageable) {
     return enrollmentApplicationRepository
         .findMyApplications(institutionId, personId, status, pageable)

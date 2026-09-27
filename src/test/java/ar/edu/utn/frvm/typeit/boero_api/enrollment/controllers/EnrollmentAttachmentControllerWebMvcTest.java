@@ -82,7 +82,7 @@ class EnrollmentAttachmentControllerWebMvcTest {
             .sessionId(UUID.randomUUID())
             .tokenId("jti")
             .build();
-    return new TestingAuthenticationToken(principal, null);
+    return new TestingAuthenticationToken(principal, "");
   }
 
   @Test

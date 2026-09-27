@@ -39,6 +39,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(
@@ -68,10 +69,10 @@ public class EnrollmentApplication extends SoftDeletable {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "study_plan_id")
-  private StudyPlan studyPlan;
+  private @Nullable StudyPlan studyPlan;
 
   @Column(name = "study_plan_id", insertable = false, updatable = false)
-  private UUID legacyStudyPlanId;
+  private @Nullable UUID legacyStudyPlanId;
 
   @Transient private boolean legacyPlanLoaded;
 
@@ -102,31 +103,31 @@ public class EnrollmentApplication extends SoftDeletable {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "academic_year_id")
-  private AcademicYear academicYear;
+  private @Nullable AcademicYear academicYear;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "enrollment_period_id")
-  private EnrollmentPeriod enrollmentPeriod;
+  private @Nullable EnrollmentPeriod enrollmentPeriod;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 40)
   private EnrollmentApplicationStatus status;
 
   @Column(name = "rejection_reason", columnDefinition = "text")
-  private String rejectionReason;
+  private @Nullable String rejectionReason;
 
   @Column(name = "resolved_at")
-  private Instant resolvedAt;
+  private @Nullable Instant resolvedAt;
 
   @Column(name = "resolved_by_person_id")
-  private UUID resolvedByPersonId;
+  private @Nullable UUID resolvedByPersonId;
 
   @OneToOne(
       mappedBy = "enrollmentApplication",
       cascade = CascadeType.ALL,
       fetch = FetchType.LAZY,
       orphanRemoval = true)
-  private ApplicantEducationBackground educationBackground;
+  private @Nullable ApplicantEducationBackground educationBackground;
 
   @OneToOne(
       mappedBy = "enrollmentApplication",
@@ -274,7 +275,7 @@ public class EnrollmentApplication extends SoftDeletable {
         .build();
   }
 
-  public AcademicYear commonAcademicYear() {
+  public @Nullable AcademicYear commonAcademicYear() {
     if (academicYear != null) {
       return academicYear;
     }
@@ -387,7 +388,7 @@ public class EnrollmentApplication extends SoftDeletable {
         || status == EnrollmentApplicationStatus.CANCELLED;
   }
 
-  public TrainingPath getTrainingPath() {
+  public @Nullable TrainingPath getTrainingPath() {
     if (trainingPath != null) {
       return trainingPath;
     }
@@ -395,7 +396,7 @@ public class EnrollmentApplication extends SoftDeletable {
     return studyPlan == null ? null : studyPlan.getTrainingPath();
   }
 
-  public void approve(final Instant resolvedAt, final UUID resolvedByPersonId) {
+  public void approve(final Instant resolvedAt, final @Nullable UUID resolvedByPersonId) {
     if (status != EnrollmentApplicationStatus.PROVISIONALLY_APPROVED) {
       ensurePendingEvaluation();
     }
@@ -410,7 +411,9 @@ public class EnrollmentApplication extends SoftDeletable {
   }
 
   public void reject(
-      final String rejectionReason, final Instant resolvedAt, final UUID resolvedByPersonId) {
+      final @Nullable String rejectionReason,
+      final Instant resolvedAt,
+      final @Nullable UUID resolvedByPersonId) {
     ensurePendingEvaluation();
 
     if (rejectionReason == null || rejectionReason.isBlank()) {

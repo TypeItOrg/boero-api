@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ScopedAuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
@@ -138,7 +140,8 @@ public class ListEnrollmentPeriodsUseCase {
         .filter(
             status ->
                 SearchNormalization.normalizeForComparison(status.name()).contains(normalizedSearch)
-                    || SearchNormalization.normalizeForComparison(STATUS_LABELS.get(status))
+                    || SearchNormalization.normalizeForComparison(
+                            requireNonNull(STATUS_LABELS.get(status)))
                         .contains(normalizedSearch))
         .collect(Collectors.toUnmodifiableSet());
   }

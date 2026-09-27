@@ -5,11 +5,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import lombok.Builder;
+import org.jspecify.annotations.Nullable;
 
 @Builder
 @Schema(requiredProperties = {"studyPlanSpaceInstrumentIds"})
 public record InstrumentSelectionDto(
-    @Schema(nullable = true) Map<UUID, UUID> studyPlanSpaceInstrumentIds) {
+    @Schema(nullable = true) @Nullable Map<UUID, UUID> studyPlanSpaceInstrumentIds) {
   public InstrumentSelectionDto() {
     this(new HashMap<>());
   }
@@ -19,7 +20,7 @@ public record InstrumentSelectionDto(
         studyPlanSpaceInstrumentIds == null ? new HashMap<>() : studyPlanSpaceInstrumentIds;
   }
 
-  public Map<UUID, UUID> getStudyPlanSpaceInstrumentIds() {
+  public @Nullable Map<UUID, UUID> getStudyPlanSpaceInstrumentIds() {
     return studyPlanSpaceInstrumentIds;
   }
 }

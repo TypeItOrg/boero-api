@@ -18,6 +18,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "enrollment_application_spaces")
@@ -43,5 +44,5 @@ public class EnrollmentApplicationSpace extends Auditable {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "instrument_id")
-  private Instrument instrument;
+  private @Nullable Instrument instrument;
 }

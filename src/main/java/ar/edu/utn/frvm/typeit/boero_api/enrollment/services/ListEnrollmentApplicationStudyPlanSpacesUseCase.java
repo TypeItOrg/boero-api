@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceInstrumentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceInstrumentOptionResponse;
@@ -41,7 +43,7 @@ public class ListEnrollmentApplicationStudyPlanSpacesUseCase {
         studyPlanSpaceRepository
             .findEligibleByStudyPlanId(principal.institutionId(), effectiveStudyPlan.getId())
             .stream()
-            .filter(application.getEnrollmentPeriod()::includes)
+            .filter(requireNonNull(application.getEnrollmentPeriod())::includes)
             .toList();
     final var allowedInstrumentsByStudyPlanSpaceId =
         studyPlanSpaceInstrumentRepository

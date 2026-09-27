@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -83,8 +84,11 @@ class EnrollmentApplicationPostgresIntegrationTest extends DatabaseMigrationTest
         service.updateDraft(application.getApplicantPerson().getId(), application.getId(), request);
     entityManager.flush();
 
-    assertThat(response.getData().getResponsible().getFullName()).isEqualTo("Tutor Incompleto");
-    assertThat(response.getData().getResponsible().getDocumentNumber()).isNull();
+    assertThat(requireNonNull(requireNonNull(response.getData()).getResponsible()).getFullName())
+        .isEqualTo("Tutor Incompleto");
+    assertThat(
+            requireNonNull(requireNonNull(response.getData()).getResponsible()).getDocumentNumber())
+        .isNull();
   }
 
   @Test
@@ -99,7 +103,9 @@ class EnrollmentApplicationPostgresIntegrationTest extends DatabaseMigrationTest
             applicationA.getInstitution().getId(), null, null, null, PageRequest.of(0, 10));
 
     assertThat(response.items())
-        .extracting(EnrollmentApplicationResponse::getApplicationId)
+        .extracting(
+            mappedEnrollmentApplicationResponse ->
+                mappedEnrollmentApplicationResponse.getApplicationId())
         .containsExactly(applicationA.getId())
         .doesNotContain(applicationB.getId());
   }
@@ -111,7 +117,8 @@ class EnrollmentApplicationPostgresIntegrationTest extends DatabaseMigrationTest
   void enrollmentApplicationSpace_rejectsDuplicatePairAtDatabaseLevel() {
     EnrollmentApplication application = createDraftApplication();
     StudyPlanSpace studyPlanSpace =
-        createStudyPlanSpace(application.getInstitution(), application.getStudyPlan(), 1);
+        createStudyPlanSpace(
+            application.getInstitution(), requireNonNull(application.getStudyPlan()), 1);
 
     entityManager.persist(
         EnrollmentApplicationSpace.builder()
@@ -135,9 +142,11 @@ class EnrollmentApplicationPostgresIntegrationTest extends DatabaseMigrationTest
   void updateDraft_replacingSelection_deletesDiscardedSpaceRow() {
     EnrollmentApplication application = createDraftApplication();
     StudyPlanSpace firstSpace =
-        createStudyPlanSpace(application.getInstitution(), application.getStudyPlan(), 1);
+        createStudyPlanSpace(
+            application.getInstitution(), requireNonNull(application.getStudyPlan()), 1);
     StudyPlanSpace secondSpace =
-        createStudyPlanSpace(application.getInstitution(), application.getStudyPlan(), 2);
+        createStudyPlanSpace(
+            application.getInstitution(), requireNonNull(application.getStudyPlan()), 2);
 
     service.updateDraft(
         application.getApplicantPerson().getId(),

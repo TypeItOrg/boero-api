@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.common.storage.StorageService;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
@@ -27,6 +29,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
+import org.jspecify.annotations.Nullable;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Pageable;
@@ -56,7 +59,7 @@ public class EnrollmentAttachmentService {
       final UUID applicationId,
       final MultipartFile file,
       final UUID requirementId,
-      final Authentication authentication) {
+      final @Nullable Authentication authentication) {
     final var application =
         lockApplication(
             applicationId,
@@ -112,7 +115,7 @@ public class EnrollmentAttachmentService {
         EnrollmentAttachment.builder()
             .enrollmentApplication(application)
             .requirement(requirement)
-            .uploadedBy(actor.id())
+            .uploadedBy(requireNonNull(actor.id()))
             .uploaderType(actor.accountType())
             .originalFileName(originalName)
             .storagePath(stored.storagePath())
@@ -145,7 +148,9 @@ public class EnrollmentAttachmentService {
 
   @Transactional(readOnly = true)
   public AttachmentContentResult getAttachmentContent(
-      final UUID applicationId, final UUID attachmentId, final Authentication authentication) {
+      final UUID applicationId,
+      final UUID attachmentId,
+      final @Nullable Authentication authentication) {
     final var application = getActiveApplication(applicationId);
     authorization.require(
         application,
@@ -173,7 +178,9 @@ public class EnrollmentAttachmentService {
 
   @Transactional
   public void deleteAttachment(
-      final UUID applicationId, final UUID attachmentId, final Authentication authentication) {
+      final UUID applicationId,
+      final UUID attachmentId,
+      final @Nullable Authentication authentication) {
     final var application =
         lockApplication(
             applicationId,
@@ -206,7 +213,7 @@ public class EnrollmentAttachmentService {
 
   @Transactional(readOnly = true)
   public List<EnrollmentAttachmentResponse> listAttachments(
-      final UUID applicationId, final Authentication authentication) {
+      final UUID applicationId, final @Nullable Authentication authentication) {
     final var application = getActiveApplication(applicationId);
     authorization.require(
         application,
@@ -224,7 +231,7 @@ public class EnrollmentAttachmentService {
     return attachmentRepository
         .findByEnrollmentApplicationIdAndDeletedAtIsNull(applicationId)
         .stream()
-        .filter(EnrollmentAttachment::isCurrent)
+        .filter(mappedEnrollmentAttachment -> mappedEnrollmentAttachment.isCurrent())
         .map(EnrollmentAttachmentResponse::from)
         .toList();
   }
@@ -238,10 +245,10 @@ public class EnrollmentAttachmentService {
 
   private EnrollmentApplication lockApplication(
       final UUID applicationId,
-      final Authentication authentication,
+      final @Nullable Authentication authentication,
       final PermissionCode permission,
       final EnrollmentDocumentAction action,
-      final UUID attachmentId) {
+      final @Nullable UUID attachmentId) {
     final var application = getActiveApplication(applicationId);
     authorization.require(application, authentication, permission, action, attachmentId);
     final var institutionId = application.getInstitution().getId();
@@ -287,7 +294,11 @@ public class EnrollmentAttachmentService {
             .orElseThrow(() -> new AttachmentNotFoundException(attachmentId));
     var actor = Actor.from(authentication);
     attachment.review(
-        request.status(), request.observation(), actor.id(), actor.accountType(), clock.instant());
+        request.status(),
+        request.observation(),
+        requireNonNull(actor.id()),
+        actor.accountType(),
+        clock.instant());
     audit.record(
         actor,
         application.getInstitution().getId(),

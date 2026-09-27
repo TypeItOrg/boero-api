@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceInstrumentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceInstrumentOptionResponse;
@@ -44,7 +46,7 @@ public class ListEnrollmentApplicationStudyPlanSpaceInstrumentsUseCase {
             principal.institutionId(), effectiveStudyPlan.getId(), List.of(studyPlanSpaceId));
 
     if (eligibleSpaces.isEmpty()
-        || !application.getEnrollmentPeriod().includes(eligibleSpaces.getFirst())) {
+        || !requireNonNull(application.getEnrollmentPeriod()).includes(eligibleSpaces.getFirst())) {
       throw new EnrollmentValidationException(
           EnrollmentMessages.ENROLLMENT_APPLICATION_STUDY_PLAN_SPACE_INVALID,
           Map.of(

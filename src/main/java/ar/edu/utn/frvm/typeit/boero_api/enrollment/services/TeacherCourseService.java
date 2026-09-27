@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
 import static ar.edu.utn.frvm.typeit.boero_api.security.handlers.SecurityErrorMessages.DEFAULT_FORBIDDEN_MESSAGE;
+import static java.util.Objects.requireNonNull;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.CourseClass;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassTeacherRepository;
@@ -67,7 +68,9 @@ public class TeacherCourseService {
         assignments.findAssignedClassesInWeek(institutionId, personId, weekStart, weekEnd);
 
     final var classesById =
-        classes.stream().collect(Collectors.toMap(CourseClass::getId, value -> value));
+        classes.stream()
+            .collect(
+                Collectors.toMap(mappedCourseClass -> mappedCourseClass.getId(), value -> value));
     final var responses =
         toResponses(classes).stream()
             .map(response -> restrictToWeek(response, classesById, weekStart))
@@ -96,13 +99,15 @@ public class TeacherCourseService {
   private List<TeacherCourseClassResponse> toResponses(final List<CourseClass> classes) {
     final var details =
         treeReader.readClasses(classes).stream()
-            .collect(Collectors.toMap(CourseClassResponse::id, value -> value));
+            .collect(
+                Collectors.toMap(
+                    mappedCourseClassResponse -> mappedCourseClassResponse.id(), value -> value));
 
     return classes.stream()
         .map(
             courseClass -> {
               final var course = courseClass.getCourse();
-              final var detail = details.get(courseClass.getId());
+              final var detail = requireNonNull(details.get(courseClass.getId()));
 
               return new TeacherCourseClassResponse(
                   course.getId(),
@@ -118,7 +123,7 @@ public class TeacherCourseService {
       final TeacherCourseClassResponse response,
       final Map<UUID, CourseClass> classesById,
       final LocalDate weekStart) {
-    final var courseClass = classesById.get(response.courseClass().id());
+    final var courseClass = requireNonNull(classesById.get(response.courseClass().id()));
     final var academicYear = courseClass.getCourse().getAcademicYear();
     final var applicableDays =
         response.courseClass().days().stream()

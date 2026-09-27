@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.CourseClassSchedule;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.CourseIndividualSlot;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.CourseIndividualSlotRepository;
@@ -17,7 +19,7 @@ public class CourseIndividualSlotFactory {
     if (count == 0) {
       return;
     }
-    final int duration = schedule.getDay().getPeriodDurationMinutes();
+    final int duration = requireNonNull(schedule.getDay().getPeriodDurationMinutes());
     final var slots = new ArrayList<CourseIndividualSlot>(count);
     for (int index = 0; index < count; index++) {
       final var start = schedule.getStartTime().plusMinutes((long) index * duration);

@@ -142,7 +142,7 @@ class EnrollmentApplicationTest {
   }
 
   private static EnrollmentApplication draft() {
-    return EnrollmentApplication.create(null, null, null, null, null);
+    return EnrollmentApplication.builder().status(EnrollmentApplicationStatus.DRAFT).build();
   }
 
   private static EnrollmentApplication submitted() {

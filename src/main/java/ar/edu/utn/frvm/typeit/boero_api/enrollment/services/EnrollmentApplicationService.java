@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Instrument;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
@@ -7,7 +9,6 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassTeacherRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.InstrumentRepository;
-import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
@@ -79,7 +80,6 @@ public class EnrollmentApplicationService {
   private final EnrollmentApplicationPeriodService applicationPeriodService;
   private final EnrollmentApplicationResponseFactory responseFactory;
   private final PersonRepository personRepository;
-  private final StudyPlanRepository studyPlanRepository;
   private final TrainingPathRepository trainingPathRepository;
   private final CourseRepository courseRepository;
   private final CourseClassTeacherRepository courseClassTeacherRepository;
@@ -125,7 +125,7 @@ public class EnrollmentApplicationService {
     final TrainingPath trainingPath =
         trainingPathRepository
             .findByIdAndInstitution_IdAndActiveTrueAndDeletedAtIsNull(
-                request.getTrainingPathId(), institutionId)
+                requireNonNull(request.getTrainingPathId()), institutionId)
             .orElseThrow(
                 () ->
                     new EnrollmentValidationException(
@@ -387,7 +387,9 @@ public class EnrollmentApplicationService {
   private void updateCourseSelections(
       final EnrollmentApplication application, final List<CourseSelectionDto> requestedSelections) {
     final Set<UUID> requestedCourseIds =
-        requestedSelections.stream().map(CourseSelectionDto::courseId).collect(Collectors.toSet());
+        requestedSelections.stream()
+            .map(mappedCourseSelectionDto -> mappedCourseSelectionDto.courseId())
+            .collect(Collectors.toSet());
     if (requestedCourseIds.size() != requestedSelections.size()) {
       throw new EnrollmentValidationException(
           EnrollmentMessages.ENROLLMENT_APPLICATION_SPACES_DUPLICATED);
@@ -418,7 +420,7 @@ public class EnrollmentApplicationService {
               .getStudyPlan()
               .getTrainingPath()
               .getId()
-              .equals(application.getTrainingPath().getId())) {
+              .equals(requireNonNull(application.getTrainingPath()).getId())) {
         throw new EnrollmentValidationException(
             EnrollmentMessages.ENROLLMENT_APPLICATION_TRAINING_PATH_INVALID);
       }

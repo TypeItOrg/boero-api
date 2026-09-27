@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -130,7 +131,6 @@ class EnrollmentApplicationServiceTest {
                 documentRequirements,
                 admissionHistory),
             personRepository,
-            studyPlanRepository,
             trainingPathRepository,
             courseRepository,
             courseClassTeacherRepository,
@@ -274,7 +274,7 @@ class EnrollmentApplicationServiceTest {
 
     assertThatCode(() -> service.updateDraft(personId, applicationId, request))
         .doesNotThrowAnyException();
-    assertThat(application.getStudyPlan().getId()).isEqualTo(effectivePlan.getId());
+    assertThat(requireNonNull(application.getStudyPlan()).getId()).isEqualTo(effectivePlan.getId());
   }
 
   @Test
@@ -377,10 +377,10 @@ class EnrollmentApplicationServiceTest {
                     .build())
             .build();
 
-    EnrollmentApplicationResponse response = service.updateDraft(personId, applicationId, request);
+    service.updateDraft(personId, applicationId, request);
 
     assertThat(application.getApplicantPerson()).isSameAs(person);
-    assertThat(application.getEducationBackground().getSecondarySchool())
+    assertThat(requireNonNull(application.getEducationBackground()).getSecondarySchool())
         .isEqualTo("Colegio Nacional");
     verify(applicationRepository).saveAndFlush(application);
   }
@@ -451,7 +451,7 @@ class EnrollmentApplicationServiceTest {
     assertThat(application.getSelectedSpaces()).hasSize(1);
     EnrollmentApplicationSpace persisted = application.getSelectedSpaces().getFirst();
     assertThat(persisted.getStudyPlanSpace().getId()).isEqualTo(spaceId);
-    assertThat(persisted.getInstrument().getId()).isEqualTo(instrumentId);
+    assertThat(requireNonNull(persisted.getInstrument()).getId()).isEqualTo(instrumentId);
   }
 
   @Test
@@ -517,7 +517,7 @@ class EnrollmentApplicationServiceTest {
 
     service.updateDraft(personId, applicationId, request);
 
-    assertThat(application.getStudyPlan()).isEqualTo(newStudyPlan);
+    assertThat(requireNonNull(application.getStudyPlan())).isEqualTo(newStudyPlan);
     assertThat(application.getSelectedSpaces()).isEmpty();
   }
 
@@ -646,7 +646,6 @@ class EnrollmentApplicationServiceTest {
             .status(EnrollmentApplicationStatus.DRAFT)
             .build();
     StudyPlanSpace selectedStudyPlanSpace = Mockito.mock(StudyPlanSpace.class);
-    AcademicSpace selectedAcademicSpace = Mockito.mock(AcademicSpace.class);
     application.addSelectedSpace(
         EnrollmentApplicationSpace.builder().studyPlanSpace(selectedStudyPlanSpace).build());
 
@@ -685,7 +684,9 @@ class EnrollmentApplicationServiceTest {
     assertThatThrownBy(() -> service.submitApplication(personId, applicationId))
         .isInstanceOf(EnrollmentValidationException.class)
         .asInstanceOf(InstanceOfAssertFactories.type(EnrollmentValidationException.class))
-        .extracting(EnrollmentValidationException::fieldErrors)
+        .extracting(
+            mappedEnrollmentValidationException ->
+                mappedEnrollmentValidationException.fieldErrors())
         .satisfies(fieldErrors -> assertThat(fieldErrors).containsKey("courses"));
   }
 
@@ -712,7 +713,9 @@ class EnrollmentApplicationServiceTest {
     assertThatThrownBy(() -> service.submitApplication(personId, applicationId))
         .isInstanceOf(EnrollmentValidationException.class)
         .asInstanceOf(InstanceOfAssertFactories.type(EnrollmentValidationException.class))
-        .extracting(EnrollmentValidationException::fieldErrors)
+        .extracting(
+            mappedEnrollmentValidationException ->
+                mappedEnrollmentValidationException.fieldErrors())
         .satisfies(
             fieldErrors -> {
               assertThat(fieldErrors)
@@ -757,7 +760,9 @@ class EnrollmentApplicationServiceTest {
     assertThatThrownBy(() -> service.submitApplication(personId, applicationId))
         .isInstanceOf(EnrollmentValidationException.class)
         .asInstanceOf(InstanceOfAssertFactories.type(EnrollmentValidationException.class))
-        .extracting(EnrollmentValidationException::fieldErrors)
+        .extracting(
+            mappedEnrollmentValidationException ->
+                mappedEnrollmentValidationException.fieldErrors())
         .satisfies(fieldErrors -> assertThat(fieldErrors).containsKey("responsible"));
   }
 
@@ -795,7 +800,8 @@ class EnrollmentApplicationServiceTest {
             .build();
 
     PageImpl<EnrollmentApplication> page = new PageImpl<>(List.of(application));
-    when(applicationRepository.findAll(any(Specification.class), any(Pageable.class)))
+    when(applicationRepository.findAll(
+            ArgumentMatchers.<Specification<EnrollmentApplication>>any(), any(Pageable.class)))
         .thenReturn(page);
 
     PaginatedResponse<EnrollmentApplicationResponse> response =

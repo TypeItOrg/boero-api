@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidFileException;
 import java.io.ByteArrayInputStream;
@@ -42,7 +44,8 @@ public final class EnrollmentFilePolicy {
       throw new InvalidFileException(EnrollmentMessages.FILE_CONTENT_INVALID);
     }
 
-    final String declaredType = file.getContentType().trim().toLowerCase(Locale.ROOT);
+    final String declaredType =
+        requireNonNull(file.getContentType()).trim().toLowerCase(Locale.ROOT);
     final String contentType = validateContent(bytes);
     final String normalizedDeclaredType =
         "image/jpg".equals(declaredType) ? "image/jpeg" : declaredType;

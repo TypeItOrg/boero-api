@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -23,7 +24,7 @@ public class EnrollmentStorageJobRepository {
       String storagePath,
       UUID institutionId,
       UUID applicationId,
-      UUID attachmentId,
+      @Nullable UUID attachmentId,
       Actor actor,
       String state,
       int attempts) {}
@@ -33,7 +34,7 @@ public class EnrollmentStorageJobRepository {
       final String path,
       final UUID institutionId,
       final UUID applicationId,
-      final UUID attachmentId,
+      final @Nullable UUID attachmentId,
       final Actor actor,
       final Instant now,
       final Instant due) {
@@ -69,7 +70,7 @@ public class EnrollmentStorageJobRepository {
         .findFirst();
   }
 
-  public Optional<Job> lockAttachment(final UUID attachmentId) {
+  public Optional<Job> lockAttachment(final @Nullable UUID attachmentId) {
     return jdbc
         .query(
             "SELECT * FROM enrollment_storage_jobs WHERE attachment_id = ? FOR UPDATE",
@@ -119,7 +120,7 @@ public class EnrollmentStorageJobRepository {
         .findFirst();
   }
 
-  public void activate(final UUID id, final UUID attachmentId, final Instant now) {
+  public void activate(final UUID id, final @Nullable UUID attachmentId, final Instant now) {
     jdbc.update(
         """
         UPDATE enrollment_storage_jobs SET state = 'ACTIVE', attachment_id = ?, updated_at = ?,

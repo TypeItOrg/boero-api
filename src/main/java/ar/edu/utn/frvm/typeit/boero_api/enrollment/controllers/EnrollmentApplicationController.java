@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.controllers;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.ShiftResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.TrainingPathResponse;
@@ -210,6 +212,6 @@ public class EnrollmentApplicationController {
   private JwtAuthenticatedUser requireInstitutionalUser(Authentication authentication) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
 
-    return (JwtAuthenticatedUser) authentication.getPrincipal();
+    return (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
   }
 }

@@ -36,7 +36,9 @@ public record EnrollmentPeriodOfferingResponse(
         offering.getLevels().stream()
             .filter(level -> level.getAcademicLevel() != null)
             .map(level -> AcademicLevelResponse.from(level.getAcademicLevel()))
-            .sorted(Comparator.comparingInt(AcademicLevelResponse::displayOrder))
+            .sorted(
+                Comparator.comparingInt(
+                    mappedAcademicLevelResponse -> mappedAcademicLevelResponse.displayOrder()))
             .toList(),
         offering.includes(null));
   }

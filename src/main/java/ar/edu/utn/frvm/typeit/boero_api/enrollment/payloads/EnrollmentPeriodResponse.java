@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(
     requiredProperties = {
@@ -34,7 +35,7 @@ public record EnrollmentPeriodResponse(
     Instant startDate,
     Instant endDate,
     EnrollmentPeriodStatus status,
-    @Schema(nullable = true) Instant deletedAt,
+    @Schema(nullable = true) @Nullable Instant deletedAt,
     boolean scopeConfigured,
     List<EnrollmentPeriodOfferingResponse> offerings,
     boolean limitedView,

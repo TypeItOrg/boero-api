@@ -14,6 +14,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,9 +35,12 @@ public class EnrollmentApplicationCourseApprovalService {
     selections.stream()
         .sorted(
             Comparator.comparing(
-                    EnrollmentApplicationCourse::getRequestedAt,
+                    (EnrollmentApplicationCourse mappedEnrollmentApplicationCourse) ->
+                        mappedEnrollmentApplicationCourse.getRequestedAt(),
                     Comparator.nullsLast(Comparator.naturalOrder()))
-                .thenComparing(EnrollmentApplicationCourse::getId))
+                .thenComparing(
+                    (EnrollmentApplicationCourse mappedEnrollmentApplicationCourse) ->
+                        mappedEnrollmentApplicationCourse.getId()))
         .forEach(this::evaluate);
   }
 
@@ -67,7 +71,7 @@ public class EnrollmentApplicationCourseApprovalService {
   }
 
   private void evaluate(
-      final EnrollmentApplicationCourse selection, final Boolean capacityOverride) {
+      final EnrollmentApplicationCourse selection, final @Nullable Boolean capacityOverride) {
     final Course course = selection.getCourse();
     if (course.isClosed()) {
       selection.reject(

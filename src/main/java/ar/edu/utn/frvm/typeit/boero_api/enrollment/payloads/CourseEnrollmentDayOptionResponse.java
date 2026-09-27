@@ -4,6 +4,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.CourseClassDay;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(
     requiredProperties = {
@@ -17,9 +18,9 @@ import java.util.UUID;
 public record CourseEnrollmentDayOptionResponse(
     UUID id,
     String dayOfWeek,
-    @Schema(nullable = true) Integer capacity,
-    @Schema(nullable = true) Integer availableCapacity,
-    @Schema(nullable = true) Integer periodDurationMinutes,
+    @Schema(nullable = true) @Nullable Integer capacity,
+    @Schema(nullable = true) @Nullable Integer availableCapacity,
+    @Schema(nullable = true) @Nullable Integer periodDurationMinutes,
     List<CourseEnrollmentScheduleOptionResponse> schedules) {
 
   public static CourseEnrollmentDayOptionResponse from(

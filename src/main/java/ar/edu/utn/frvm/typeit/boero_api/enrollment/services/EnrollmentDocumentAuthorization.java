@@ -14,6 +14,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -27,7 +28,7 @@ public class EnrollmentDocumentAuthorization {
 
   public boolean canAccess(
       final EnrollmentApplication application,
-      final Authentication authentication,
+      final @Nullable Authentication authentication,
       final PermissionCode permission) {
     if (authentication == null || !authentication.isAuthenticated()) {
       return false;
@@ -59,10 +60,10 @@ public class EnrollmentDocumentAuthorization {
 
   public void require(
       final EnrollmentApplication application,
-      final Authentication authentication,
+      final @Nullable Authentication authentication,
       final PermissionCode permission,
       final EnrollmentDocumentAction action,
-      final UUID attachmentId) {
+      final @Nullable UUID attachmentId) {
     if (canAccess(application, authentication, permission)) {
       return;
     }

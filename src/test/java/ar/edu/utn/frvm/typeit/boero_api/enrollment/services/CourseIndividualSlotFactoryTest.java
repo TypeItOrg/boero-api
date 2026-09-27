@@ -31,9 +31,18 @@ class CourseIndividualSlotFactoryTest {
   @ParameterizedTest
   @CsvSource({"10:00,11:00,30,2", "23:00,23:30,30,1", "10:00:30,11:00:30,30,2"})
   void createsOnlyCompletePeriodsInsideSchedule(String start, String end, int minutes, int count) {
-    final var day = CourseClassDay.create(null, null, CourseDay.MONDAY, count, minutes);
+    final var day =
+        CourseClassDay.create(
+            org.mockito.Mockito.mock(
+                ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution.class),
+            org.mockito.Mockito.mock(
+                ar.edu.utn.frvm.typeit.boero_api.academic.entities.CourseClass.class),
+            CourseDay.MONDAY,
+            count,
+            minutes);
     final var schedule =
-        CourseClassSchedule.create(null, day, LocalTime.parse(start), LocalTime.parse(end));
+        CourseClassSchedule.create(
+            day.getInstitution(), day, LocalTime.parse(start), LocalTime.parse(end));
 
     new CourseIndividualSlotFactory(repository).createFor(schedule);
 
@@ -52,11 +61,20 @@ class CourseIndividualSlotFactoryTest {
   @ParameterizedTest
   @CsvSource({"23:00,23:30:30", "10:00,11:00:30", "10:00,11:00:00.000000001", "10:00,10:15"})
   void rejectsIncompletePeriodsWithoutTruncatingSeconds(String start, String end) {
-    final var day = CourseClassDay.create(null, null, CourseDay.MONDAY, 2, 30);
+    final var day =
+        CourseClassDay.create(
+            org.mockito.Mockito.mock(
+                ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution.class),
+            org.mockito.Mockito.mock(
+                ar.edu.utn.frvm.typeit.boero_api.academic.entities.CourseClass.class),
+            CourseDay.MONDAY,
+            2,
+            30);
 
     assertThatThrownBy(
             () ->
-                CourseClassSchedule.create(null, day, LocalTime.parse(start), LocalTime.parse(end)))
+                CourseClassSchedule.create(
+                    day.getInstitution(), day, LocalTime.parse(start), LocalTime.parse(end)))
         .isInstanceOf(AcademicValidationException.class)
         .hasMessage(AcademicMessages.COURSE_PERIOD_DURATION_NOT_DIVISIBLE);
     verifyNoInteractions(repository);
@@ -64,9 +82,18 @@ class CourseIndividualSlotFactoryTest {
 
   @Test
   void doesNotCreatePeriodsForGroupClasses() {
-    final var day = CourseClassDay.create(null, null, CourseDay.MONDAY, 20, null);
+    final var day =
+        CourseClassDay.create(
+            org.mockito.Mockito.mock(
+                ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution.class),
+            org.mockito.Mockito.mock(
+                ar.edu.utn.frvm.typeit.boero_api.academic.entities.CourseClass.class),
+            CourseDay.MONDAY,
+            20,
+            null);
     final var schedule =
-        CourseClassSchedule.create(null, day, LocalTime.of(10, 0), LocalTime.of(11, 0));
+        CourseClassSchedule.create(
+            day.getInstitution(), day, LocalTime.of(10, 0), LocalTime.of(11, 0));
 
     new CourseIndividualSlotFactory(repository).createFor(schedule);
 

@@ -4,6 +4,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplicatio
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(
     requiredProperties = {
@@ -33,12 +34,12 @@ public record CourseWaitlistEntryResponse(
     Integer waitlistNumber,
     String applicantName,
     String applicantDocumentNumber,
-    @Schema(nullable = true) Instant requestedAt,
+    @Schema(nullable = true) @Nullable Instant requestedAt,
     Instant waitlistedAt,
-    @Schema(nullable = true) String originalReason,
+    @Schema(nullable = true) @Nullable String originalReason,
     String currentSituation,
-    @Schema(nullable = true) String preferredShift,
-    @Schema(nullable = true) UUID preferredTeacherId) {
+    @Schema(nullable = true) @Nullable String preferredShift,
+    @Schema(nullable = true) @Nullable UUID preferredTeacherId) {
 
   public static CourseWaitlistEntryResponse from(
       final EnrollmentApplicationCourse selection, final boolean hasCapacity) {

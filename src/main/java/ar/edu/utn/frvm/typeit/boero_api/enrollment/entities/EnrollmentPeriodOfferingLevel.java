@@ -30,7 +30,7 @@ public class EnrollmentPeriodOfferingLevel {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "academic_level_id")
-  private AcademicLevel academicLevel;
+  private @Nullable AcademicLevel academicLevel;
 
   public static EnrollmentPeriodOfferingLevel create(
       final EnrollmentPeriodOffering offering, final @Nullable AcademicLevel level) {

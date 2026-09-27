@@ -21,6 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "course_enrollment_histories")
@@ -45,7 +46,7 @@ public class CourseEnrollmentHistory extends Auditable {
 
   @Enumerated(EnumType.STRING)
   @Column(name = "previous_status", length = 40)
-  private CourseEnrollmentStatus previousStatus;
+  private @Nullable CourseEnrollmentStatus previousStatus;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "new_status", length = 40)
@@ -53,7 +54,7 @@ public class CourseEnrollmentHistory extends Auditable {
 
   @Enumerated(EnumType.STRING)
   @Column(name = "previous_academic_status", length = 30)
-  private AcademicEnrollmentStatus previousAcademicStatus;
+  private @Nullable AcademicEnrollmentStatus previousAcademicStatus;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "new_academic_status", length = 30)
@@ -62,10 +63,10 @@ public class CourseEnrollmentHistory extends Auditable {
   @Column(nullable = false, length = 80)
   private String operation;
 
-  @Column private String reason;
+  @Column private @Nullable String reason;
 
   @Column(name = "authority_person_id")
-  private UUID authorityPersonId;
+  private @Nullable UUID authorityPersonId;
 
   @Column(name = "changed_at", nullable = false)
   private Instant changedAt;
@@ -73,13 +74,13 @@ public class CourseEnrollmentHistory extends Auditable {
   public static CourseEnrollmentHistory create(
       final Institution institution,
       final CourseEnrollment courseEnrollment,
-      final CourseEnrollmentStatus previousStatus,
+      final @Nullable CourseEnrollmentStatus previousStatus,
       final CourseEnrollmentStatus newStatus,
-      final AcademicEnrollmentStatus previousAcademicStatus,
+      final @Nullable AcademicEnrollmentStatus previousAcademicStatus,
       final AcademicEnrollmentStatus newAcademicStatus,
       final String operation,
-      final String reason,
-      final UUID authorityPersonId,
+      final @Nullable String reason,
+      final @Nullable UUID authorityPersonId,
       final Instant changedAt) {
     return CourseEnrollmentHistory.builder()
         .institution(institution)
