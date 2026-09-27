@@ -67,7 +67,7 @@ public interface EnrollmentApplicationCourseRepository
       @Param("statuses") List<EnrollmentApplicationCourseStatus> statuses);
 
   @Query(
-      "SELECT selection FROM EnrollmentApplicationCourse selection WHERE selection.institution.id = :institutionId AND selection.course.id = :courseId AND selection.status = :status AND selection.enrollmentApplication.status = ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus.APPROVED ORDER BY selection.requestedAt, selection.id")
+      "SELECT selection FROM EnrollmentApplicationCourse selection WHERE selection.institution.id = :institutionId AND selection.course.id = :courseId AND selection.status = :status AND selection.enrollmentApplication.status IN (ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus.APPROVED, ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus.PROVISIONALLY_APPROVED) ORDER BY selection.requestedAt, selection.id")
   List<EnrollmentApplicationCourse> findApprovedPendingByCourse(
       @Param("institutionId") UUID institutionId,
       @Param("courseId") UUID courseId,

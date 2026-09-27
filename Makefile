@@ -2,7 +2,7 @@ COMPOSE := docker compose
 .DEFAULT_GOAL := dev
 
 MIGRATION_NAME := $(word 2,$(MAKECMDGOALS))
-KNOWN_TARGETS := dev build down logs clean reset-data ps test format format-check migration seed-demo seed-demo-repair-ids
+KNOWN_TARGETS := discard-legacy-documents dev build down logs clean reset-data ps test format format-check migration seed-demo seed-demo-repair-ids
 
 ifeq ($(firstword $(MAKECMDGOALS)),migration)
 ifneq ($(MIGRATION_NAME),)
@@ -23,6 +23,12 @@ seed-demo:
 
 seed-demo-repair-ids:
 	cat scripts/seed/enrollment-demo-ids.sql scripts/seed/enrollment-demo-catalog.sql scripts/seed/enrollment-demo-repair-ids.sql | $(COMPOSE) exec -T postgres sh -c 'exec psql -X -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"'
+
+.PHONY: discard-legacy-documents
+discard-legacy-documents:
+	$(COMPOSE) stop dev
+	$(COMPOSE) up -d --wait postgres
+	cat scripts/maintenance/discard-legacy-enrollment-documents.sql | $(COMPOSE) exec -T postgres sh -c 'exec psql -X -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"'
 
 dev:
 	@$(COMPOSE) rm --stop --force dev

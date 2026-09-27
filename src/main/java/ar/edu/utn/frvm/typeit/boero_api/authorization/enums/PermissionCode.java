@@ -331,6 +331,26 @@ public enum PermissionCode {
       PermissionScope.INSTITUTION,
       PermissionGroup.ENROLLMENT,
       "Ver solicitudes de inscripción"),
+  ENROLLMENT_ATTACHMENT_READ(
+      "institution:enrollment-attachment:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Consultar documentación de inscripción"),
+  ENROLLMENT_ATTACHMENT_UPLOAD(
+      "institution:enrollment-attachment:upload",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Cargar documentación de inscripción"),
+  ENROLLMENT_ATTACHMENT_REVIEW(
+      "institution:enrollment-attachment:review",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Revisar documentación de inscripción"),
+  ENROLLMENT_ATTACHMENT_DELETE(
+      "institution:enrollment-attachment:delete",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Eliminar documentación de inscripción"),
   ENROLLMENT_APPLICATION_APPROVE(
       "institution:enrollment-application:approve",
       PermissionScope.INSTITUTION,
@@ -414,6 +434,10 @@ public enum PermissionCode {
           ENROLLMENT_PERIOD_STATUS_UPDATE,
           ENROLLMENT_PERIOD_DELETE,
           ENROLLMENT_APPLICATION_READ,
+          ENROLLMENT_ATTACHMENT_READ,
+          ENROLLMENT_ATTACHMENT_UPLOAD,
+          ENROLLMENT_ATTACHMENT_DELETE,
+          ENROLLMENT_ATTACHMENT_REVIEW,
           ENROLLMENT_APPLICATION_APPROVE,
           ENROLLMENT_APPLICATION_REJECT,
           COURSE_ENROLLMENT_READ,
@@ -485,6 +509,11 @@ public enum PermissionCode {
           Set.of(SHIFT_READ);
       case COURSE_CREATE, COURSE_UPDATE, COURSE_STATUS_UPDATE, COURSE_DELETE, COURSE_RESTORE ->
           Set.of(COURSE_READ);
+      case ENROLLMENT_ATTACHMENT_READ -> Set.of(ENROLLMENT_APPLICATION_READ);
+      case ENROLLMENT_ATTACHMENT_UPLOAD,
+          ENROLLMENT_ATTACHMENT_DELETE,
+          ENROLLMENT_ATTACHMENT_REVIEW ->
+          Set.of(ENROLLMENT_ATTACHMENT_READ);
       case ENROLLMENT_APPLICATION_APPROVE, ENROLLMENT_APPLICATION_REJECT ->
           Set.of(ENROLLMENT_APPLICATION_READ);
       case COURSE_ENROLLMENT_CREATE,

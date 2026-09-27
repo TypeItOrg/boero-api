@@ -115,9 +115,11 @@ class RejectEnrollmentApplicationUseCaseTest {
 
   private RejectEnrollmentApplicationUseCase useCase() {
     return new RejectEnrollmentApplicationUseCase(
+        Mockito.mock(EnrollmentApplicationResponseFactory.class),
         org.mockito.Mockito.mock(AcademicAccessGuard.class),
         enrollmentApplicationRepository,
         Clock.systemUTC(),
+        Mockito.mock(EnrollmentAdmissionHistory.class),
         Mockito.mock(EnrollmentInstitutionLock.class));
   }
 

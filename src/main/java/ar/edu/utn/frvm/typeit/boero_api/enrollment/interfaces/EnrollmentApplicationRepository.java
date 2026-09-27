@@ -21,7 +21,7 @@ public interface EnrollmentApplicationRepository
         JpaSpecificationExecutor<EnrollmentApplication> {
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
-  java.util.Optional<EnrollmentApplication>
+  Optional<EnrollmentApplication>
       findByInstitution_IdAndApplicantPerson_IdAndTrainingPathIdAndEnrollmentPeriod_IdAndStatusAndDeletedAtIsNull(
           UUID institutionId,
           UUID personId,
@@ -107,6 +107,7 @@ public interface EnrollmentApplicationRepository
           + "AND application.deletedAt IS NULL "
           + "AND (:#{@scopedAuthorization.unrestricted('ENROLLMENT_APPLICATION_READ')} = true OR application.trainingPathId IN :#{@scopedAuthorization.paths('ENROLLMENT_APPLICATION_READ')}) AND (:status IS NULL OR application.status = :status) "
           + "AND (:trainingPathId IS NULL OR application.trainingPathId = :trainingPathId) "
+          + "AND (:pendingDocuments = false OR ((:#{@scopedAuthorization.unrestricted('ENROLLMENT_ATTACHMENT_READ')} = true OR application.trainingPathId IN :#{@scopedAuthorization.paths('ENROLLMENT_ATTACHMENT_READ')}) AND EXISTS (SELECT requirement.id FROM EnrollmentDocumentRequirement requirement WHERE requirement.application.id = application.id AND requirement.level <> ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.DocumentRequirementLevel.OPTIONAL AND NOT EXISTS (SELECT attachment.id FROM EnrollmentAttachment attachment WHERE attachment.requirement.id = requirement.id AND attachment.versionStatus = ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.DocumentVersionStatus.CURRENT AND attachment.reviewStatus = ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.DocumentReviewStatus.ACCEPTED AND attachment.deletedAt IS NULL)))) "
           + "AND (:open = false OR EXISTS ("
           + "SELECT period.id FROM EnrollmentPeriod period "
           + "WHERE period.id = application.enrollmentPeriod.id "
@@ -119,6 +120,7 @@ public interface EnrollmentApplicationRepository
       @Param("status") @Nullable EnrollmentApplicationStatus status,
       @Param("trainingPathId") @Nullable UUID trainingPathId,
       @Param("open") boolean open,
+      @Param("pendingDocuments") boolean pendingDocuments,
       Pageable pageable);
 
   @EntityGraph(
@@ -135,6 +137,7 @@ public interface EnrollmentApplicationRepository
           + "AND (:institutionId IS NULL OR application.institution.id = :institutionId) "
           + "AND (:status IS NULL OR application.status = :status) "
           + "AND (:trainingPathId IS NULL OR application.trainingPathId = :trainingPathId) "
+          + "AND (:pendingDocuments = false OR ((:#{@scopedAuthorization.unrestricted('ENROLLMENT_ATTACHMENT_READ')} = true OR application.trainingPathId IN :#{@scopedAuthorization.paths('ENROLLMENT_ATTACHMENT_READ')}) AND EXISTS (SELECT requirement.id FROM EnrollmentDocumentRequirement requirement WHERE requirement.application.id = application.id AND requirement.level <> ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.DocumentRequirementLevel.OPTIONAL AND NOT EXISTS (SELECT attachment.id FROM EnrollmentAttachment attachment WHERE attachment.requirement.id = requirement.id AND attachment.versionStatus = ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.DocumentVersionStatus.CURRENT AND attachment.reviewStatus = ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.DocumentReviewStatus.ACCEPTED AND attachment.deletedAt IS NULL)))) "
           + "AND (:open = false OR EXISTS ("
           + "SELECT period.id FROM EnrollmentPeriod period "
           + "WHERE period.id = application.enrollmentPeriod.id "
@@ -147,6 +150,7 @@ public interface EnrollmentApplicationRepository
       @Param("status") @Nullable EnrollmentApplicationStatus status,
       @Param("trainingPathId") @Nullable UUID trainingPathId,
       @Param("open") boolean open,
+      @Param("pendingDocuments") boolean pendingDocuments,
       Pageable pageable);
 
   @EntityGraph(

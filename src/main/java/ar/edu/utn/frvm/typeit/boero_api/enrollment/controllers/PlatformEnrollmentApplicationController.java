@@ -44,17 +44,27 @@ public class PlatformEnrollmentApplicationController {
       @RequestParam(required = false) final EnrollmentApplicationStatus status,
       @RequestParam(required = false) final UUID trainingPathId,
       @RequestParam(defaultValue = "false") final boolean open,
+      @RequestParam(defaultValue = "false") final boolean pendingDocuments,
       @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC)
           final Pageable pageable) {
     return PaginatedResponse.from(
         listEnrollmentApplicationsUseCase.executeForPlatform(
-            institutionId, status, trainingPathId, open, pageable));
+            institutionId, status, trainingPathId, open, pendingDocuments, pageable));
   }
 
   @GetMapping(value = "/{institutionId}/{applicationId}", version = Version.V1)
   public EnrollmentApplicationResponse get(
       @PathVariable final UUID institutionId, @PathVariable final UUID applicationId) {
     return getEnrollmentApplicationUseCase.execute(institutionId, applicationId);
+  }
+
+  @PostMapping(
+      value = "/{institutionId}/{applicationId}/approve-provisionally",
+      version = Version.V1)
+  public EnrollmentApplicationResponse approveProvisionally(
+      @PathVariable UUID institutionId, @PathVariable UUID applicationId) {
+    return approveEnrollmentApplicationUseCase.executeProvisionally(
+        institutionId, applicationId, null);
   }
 
   @PostMapping(value = "/{institutionId}/{applicationId}/approve", version = Version.V1)

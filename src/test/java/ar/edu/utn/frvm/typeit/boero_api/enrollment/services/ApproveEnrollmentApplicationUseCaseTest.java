@@ -112,6 +112,7 @@ class ApproveEnrollmentApplicationUseCaseTest {
 
   private ApproveEnrollmentApplicationUseCase useCase() {
     return new ApproveEnrollmentApplicationUseCase(
+        Mockito.mock(EnrollmentApplicationResponseFactory.class),
         org.mockito.Mockito.mock(AcademicAccessGuard.class),
         enrollmentApplicationRepository,
         studentRepository,
@@ -119,7 +120,10 @@ class ApproveEnrollmentApplicationUseCaseTest {
         Clock.systemUTC(),
         new BusinessDateProvider(Clock.systemUTC()),
         Mockito.mock(EnrollmentApplicationCourseApprovalService.class),
-        Mockito.mock(EnrollmentInstitutionLock.class));
+        Mockito.mock(EnrollmentInstitutionLock.class),
+        Mockito.mock(EnrollmentDocumentRequirementsService.class),
+        Mockito.mock(EnrollmentDocumentAudit.class),
+        Mockito.mock(EnrollmentAdmissionHistory.class));
   }
 
   private void stubApplication() {

@@ -173,7 +173,7 @@ public class CourseEnrollmentService {
     if (!applicationCourse.getEnrollmentApplication().getId().equals(applicationId)) {
       throw new EnrollmentApplicationNotFoundException();
     }
-    if (!applicationCourse.getEnrollmentApplication().isApproved()) {
+    if (!applicationCourse.getEnrollmentApplication().isAdmitted()) {
       throw new EnrollmentValidationException(EnrollmentMessages.PARENT_NOT_APPROVED);
     }
     if (applicationCourse.getStatus() == EnrollmentApplicationCourseStatus.ENROLLED) {

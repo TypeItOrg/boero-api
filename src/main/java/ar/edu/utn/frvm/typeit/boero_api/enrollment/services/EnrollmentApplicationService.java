@@ -94,6 +94,8 @@ public class EnrollmentApplicationService {
   private final Clock clock;
   private final EnrollmentInstitutionLock enrollmentInstitutionLock;
   private final AcademicEligibilityService academicEligibilityService;
+  private final EnrollmentDocumentRequirementsService documentRequirements;
+  private final EnrollmentAdmissionHistory admissionHistory;
 
   @Transactional
   public EnrollmentApplicationResponse startOrGetApplication(
@@ -133,10 +135,7 @@ public class EnrollmentApplicationService {
     }
     final var drafts =
         applicationRepository.findDraftsForTrainingPath(
-            institutionId,
-            personId,
-            trainingPath.getId(),
-            org.springframework.data.domain.Pageable.ofSize(1));
+            institutionId, personId, trainingPath.getId(), Pageable.ofSize(1));
     if (!drafts.isEmpty()) {
       final var draft = drafts.getFirst();
       draft.useCoursePeriods();
@@ -145,7 +144,10 @@ public class EnrollmentApplicationService {
     final var application =
         EnrollmentApplication.createForTrainingPath(
             trainingPath.getInstitution(), person, trainingPath);
-    return responseFactory.from(saveAndFlush(application));
+    documentRequirements.snapshot(application);
+    saveAndFlush(application);
+    admissionHistory.record(application);
+    return responseFactory.from(application);
   }
 
   @Transactional
@@ -561,6 +563,7 @@ public class EnrollmentApplicationService {
             .orElseThrow(() -> new EnrollmentApplicationNotFoundException(applicationId));
 
     application.cancel();
+    admissionHistory.record(application);
     for (final var selection : application.getCourseSelections()) {
       if (selection.isPendingResolution()) {
         selection.cancel(clock.instant(), personId);
@@ -713,7 +716,9 @@ public class EnrollmentApplicationService {
               .toList());
       applicationCourseApprovalService.markSubmitted(application);
     }
+    documentRequirements.requireSubmission(application);
     application.submit();
+    admissionHistory.record(application);
     final EnrollmentApplication saved;
     try {
       saved = applicationRepository.saveAndFlush(application);

@@ -46,7 +46,12 @@ import lombok.Builder;
       "spaces",
       "courses",
       "enrollmentPeriod",
-      "periodOpen"
+      "periodOpen",
+      "canReadAttachments",
+      "documents",
+      "canApproveProvisionally",
+      "canConfirm",
+      "admissionHistory"
     })
 public record EnrollmentApplicationResponse(
     @Schema(nullable = true) UUID applicationId,
@@ -75,7 +80,12 @@ public record EnrollmentApplicationResponse(
     @Schema(nullable = true) List<EnrollmentApplicationSpaceResponse> spaces,
     @Schema(nullable = true) List<EnrollmentApplicationCourseResponse> courses,
     @Schema(nullable = true) EnrollmentPeriodResponse enrollmentPeriod,
-    boolean periodOpen) {
+    boolean periodOpen,
+    boolean canReadAttachments,
+    List<EnrollmentDocumentRequirementResponse> documents,
+    boolean canApproveProvisionally,
+    boolean canConfirm,
+    List<EnrollmentAdmissionHistoryResponse> admissionHistory) {
   public EnrollmentApplicationResponse() {
     this(
         null,
@@ -104,10 +114,17 @@ public record EnrollmentApplicationResponse(
         new ArrayList<>(),
         new ArrayList<>(),
         null,
-        false);
+        false,
+        false,
+        List.of(),
+        false,
+        false,
+        List.of());
   }
 
   public EnrollmentApplicationResponse {
+    documents = documents == null ? List.of() : documents;
+    admissionHistory = admissionHistory == null ? List.of() : admissionHistory;
     spaces = spaces == null ? new ArrayList<>() : spaces;
     courses = courses == null ? new ArrayList<>() : courses;
   }
@@ -281,7 +298,15 @@ public record EnrollmentApplicationResponse(
 
   public static EnrollmentApplicationResponse from(
       final EnrollmentApplication application, final boolean includeCourseDetails) {
+    return from(application, includeCourseDetails, false);
+  }
+
+  public static EnrollmentApplicationResponse from(
+      final EnrollmentApplication application,
+      final boolean includeCourseDetails,
+      final boolean includeAttachments) {
     return EnrollmentApplicationResponse.builder()
+        .canReadAttachments(includeAttachments)
         .applicationId(application.getId())
         .institutionId(
             application.getInstitution() != null ? application.getInstitution().getId() : null)
@@ -333,7 +358,7 @@ public record EnrollmentApplicationResponse(
                 && application.getEnrollmentPeriod().isOpenAt(Instant.now()))
         .status(application.getStatus())
         .isEditable(application.isEditable())
-        .data(buildDraftData(application))
+        .data(buildDraftData(application, includeAttachments))
         .secondarySchool(
             application.getEducationBackground() != null
                 ? application.getEducationBackground().getSecondarySchool()
@@ -375,7 +400,8 @@ public record EnrollmentApplicationResponse(
         .toList();
   }
 
-  private static EnrollmentDraftData buildDraftData(final EnrollmentApplication entity) {
+  private static EnrollmentDraftData buildDraftData(
+      final EnrollmentApplication entity, final boolean includeAttachments) {
     PersonalDataDto personalDataDto = null;
     Person applicant = entity.getApplicantPerson();
 
@@ -472,20 +498,17 @@ public record EnrollmentApplicationResponse(
 
     List<AttachmentDto> attachmentsList = new ArrayList<>();
 
-    if (entity.getAttachments() != null) {
+    if (includeAttachments && entity.getAttachments() != null) {
       attachmentsList =
           entity.getAttachments().stream()
-              .filter(att -> att.getDeletedAt() == null)
+              .filter(att -> att.getDeletedAt() == null && att.isCurrent())
               .map(
                   att ->
                       AttachmentDto.builder()
                           .id(att.getId())
-                          .attachmentType(
-                              att.getAttachmentType() != null
-                                  ? att.getAttachmentType().name()
-                                  : null)
+                          .requirementId(att.getRequirement().getId())
                           .originalFileName(att.getOriginalFileName())
-                          .storagePath(att.getStoragePath())
+                          .storagePath(null)
                           .contentType(att.getContentType())
                           .fileSize(att.getFileSize())
                           .createdAt(att.getCreatedAt())

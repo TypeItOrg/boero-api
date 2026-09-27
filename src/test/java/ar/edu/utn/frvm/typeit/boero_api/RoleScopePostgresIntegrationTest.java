@@ -541,7 +541,7 @@ class RoleScopePostgresIntegrationTest extends DatabaseMigrationTestSupport {
     authenticate(actor, institution);
     assertThat(
             applicationList
-                .execute(institution, null, hidden, false, PageRequest.of(0, 1))
+                .execute(institution, null, hidden, false, false, PageRequest.of(0, 1))
                 .getTotalElements())
         .isZero();
     assertThatThrownBy(() -> applicationDetail.execute(institution, application))
