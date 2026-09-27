@@ -26,7 +26,6 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionRoleMa
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ReplacePersonRolesUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.CourseEnrollment;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.CourseEnrollmentSource;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CourseEnrollmentService;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentAttachmentService;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.GetEnrollmentApplicationUseCase;
@@ -548,10 +547,10 @@ class RoleScopePostgresIntegrationTest extends DatabaseMigrationTestSupport {
         .isInstanceOf(ScopedResourceNotFoundException.class);
     var authentication = SecurityContextHolder.getContext().getAuthentication();
     assertThatThrownBy(() -> attachments.listAttachments(application, authentication))
-        .isInstanceOf(EnrollmentApplicationNotFoundException.class);
+        .isInstanceOf(AccessDeniedException.class);
     assertThatThrownBy(
             () -> attachments.getAttachmentContent(application, UUID.randomUUID(), authentication))
-        .isInstanceOf(EnrollmentApplicationNotFoundException.class);
+        .isInstanceOf(AccessDeniedException.class);
     assertThat(
             enrollments
                 .listInstitutional(institution, null, null, PageRequest.of(0, 1))

@@ -1,10 +1,15 @@
 package ar.edu.utn.frvm.typeit.boero_api;
 
+import ar.edu.utn.frvm.typeit.boero_api.support.AuthTestData;
 import ar.edu.utn.frvm.typeit.boero_api.support.IntegrationTest;
+import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
@@ -16,7 +21,7 @@ import org.testcontainers.utility.DockerImageName;
 @SpringBootTest
 @Testcontainers(disabledWithoutDocker = true)
 @IntegrationTest
-abstract class DatabaseMigrationTestSupport {
+public abstract class DatabaseMigrationTestSupport {
 
   static final PostgreSQLContainer<?> POSTGRES =
       new PostgreSQLContainer<>(DockerImageName.parse("postgres:18-alpine"));
@@ -31,6 +36,23 @@ abstract class DatabaseMigrationTestSupport {
   @BeforeEach
   void createFixtures() {
     fixtures = new MigrationFixtures(jdbcTemplate);
+  }
+
+  protected void authenticatePlatformAdministrator() {
+    final var id =
+        jdbcTemplate.queryForObject(
+            "SELECT platform_account_id FROM platform_accounts WHERE email = ?",
+            UUID.class,
+            "admin@plataforma.com");
+    SecurityContextHolder.getContext()
+        .setAuthentication(
+            new TestingAuthenticationToken(
+                AuthTestData.platformPrincipal(id), null, "ROLE_PLATFORM_ADMIN"));
+  }
+
+  @AfterEach
+  void clearTestAuthentication() {
+    SecurityContextHolder.clearContext();
   }
 
   @DynamicPropertySource

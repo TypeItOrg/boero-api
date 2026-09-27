@@ -8,7 +8,6 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
-import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.ApprovalMode;
@@ -19,6 +18,8 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceReposi
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriodOffering;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
@@ -123,8 +124,12 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
             .documentNumber("12345678")
             .email("ana@example.com")
             .build();
-    final var path = TrainingPath.create(institution, "Base", null);
-    final var plan = StudyPlan.create(institution, path, "Plan", LocalDate.of(2026, 3, 1), null);
+    final var plan = mock(StudyPlan.class);
+    given(plan.getId()).willReturn(UUID.randomUUID());
+    final var period = EnrollmentPeriod.builder().scopeConfigured(true).build();
+    final var offering = EnrollmentPeriodOffering.create(period, plan);
+    offering.selectLevels(List.of(), true);
+    period.getOfferings().add(offering);
     final var year =
         AcademicYear.create(
             institution,
@@ -137,6 +142,7 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
         .institution(institution)
         .applicantPerson(person)
         .studyPlan(plan)
+        .enrollmentPeriod(period)
         .academicYear(year)
         .status(EnrollmentApplicationStatus.DRAFT)
         .build();

@@ -155,8 +155,8 @@ final class MigrationFixtures {
     jdbcTemplate.update(
         """
         INSERT INTO course_classes (
-          course_class_id, institution_id, course_id, created_at, updated_at
-        ) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          course_class_id, institution_id, course_id, class_number, created_at, updated_at
+        ) VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         """,
         id,
         institutionId,

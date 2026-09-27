@@ -113,7 +113,16 @@ class EnrollmentPeriodControllerWebMvcTest {
             "academicYearId", ACADEMIC_YEAR_ID,
             "name", "Inscripción 2026",
             "startDate", "2026-11-01T08:00:00Z",
-            "endDate", "2026-12-01T20:00:00Z");
+            "endDate", "2026-12-01T20:00:00Z",
+            "offerings",
+                List.of(
+                    Map.of(
+                        "studyPlanId",
+                        UUID.randomUUID(),
+                        "academicLevelIds",
+                        List.of(),
+                        "includeUnassigned",
+                        true)));
 
     mockMvc
         .perform(
@@ -140,7 +149,16 @@ class EnrollmentPeriodControllerWebMvcTest {
             "academicYearId", ACADEMIC_YEAR_ID,
             "name", "Inscripción 2026",
             "startDate", "2026-11-01T08:00:00Z",
-            "endDate", "2026-12-01T20:00:00Z");
+            "endDate", "2026-12-01T20:00:00Z",
+            "offerings",
+                List.of(
+                    Map.of(
+                        "studyPlanId",
+                        UUID.randomUUID(),
+                        "academicLevelIds",
+                        List.of(),
+                        "includeUnassigned",
+                        true)));
 
     mockMvc
         .perform(

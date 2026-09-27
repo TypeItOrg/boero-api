@@ -19,7 +19,7 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 @NullMarked
 public class InstitutionalEmailVerificationMailService {
 
-  private static final String LOGO_URL = "https://i.ibb.co/RGwrB7B8/boero-logo.png";
+  private static final String LOGO_URL = "https://staging.typeit.com.ar/boero-logo.png";
   private static final String TEMPLATE_NAME = "mail/institutional-email-verification";
 
   private final MailSender mailSender;

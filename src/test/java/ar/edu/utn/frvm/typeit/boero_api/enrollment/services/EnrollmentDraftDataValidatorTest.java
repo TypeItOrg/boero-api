@@ -21,6 +21,8 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceInstru
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriodOffering;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.AcademicSpaceSelectionDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CareerSelectionDto;
@@ -73,6 +75,7 @@ class EnrollmentDraftDataValidatorTest {
         EnrollmentApplication.builder()
             .institution(institution)
             .studyPlan(studyPlan)
+            .enrollmentPeriod(EnrollmentPeriod.builder().scopeConfigured(true).build())
             .academicYear(academicYear)
             .build();
   }
@@ -182,6 +185,8 @@ class EnrollmentDraftDataValidatorTest {
             .academicSpaceSelection(new AcademicSpaceSelectionDto(List.of(spaceId)))
             .build();
 
+    configureOffering(newStudyPlan, spaceId);
+
     StudyPlan result = validator.validate(institutionId, application, data);
 
     assertThat(result).isEqualTo(newStudyPlan);
@@ -277,9 +282,22 @@ class EnrollmentDraftDataValidatorTest {
             .instrumentSelection(new InstrumentSelectionDto(Map.of(spaceId, instrumentId)))
             .build();
 
+    configureOffering(studyPlan, spaceId);
+
     StudyPlan result = validator.validate(institutionId, application, data);
 
     assertThat(result).isEqualTo(studyPlan);
+  }
+
+  private void configureOffering(final StudyPlan plan, final UUID spaceId) {
+    final var period = application.getEnrollmentPeriod();
+    final var offering = EnrollmentPeriodOffering.create(period, plan);
+    offering.selectLevels(List.of(), true);
+    period.getOfferings().add(offering);
+    final var space = mock(StudyPlanSpace.class);
+    when(space.getStudyPlan()).thenReturn(plan);
+    when(studyPlanSpaceRepository.findAllById(java.util.Set.of(spaceId)))
+        .thenReturn(List.of(space));
   }
 
   private void verifyNoValidationSideEffects() {

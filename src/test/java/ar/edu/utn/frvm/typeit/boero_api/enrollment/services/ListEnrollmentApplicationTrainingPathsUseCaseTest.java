@@ -3,6 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
@@ -18,7 +19,6 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -36,25 +36,20 @@ class ListEnrollmentApplicationTrainingPathsUseCaseTest {
   @Mock private TrainingPathRepository trainingPathRepository;
 
   @Test
-  @DisplayName("Should list active training paths for the applicant's institution")
-  void listsActiveTrainingPathsForInstitution() {
+  @DisplayName("Should keep a course-based application in its selected training path")
+  void listsSelectedTrainingPathForCourseBasedApplication() {
     final var application = application();
     final var principal = principal(application);
-    final var trainingPath = TrainingPath.create(application.getInstitution(), "Guitarra", null);
     final var useCase = useCase();
     givenApplicant(principal, application.getApplicantPerson());
     given(enrollmentApplicationRepository.findById(application.getId()))
         .willReturn(Optional.of(application));
-    given(
-            trainingPathRepository
-                .findByInstitution_IdAndActiveTrueAndDeletedAtIsNullOrderByNameAsc(
-                    principal.institutionId()))
-        .willReturn(List.of(trainingPath));
 
     final var response = useCase.execute(principal, application.getId());
 
+    verifyNoInteractions(trainingPathRepository);
     assertThat(response).hasSize(1);
-    assertThat(response.getFirst().name()).isEqualTo("Guitarra");
+    assertThat(response.getFirst().name()).isEqualTo("Base");
     assertThat(response.getFirst().institutionId()).isEqualTo(application.getInstitution().getId());
   }
 

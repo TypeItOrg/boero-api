@@ -10,6 +10,9 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssig
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -54,7 +57,7 @@ class ListAvailableEnrollmentTrainingPathsUseCaseTest {
     final var pageable = PageRequest.of(0, 20);
     final var useCase =
         new ListAvailableEnrollmentTrainingPathsUseCase(
-            java.time.Clock.systemUTC(),
+            Clock.fixed(Instant.parse("2026-09-26T12:00:00Z"), ZoneOffset.UTC),
             new ApplicantEnrollmentGuard(personRepository, personRoleAssignmentRepository),
             trainingPathRepository);
 
@@ -66,7 +69,9 @@ class ListAvailableEnrollmentTrainingPathsUseCaseTest {
             personRepository.findByIdAndInstitution_Id(
                 principal.personId(), principal.institutionId()))
         .willReturn(Optional.of(person));
-    given(trainingPathRepository.findAvailableForEnrollment(principal.institutionId(), pageable))
+    given(
+            trainingPathRepository.findOfferedForEnrollment(
+                principal.institutionId(), Instant.parse("2026-09-26T12:00:00Z"), null, pageable))
         .willReturn(new PageImpl<>(java.util.List.of(trainingPath), pageable, 1));
 
     final var response = useCase.execute(principal, null, pageable);

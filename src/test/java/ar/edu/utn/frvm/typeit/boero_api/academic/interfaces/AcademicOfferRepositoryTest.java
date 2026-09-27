@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.interfaces;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicLevel;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace;
@@ -11,6 +12,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.ApprovalMode;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequirementType;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ScopedAuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData;
 import ar.edu.utn.frvm.typeit.boero_api.support.JpaAuditingTestConfig;
@@ -23,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DataJpaTest
 @Import(JpaAuditingTestConfig.class)
@@ -33,6 +36,9 @@ class AcademicOfferRepositoryTest {
   @Autowired private EntityManager entityManager;
   @Autowired private StudyPlanRepository studyPlanRepository;
   @Autowired private StudyPlanSpaceRepository studyPlanSpaceRepository;
+
+  @MockitoBean(name = "scopedAuthorization")
+  private ScopedAuthorizationService scopedAuthorization;
 
   private Institution institution;
 
@@ -50,6 +56,8 @@ class AcademicOfferRepositoryTest {
     createPlan("CAV Avanzado", "Trayecto inactivo", TODAY.minusYears(1), null, false, true);
     entityManager.flush();
     entityManager.clear();
+
+    when(scopedAuthorization.unrestricted("ACADEMIC_OFFER_READ")).thenReturn(true);
 
     final var result =
         studyPlanRepository.findAvailableOffers(institution.getId(), TODAY, PageRequest.of(0, 20));

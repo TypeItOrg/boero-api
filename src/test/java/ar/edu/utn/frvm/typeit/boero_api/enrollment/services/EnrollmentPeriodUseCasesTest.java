@@ -9,6 +9,8 @@ import static org.mockito.Mockito.when;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicYearNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.PermissionAccess;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ScopedAuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentPeriodNotFoundException;
@@ -40,6 +42,10 @@ class EnrollmentPeriodUseCasesTest {
   @Mock private InstitutionRepository institutionRepository;
   @Mock private AcademicYearRepository academicYearRepository;
 
+  @Mock private ScopedAuthorizationService authorization;
+  @Mock private EnrollmentPeriodScopeService scopeService;
+  private EnrollmentPeriodAccessService periodAccess;
+
   private CreateEnrollmentPeriodUseCase createUseCase;
   private GetEnrollmentPeriodUseCase getUseCase;
   private UpdateEnrollmentPeriodUseCase updateUseCase;
@@ -55,35 +61,34 @@ class EnrollmentPeriodUseCasesTest {
 
   @BeforeEach
   void setUp() {
+    periodAccess = new EnrollmentPeriodAccessService(authorization);
     createUseCase =
         new CreateEnrollmentPeriodUseCase(
-            org.mockito.Mockito.mock(EnrollmentPeriodAccessService.class),
+            periodAccess,
             periodRepository,
             org.mockito.Mockito.mock(EnrollmentInstitutionLock.class),
-            org.mockito.Mockito.mock(EnrollmentPeriodScopeService.class),
+            scopeService,
             institutionRepository,
             academicYearRepository);
-    getUseCase =
-        new GetEnrollmentPeriodUseCase(
-            org.mockito.Mockito.mock(EnrollmentPeriodAccessService.class), periodRepository);
+    getUseCase = new GetEnrollmentPeriodUseCase(periodAccess, periodRepository);
     updateUseCase =
         new UpdateEnrollmentPeriodUseCase(
-            org.mockito.Mockito.mock(EnrollmentPeriodAccessService.class),
+            periodAccess,
             periodRepository,
             org.mockito.Mockito.mock(EnrollmentInstitutionLock.class),
-            org.mockito.Mockito.mock(EnrollmentPeriodScopeService.class));
+            scopeService);
     updateStatusUseCase =
         new UpdateEnrollmentPeriodStatusUseCase(
-            org.mockito.Mockito.mock(EnrollmentPeriodAccessService.class),
+            periodAccess,
             periodRepository,
             org.mockito.Mockito.mock(EnrollmentInstitutionLock.class),
-            org.mockito.Mockito.mock(EnrollmentPeriodScopeService.class));
+            scopeService);
     deleteUseCase =
         new DeleteEnrollmentPeriodUseCase(
-            org.mockito.Mockito.mock(EnrollmentPeriodAccessService.class),
+            periodAccess,
             periodRepository,
             org.mockito.Mockito.mock(EnrollmentInstitutionLock.class),
-            org.mockito.Mockito.mock(EnrollmentPeriodScopeService.class),
+            scopeService,
             Clock.systemUTC());
 
     institutionId = UUID.randomUUID();
@@ -108,6 +113,7 @@ class EnrollmentPeriodUseCasesTest {
   @Test
   @DisplayName("Create: Debería crear un período exitosamente")
   void create_success() {
+    when(authorization.managementAccess(any())).thenReturn(PermissionAccess.institution());
     var request =
         new CreateEnrollmentPeriodRequest(
             academicYearId,
@@ -117,7 +123,7 @@ class EnrollmentPeriodUseCasesTest {
 
     when(institutionRepository.findById(institutionId)).thenReturn(Optional.of(institution));
     when(academicYearRepository.findById(academicYearId)).thenReturn(Optional.of(academicYear));
-    when(periodRepository.save(any())).thenReturn(period);
+    when(scopeService.save(any())).thenReturn(period);
 
     var response = createUseCase.execute(institutionId, request);
 
@@ -176,6 +182,7 @@ class EnrollmentPeriodUseCasesTest {
   @Test
   @DisplayName("Get: Debería devolver el detalle del período")
   void get_success() {
+    when(authorization.managementAccess(any())).thenReturn(PermissionAccess.institution());
     when(periodRepository.findByIdAndInstitutionIdAndDeletedAtIsNull(periodId, institutionId))
         .thenReturn(Optional.of(period));
 
@@ -198,6 +205,7 @@ class EnrollmentPeriodUseCasesTest {
   @Test
   @DisplayName("Update: Debería actualizar datos correctamente")
   void update_success() {
+    when(authorization.managementAccess(any())).thenReturn(PermissionAccess.institution());
     var request =
         new UpdateEnrollmentPeriodRequest(
             "Inscripción 2026 Editada",
@@ -206,17 +214,19 @@ class EnrollmentPeriodUseCasesTest {
 
     when(periodRepository.findByIdAndInstitutionIdAndDeletedAtIsNull(periodId, institutionId))
         .thenReturn(Optional.of(period));
-    when(periodRepository.save(any())).thenReturn(period);
+    when(scopeService.save(any())).thenReturn(period);
 
     var response = updateUseCase.execute(institutionId, periodId, request);
 
     assertThat(response).isNotNull();
-    verify(periodRepository).save(period);
+    verify(scopeService).save(period);
   }
 
   @Test
   @DisplayName("UpdateStatus: Debería cambiar el estado correctamente")
   void updateStatus_success() {
+    when(authorization.managementAccess(any())).thenReturn(PermissionAccess.institution());
+    period.markScopeConfigured();
     var request = new EnrollmentPeriodStatusRequest(EnrollmentPeriodStatus.OPEN);
 
     when(periodRepository.findByIdAndInstitutionIdAndDeletedAtIsNull(periodId, institutionId))
@@ -225,18 +235,19 @@ class EnrollmentPeriodUseCasesTest {
     updateStatusUseCase.execute(institutionId, periodId, request);
 
     assertThat(period.getStatus()).isEqualTo(EnrollmentPeriodStatus.OPEN);
-    verify(periodRepository).save(period);
+    verify(scopeService).save(period);
   }
 
   @Test
   @DisplayName("Delete: Debería marcar como eliminado (soft delete)")
   void delete_success() {
+    when(authorization.managementAccess(any())).thenReturn(PermissionAccess.institution());
     when(periodRepository.findByIdAndInstitutionIdAndDeletedAtIsNull(periodId, institutionId))
         .thenReturn(Optional.of(period));
 
     deleteUseCase.execute(institutionId, periodId);
 
     assertThat(period.getDeletedAt()).isNotNull();
-    verify(periodRepository).save(period);
+    verify(scopeService).save(period);
   }
 }

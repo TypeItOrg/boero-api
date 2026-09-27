@@ -18,6 +18,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AssignPersonSyste
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionRoleProvisioner;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.*;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.*;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EducationLevel;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentPeriodClosedException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.*;
@@ -30,6 +31,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
 import org.hibernate.SessionFactory;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -61,6 +63,11 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
   @Autowired AssignPersonSystemRoleUseCase assignRole;
   @Autowired TeacherCourseService teaching;
   @Autowired UpdateAcademicYearStatusUseCase closeYear;
+
+  @BeforeEach
+  void authenticateManagementOperations() {
+    authenticatePlatformAdministrator();
+  }
 
   @Test
   void differentApplicantsCanRequestSameCourseAndCancellationReleasesRequest() {
@@ -444,7 +451,12 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
         new UpdateEnrollmentDraftRequest(
             EnrollmentDraftData.builder()
                 .academicBackground(
-                    AcademicBackgroundDto.builder().secondarySchool("Colegio").build())
+                    AcademicBackgroundDto.builder()
+                        .currentlyStudying(false)
+                        .educationLevel(EducationLevel.SECONDARY)
+                        .schoolOrigin("Colegio")
+                        .secondaryCompleted(true)
+                        .build())
                 .preference(
                     PreferenceDto.builder()
                         .preferredShift("MORNING")
@@ -518,8 +530,13 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
                       executor.submit(
                           () -> {
                             start.await();
-                            return approve.execute(
-                                f.institutionId(), request.applicationId(), null);
+                            authenticatePlatformAdministrator();
+                            try {
+                              return approve.execute(
+                                  f.institutionId(), request.applicationId(), null);
+                            } finally {
+                              SecurityContextHolder.clearContext();
+                            }
                           }))
               .toList();
       start.countDown();
@@ -623,10 +640,13 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
                       executor.submit(
                           () -> {
                             start.await();
+                            authenticatePlatformAdministrator();
                             try {
                               return enroll(f, request);
                             } catch (EnrollmentValidationException expected) {
                               return null;
+                            } finally {
+                              SecurityContextHolder.clearContext();
                             }
                           }))
               .toList();
@@ -698,7 +718,12 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
         new UpdateEnrollmentDraftRequest(
             EnrollmentDraftData.builder()
                 .academicBackground(
-                    AcademicBackgroundDto.builder().secondarySchool("Colegio").build())
+                    AcademicBackgroundDto.builder()
+                        .currentlyStudying(false)
+                        .educationLevel(EducationLevel.SECONDARY)
+                        .schoolOrigin("Colegio")
+                        .secondaryCompleted(true)
+                        .build())
                 .preference(
                     PreferenceDto.builder()
                         .preferredShift("MORNING")
@@ -746,6 +771,7 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
           final var path = persist(TrainingPath.create(institution, "Trayecto", null));
           final var plan =
               persist(StudyPlan.create(institution, path, "Plan", LocalDate.of(2026, 1, 1), null));
+          plan.activate();
           final var space =
               persist(
                   AcademicSpace.create(
@@ -801,6 +827,12 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
                       .endDate(Instant.now().plusSeconds(3600))
                       .status(EnrollmentPeriodStatus.OPEN)
                       .build());
+          em.flush();
+          period.markScopeConfigured();
+          final var offering = EnrollmentPeriodOffering.create(period, plan);
+          offering.selectLevels(List.of(), true);
+          period.getOfferings().add(offering);
+          persist(offering);
           return new Fixture(
               institution.getId(),
               path.getId(),
