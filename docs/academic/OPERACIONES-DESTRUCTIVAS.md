@@ -1,8 +1,8 @@
-# Ciclo de vida y operaciones destructivas académicas
+# CICLO DE VIDA Y OPERACIONES DESTRUCTIVAS ACADÉMICAS
 
 ## Política general
 
-- `academic_years`, `training_paths`, `study_plans`, `academic_spaces` e `instruments`
+- `academic_years`, `training_paths`, `study_plans`, `academic_spaces`, `instruments`, `shifts` y `courses`
   usan eliminación lógica mediante `deleted_at`.
 - El estado operativo no representa eliminación. Restaurar conserva el estado previo.
 - Las lecturas, búsquedas y catálogos excluyen eliminados por defecto. Los listados de
@@ -20,10 +20,10 @@
 | Plan de estudio | `DRAFT` | La estructura curricular se conserva |
 | Espacio académico | Inactivo | Las referencias históricas se conservan |
 | Instrumento | Inactivo | Las referencias históricas se conservan |
+| Turno | Inactivo | Sin asignaciones activas |
+| Curso | Inactivo (`INACTIVE`) | No puede estar `ACTIVE` ni `CLOSED`, ni poseer cursadas asociadas (activas o históricas) |
 
-Al restaurar un plan, su trayecto debe seguir vigente y activo. Los conflictos de
-unicidad de una restauración se informan como conflicto funcional, sin sobrescribir el
-recurso vigente.
+Al restaurar un plan, su trayecto debe seguir vigente y activo. Al restaurar un curso, su ciclo lectivo y su plan de estudio deben estar activos (`ACTIVE`), y su condición instrumental debe coincidir con la del espacio académico. Los conflictos de unicidad de una restauración (por ejemplo, si se recreó la oferta mientras el curso original estaba eliminado) se informan como conflicto funcional sin sobrescribir el recurso vigente, gracias a los índices únicos parciales (`WHERE deleted_at IS NULL`).
 
 ## Autorización e integridad
 

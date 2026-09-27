@@ -1,4 +1,4 @@
-# Documentación e inscripción provisoria
+# REQUISITOS DOCUMENTALES Y ESTADOS DE ADMISIÓN
 
 Cada trayecto configura nombre, instrucciones, formatos (PDF/JPEG/PNG), orden y
 exigencia de sus documentos. La pantalla está en el detalle del trayecto, sección

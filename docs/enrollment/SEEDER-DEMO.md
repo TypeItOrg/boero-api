@@ -1,4 +1,4 @@
-# Seeder de inscripciones: desarrollo y staging
+# SEEDER DE INSCRIPCIONES: DESARROLLO Y STAGING
 
 Requiere Bash, una base con las migraciones aplicadas y una institución activa con
 sus roles de sistema inicializados por la API. No crea instituciones ni forma
@@ -106,7 +106,7 @@ CAVI, CAVB Instrumento/Canto, CAVA Instrumento/Canto y Profesorado de Música.
 Incluye seis planes, veinte niveles y cien ubicaciones curriculares; el primer
 nivel de cada propuesta cuenta con cursos para realizar la prueba.
 
-Consultar [fuentes, materias y supuestos](enrollment-academic-sources.md). Los
+Consultar [fuentes, materias y supuestos](FUENTES-OFERTA-ACADEMICA.md). Los
 horarios, cupos, docentes y fechas de inscripción son operativos para pruebas.
 Las fuentes consultadas no incluyen el régimen de correlatividades.
 

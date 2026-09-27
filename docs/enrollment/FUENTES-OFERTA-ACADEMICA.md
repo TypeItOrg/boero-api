@@ -1,4 +1,4 @@
-# Oferta académica utilizada por el seeder de inscripciones
+# OFERTA ACADÉMICA UTILIZADA POR EL SEEDER DE INSCRIPCIONES
 
 Consulta: 22 de septiembre de 2026. La estructura se transcribió de las seis
 planillas de inscripción **2025** compartidas por el equipo y se contrastó con el

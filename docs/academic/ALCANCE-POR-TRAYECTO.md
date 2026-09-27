@@ -1,4 +1,4 @@
-# Roles con alcance por trayecto
+# ROLES CON ALCANCE POR TRAYECTO
 
 Cada asignación conserva un rol dentro de una institución y declara `accessScope`:
 
@@ -34,5 +34,3 @@ Para futuras migraciones durante desarrollo, detener el consumidor de Flyway ant
 - `fastTest`: autorización, delegación, contratos HTTP de roles, revocación y capacidades de períodos.
 - `RoleScopePostgresIntegrationTest`: paginación y búsquedas, separación por permiso, restricciones PostgreSQL, opciones por operación, cambios de alcance con caché y sesiones, delegación concurrente y acceso ajeno a inscripciones, adjuntos y cursadas.
 - UI: validación de asignaciones, edición de roles, permisos por trayecto, opciones, colecciones y listas de espera; compilación de producción y lint de archivos modificados.
-
-La comprobación ampliada en navegador del 21/09/2026 cubrió responsive, guardado y reversión de una asignación temporal autorizada, sesión limitada, acceso directo fuera de alcance, filtros, permisos institucionales inactivos y revocación de sesión. Ver [resultados y límites de la prueba](training-path-browser-qa-2026-09-21.md).

@@ -1,4 +1,4 @@
-# Documentación de Autenticación y Autorización
+# ÍNDICE DE AUTENTICACIÓN Y AUTORIZACIÓN
 
 Esta carpeta contiene la documentación de los subsistemas de autenticación y autorización del proyecto boero-api. Está pensada para que el equipo entienda cómo funciona cada pieza, por qué se tomaron ciertas decisiones y qué casos particulares existen.
 
@@ -24,5 +24,6 @@ Esta carpeta contiene la documentación de los subsistemas de autenticación y a
 
 ## Documentación relacionada
 
-- [`docs/AUTH-INSTITUTIONAL-FOUNDATION.md`](../AUTH-INSTITUTIONAL-FOUNDATION.md) — documentación técnica de la base de autenticación institucional (más detallada, orientada a código)
+- [`docs/AUTENTICACION.md`](../AUTENTICACION.md) — visión general del subsistema de autenticación y autorización
+- [`docs/ARQUITECTURA.md`](../ARQUITECTURA.md) — arquitectura general del sistema
 - [`AGENTS.md`](../../AGENTS.md) — convenciones del proyecto para desarrollo con asistentes de IA

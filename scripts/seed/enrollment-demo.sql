@@ -1,5 +1,5 @@
 -- Enrollment dataset loader. Configuration and fixtures are supplied by run.sh.
--- See docs/enrollment-academic-sources.md for sources and explicit operational assumptions.
+-- See docs/enrollment/FUENTES-OFERTA-ACADEMICA.md for sources and explicit operational assumptions.
 -- Atomic, explicit execution only. No Flyway migration and no startup hook.
 -- Run with the shared IDs and catalog scripts through make seed-demo.
 DO $$

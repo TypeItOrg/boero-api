@@ -1,7 +1,7 @@
-# Seguridad de documentación de inscripción
+# SEGURIDAD DE DOCUMENTACIÓN DE INSCRIPCIÓN
 
 El circuito configurable, la admisión provisoria y su verificación están en
-[Documentación e inscripción provisoria](ENROLLMENT-DOCUMENTS.md).
+[Requisitos documentales y estados de admisión](DOCUMENTACION-Y-ESTADOS.md).
 
 ## Almacenamiento compartido
 

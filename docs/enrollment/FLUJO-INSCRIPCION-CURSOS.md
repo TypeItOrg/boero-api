@@ -1,4 +1,4 @@
-# Inscripción por cursos y cursadas
+# FLUJO DE INSCRIPCIÓN POR CURSOS Y CURSADAS
 
 Las solicitudes nuevas se inician por trayecto y ciclo lectivo. El postulante o estudiante selecciona cursos concretos, incluidos cursos sin instrumento y sin nivel. Puede elegir varios cursos del mismo espacio académico. El instrumento pertenece al curso ofrecido: un curso instrumental requiere instrumento; uno no instrumental no lo admite.
 
@@ -12,7 +12,9 @@ La instrumentalidad del espacio puede modificarse cuando todos sus cursos están
 | --- | --- | --- |
 | Principal | DRAFT → SUBMITTED | Titular; datos requeridos, cursos del trayecto/ciclo/institución, período abierto y ausencia de solicitudes o cursadas duplicadas propias. |
 | Principal | DRAFT → CANCELLED | Titular; cancela también las hijas pendientes. |
-| Principal | SUBMITTED → APPROVED | Permiso de aprobación; validación documental. No crea cursadas. Evalúa cada hija y envía a espera las que no tienen cupo. |
+| Principal | SUBMITTED → PROVISIONALLY_APPROVED | Permiso de aprobación; requisitos documentales obligatorios iniciales aceptados, con documentación pendiente de entrega posterior. |
+| Principal | PROVISIONALLY_APPROVED → APPROVED | Permiso de aprobación; confirmación definitiva tras aceptar todos los requisitos obligatorios pendientes. |
+| Principal | SUBMITTED → APPROVED | Permiso de aprobación; validación documental completa. No crea cursadas directamente. Evalúa cada hija y envía a espera las que no tienen cupo. |
 | Principal | SUBMITTED → REJECTED | Permiso de rechazo; requiere motivo y resuelve las hijas pendientes. |
 | Hija | PENDING → WAITLISTED | Al aprobar la principal sin cupos o al agotarlos por otra incorporación; asigna número único por curso. |
 | Hija | PENDING/WAITLISTED → ENROLLED | Permiso de inscripción; principal aprobada, curso activo, clase del curso, días de esa clase, períodos precalculados correspondientes para individuales, cupos y ausencia de superposición/duplicación. |
@@ -21,7 +23,7 @@ La instrumentalidad del espacio puede modificarse cuando todos sus cursos están
 | Cursada | Creación → ENROLLED / IN_PROGRESS | Aceptación efectiva de la hija o alta manual autorizada; crea estudiante cuando corresponde, asignaciones y auditoría. |
 | Cursada | ENROLLED → WITHDRAWN/ADMINISTRATIVELY_WITHDRAWN | Permiso de baja, motivo y versión vigente; libera horarios sin incorporar a nadie automáticamente. |
 | Cursada | ENROLLED → COMPLETED | Cierre del curso o del ciclo; libera horarios. IN_PROGRESS pasa a PENDING_RESULT; conserva resultados ya registrados. |
-| Estado académico | IN_PROGRESS, PENDING_RESULT, REGULARIZED, PROMOTED, PASSED, FAILED | Actualización administrativa con motivo y versión. Las bajas no admiten cambios; una cursada finalizada no vuelve a IN_PROGRESS. |
+| Estado académico | IN_PROGRESS, PENDING_RESULT, REGULARIZED, PROMOTED, PASSED, FAILED, NOT_APPLICABLE | Actualización administrativa con motivo y versión. Las bajas no admiten cambios; una cursada finalizada no vuelve a IN_PROGRESS. |
 
 Los estados terminales de las hijas no pueden reabrirse. Repetir la aceptación de una hija ya incorporada devuelve su misma cursada. El número de espera se conserva como dato histórico. Liberar un cupo mantiene la hija en WAITLISTED hasta una confirmación explícita con clase y horarios.
 

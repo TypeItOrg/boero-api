@@ -24,18 +24,26 @@ _Centraliza las reglas de negocio, protege el acceso y mantiene aislada la infor
 
 </div>
 
+## Documentación
+
+- [Arquitectura del Sistema](docs/ARQUITECTURA.md)
+- [Desarrollo Local y Entornos](docs/DESARROLLO-LOCAL.md)
+- [Integración Continua y Calidad](docs/INTEGRACION-CONTINUA.md)
+- [Registro y Trazabilidad (Logs)](docs/LOGS.md)
+- [Autenticación y Autorización](docs/AUTENTICACION.md)
+
 ## Análisis estático
 
 `make static-analysis` verifica producción y tests con NullAway/JSpecify estricto
 y Eclipse ECJ, sin ejecutar suites. Requiere JDK 21 y 25; el runtime sigue en Java 21.
-Ver [configuración, cobertura e informes](docs/STATIC-ANALYSIS.md).
+Ver [configuración, cobertura e informes](docs/INTEGRACION-CONTINUA.md).
 
 ## Almacenamiento de archivos
 
 La guía de preparación del bucket, permisos y activación está en
-[Almacenamiento S3](docs/S3.md). La autorización documental, auditoría y limpieza
-persistente se describen en [Seguridad documental](docs/DOCUMENT-SECURITY.md). Los requisitos por trayecto,
-entregas y admisión provisoria se describen en [Documentación de inscripción](docs/ENROLLMENT-DOCUMENTS.md).
+[Almacenamiento S3 y Local](docs/storage/ALMACENAMIENTO-S3.md). La autorización documental, auditoría y limpieza
+persistente se describen en [Seguridad documental](docs/enrollment/SEGURIDAD-DOCUMENTAL.md). Los requisitos por trayecto,
+entregas y admisión provisoria se describen en [Documentación de inscripción](docs/enrollment/DOCUMENTACION-Y-ESTADOS.md).
 
 Para descartar adjuntos del esquema anterior de desarrollo antes de migrar: `make discard-legacy-documents` y luego `make dev`. El comando preserva las entregas del modelo nuevo.
 

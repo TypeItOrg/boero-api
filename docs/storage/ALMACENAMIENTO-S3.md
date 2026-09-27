@@ -1,7 +1,7 @@
-# Almacenamiento general en Amazon S3
+# ALMACENAMIENTO GENERAL EN AMAZON S3 Y LOCAL
 
 La seguridad documental y la operación de auditoría/limpieza se describen en
-[Seguridad documental](DOCUMENT-SECURITY.md).
+[Seguridad documental](../enrollment/SEGURIDAD-DOCUMENTAL.md).
 
 ## Arquitectura actual
 
@@ -158,7 +158,7 @@ incluye compatibilidad ni migración de adjuntos anteriores. Para comenzar con S
 usar un entorno de prueba limpio y configurar el bucket y las credenciales.
 Los registros de nuevas cargas y eliminaciones conservan su destino: el cambio no
 puede redirigir trabajos existentes a otro proveedor. Ver
-[el control operativo de destinos](DOCUMENT-SECURITY.md#destinos-y-backups).
+[el control operativo de destinos](../enrollment/SEGURIDAD-DOCUMENTAL.md#destinos-y-backups).
 
 ## Referencias
 
