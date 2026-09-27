@@ -24,6 +24,12 @@ _Centraliza las reglas de negocio, protege el acceso y mantiene aislada la infor
 
 </div>
 
+## Análisis estático
+
+`make static-analysis` verifica producción y tests con NullAway/JSpecify estricto
+y Eclipse ECJ, sin ejecutar suites. Requiere JDK 21 y 25; el runtime sigue en Java 21.
+Ver [configuración, cobertura e informes](docs/STATIC-ANALYSIS.md).
+
 ## Almacenamiento de archivos
 
 La guía de preparación del bucket, permisos y activación está en
