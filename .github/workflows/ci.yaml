@@ -17,6 +17,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  static-analysis:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up analysis toolchains
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: |
+            21
+            25
+          cache: gradle
+
+      - name: Check nullness and compiler warnings
+        run: ./gradlew --no-daemon --continue staticAnalysis
+
+      - name: Upload compiler diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-analysis-reports
+          path: build/reports/static-analysis/
+          if-no-files-found: ignore
+
   test:
     runs-on: ubuntu-latest
     permissions:
