@@ -1,5 +1,5 @@
-CREATE TEMP TABLE seed_programs (code text PRIMARY KEY, name text NOT NULL, levels integer NOT NULL, source_url text NOT NULL) ON COMMIT DROP;
-INSERT INTO seed_programs VALUES
+CREATE TEMP TABLE seed_programs (code text PRIMARY KEY, name text NOT NULL, levels integer NOT NULL, source_url text NOT NULL, individual_minutes integer NOT NULL DEFAULT 30 CHECK (individual_minutes > 0)) ON COMMIT DROP;
+INSERT INTO seed_programs (code, name, levels, source_url) VALUES
     ('cavi', 'Ciclo Artístico Vocacional Infantil (CAVI)', 4, 'https://drive.google.com/file/d/1fpi_Iw6xdhQiLUTlX3ve3vFpHj7ck2SV/view'),
     ('cavb-instrumento', 'Ciclo Artístico Vocacional Básico en Instrumento (CAVB)', 3, 'https://drive.google.com/file/d/1HiTXgLejYh1w2qKY6mQiO0ydnVm9hU3a/view'),
     ('cavb-canto', 'Ciclo Artístico Vocacional Básico en Canto (CAVB)', 3, 'https://drive.google.com/file/d/1T9RU6Jx6SzgpPSzdIUdr9SMJID8tAAOw/view'),
@@ -115,3 +115,10 @@ INSERT INTO seed_curriculum VALUES
     ('isfd', 4, 7, 'Producción Artística', 'WORKSHOP', 'GRUPAL', 'none'),
     ('isfd', 4, 8, 'Didáctica de la Música en el Nivel Secundario', 'SUBJECT', 'GRUPAL', 'none'),
     ('isfd', 4, 9, 'UDI II - Armonización y Arreglos del Repertorio Escolar', 'WORKSHOP', 'GRUPAL', 'none');
+
+UPDATE seed_programs SET individual_minutes = 40 WHERE code = 'cavi';
+CREATE TEMP TABLE seed_levels (code text REFERENCES seed_programs, level integer, description text, PRIMARY KEY (code, level)) ON COMMIT DROP;
+INSERT INTO seed_levels
+SELECT code, level, CASE WHEN code = 'cavi' THEN (level + 7) || ' años; ' || (level + 2) || '° grado escolar'
+                        WHEN code = 'isfd' THEN level || '° año' END
+FROM seed_programs CROSS JOIN LATERAL generate_series(1, levels) AS level;

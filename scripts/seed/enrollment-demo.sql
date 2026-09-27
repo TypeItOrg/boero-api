@@ -1,13 +1,14 @@
--- Local enrollment fixture based on the institution website and 2025 registration forms.
+-- Enrollment dataset loader. Configuration and fixtures are supplied by run.sh.
 -- See docs/enrollment-academic-sources.md for sources and explicit operational assumptions.
 -- Atomic, explicit execution only. No Flyway migration and no startup hook.
 -- Run with the shared IDs and catalog scripts through make seed-demo.
 DO $$
 BEGIN
-    IF EXISTS (SELECT 1 FROM people WHERE person_id = md5('boero:enrollment-demo:v1:person:1')::uuid)
+    IF EXISTS (SELECT 1 FROM people WHERE institution_id = (SELECT institution_id FROM seed_context) AND person_id = md5('boero:enrollment-demo:v1:person:1')::uuid)
        OR EXISTS (SELECT 1 FROM training_paths p JOIN seed_programs s
-                  ON p.training_path_id = md5('boero:enrollment:official-2025:path:' || s.code)::uuid)
-       OR EXISTS (SELECT 1 FROM study_plans WHERE study_plan_id IN (
+                  ON p.training_path_id = md5('boero:enrollment:official-2025:path:' || s.code)::uuid
+                  WHERE p.institution_id = (SELECT institution_id FROM seed_context))
+       OR EXISTS (SELECT 1 FROM study_plans WHERE institution_id = (SELECT institution_id FROM seed_context) AND study_plan_id IN (
                   md5('boero:enrollment-demo:v1:plan:1')::uuid, md5('boero:enrollment-demo:v1:plan:2')::uuid)) THEN
         RAISE EXCEPTION 'Hay IDs del seed anterior. Respaldar y ejecutar make seed-demo-repair-ids antes de cargar.';
     END IF;
@@ -15,29 +16,17 @@ END $$;
 
 DO $$
 DECLARE
-    tenant uuid;
+    tenant uuid := (SELECT institution_id FROM seed_context);
     cycle uuid;
-    cycle_year integer := extract(year FROM CURRENT_DATE);
+    cycle_year integer := (SELECT academic_year FROM seed_context);
     role_key uuid;
     person_key uuid;
     member record;
-    -- Public development-only password: BoeroDemo2026!
-    demo_password text := '$2b$12$xwT.Abo0Q4vFReOL.rFEvODBYAegel/G1HE96wmS1S4Rm7VVpAyla';
+    settings record;
 BEGIN
-    -- Stable ID from the existing development seed; the institution slug is editable.
-    SELECT institution_id INTO STRICT tenant FROM institutions
-    WHERE institution_id = '019e18e4-d919-76d8-9848-7f1b14e64452' AND active;
+    SELECT * INTO STRICT settings FROM seed_settings;
 
-    FOR member IN SELECT * FROM (VALUES
-        (1, '99000001', 'Lucía', 'Ferreyra', DATE '2022-03-10', 'APPLICANT'),
-        (2, '99000002', 'Mateo', 'Soria', DATE '1988-11-22', 'APPLICANT'),
-        (3, '99000003', 'Camila', 'Roldán', DATE '2003-07-18', 'STUDENT'),
-        (4, '99000004', 'Julián', 'Pereyra', DATE '2001-02-09', 'STUDENT'),
-        (5, '99000005', 'Valeria', 'Molina', DATE '1986-08-14', 'TEACHER'),
-        (6, '99000006', 'Gabriel', 'Acosta', DATE '1979-12-03', 'TEACHER'),
-        (7, '99000007', 'Mariana', 'Suárez', DATE '1982-06-27', 'INSTITUTIONAL_AUTHORITY'),
-        (8, '99000008', 'Nicolás', 'Herrera', DATE '1990-04-05', 'INSTITUTIONAL_AUTHORITY')
-    ) AS members(number, document, first_name, last_name, birth_date, role_code)
+    FOR member IN SELECT * FROM seed_members ORDER BY number
     LOOP
         SELECT role_id INTO STRICT role_key FROM roles
         WHERE institution_id = tenant AND code = member.role_code AND is_system;
@@ -46,13 +35,13 @@ BEGIN
         INSERT INTO people (person_id, institution_id, document_number, first_name, last_name,
                             email, birth_date, deleted, created_at, updated_at)
         VALUES (person_key, tenant, member.document, member.first_name, member.last_name,
-                lower(translate(member.first_name || '.' || member.last_name, 'áéíóúñÁÉÍÓÚÑ', 'aeiounAEIOUN')) || '@example.test', member.birth_date, false, now(), now())
-        ON CONFLICT (person_id) DO UPDATE
-        SET birth_date = EXCLUDED.birth_date, updated_at = now();
+                lower(translate(member.first_name || '.' || member.last_name, 'áéíóúñÁÉÍÓÚÑ', 'aeiounAEIOUN')) || '@' || settings.email_domain,
+                ((SELECT reference_date FROM seed_context) - make_interval(years => member.age))::date, false, now(), now())
+        ON CONFLICT (person_id) DO NOTHING;
 
         INSERT INTO users (user_id, institution_id, person_id, password, enabled,
                            email_verification_status, email_verified_at, created_at, updated_at)
-        VALUES (pg_temp.demo_id('user:' || member.number), tenant, person_key, demo_password,
+        VALUES (pg_temp.demo_id('user:' || member.number), tenant, person_key, settings.password_hash,
                 true, 'VERIFIED', now(), now(), now()) ON CONFLICT (user_id) DO NOTHING;
 
         INSERT INTO person_role_assignments (person_role_assignment_id, institution_id, person_id,
@@ -64,7 +53,7 @@ BEGIN
             INSERT INTO students (student_id, institution_id, person_id, enrollment_date,
                                   status, file_number, created_at, updated_at)
             VALUES (pg_temp.demo_id('student:' || member.number), tenant, person_key,
-                    CURRENT_DATE, 'ACTIVE', '2026-' || lpad((member.number - 2)::text, 4, '0'), now(), now())
+                    (SELECT reference_date FROM seed_context), 'ACTIVE', cycle_year || '-' || member.student_file_suffix, now(), now())
             ON CONFLICT (student_id) DO NOTHING;
         END IF;
     END LOOP;
@@ -86,83 +75,20 @@ BEGIN
     INSERT INTO academic_years (academic_year_id, institution_id, year, start_date, end_date, status, created_at, updated_at)
     SELECT pg_temp.demo_id('year:' || (cycle_year + 1)), tenant, cycle_year + 1,
            make_date(cycle_year + 1, 1, 1), make_date(cycle_year + 1, 12, 31), 'PLANNED', now(), now()
-    WHERE NOT EXISTS (SELECT 1 FROM academic_years WHERE institution_id = tenant AND year = cycle_year + 1);
+    WHERE NOT EXISTS (SELECT 1 FROM academic_years WHERE institution_id = tenant AND year = cycle_year + 1 AND deleted_at IS NULL);
 
-END $$;
-
--- Replace only the two earlier fixtures created in this task. Never remove user identities,
--- the pre-existing CAV/2008 plan, or enrollment activity. Unexpected references abort everything.
-DO $$
-DECLARE
-    tenant uuid := '019e18e4-d919-76d8-9848-7f1b14e64452';
-    old_plans uuid[] := ARRAY[pg_temp.demo_id('plan:1'), pg_temp.demo_id('plan:2')];
-    old_paths uuid[] := ARRAY[pg_temp.demo_id('path:1'), pg_temp.demo_id('path:2')];
-BEGIN
-    PERFORM 1 FROM institutions WHERE institution_id = tenant FOR UPDATE;
-    PERFORM 1 FROM institution_enrollment_locks WHERE institution_id = tenant FOR UPDATE;
-    PERFORM 1 FROM study_plans WHERE institution_id = tenant AND study_plan_id = ANY(old_plans) FOR UPDATE;
-    IF EXISTS (SELECT 1 FROM enrollment_applications
-               WHERE institution_id = tenant AND (study_plan_id = ANY(old_plans) OR training_path_id = ANY(old_paths)))
-       OR EXISTS (SELECT 1 FROM course_enrollments e JOIN courses c USING(course_id)
-                  WHERE c.institution_id = tenant AND c.training_path_id = ANY(old_paths)) THEN
-        RAISE EXCEPTION 'La oferta inicial tiene actividad de inscripción; conservarla y revisar su transición antes de reemplazarla.';
-    END IF;
-    IF EXISTS (SELECT 1 FROM study_plans WHERE institution_id = tenant AND study_plan_id = ANY(old_plans)
-               AND (status <> 'ACTIVE' OR name NOT IN ('Plan de Formación Musical Inicial', 'Plan de Formación Instrumental')))
-       OR EXISTS (SELECT 1 FROM courses c JOIN study_plan_spaces s USING(study_plan_space_id)
-                  WHERE s.study_plan_id = ANY(old_plans) AND c.status <> 'ACTIVE') THEN
-        RAISE EXCEPTION 'La oferta inicial cambió de estado; revisar antes de reemplazarla.';
-    END IF;
-
-    DELETE FROM enrollment_period_offering_levels l USING enrollment_period_offerings o
-    WHERE l.offering_id = o.offering_id AND o.study_plan_id = ANY(old_plans);
-    DELETE FROM enrollment_period_offerings WHERE study_plan_id = ANY(old_plans);
-    DELETE FROM enrollment_periods p USING academic_years y
-    WHERE p.academic_year_id = y.academic_year_id AND p.institution_id = tenant
-      AND p.enrollment_period_id IN (pg_temp.demo_id('period:1:' || y.year), pg_temp.demo_id('period:2:' || y.year));
-
-    DELETE FROM course_individual_slots slot USING course_class_schedules schedule,
-        course_class_days day, course_classes class, courses course
-    WHERE slot.course_class_schedule_id = schedule.course_class_schedule_id
-      AND schedule.course_class_day_id = day.course_class_day_id AND day.course_class_id = class.course_class_id
-      AND class.course_id = course.course_id AND course.institution_id = tenant AND course.training_path_id = ANY(old_paths);
-    DELETE FROM course_class_schedules schedule USING course_class_days day, course_classes class, courses course
-    WHERE schedule.course_class_day_id = day.course_class_day_id AND day.course_class_id = class.course_class_id
-      AND class.course_id = course.course_id AND course.institution_id = tenant AND course.training_path_id = ANY(old_paths);
-    DELETE FROM course_class_days day USING course_classes class, courses course
-    WHERE day.course_class_id = class.course_class_id AND class.course_id = course.course_id
-      AND course.institution_id = tenant AND course.training_path_id = ANY(old_paths);
-    DELETE FROM course_class_teachers teacher USING course_classes class, courses course
-    WHERE teacher.course_class_id = class.course_class_id AND class.course_id = course.course_id
-      AND course.institution_id = tenant AND course.training_path_id = ANY(old_paths);
-    DELETE FROM course_classes class USING courses course
-    WHERE class.course_id = course.course_id AND course.institution_id = tenant AND course.training_path_id = ANY(old_paths);
-    UPDATE courses SET status = 'INACTIVE' WHERE institution_id = tenant AND training_path_id = ANY(old_paths);
-    DELETE FROM courses WHERE institution_id = tenant AND training_path_id = ANY(old_paths);
-    DELETE FROM prerequisites WHERE study_plan_id = ANY(old_plans);
-    DELETE FROM study_plan_space_instruments i USING study_plan_spaces s
-    WHERE i.study_plan_space_id = s.study_plan_space_id AND s.study_plan_id = ANY(old_plans);
-    DELETE FROM study_plan_spaces WHERE institution_id = tenant AND study_plan_id = ANY(old_plans);
-    DELETE FROM academic_levels WHERE study_plan_id = ANY(old_plans);
-    UPDATE study_plans SET status = 'INACTIVE' WHERE institution_id = tenant AND study_plan_id = ANY(old_plans);
-    DELETE FROM study_plans WHERE institution_id = tenant AND study_plan_id = ANY(old_plans);
-    UPDATE training_paths SET active = false WHERE institution_id = tenant AND training_path_id = ANY(old_paths);
-    DELETE FROM training_paths WHERE institution_id = tenant AND training_path_id = ANY(old_paths);
-    DELETE FROM academic_spaces WHERE institution_id = tenant AND academic_space_id IN (
-        SELECT pg_temp.demo_id('space:' || p || ':' || l || ':' || s)
-        FROM generate_series(1, 2) p CROSS JOIN generate_series(1, 2) l CROSS JOIN generate_series(1, 2) s
-    );
 END $$;
 
 DO $$
 DECLARE
-    tenant uuid := '019e18e4-d919-76d8-9848-7f1b14e64452';
+    tenant uuid := (SELECT institution_id FROM seed_context);
     cycle uuid;
-    cycle_year integer := extract(year FROM CURRENT_DATE);
+    cycle_year integer := (SELECT academic_year FROM seed_context);
     program record;
     placement record;
     chosen_instrument record;
     catalog_name text;
+    settings record;
     path_key uuid;
     plan_key uuid;
     level_key uuid;
@@ -182,18 +108,21 @@ DECLARE
     ends time;
     weekday text;
 BEGIN
+    SELECT * INTO STRICT settings FROM seed_settings;
     SELECT academic_year_id INTO STRICT cycle FROM academic_years
     WHERE institution_id = tenant AND year = cycle_year AND deleted_at IS NULL;
 
-    -- Full published instrument catalog; teaching sample below uses piano and guitar.
-    FOREACH catalog_name IN ARRAY ARRAY['Guitarra', 'Piano', 'Violín', 'Violoncello', 'Saxofón',
-                                       'Clarinete', 'Flauta traversa', 'Trompeta', 'Percusión'] LOOP
+    FOR catalog_name IN SELECT name FROM seed_instruments ORDER BY name LOOP
         INSERT INTO instruments (instrument_id, institution_id, name, active, created_at, updated_at)
         SELECT pg_temp.academic_id('instrument:' || catalog_name), tenant, catalog_name, true, now(), now()
         WHERE NOT EXISTS (SELECT 1 FROM instruments WHERE institution_id = tenant AND deleted_at IS NULL
                           AND lower(name) = lower(catalog_name));
     END LOOP;
-    FOREACH catalog_name IN ARRAY ARRAY['Mañana', 'Tarde', 'Vespertino'] LOOP
+    IF EXISTS (SELECT 1 FROM seed_instruments d JOIN instruments i ON lower(i.name) = lower(d.name)
+               WHERE i.institution_id = tenant AND i.deleted_at IS NULL AND NOT i.active) THEN
+        RAISE EXCEPTION 'Un instrumento del dataset está inactivo; no se modifica ni se omite silenciosamente.';
+    END IF;
+    FOR catalog_name IN SELECT name FROM seed_shifts ORDER BY name LOOP
         INSERT INTO shifts (shift_id, institution_id, name, active, created_at, updated_at)
         SELECT pg_temp.academic_id('shift:' || catalog_name), tenant, catalog_name, true, now(), now()
         WHERE NOT EXISTS (SELECT 1 FROM shifts WHERE institution_id = tenant AND deleted_at IS NULL
@@ -206,7 +135,7 @@ BEGIN
         INSERT INTO training_paths (training_path_id, institution_id, name, description, active, created_at, updated_at)
         VALUES (path_key, tenant, program.name, NULL, true, now(), now()) ON CONFLICT (training_path_id) DO NOTHING;
         INSERT INTO study_plans (study_plan_id, institution_id, training_path_id, name, effective_from, status, created_at, updated_at)
-        VALUES (plan_key, tenant, path_key, program.name || ' - 2025', DATE '2025-01-01', 'ACTIVE', now(), now())
+        VALUES (plan_key, tenant, path_key, program.name || ' - ' || settings.plan_edition, settings.plan_effective_from, 'ACTIVE', now(), now())
         ON CONFLICT (study_plan_id) DO NOTHING;
 
         period_key := pg_temp.academic_id('period:' || program.code || ':' || cycle_year);
@@ -214,8 +143,8 @@ BEGIN
         INSERT INTO enrollment_periods (enrollment_period_id, institution_id, academic_year_id, name,
                                         start_date, end_date, status, scope_configured, created_at, updated_at)
         VALUES (period_key, tenant, cycle, 'Inscripciones ' || cycle_year || ' - ' || program.name,
-                make_date(cycle_year, 1, 1)::timestamp AT TIME ZONE 'America/Argentina/Cordoba',
-                (make_date(cycle_year + 1, 1, 1)::timestamp AT TIME ZONE 'America/Argentina/Cordoba') - interval '1 second',
+                make_date(cycle_year, 1, 1)::timestamp AT TIME ZONE (SELECT timezone FROM seed_context),
+                (make_date(cycle_year + 1, 1, 1)::timestamp AT TIME ZONE (SELECT timezone FROM seed_context)) - interval '1 second',
                 'OPEN', true, now(), now()) ON CONFLICT (enrollment_period_id) DO NOTHING;
         INSERT INTO enrollment_period_offerings (offering_id, enrollment_period_id, study_plan_id)
         VALUES (offering_key, period_key, plan_key) ON CONFLICT (offering_id) DO NOTHING;
@@ -224,11 +153,10 @@ BEGIN
             level_key := pg_temp.academic_id('level:' || program.code || ':' || level_number);
             INSERT INTO academic_levels (academic_level_id, study_plan_id, name, display_order, description, created_at, updated_at)
             VALUES (level_key, plan_key, 'Nivel ' || level_number, level_number,
-                    CASE WHEN program.code = 'cavi' THEN (level_number + 7) || ' años; ' || (level_number + 2) || '° grado escolar'
-                         WHEN program.code = 'isfd' THEN level_number || '° año' ELSE NULL END, now(), now())
+                    (SELECT description FROM seed_levels WHERE code = program.code AND level = level_number), now(), now())
             ON CONFLICT (academic_level_id) DO NOTHING;
-            -- Only level 1 has operational classes. Upper levels remain complete curriculum.
-            IF level_number = 1 THEN
+            -- Only the configured level has operational classes; the full curriculum is retained.
+            IF level_number = settings.offered_level THEN
                 INSERT INTO enrollment_period_offering_levels (offering_level_id, offering_id, academic_level_id)
                 VALUES (pg_temp.academic_id('offering-level:' || program.code || ':' || cycle_year), offering_key, level_key)
                 ON CONFLICT (offering_level_id) DO NOTHING;
@@ -262,18 +190,20 @@ BEGIN
                 SELECT pg_temp.academic_id('allowed:' || curriculum_key || ':' || i.instrument_id), tenant,
                        curriculum_key, i.instrument_id, now(), now()
                 FROM instruments i WHERE i.institution_id = tenant AND i.deleted_at IS NULL AND i.active
-                  AND lower(i.name) = ANY(CASE placement.instrument_group WHEN 'harmonic' THEN ARRAY['piano', 'guitarra']
-                      ELSE ARRAY['guitarra', 'piano', 'violín', 'violoncello', 'saxofón', 'clarinete', 'flauta traversa', 'trompeta', 'percusión'] END)
+                  AND EXISTS (SELECT 1 FROM seed_instrument_groups g
+                              WHERE g.group_code = placement.instrument_group AND lower(g.instrument) = lower(i.name))
                 ON CONFLICT (study_plan_space_instrument_id) DO NOTHING;
             END IF;
 
-            IF placement.level <> 1 THEN
+            IF placement.level <> settings.offered_level THEN
                 CONTINUE;
             END IF;
             FOR chosen_instrument IN
-                SELECT instrument_id, name FROM instruments WHERE institution_id = tenant AND deleted_at IS NULL AND active
-                  AND lower(name) IN ('piano', 'guitarra') AND placement.instrument_group <> 'none'
-                UNION ALL SELECT NULL::uuid, NULL::varchar WHERE placement.instrument_group = 'none'
+                SELECT i.instrument_id, i.name, d.teacher_number FROM instruments i
+                JOIN seed_instruments d ON lower(d.name) = lower(i.name) AND d.offered
+                JOIN seed_instrument_groups g ON g.instrument = d.name AND g.group_code = placement.instrument_group
+                WHERE i.institution_id = tenant AND i.deleted_at IS NULL AND i.active
+                UNION ALL SELECT NULL::uuid, NULL::text, NULL::integer WHERE placement.instrument_group = 'none'
                 ORDER BY name NULLS FIRST
             LOOP
                 course_key := pg_temp.academic_id('course:' || curriculum_key || ':' || coalesce(chosen_instrument.instrument_id::text, 'group') || ':' || cycle_year);
@@ -282,13 +212,15 @@ BEGIN
                 schedule_key := pg_temp.academic_id('schedule:' || course_key);
                 -- Sequential afternoon/evening sample: no student or teacher overlaps across the fixture.
                 -- This is not the institution's published weekly timetable or required course load.
-                weekday := (ARRAY['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'])[course_number / 7 + 1];
-                starts := TIME '14:00' + (course_number % 7) * interval '1 hour';
+                weekday := (settings.weekdays)[course_number / settings.blocks_per_day + 1];
+                starts := settings.day_start + make_interval(mins => (course_number % settings.blocks_per_day) * settings.block_minutes);
                 period_minutes := CASE WHEN placement.format <> 'INDIVIDUAL' THEN NULL
-                                       WHEN program.code = 'cavi' THEN 40 ELSE 30 END;
-                ends := starts + CASE WHEN period_minutes = 40 THEN interval '40 minutes' ELSE interval '1 hour' END;
+                                       ELSE program.individual_minutes END;
+                ends := starts + make_interval(mins => CASE WHEN period_minutes IS NULL THEN settings.block_minutes
+                    ELSE (settings.block_minutes / period_minutes) * period_minutes END);
                 IF weekday IS NULL THEN
-                    RAISE EXCEPTION 'La oferta excede los 35 horarios del escenario; definir más comisiones/docentes.';
+                    RAISE EXCEPTION 'La oferta excede los % horarios del dataset; ampliar su grilla.',
+                        cardinality(settings.weekdays) * settings.blocks_per_day;
                 END IF;
                 course_number := course_number + 1;
 
@@ -300,18 +232,18 @@ BEGIN
                 VALUES (class_key, tenant, course_key, 1, now(), now()) ON CONFLICT (course_class_id) DO NOTHING;
                 INSERT INTO course_class_teachers (course_class_teacher_id, institution_id, course_class_id, person_id, created_at, updated_at)
                 VALUES (pg_temp.academic_id('teacher:' || course_key), tenant, class_key,
-                        pg_temp.demo_id('person:' || CASE WHEN chosen_instrument.name = 'Guitarra' THEN 6
-                            WHEN chosen_instrument.name = 'Piano' THEN 5 ELSE 5 + course_number % 2 END), now(), now())
+                        pg_temp.demo_id('person:' || coalesce(chosen_instrument.teacher_number,
+                            settings.group_teachers[1 + course_number % cardinality(settings.group_teachers)])), now(), now())
                 ON CONFLICT (course_class_teacher_id) DO NOTHING;
                 INSERT INTO course_class_days (course_class_day_id, institution_id, course_class_id, day_of_week,
                                                capacity, period_duration_minutes, created_at, updated_at)
-                VALUES (day_key, tenant, class_key, weekday, CASE WHEN placement.format = 'GRUPAL' THEN 20 ELSE NULL END,
+                VALUES (day_key, tenant, class_key, weekday, CASE WHEN placement.format = 'GRUPAL' THEN settings.group_capacity ELSE NULL END,
                         period_minutes, now(), now()) ON CONFLICT (course_class_day_id) DO NOTHING;
                 INSERT INTO course_class_schedules (course_class_schedule_id, institution_id, course_class_day_id,
                                                    start_time, end_time, created_at, updated_at)
                 VALUES (schedule_key, tenant, day_key, starts, ends, now(), now()) ON CONFLICT (course_class_schedule_id) DO NOTHING;
                 IF period_minutes IS NOT NULL THEN
-                    FOR slot_number IN 0..(CASE WHEN period_minutes = 40 THEN 0 ELSE 1 END) LOOP
+                    FOR slot_number IN 0..(settings.block_minutes / period_minutes - 1) LOOP
                         INSERT INTO course_individual_slots (course_individual_slot_id, institution_id, course_class_schedule_id,
                                                              start_time, end_time, created_at, updated_at)
                         VALUES (pg_temp.academic_id('slot:' || course_key || ':' || slot_number), tenant, schedule_key,
@@ -325,4 +257,4 @@ BEGIN
     END LOOP;
 END $$;
 COMMIT;
-\echo 'Oferta académica cargada desde las planillas 2025. Ver docs/enrollment-academic-sources.md.'
+\echo 'Carga completada. Los registros existentes no se sobrescribieron.'

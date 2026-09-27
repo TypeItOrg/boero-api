@@ -1,5 +1,5 @@
--- Explicit, backed-up LOCAL repair. Concatenate after enrollment-demo-ids.sql
--- and enrollment-demo-catalog.sql. Does not delete or recreate business rows.
+-- Explicit historical repair through run.sh repair-ids. Back up first.
+-- Does not delete or recreate business rows.
 CREATE TEMP TABLE seed_id_targets (table_name text, column_name text, legacy_id uuid PRIMARY KEY, id uuid UNIQUE) ON COMMIT DROP;
 CREATE FUNCTION pg_temp.register_seed_id(target_table text, target_column text, seed_namespace text, key text)
 RETURNS void LANGUAGE plpgsql AS $$
@@ -8,10 +8,19 @@ DECLARE
     old_id uuid := md5(seed_namespace || canonical_key)::uuid;
     present boolean;
     new_id uuid;
+    target_tenant uuid;
 BEGIN
     EXECUTE format('SELECT EXISTS (SELECT 1 FROM public.%I WHERE %I = $1)', target_table, target_column)
         INTO present USING old_id;
     IF present THEN
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public'
+                   AND table_name = target_table AND column_name = 'institution_id') THEN
+            EXECUTE format('SELECT institution_id FROM public.%I WHERE %I = $1', target_table, target_column)
+                INTO target_tenant USING old_id;
+            IF target_tenant IS DISTINCT FROM (SELECT institution_id FROM seed_context) THEN
+                RAISE EXCEPTION 'El ID histórico de % pertenece a otra institución; no se modifica.', target_table;
+            END IF;
+        END IF;
         new_id := pg_temp.seed_id(seed_namespace, canonical_key);
         INSERT INTO seed_id_targets VALUES (target_table, target_column, old_id, new_id) ON CONFLICT DO NOTHING;
     END IF;
@@ -24,7 +33,7 @@ DECLARE
     item record;
     demo text := 'boero:enrollment-demo:v1:';
     academic text := 'boero:enrollment:official-2025:';
-    tenant uuid := '019e18e4-d919-76d8-9848-7f1b14e64452';
+    tenant uuid := (SELECT institution_id FROM seed_context);
 BEGIN
     -- Stable ordering and a bounded timeout prevent concurrent writes during rekeying.
     FOR t IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename LOOP
@@ -32,9 +41,9 @@ BEGIN
     END LOOP;
     PERFORM 1 FROM institutions WHERE institution_id = tenant AND active;
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'La institución local del seed no existe o está inactiva.';
+        RAISE EXCEPTION 'La institución del seed no existe o está inactiva.';
     END IF;
-    FOR member IN 1..8 LOOP
+    FOR member IN SELECT number FROM seed_members ORDER BY number LOOP
         PERFORM pg_temp.register_seed_id('people', 'person_id', demo, 'person:' || member);
         PERFORM pg_temp.register_seed_id('users', 'user_id', demo, 'user:' || member);
         PERFORM pg_temp.register_seed_id('person_role_assignments', 'person_role_assignment_id', demo, 'role:' || member);
