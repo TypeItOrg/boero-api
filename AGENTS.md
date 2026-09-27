@@ -4,10 +4,11 @@ Spring Boot API using Gradle, Java 21, JPA/PostgreSQL and Redis. Resolve exact v
 
 ## Working scope and tooling
 
-- Follow the user's requested scope and existing authorization. Diagnosis/review does not authorize implementation; message drafting does not authorize commits. Complete authorized work without repeatedly asking for the same approval.
+- Follow the user's requested scope and existing authorization. Diagnosis/review does not authorize implementation; message drafting does not authorize commits.
+- Finish the requested outcome, including authorized verification and fixes caused by the change, without stopping after a first draft or repeatedly asking for the same approval. Stop for an unresolved scope, data-loss or access decision; report blockers and unverified behavior explicitly.
 - Preserve unrelated worktree/index changes and local environment files. Commit and push only when requested.
 - Local development uses `make dev` / `compose.yaml`; shared staging and production live in `boero-infra`. Copy `.env.dev.example` for local setup. Document new environment variables in the applicable example files, never real secrets.
-- Staging and production are configured but neither currently has a provisioned VPS. Retain their profiles and Compose configuration. CI/image publication remain enabled; automatic staging deployment is explicitly disabled, while production deployment remains manual pending provisioning.
+- Retain staging/production profiles and Compose configuration. For deployment work, consult `boero-infra` operations docs and this checkout's `.github/workflows/`; verify the target host before claiming a live environment. Configuration and old provisioning notes are not runtime evidence. Do not deploy or change deployment policy unless requested.
 - Spotless/google-java-format is the formatting authority. For changed Java files, use the existing formatter's scoped support where available and inspect the resulting diff. Do not reformat unrelated source for a documentation-only task.
 - Commands: `./gradlew compileJava`, `./gradlew spotlessCheck`, `./gradlew fastTest`, `./gradlew integrationTest`, `./gradlew test`. Use only the checks relevant and authorized for the task; do not add or run tests on initiative.
 
@@ -40,13 +41,9 @@ Spring Boot API using Gradle, Java 21, JPA/PostgreSQL and Redis. Resolve exact v
 - Application exceptions extend `ApplicationException` with an `ErrorCategory` and do not depend on Spring Web. Keep HTTP translation in `ApplicationExceptionHttpMapper` / `GlobalExceptionHandler`, using `ExceptionPayload`.
 - Centralize error text in the existing domain `*Messages` classes.
 
-## Testing when requested
+## Task-specific guidance
 
-- Use Boot-managed JUnit Jupiter, Mockito and the existing fixtures. Exact versions come from Gradle dependencies, not a separately pinned testing recipe.
-- Choose unit tests for entity/use-case logic, `@WebMvcTest` for controller HTTP/security behavior, `@DataJpaTest` for repository slices, and `@SpringBootTest` when the full context is necessary. Use `@MockitoBean` for mocked Spring dependencies.
-- Existing MockMvc tests are valid; do not migrate assertion APIs or add fixture libraries just to follow a tutorial. Avoid reflection and business logic in tests.
-- `fastTest` excludes integration-tagged tests; `integrationTest` selects them; `test` runs all. Scope execution with `--tests` when appropriate. Never assume a suite is isolated from external systems without checking its configuration.
-- Fix and rerun failures caused by the requested change within the authorized scope. Report unrelated failures and incomplete runtime/database verification explicitly.
+For requested testing work, use the [testing skill](.agents/skills/spring-boot-testing/SKILL.md) for the repository's fixtures, test slices and Gradle tasks. Load only references needed by the task; routine Java or documentation edits do not require a testing guide.
 
 ## Logging
 

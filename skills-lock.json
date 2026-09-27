@@ -11,19 +11,19 @@
       "source": "github/awesome-copilot",
       "sourceType": "github",
       "skillPath": "skills/java-springboot/SKILL.md",
-      "computedHash": "d08c86b0b59485b1e1d083e659e54da06606267d92d6fe19e790446d77b658d6"
+      "computedHash": "f6c1c76df224f49ffd3c3905e70dbc3a25e029c7bd4d5f0babf30f8dfdd0dc6e"
     },
     "simplify": {
       "source": "brianlovin/claude-config",
       "sourceType": "github",
       "skillPath": "skills/simplify/SKILL.md",
-      "computedHash": "5a1c33553e7e21c97b5c993dae8affcaaae71009653b7c85d46b52231fe29ece"
+      "computedHash": "45654ebad3aad231464d0a41deab3a6f5bd434abaa9c9e8ad675e3d5b73e96ae"
     },
     "spring-boot-testing": {
       "source": "github/awesome-copilot",
       "sourceType": "github",
       "skillPath": "skills/spring-boot-testing/SKILL.md",
-      "computedHash": "a46e04145124373fec998ed119d8eab37cf8b0d3cbcda7af3dbc74d9b6cf81af"
+      "computedHash": "d593df6c8cf5b25bf3613057a5991e26152e84cec7660e0ad83cdc1f29155aa9"
     }
   }
 }

@@ -1,11 +1,11 @@
 ---
 name: simplify
-description: Review code changed for the current task for unnecessary complexity while preserving behavior and scope.
+description: Simplify a requested code scope or diff while preserving behavior and public contracts.
 ---
 
 # Simplify touched code
 
-Apply the repository's AGENTS.md and conventions of the affected code. Use this skill for requested simplification or a relevant cleanup of the current change.
+Use this skill when simplification or cleanup is part of the request, not for every code edit. Apply the repository's AGENTS.md and conventions of the affected code.
 
 Remove unused code and needless indirection when references and contracts support it. Keep abstractions that enforce authorization, validation, transaction boundaries, error handling or shared UI behavior. Prefer a direct implementation over introducing a new framework for a small duplication.
 
