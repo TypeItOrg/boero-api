@@ -28,6 +28,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotF
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,7 +65,8 @@ public class CreateCourseUseCase {
       throw new AcademicConflictException(AcademicMessages.COURSE_STUDY_PLAN_NOT_ACTIVE);
     }
     final var space = selection.space();
-    final Instrument instrument = resolveInstrument(institutionId, request.instrumentId());
+    final @Nullable Instrument instrument =
+        resolveInstrument(institutionId, request.instrumentId());
     validateInstrumentSelection(space.isInstrumental(), instrument);
     final var year =
         academicYearRepository
@@ -126,7 +128,8 @@ public class CreateCourseUseCase {
     throw new AcademicConflictException(AcademicMessages.COURSE_SPACE_NOT_IN_PLAN);
   }
 
-  private Instrument resolveInstrument(final UUID institutionId, final UUID instrumentId) {
+  private @Nullable Instrument resolveInstrument(
+      final UUID institutionId, final @Nullable UUID instrumentId) {
     if (instrumentId == null) {
       return null;
     }
@@ -137,7 +140,7 @@ public class CreateCourseUseCase {
   }
 
   private static void validateInstrumentSelection(
-      final boolean instrumental, final Instrument instrument) {
+      final boolean instrumental, final @Nullable Instrument instrument) {
     if (instrumental && instrument == null) {
       throw new AcademicConflictException(AcademicMessages.INSTRUMENT_REQUIRED);
     }

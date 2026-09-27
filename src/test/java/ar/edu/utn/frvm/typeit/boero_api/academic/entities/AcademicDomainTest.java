@@ -6,7 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.ApprovalMode;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequirementType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.InvalidAcademicStateException;
@@ -85,7 +87,18 @@ class AcademicDomainTest {
             null,
             AcademicSpaceType.SUBJECT,
             AcademicSpaceFormat.INDIVIDUAL);
-    final var course = Course.create(institution, plan, academicSpace, academicYear);
+    final var course =
+        Course.create(
+            institution,
+            StudyPlanSpace.create(
+                institution,
+                plan,
+                academicSpace,
+                null,
+                RequirementType.REQUIRED,
+                1,
+                ApprovalMode.FINAL_EXAM),
+            academicYear);
     course.deactivate();
 
     assertThatThrownBy(() -> course.updateStatus(CourseStatus.ACTIVE))

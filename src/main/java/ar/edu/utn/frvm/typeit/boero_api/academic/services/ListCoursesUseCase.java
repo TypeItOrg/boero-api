@@ -25,8 +25,8 @@ public class ListCoursesUseCase {
   @Transactional(readOnly = true)
   public PaginatedResponse<CourseResponse> execute(
       final @Nullable UUID institutionId,
-      final String search,
-      final CourseStatus status,
+      final @Nullable String search,
+      final @Nullable CourseStatus status,
       final @Nullable UUID academicSpaceId,
       final @Nullable UUID trainingPathId,
       final @Nullable UUID studyPlanId,
@@ -89,12 +89,12 @@ public class ListCoursesUseCase {
 
   public PaginatedResponse<CourseResponse> execute(
       final UUID institutionId,
-      final String search,
-      final CourseStatus status,
-      @Nullable final UUID academicSpaceId,
-      @Nullable final UUID trainingPathId,
-      @Nullable final UUID studyPlanId,
-      @Nullable final Integer year,
+      final @Nullable String search,
+      final @Nullable CourseStatus status,
+      final @Nullable UUID academicSpaceId,
+      final @Nullable UUID trainingPathId,
+      final @Nullable UUID studyPlanId,
+      final @Nullable Integer year,
       final Pageable pageable) {
     return execute(
         institutionId,

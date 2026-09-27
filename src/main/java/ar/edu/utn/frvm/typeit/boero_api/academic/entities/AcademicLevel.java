@@ -17,6 +17,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(
@@ -51,7 +52,7 @@ public class AcademicLevel extends Auditable {
   private int displayOrder;
 
   @Column(length = 1000)
-  private String description;
+  private @Nullable String description;
 
   public static String derivedName(final int displayOrder) {
     return AcademicNameNormalizer.display("Nivel " + displayOrder);
@@ -61,7 +62,7 @@ public class AcademicLevel extends Auditable {
       final StudyPlan studyPlan,
       final String name,
       final int displayOrder,
-      final String description) {
+      final @Nullable String description) {
     return AcademicLevel.builder()
         .studyPlan(studyPlan)
         .name(AcademicNameNormalizer.display(name))
@@ -70,7 +71,8 @@ public class AcademicLevel extends Auditable {
         .build();
   }
 
-  public void update(final String name, final int displayOrder, final String description) {
+  public void update(
+      final String name, final int displayOrder, final @Nullable String description) {
     this.name = AcademicNameNormalizer.display(name);
     this.displayOrder = displayOrder;
     this.description = description;

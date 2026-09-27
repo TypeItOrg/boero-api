@@ -19,8 +19,8 @@ public class ListShiftsUseCase {
   @Transactional(readOnly = true)
   public PaginatedResponse<ShiftResponse> execute(
       final @Nullable UUID institutionId,
-      final String search,
-      final Boolean active,
+      final @Nullable String search,
+      final @Nullable Boolean active,
       final boolean deleted,
       final Pageable pageable) {
     return PaginatedResponse.from(
@@ -32,8 +32,8 @@ public class ListShiftsUseCase {
 
   public PaginatedResponse<ShiftResponse> execute(
       final UUID institutionId,
-      final String search,
-      final Boolean active,
+      final @Nullable String search,
+      final @Nullable Boolean active,
       final Pageable pageable) {
     return execute(institutionId, search, active, false, pageable);
   }

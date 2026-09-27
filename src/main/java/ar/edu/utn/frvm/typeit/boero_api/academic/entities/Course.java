@@ -27,6 +27,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(
@@ -61,11 +62,11 @@ public class Course extends SoftDeletable {
   private UUID academicSpaceId;
 
   @Column(name = "academic_level_id", updatable = false)
-  private UUID academicLevelId;
+  private @Nullable UUID academicLevelId;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "instrument_id")
-  private Instrument instrument;
+  private @Nullable Instrument instrument;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "academic_year_id", nullable = false)
@@ -106,7 +107,7 @@ public class Course extends SoftDeletable {
       final Institution institution,
       final StudyPlanSpace studyPlanSpace,
       final AcademicYear academicYear,
-      final Instrument instrument) {
+      final @Nullable Instrument instrument) {
     return Course.builder()
         .institution(institution)
         .studyPlanSpace(studyPlanSpace)

@@ -19,6 +19,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "course_class_days")
@@ -45,17 +46,17 @@ public class CourseClassDay extends Auditable {
   @Column(name = "day_of_week", nullable = false, length = 20)
   private CourseDay dayOfWeek;
 
-  @Column private Integer capacity;
+  @Column private @Nullable Integer capacity;
 
   @Column(name = "period_duration_minutes")
-  private Integer periodDurationMinutes;
+  private @Nullable Integer periodDurationMinutes;
 
   public static CourseClassDay create(
       final Institution institution,
       final CourseClass courseClass,
       final CourseDay dayOfWeek,
-      final Integer capacity,
-      final Integer periodDurationMinutes) {
+      final @Nullable Integer capacity,
+      final @Nullable Integer periodDurationMinutes) {
     return CourseClassDay.builder()
         .institution(institution)
         .courseClass(courseClass)

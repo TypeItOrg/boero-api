@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(
     requiredProperties = {
@@ -29,12 +30,12 @@ public record StudyPlanResponse(
     UUID trainingPathId,
     String trainingPathName,
     String name,
-    @Schema(nullable = true) LocalDate effectiveFrom,
-    @Schema(nullable = true) LocalDate effectiveTo,
+    @Schema(nullable = true) @Nullable LocalDate effectiveFrom,
+    @Schema(nullable = true) @Nullable LocalDate effectiveTo,
     StudyPlanStatus status,
-    @Schema(nullable = true) UUID previousVersionId,
+    @Schema(nullable = true) @Nullable UUID previousVersionId,
     int versionNumber,
-    @Schema(nullable = true) Instant deletedAt) {
+    @Schema(nullable = true) @Nullable Instant deletedAt) {
 
   public static StudyPlanResponse from(final StudyPlan plan) {
     return new StudyPlanResponse(

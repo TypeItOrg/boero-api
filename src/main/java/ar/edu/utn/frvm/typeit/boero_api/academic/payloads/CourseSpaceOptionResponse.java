@@ -4,6 +4,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(requiredProperties = {"id", "name", "type", "format", "studyPlanSpaceId", "instrumental"})
 public record CourseSpaceOptionResponse(
@@ -11,8 +12,8 @@ public record CourseSpaceOptionResponse(
     String name,
     String type,
     String format,
-    UUID studyPlanSpaceId,
-    @Schema(nullable = true) String academicLevelName,
+    @Nullable UUID studyPlanSpaceId,
+    @Schema(nullable = true) @Nullable String academicLevelName,
     boolean instrumental) {
 
   public CourseSpaceOptionResponse(

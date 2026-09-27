@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(
     requiredProperties = {
@@ -42,22 +43,22 @@ public record CourseResponse(
     int studyPlanVersion,
     UUID trainingPathId,
     String trainingPathName,
-    UUID studyPlanSpaceId,
+    @Nullable UUID studyPlanSpaceId,
     UUID academicSpaceId,
     String academicSpaceName,
     String academicSpaceType,
     String academicSpaceFormat,
     boolean academicSpaceInstrumental,
-    @Schema(nullable = true) UUID academicLevelId,
-    @Schema(nullable = true) String academicLevelName,
-    @Schema(nullable = true) UUID instrumentId,
-    @Schema(nullable = true) String instrumentName,
+    @Schema(nullable = true) @Nullable UUID academicLevelId,
+    @Schema(nullable = true) @Nullable String academicLevelName,
+    @Schema(nullable = true) @Nullable UUID instrumentId,
+    @Schema(nullable = true) @Nullable String instrumentName,
     UUID academicYearId,
     int year,
     String status,
     boolean active,
     List<CourseClassResponse> classes,
-    @Schema(nullable = true) Instant deletedAt) {
+    @Schema(nullable = true) @Nullable Instant deletedAt) {
 
   public static CourseResponse from(final Course course) {
     return from(course, List.of());

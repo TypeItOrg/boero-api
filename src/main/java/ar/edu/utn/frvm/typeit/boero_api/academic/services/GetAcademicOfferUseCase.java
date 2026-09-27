@@ -50,7 +50,10 @@ public class GetAcademicOfferUseCase {
     final Map<UUID, List<AcademicOfferSpaceResponse>> spacesByLevel =
         spaces.stream()
             .filter(space -> space.academicLevelId() != null)
-            .collect(Collectors.groupingBy(AcademicOfferSpaceResponse::academicLevelId));
+            .collect(
+                Collectors.groupingBy(
+                    mappedAcademicOfferSpaceResponse ->
+                        mappedAcademicOfferSpaceResponse.academicLevelId()));
     final var levels =
         academicLevelRepository.findByStudyPlan_IdOrderByDisplayOrderAsc(studyPlanId).stream()
             .map(

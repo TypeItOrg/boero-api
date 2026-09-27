@@ -5,6 +5,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.enums.ApprovalMode;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequirementType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(
     requiredProperties = {
@@ -17,8 +18,8 @@ import java.util.UUID;
     })
 public record AcademicSpaceUsagePlacementResponse(
     UUID studyPlanSpaceId,
-    @Schema(nullable = true) UUID academicLevelId,
-    @Schema(nullable = true) String academicLevelName,
+    @Schema(nullable = true) @Nullable UUID academicLevelId,
+    @Schema(nullable = true) @Nullable String academicLevelName,
     RequirementType requirementType,
     ApprovalMode approvalMode,
     int displayOrder) {

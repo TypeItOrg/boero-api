@@ -25,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -89,7 +90,8 @@ public class UpdateStudyPlanSpaceUseCase {
     return StudyPlanSpaceResponse.from(existing, instrumentOptions(instruments));
   }
 
-  private AcademicLevel resolveLevel(final UUID studyPlanId, final UUID academicLevelId) {
+  private @Nullable AcademicLevel resolveLevel(
+      final UUID studyPlanId, final @Nullable UUID academicLevelId) {
     if (academicLevelId == null) {
       return null;
     }
@@ -117,7 +119,7 @@ public class UpdateStudyPlanSpaceUseCase {
       final var instrument =
           instrumentRepository
               .findByIdAndInstitution_Id(instrumentId, institutionId)
-              .filter(Instrument::isActive)
+              .filter(mappedInstrument -> mappedInstrument.isActive())
               .orElseThrow(
                   () -> new AcademicConflictException(AcademicMessages.INVALID_RELATIONSHIP));
       instruments.add(instrument);

@@ -24,6 +24,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(
@@ -51,7 +52,7 @@ public class AcademicSpace extends SoftDeletable {
   private String name;
 
   @Column(length = 1000)
-  private String description;
+  private @Nullable String description;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
@@ -70,7 +71,7 @@ public class AcademicSpace extends SoftDeletable {
   public static AcademicSpace create(
       final Institution institution,
       final String name,
-      final String description,
+      final @Nullable String description,
       final AcademicSpaceType type,
       final AcademicSpaceFormat format) {
     return create(institution, name, description, type, format, false);
@@ -79,7 +80,7 @@ public class AcademicSpace extends SoftDeletable {
   public static AcademicSpace create(
       final Institution institution,
       final String name,
-      final String description,
+      final @Nullable String description,
       final AcademicSpaceType type,
       final AcademicSpaceFormat format,
       final boolean instrumental) {
@@ -96,7 +97,7 @@ public class AcademicSpace extends SoftDeletable {
 
   public void update(
       final String name,
-      final String description,
+      final @Nullable String description,
       final AcademicSpaceType type,
       final AcademicSpaceFormat format) {
     update(name, description, type, format, instrumental);
@@ -104,7 +105,7 @@ public class AcademicSpace extends SoftDeletable {
 
   public void update(
       final String name,
-      final String description,
+      final @Nullable String description,
       final AcademicSpaceType type,
       final AcademicSpaceFormat format,
       final boolean instrumental) {

@@ -19,8 +19,8 @@ public class ListInstrumentsUseCase {
   @Transactional(readOnly = true)
   public PaginatedResponse<InstrumentResponse> execute(
       final @Nullable UUID institutionId,
-      final String search,
-      final Boolean active,
+      final @Nullable String search,
+      final @Nullable Boolean active,
       final boolean deleted,
       final Pageable pageable) {
     return PaginatedResponse.from(
@@ -31,9 +31,9 @@ public class ListInstrumentsUseCase {
   }
 
   public PaginatedResponse<InstrumentResponse> execute(
-      final UUID institutionId,
-      final String search,
-      final Boolean active,
+      final @Nullable UUID institutionId,
+      final @Nullable String search,
+      final @Nullable Boolean active,
       final Pageable pageable) {
     return execute(institutionId, search, active, false, pageable);
   }

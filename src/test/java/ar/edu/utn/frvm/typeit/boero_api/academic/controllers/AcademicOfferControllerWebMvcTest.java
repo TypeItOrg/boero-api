@@ -109,7 +109,7 @@ class AcademicOfferControllerWebMvcTest {
     verify(listAcademicOffersUseCase).execute(eq(INSTITUTION_ID), pageable.capture());
     assertThat(pageable.getValue().getSort().getOrderFor("trainingPathName"))
         .isNotNull()
-        .extracting(Sort.Order::getDirection)
+        .extracting(mappedOrder -> mappedOrder.getDirection())
         .isEqualTo(Sort.Direction.ASC);
   }
 
@@ -254,7 +254,7 @@ class AcademicOfferControllerWebMvcTest {
   }
 
   private static TestingAuthenticationToken authentication(final Object principal) {
-    final var authentication = new TestingAuthenticationToken(principal, null);
+    final var authentication = new TestingAuthenticationToken(principal, "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     return authentication;
   }

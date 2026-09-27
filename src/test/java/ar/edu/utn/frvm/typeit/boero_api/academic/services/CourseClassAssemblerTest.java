@@ -29,6 +29,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -238,7 +239,7 @@ class CourseClassAssemblerTest {
         .isInstanceOf(AcademicValidationException.class);
   }
 
-  private void verifySavedCapacity(final Integer expected) {
+  private void verifySavedCapacity(final @Nullable Integer expected) {
     verify(courseClassDayRepository, atLeastOnce())
         .save(
             argThat(

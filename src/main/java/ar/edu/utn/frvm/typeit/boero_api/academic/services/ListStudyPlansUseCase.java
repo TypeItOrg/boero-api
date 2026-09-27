@@ -35,10 +35,10 @@ public class ListStudyPlansUseCase {
   @Transactional(readOnly = true)
   public PaginatedResponse<StudyPlanResponse> execute(
       final @Nullable UUID institutionId,
-      final String search,
-      final StudyPlanStatus status,
-      final UUID trainingPathId,
-      final LocalDate validOn,
+      final @Nullable String search,
+      final @Nullable StudyPlanStatus status,
+      final @Nullable UUID trainingPathId,
+      final @Nullable LocalDate validOn,
       final boolean deleted,
       final Pageable pageable) {
     return PaginatedResponse.from(
@@ -57,18 +57,18 @@ public class ListStudyPlansUseCase {
 
   public PaginatedResponse<StudyPlanResponse> execute(
       final @Nullable UUID institutionId,
-      final String search,
-      final StudyPlanStatus status,
+      final @Nullable String search,
+      final @Nullable StudyPlanStatus status,
       final Pageable pageable) {
     return execute(institutionId, search, status, null, null, false, pageable);
   }
 
   public PaginatedResponse<StudyPlanResponse> execute(
       final UUID institutionId,
-      final String search,
-      final StudyPlanStatus status,
-      final UUID trainingPathId,
-      final LocalDate validOn,
+      final @Nullable String search,
+      final @Nullable StudyPlanStatus status,
+      final @Nullable UUID trainingPathId,
+      final @Nullable LocalDate validOn,
       final Pageable pageable) {
     return execute(institutionId, search, status, trainingPathId, validOn, false, pageable);
   }
@@ -91,10 +91,10 @@ public class ListStudyPlansUseCase {
 
   private Specification<StudyPlan> byFilters(
       final @Nullable UUID institutionId,
-      final String search,
-      final StudyPlanStatus status,
-      final UUID trainingPathId,
-      final LocalDate validOn,
+      final @Nullable String search,
+      final @Nullable StudyPlanStatus status,
+      final @Nullable UUID trainingPathId,
+      final @Nullable LocalDate validOn,
       final boolean deleted) {
     return (root, query, criteriaBuilder) -> {
       final List<Predicate> predicates = new ArrayList<>();

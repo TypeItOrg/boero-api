@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.exceptions;
 
 import java.util.Map;
 import org.hibernate.exception.ConstraintViolationException;
+import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
 
 public final class AcademicIntegrityViolationTranslator {
@@ -130,7 +131,7 @@ public final class AcademicIntegrityViolationTranslator {
     return new AcademicValidationException(message, Map.of(field, message));
   }
 
-  private static String constraintName(final DataIntegrityViolationException exception) {
+  private static @Nullable String constraintName(final DataIntegrityViolationException exception) {
     Throwable cause = exception;
     while (cause != null) {
       if (cause instanceof ConstraintViolationException constraintViolation) {

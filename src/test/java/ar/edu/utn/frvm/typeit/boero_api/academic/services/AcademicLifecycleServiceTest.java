@@ -13,13 +13,16 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Course;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Shift;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicLifecycleAction;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicLifecycleResource;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.ApprovalMode;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.CourseStatus;
+import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequirementType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicConflictException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicLifecycleEventRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicSpaceRepository;
@@ -90,12 +93,12 @@ class AcademicLifecycleServiceTest {
     verify(eventRepository).flush();
     assertThat(eventCaptor.getValue())
         .extracting(
-            AcademicLifecycleEvent::getResourceType,
-            AcademicLifecycleEvent::getResourceId,
-            AcademicLifecycleEvent::getAction,
-            AcademicLifecycleEvent::getActorType,
-            AcademicLifecycleEvent::getActorId,
-            AcademicLifecycleEvent::getReason)
+            mappedAcademicLifecycleEvent -> mappedAcademicLifecycleEvent.getResourceType(),
+            mappedAcademicLifecycleEvent -> mappedAcademicLifecycleEvent.getResourceId(),
+            mappedAcademicLifecycleEvent -> mappedAcademicLifecycleEvent.getAction(),
+            mappedAcademicLifecycleEvent -> mappedAcademicLifecycleEvent.getActorType(),
+            mappedAcademicLifecycleEvent -> mappedAcademicLifecycleEvent.getActorId(),
+            mappedAcademicLifecycleEvent -> mappedAcademicLifecycleEvent.getReason())
         .containsExactly(
             AcademicLifecycleResource.TRAINING_PATH,
             resourceId,
@@ -145,12 +148,12 @@ class AcademicLifecycleServiceTest {
     verify(eventRepository).flush();
     assertThat(eventCaptor.getValue())
         .extracting(
-            AcademicLifecycleEvent::getResourceType,
-            AcademicLifecycleEvent::getResourceId,
-            AcademicLifecycleEvent::getAction,
-            AcademicLifecycleEvent::getActorType,
-            AcademicLifecycleEvent::getActorId,
-            AcademicLifecycleEvent::getReason)
+            mappedAcademicLifecycleEvent -> mappedAcademicLifecycleEvent.getResourceType(),
+            mappedAcademicLifecycleEvent -> mappedAcademicLifecycleEvent.getResourceId(),
+            mappedAcademicLifecycleEvent -> mappedAcademicLifecycleEvent.getAction(),
+            mappedAcademicLifecycleEvent -> mappedAcademicLifecycleEvent.getActorType(),
+            mappedAcademicLifecycleEvent -> mappedAcademicLifecycleEvent.getActorId(),
+            mappedAcademicLifecycleEvent -> mappedAcademicLifecycleEvent.getReason())
         .containsExactly(
             AcademicLifecycleResource.SHIFT,
             resourceId,
@@ -215,7 +218,18 @@ class AcademicLifecycleServiceTest {
             null,
             AcademicSpaceType.SUBJECT,
             AcademicSpaceFormat.INDIVIDUAL);
-    final var course = Course.create(institution, studyPlan, academicSpace, academicYear);
+    final var course =
+        Course.create(
+            institution,
+            StudyPlanSpace.create(
+                institution,
+                studyPlan,
+                academicSpace,
+                null,
+                RequirementType.REQUIRED,
+                1,
+                ApprovalMode.FINAL_EXAM),
+            academicYear);
     course.deactivate();
     final var lifecycleRequest = new AcademicLifecycleRequest("Prueba de ciclo");
     final var context = mock(CourseRepository.CourseAcademicContext.class);
@@ -288,7 +302,18 @@ class AcademicLifecycleServiceTest {
             null,
             AcademicSpaceType.SUBJECT,
             AcademicSpaceFormat.INDIVIDUAL);
-    final var course = Course.create(institution, studyPlan, academicSpace, academicYear);
+    final var course =
+        Course.create(
+            institution,
+            StudyPlanSpace.create(
+                institution,
+                studyPlan,
+                academicSpace,
+                null,
+                RequirementType.REQUIRED,
+                1,
+                ApprovalMode.FINAL_EXAM),
+            academicYear);
     course.deactivate();
     course.delete(Instant.now());
     final var context = mock(CourseRepository.CourseAcademicContext.class);

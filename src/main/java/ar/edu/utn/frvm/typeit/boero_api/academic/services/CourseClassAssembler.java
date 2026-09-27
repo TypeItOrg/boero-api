@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -92,7 +93,9 @@ public class CourseClassAssembler {
       throw invalid(AcademicMessages.COURSE_SCHEDULE_INVALID);
     }
     final Integer capacity =
-        individual ? Integer.valueOf(totalMinutes / periodDurationMinutes) : request.capacity();
+        periodDurationMinutes != null
+            ? Integer.valueOf(totalMinutes / periodDurationMinutes)
+            : request.capacity();
     final var day =
         courseClassDayRepository.save(
             CourseClassDay.create(
@@ -165,7 +168,7 @@ public class CourseClassAssembler {
     }
   }
 
-  private static Integer requirePeriod(final Integer periodDurationMinutes) {
+  private static Integer requirePeriod(final @Nullable Integer periodDurationMinutes) {
     if (periodDurationMinutes == null || periodDurationMinutes <= 0) {
       throw invalid(AcademicMessages.COURSE_PERIOD_DURATION_REQUIRED);
     }

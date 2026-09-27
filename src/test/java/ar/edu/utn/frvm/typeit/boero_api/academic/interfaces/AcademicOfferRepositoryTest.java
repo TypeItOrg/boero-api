@@ -18,6 +18,7 @@ import ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData;
 import ar.edu.utn.frvm.typeit.boero_api.support.JpaAuditingTestConfig;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -62,7 +63,9 @@ class AcademicOfferRepositoryTest {
     final var result =
         studyPlanRepository.findAvailableOffers(institution.getId(), TODAY, PageRequest.of(0, 20));
 
-    assertThat(result.getContent()).extracting(StudyPlan::getId).containsExactly(available.getId());
+    assertThat(result.getContent())
+        .extracting(mappedStudyPlan -> mappedStudyPlan.getId())
+        .containsExactly(available.getId());
     assertThat(
             studyPlanRepository.findAvailableOfferById(
                 institution.getId(), available.getId(), TODAY))
@@ -109,7 +112,7 @@ class AcademicOfferRepositoryTest {
       final String pathName,
       final String planName,
       final LocalDate effectiveFrom,
-      final LocalDate effectiveTo,
+      final @Nullable LocalDate effectiveTo,
       final boolean activePath,
       final boolean activePlan) {
     final var path = TrainingPath.create(institution, pathName, null);

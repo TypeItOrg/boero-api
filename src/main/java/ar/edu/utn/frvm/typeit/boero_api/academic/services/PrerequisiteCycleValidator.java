@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -22,7 +23,7 @@ class PrerequisiteCycleValidator {
       final UUID studyPlanId,
       final UUID targetId,
       final UUID requiredId,
-      final UUID excludedPrerequisiteId) {
+      final @Nullable UUID excludedPrerequisiteId) {
     final Map<UUID, Set<UUID>> requiredBySpace = new HashMap<>();
     for (final var prerequisite : prerequisiteRepository.findByStudyPlan_Id(studyPlanId)) {
       if (prerequisite.getId().equals(excludedPrerequisiteId)) {

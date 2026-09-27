@@ -104,7 +104,7 @@ class CourseInstrumentFilterTest {
             PageRequest.of(0, 50));
 
     assertThat(result.getContent())
-        .extracting(Course::getId)
+        .extracting(mappedCourse -> mappedCourse.getId())
         .containsExactlyInAnyOrder(instrumentalCourse.getId(), plainCourse.getId());
   }
 

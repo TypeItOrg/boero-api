@@ -5,18 +5,19 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 public record CreateCourseRequest(
-    UUID studyPlanSpaceId,
-    UUID instrumentId,
-    UUID studyPlanId,
-    UUID academicSpaceId,
+    @Nullable UUID studyPlanSpaceId,
+    @Nullable UUID instrumentId,
+    @Nullable UUID studyPlanId,
+    @Nullable UUID academicSpaceId,
     @NotNull UUID academicYearId,
     @NotEmpty @Valid List<@NotNull @Valid CourseClassRequest> classes) {
 
   public CreateCourseRequest(
-      final UUID studyPlanId,
-      final UUID academicSpaceId,
+      final @Nullable UUID studyPlanId,
+      final @Nullable UUID academicSpaceId,
       final UUID academicYearId,
       final List<CourseClassRequest> classes) {
     this(null, null, studyPlanId, academicSpaceId, academicYearId, classes);

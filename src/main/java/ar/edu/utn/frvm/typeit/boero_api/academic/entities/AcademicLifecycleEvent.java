@@ -21,6 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "academic_lifecycle_events")
@@ -58,7 +59,7 @@ public class AcademicLifecycleEvent {
   private UUID actorId;
 
   @Column(length = 500)
-  private String reason;
+  private @Nullable String reason;
 
   @Column(name = "request_id", length = 36)
   private String requestId;
@@ -73,7 +74,7 @@ public class AcademicLifecycleEvent {
       final AcademicLifecycleAction action,
       final AccountType actorType,
       final UUID actorId,
-      final String reason,
+      final @Nullable String reason,
       final String requestId,
       final Instant createdAt) {
     return AcademicLifecycleEvent.builder()

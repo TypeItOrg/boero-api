@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicLevel;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Prerequisite;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
@@ -116,8 +118,10 @@ public class CreateStudyPlanVersionUseCase {
       prerequisiteRepository.save(
           Prerequisite.create(
               version,
-              spacesBySourceId.get(sourcePrerequisite.getTargetStudyPlanSpace().getId()),
-              spacesBySourceId.get(sourcePrerequisite.getRequiredStudyPlanSpace().getId()),
+              requireNonNull(
+                  spacesBySourceId.get(sourcePrerequisite.getTargetStudyPlanSpace().getId())),
+              requireNonNull(
+                  spacesBySourceId.get(sourcePrerequisite.getRequiredStudyPlanSpace().getId())),
               sourcePrerequisite.getRequirementStage(),
               sourcePrerequisite.getRequiredCondition()));
     }

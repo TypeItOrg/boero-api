@@ -4,13 +4,14 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicLevel;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(requiredProperties = {"id", "name", "displayOrder", "description", "spaces"})
 public record AcademicOfferLevelResponse(
     UUID id,
     String name,
     int displayOrder,
-    @Schema(nullable = true) String description,
+    @Schema(nullable = true) @Nullable String description,
     List<AcademicOfferSpaceResponse> spaces) {
 
   public static AcademicOfferLevelResponse from(

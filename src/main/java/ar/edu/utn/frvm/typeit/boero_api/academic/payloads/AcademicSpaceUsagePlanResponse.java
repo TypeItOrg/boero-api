@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(
     requiredProperties = {
@@ -23,8 +24,8 @@ public record AcademicSpaceUsagePlanResponse(
     String name,
     int versionNumber,
     String trainingPathName,
-    @Schema(nullable = true) LocalDate effectiveFrom,
-    @Schema(nullable = true) LocalDate effectiveTo,
+    @Schema(nullable = true) @Nullable LocalDate effectiveFrom,
+    @Schema(nullable = true) @Nullable LocalDate effectiveTo,
     StudyPlanStatus status,
     List<AcademicSpaceUsagePlacementResponse> placements) {
 

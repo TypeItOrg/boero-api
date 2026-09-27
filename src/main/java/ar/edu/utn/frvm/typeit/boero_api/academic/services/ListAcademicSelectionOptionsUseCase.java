@@ -15,6 +15,7 @@ import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import jakarta.persistence.EntityManager;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -30,11 +31,11 @@ public class ListAcademicSelectionOptionsUseCase {
   public PaginatedResponse<AcademicSelectionOptionResponse> execute(
       UUID institutionId,
       String resource,
-      String search,
-      Boolean active,
-      Boolean published,
-      UUID trainingPathId,
-      StudyPlanStatus status,
+      @Nullable String search,
+      @Nullable Boolean active,
+      @Nullable Boolean published,
+      @Nullable UUID trainingPathId,
+      @Nullable StudyPlanStatus status,
       Pageable pageable) {
     return execute(
         institutionId, resource, search, active, published, trainingPathId, status, pageable, null);
@@ -44,13 +45,13 @@ public class ListAcademicSelectionOptionsUseCase {
   public PaginatedResponse<AcademicSelectionOptionResponse> execute(
       UUID institutionId,
       String resource,
-      String search,
-      Boolean active,
-      Boolean published,
-      UUID trainingPathId,
-      StudyPlanStatus status,
+      @Nullable String search,
+      @Nullable Boolean active,
+      @Nullable Boolean published,
+      @Nullable UUID trainingPathId,
+      @Nullable StudyPlanStatus status,
       Pageable pageable,
-      PermissionCode operation) {
+      @Nullable PermissionCode operation) {
     String entity;
     Set<PermissionCode> permissions;
     String pathExpression = null;

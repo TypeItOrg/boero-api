@@ -4,6 +4,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.Shift;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(
     requiredProperties = {
@@ -20,9 +21,9 @@ public record ShiftResponse(
     UUID institutionId,
     String institutionName,
     String name,
-    @Schema(nullable = true) String description,
+    @Schema(nullable = true) @Nullable String description,
     boolean active,
-    @Schema(nullable = true) Instant deletedAt) {
+    @Schema(nullable = true) @Nullable Instant deletedAt) {
 
   public static ShiftResponse from(final Shift shift) {
     return new ShiftResponse(

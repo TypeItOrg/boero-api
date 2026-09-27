@@ -26,6 +26,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(
@@ -58,10 +59,10 @@ public class AcademicYear extends SoftDeletable {
   private int year;
 
   @Column(name = "start_date")
-  private LocalDate startDate;
+  private @Nullable LocalDate startDate;
 
   @Column(name = "end_date")
-  private LocalDate endDate;
+  private @Nullable LocalDate endDate;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
@@ -70,8 +71,8 @@ public class AcademicYear extends SoftDeletable {
   public static AcademicYear create(
       final Institution institution,
       final int year,
-      final LocalDate startDate,
-      final LocalDate endDate,
+      final @Nullable LocalDate startDate,
+      final @Nullable LocalDate endDate,
       final LocalDate today) {
     validate(year, startDate, endDate, today);
     return AcademicYear.builder()
@@ -84,7 +85,10 @@ public class AcademicYear extends SoftDeletable {
   }
 
   public void update(
-      final int year, final LocalDate startDate, final LocalDate endDate, final LocalDate today) {
+      final int year,
+      final @Nullable LocalDate startDate,
+      final @Nullable LocalDate endDate,
+      final LocalDate today) {
     if (status != AcademicYearStatus.PLANNED) {
       throw new InvalidAcademicStateException();
     }
@@ -115,18 +119,21 @@ public class AcademicYear extends SoftDeletable {
   }
 
   private static void validate(
-      final int year, final LocalDate startDate, final LocalDate endDate, final LocalDate today) {
+      final int year,
+      final @Nullable LocalDate startDate,
+      final @Nullable LocalDate endDate,
+      final LocalDate today) {
     validateYear(year, today);
 
     final boolean onlyOneDate = (startDate == null) != (endDate == null);
     if (onlyOneDate) {
       throw dateValidationError("endDate", AcademicMessages.DATE_PAIR_REQUIRED);
     }
-    if (startDate != null && startDate.isAfter(endDate)) {
-      throw dateValidationError("endDate", AcademicMessages.ACADEMIC_YEAR_DATES_INVALID);
-    }
-    if (startDate == null) {
+    if (startDate == null || endDate == null) {
       return;
+    }
+    if (startDate.isAfter(endDate)) {
+      throw dateValidationError("endDate", AcademicMessages.ACADEMIC_YEAR_DATES_INVALID);
     }
     if (startDate.getYear() != year) {
       throw dateValidationError("startDate", AcademicMessages.ACADEMIC_YEAR_START_DATE_INVALID);

@@ -68,16 +68,16 @@ class ListCoursesUseCaseTest {
 
     final var sort = capturePageable().getSort();
     assertThat(sort.getOrderFor("studyPlanSpace.academicSpace.name"))
-        .extracting(Sort.Order::getDirection)
+        .extracting(mappedOrder -> mappedOrder.getDirection())
         .isEqualTo(Sort.Direction.ASC);
     assertThat(sort.getOrderFor("studyPlanSpace.studyPlan.trainingPath.name"))
-        .extracting(Sort.Order::getDirection)
+        .extracting(mappedOrder -> mappedOrder.getDirection())
         .isEqualTo(Sort.Direction.DESC);
     assertThat(sort.getOrderFor("studyPlanSpace.studyPlan.name"))
-        .extracting(Sort.Order::getDirection)
+        .extracting(mappedOrder -> mappedOrder.getDirection())
         .isEqualTo(Sort.Direction.ASC);
     assertThat(sort.getOrderFor("academicYear.year"))
-        .extracting(Sort.Order::getDirection)
+        .extracting(mappedOrder -> mappedOrder.getDirection())
         .isEqualTo(Sort.Direction.DESC);
     assertThat(sort.getOrderFor("institution.name")).isNotNull();
   }

@@ -25,6 +25,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -123,7 +124,7 @@ class GetAcademicOfferUseCaseTest {
       final AcademicSpace academicSpace,
       final UUID id,
       final String name,
-      final AcademicLevel academicLevel) {
+      final @Nullable AcademicLevel academicLevel) {
     given(planSpace.getId()).willReturn(id);
     given(planSpace.getAcademicSpace()).willReturn(academicSpace);
     given(planSpace.getAcademicLevel()).willReturn(academicLevel);

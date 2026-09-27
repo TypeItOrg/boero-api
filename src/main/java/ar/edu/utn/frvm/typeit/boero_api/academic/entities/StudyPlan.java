@@ -27,6 +27,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(
@@ -66,10 +67,10 @@ public class StudyPlan extends SoftDeletable {
   private String name;
 
   @Column(name = "effective_from")
-  private LocalDate effectiveFrom;
+  private @Nullable LocalDate effectiveFrom;
 
   @Column(name = "effective_to")
-  private LocalDate effectiveTo;
+  private @Nullable LocalDate effectiveTo;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
@@ -79,8 +80,8 @@ public class StudyPlan extends SoftDeletable {
       final Institution institution,
       final TrainingPath trainingPath,
       final String name,
-      final LocalDate effectiveFrom,
-      final LocalDate effectiveTo) {
+      final @Nullable LocalDate effectiveFrom,
+      final @Nullable LocalDate effectiveTo) {
     validateDates(effectiveFrom, effectiveTo);
     return StudyPlan.builder()
         .institution(institution)
@@ -96,8 +97,8 @@ public class StudyPlan extends SoftDeletable {
   public static StudyPlan createVersion(
       final StudyPlan source,
       final String name,
-      final LocalDate effectiveFrom,
-      final LocalDate effectiveTo,
+      final @Nullable LocalDate effectiveFrom,
+      final @Nullable LocalDate effectiveTo,
       final int versionNumber) {
     validateDates(effectiveFrom, effectiveTo);
     if (versionNumber <= 1) {
@@ -116,7 +117,9 @@ public class StudyPlan extends SoftDeletable {
   }
 
   public void updateDraft(
-      final String name, final LocalDate effectiveFrom, final LocalDate effectiveTo) {
+      final String name,
+      final @Nullable LocalDate effectiveFrom,
+      final @Nullable LocalDate effectiveTo) {
     ensureDraft();
     validateDates(effectiveFrom, effectiveTo);
     this.name = AcademicNameNormalizer.display(name);
@@ -131,7 +134,7 @@ public class StudyPlan extends SoftDeletable {
     status = StudyPlanStatus.ACTIVE;
   }
 
-  public void deactivate(final LocalDate effectiveTo) {
+  public void deactivate(final @Nullable LocalDate effectiveTo) {
     if (status != StudyPlanStatus.ACTIVE) {
       throw new InvalidAcademicStateException();
     }
@@ -153,7 +156,8 @@ public class StudyPlan extends SoftDeletable {
     return markDeleted(deletedAt);
   }
 
-  private static void validateDates(final LocalDate effectiveFrom, final LocalDate effectiveTo) {
+  private static void validateDates(
+      final @Nullable LocalDate effectiveFrom, final @Nullable LocalDate effectiveTo) {
     if (effectiveFrom == null && effectiveTo != null) {
       throw new AcademicValidationException(
           AcademicMessages.STUDY_PLAN_DATES_INVALID,

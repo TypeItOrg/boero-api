@@ -48,7 +48,10 @@ public class GetStudyPlanCurriculumUseCase {
     final Map<UUID, List<StudyPlanSpaceResponse>> spacesByLevel =
         spaceResponses.stream()
             .filter(space -> space.academicLevelId() != null)
-            .collect(Collectors.groupingBy(StudyPlanSpaceResponse::academicLevelId));
+            .collect(
+                Collectors.groupingBy(
+                    mappedStudyPlanSpaceResponse ->
+                        mappedStudyPlanSpaceResponse.academicLevelId()));
     final var levelResponses =
         levels.stream()
             .map(
