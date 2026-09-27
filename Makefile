@@ -2,7 +2,7 @@ COMPOSE := docker compose
 .DEFAULT_GOAL := dev
 
 MIGRATION_NAME := $(word 2,$(MAKECMDGOALS))
-KNOWN_TARGETS := discard-legacy-documents dev build down logs clean reset-data ps test format format-check migration seed-demo seed-demo-repair-ids seed-demo-cleanup-legacy
+KNOWN_TARGETS := discard-legacy-documents dev build down logs clean reset-data ps test static-analysis format format-check migration seed-demo seed-demo-repair-ids seed-demo-cleanup-legacy
 
 ifeq ($(firstword $(MAKECMDGOALS)),migration)
 ifneq ($(MIGRATION_NAME),)
@@ -15,7 +15,7 @@ $(MIGRATION_NAME):
 endif
 endif
 
-.PHONY: dev build down logs clean reset-data ps test format format-check migration
+.PHONY: dev build down logs clean reset-data ps test static-analysis format format-check migration
 
 .PHONY: seed-demo seed-demo-repair-ids seed-demo-cleanup-legacy
 seed-demo:
@@ -57,6 +57,9 @@ ps:
 
 test:
 	./gradlew --no-daemon test
+
+static-analysis:
+	./gradlew --continue staticAnalysis
 
 format:
 	./gradlew spotlessApply
