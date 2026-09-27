@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.*;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.*;
@@ -88,9 +89,9 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
                       EnrollmentApplication.createForTrainingPath(
                           previous.getInstitution(),
                           previous.getApplicantPerson(),
-                          previous.getTrainingPath(),
-                          previous.getAcademicYear(),
-                          previous.getEnrollmentPeriod()));
+                          requireNonNull(previous.getTrainingPath()),
+                          requireNonNull(previous.getAcademicYear()),
+                          requireNonNull(previous.getEnrollmentPeriod())));
               return new Request(application.getId(), previous.getApplicantPerson().getId());
             });
     select(next, f.courseId());
@@ -105,7 +106,8 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
         catalog.execute(
             request.personId(), request.applicationId(), null, null, null, PageRequest.of(0, 20));
     assertThat(courseOptions.getContent())
-        .extracting(EnrollmentCourseOptionResponse::courseId)
+        .extracting(
+            mappedEnrollmentCourseOptionResponse -> mappedEnrollmentCourseOptionResponse.courseId())
         .contains(f.courseId());
     assertThat(courseOptions.getContent().getFirst().hasCapacity()).isTrue();
     approve.execute(f.institutionId(), request.applicationId(), null);
@@ -138,7 +140,9 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
                       PageRequest.of(0, 20))
                   .getContent())
           .hasSize(1)
-          .allMatch(EnrollmentCourseOptionResponse::hasCapacity);
+          .allMatch(
+              mappedEnrollmentCourseOptionResponse ->
+                  mappedEnrollmentCourseOptionResponse.hasCapacity());
       final long singleCourseQueries = statistics.getPrepareStatementCount();
 
       final var individual = addCourse(f, true, "Individual", 2);
@@ -150,7 +154,9 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
               request.personId(), request.applicationId(), null, null, null, PageRequest.of(0, 20));
       assertThat(available.getContent())
           .hasSize(4)
-          .allMatch(EnrollmentCourseOptionResponse::hasCapacity);
+          .allMatch(
+              mappedEnrollmentCourseOptionResponse ->
+                  mappedEnrollmentCourseOptionResponse.hasCapacity());
       // A mixed page adds only the batch query for individual slots.
       assertThat(statistics.getPrepareStatementCount())
           .isLessThanOrEqualTo(singleCourseQueries + 1);
@@ -165,7 +171,9 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
           .allMatch(value -> !value.hasCapacity());
       assertThat(remaining.getContent())
           .filteredOn(value -> value.courseId().equals(individual.courseId()))
-          .allMatch(EnrollmentCourseOptionResponse::hasCapacity);
+          .allMatch(
+              mappedEnrollmentCourseOptionResponse ->
+                  mappedEnrollmentCourseOptionResponse.hasCapacity());
     } finally {
       statistics.setStatisticsEnabled(statisticsEnabled);
     }
@@ -197,8 +205,9 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
     assertThat(second.items()).hasSize(1);
     assertThat(List.of(first.items().getFirst(), second.items().getFirst()))
         .extracting(
-            TeacherCourseClassResponse::academicSpaceName,
-            TeacherCourseClassResponse::instrumentName)
+            mappedTeacherCourseClassResponse ->
+                mappedTeacherCourseClassResponse.academicSpaceName(),
+            mappedTeacherCourseClassResponse -> mappedTeacherCourseClassResponse.instrumentName())
         .containsExactlyInAnyOrder(tuple("Curso", null), tuple("Instrumental", "Instrumental"));
   }
 
@@ -262,7 +271,11 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
             .getFirst()
             .individualSlots();
     assertThat(periods).filteredOn(slot -> !slot.available()).hasSize(1);
-    assertThat(periods).filteredOn(CourseIndividualSlotOptionResponse::available).hasSize(1);
+    assertThat(periods)
+        .filteredOn(
+            mappedCourseIndividualSlotOptionResponse ->
+                mappedCourseIndividualSlotOptionResponse.available())
+        .hasSize(1);
   }
 
   @Test
@@ -325,7 +338,7 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
                 .listEnrollments(
                     f.institutionId(), teachers.getFirst(), f.classId(), PageRequest.of(0, 20))
                 .items())
-        .extracting(CourseEnrollmentResponse::id)
+        .extracting(mappedCourseEnrollmentResponse -> mappedCourseEnrollmentResponse.id())
         .containsExactly(enrollment.id());
     assertThatThrownBy(
             () ->
@@ -491,7 +504,7 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
         new JwtAuthenticatedUser(
             UUID.randomUUID(), teacher, "00009001", f.institutionId(), UUID.randomUUID(), "test");
     final var authentication =
-        new TestingAuthenticationToken(principal, null, "ROLE_INSTITUTIONAL_USER");
+        new TestingAuthenticationToken(principal, "", "ROLE_INSTITUTIONAL_USER");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     try {
       http.perform(
@@ -545,7 +558,8 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
       }
     }
     assertThat(waitlist.execute(f.institutionId(), f.courseId()))
-        .extracting(CourseWaitlistEntryResponse::waitlistNumber)
+        .extracting(
+            mappedCourseWaitlistEntryResponse -> mappedCourseWaitlistEntryResponse.waitlistNumber())
         .containsExactly(1, 2);
     assertThat(
             enrollments
@@ -592,7 +606,9 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
                                                 LocalTime.of(23, 30, 30))))))))))
         .isInstanceOf(AcademicValidationException.class);
     assertThat(options.execute(f.institutionId(), f.courseId()).classes())
-        .extracting(CourseEnrollmentClassOptionResponse::id)
+        .extracting(
+            mappedCourseEnrollmentClassOptionResponse ->
+                mappedCourseEnrollmentClassOptionResponse.id())
         .containsExactly(f.classId());
     assertThat(slotCount(f)).isEqualTo(2L);
 
@@ -626,7 +642,9 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
                 .getFirst()
                 .individualSlots())
         .hasSize(4)
-        .allMatch(CourseIndividualSlotOptionResponse::available);
+        .allMatch(
+            mappedCourseIndividualSlotOptionResponse ->
+                mappedCourseIndividualSlotOptionResponse.available());
   }
 
   private List<CourseEnrollmentResponse> race(Fixture f, Request first, Request second)
@@ -697,10 +715,11 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
   }
 
   private Long slotCount(Fixture f) {
-    return jdbcTemplate.queryForObject(
-        "SELECT count(*) FROM course_individual_slots WHERE institution_id = ?",
-        Long.class,
-        f.institutionId());
+    return requireNonNull(
+        jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM course_individual_slots WHERE institution_id = ?",
+            Long.class,
+            f.institutionId()));
   }
 
   private Request approved(Fixture f, String document) {
@@ -871,7 +890,11 @@ class CourseEnrollmentFlowPostgresIntegrationTest extends DatabaseMigrationTestS
               individual ? persist(Instrument.create(institution, name, null)) : null;
           final var course =
               persist(
-                  Course.create(institution, placement, previous.getAcademicYear(), instrument));
+                  Course.create(
+                      institution,
+                      placement,
+                      requireNonNull(previous.getAcademicYear()),
+                      instrument));
           final var courseClass = persist(CourseClass.create(institution, course, 1));
           final var day =
               persist(

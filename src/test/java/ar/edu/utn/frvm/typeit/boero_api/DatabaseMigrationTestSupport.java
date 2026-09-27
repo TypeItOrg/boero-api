@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.support.AuthTestData;
 import ar.edu.utn.frvm.typeit.boero_api.support.IntegrationTest;
 import java.util.UUID;
@@ -26,6 +28,8 @@ public abstract class DatabaseMigrationTestSupport {
   static final PostgreSQLContainer<?> POSTGRES =
       new PostgreSQLContainer<>(DockerImageName.parse("postgres:18-alpine"));
 
+  // The Testcontainers lifecycle owns and stops this shared container.
+  @SuppressWarnings("resource")
   static final GenericContainer<?> REDIS =
       new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
 
@@ -47,7 +51,7 @@ public abstract class DatabaseMigrationTestSupport {
     SecurityContextHolder.getContext()
         .setAuthentication(
             new TestingAuthenticationToken(
-                AuthTestData.platformPrincipal(id), null, "ROLE_PLATFORM_ADMIN"));
+                AuthTestData.platformPrincipal(requireNonNull(id)), "", "ROLE_PLATFORM_ADMIN"));
   }
 
   @AfterEach

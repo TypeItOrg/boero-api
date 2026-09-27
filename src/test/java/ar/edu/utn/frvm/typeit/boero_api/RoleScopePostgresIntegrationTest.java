@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -141,10 +142,11 @@ class RoleScopePostgresIntegrationTest extends DatabaseMigrationTestSupport {
     fixtures.insertTrainingPath(allowed, institution);
     UUID assignment = assignment(person, institution, PermissionCode.TRAINING_PATH_READ);
     assertThat(
-            authorities
-                .resolvePersonAuthorities(person, institution)
-                .permissionScopes()
-                .get(PermissionCode.TRAINING_PATH_READ)
+            requireNonNull(
+                    authorities
+                        .resolvePersonAuthorities(person, institution)
+                        .permissionScopes()
+                        .get(PermissionCode.TRAINING_PATH_READ))
                 .institutional())
         .isTrue();
     transaction()
@@ -160,11 +162,12 @@ class RoleScopePostgresIntegrationTest extends DatabaseMigrationTestSupport {
               invalidator.evictPerson(person, institution);
             });
     var access =
-        authorities
-            .resolvePersonAuthorities(person, institution)
-            .permissionScopes()
-            .get(PermissionCode.TRAINING_PATH_READ);
-    assertThat(access.institutional()).isFalse();
+        requireNonNull(
+            authorities
+                .resolvePersonAuthorities(person, institution)
+                .permissionScopes()
+                .get(PermissionCode.TRAINING_PATH_READ));
+    assertThat(requireNonNull(access).institutional()).isFalse();
     assertThat(access.trainingPathIds()).containsExactly(allowed);
   }
 
@@ -264,10 +267,11 @@ class RoleScopePostgresIntegrationTest extends DatabaseMigrationTestSupport {
             UUID.class,
             targetAssignment);
     assertThat(
-            authorities
-                .resolvePersonAuthorities(person, institution)
-                .permissionScopes()
-                .get(PermissionCode.TRAINING_PATH_READ)
+            requireNonNull(
+                    authorities
+                        .resolvePersonAuthorities(person, institution)
+                        .permissionScopes()
+                        .get(PermissionCode.TRAINING_PATH_READ))
                 .institutional())
         .isTrue();
     authenticate(actor, institution);
@@ -276,7 +280,9 @@ class RoleScopePostgresIntegrationTest extends DatabaseMigrationTestSupport {
             institution,
             person,
             new ReplacePersonRolesRequest(
-                List.of(new AssignRoleRequest(role, AccessScope.TRAINING_PATHS, Set.of(path)))),
+                List.of(
+                    new AssignRoleRequest(
+                        requireNonNull(role), AccessScope.TRAINING_PATHS, Set.of(path)))),
             false,
             Set.of());
     assertThat(activeSession.execute(sessionId)).isFalse();
@@ -288,10 +294,11 @@ class RoleScopePostgresIntegrationTest extends DatabaseMigrationTestSupport {
               assertThat(assignment.trainingPathNames()).containsKey(path);
             });
     assertThat(
-            authorities
-                .resolvePersonAuthorities(person, institution)
-                .permissionScopes()
-                .get(PermissionCode.TRAINING_PATH_READ)
+            requireNonNull(
+                    authorities
+                        .resolvePersonAuthorities(person, institution)
+                        .permissionScopes()
+                        .get(PermissionCode.TRAINING_PATH_READ))
                 .trainingPathIds())
         .containsExactly(path);
   }
@@ -572,10 +579,11 @@ class RoleScopePostgresIntegrationTest extends DatabaseMigrationTestSupport {
   }
 
   private UUID roleId(UUID assignment) {
-    return jdbcTemplate.queryForObject(
-        "SELECT role_id FROM person_role_assignments WHERE person_role_assignment_id = ?",
-        UUID.class,
-        assignment);
+    return requireNonNull(
+        jdbcTemplate.queryForObject(
+            "SELECT role_id FROM person_role_assignments WHERE person_role_assignment_id = ?",
+            UUID.class,
+            assignment));
   }
 
   private void selectPath(UUID assignment, UUID path) {

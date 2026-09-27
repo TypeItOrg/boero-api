@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -24,8 +26,9 @@ final class MigrationFixtures {
   }
 
   UUID firstInstitutionId() {
-    return jdbcTemplate.queryForObject(
-        "SELECT institution_id FROM institutions ORDER BY institution_id LIMIT 1", UUID.class);
+    return requireNonNull(
+        jdbcTemplate.queryForObject(
+            "SELECT institution_id FROM institutions ORDER BY institution_id LIMIT 1", UUID.class));
   }
 
   void insertTestInstitution(final UUID institutionId) {
@@ -193,8 +196,9 @@ final class MigrationFixtures {
   }
 
   String randomDocumentNumber() {
-    return jdbcTemplate.queryForObject(
-        "SELECT LPAD((floor(random() * 100000000))::bigint::text, 8, '0')", String.class);
+    return requireNonNull(
+        jdbcTemplate.queryForObject(
+            "SELECT LPAD((floor(random() * 100000000))::bigint::text, 8, '0')", String.class));
   }
 
   void insertPerson(UUID personId, UUID institutionId, String documentNumber, boolean deleted) {

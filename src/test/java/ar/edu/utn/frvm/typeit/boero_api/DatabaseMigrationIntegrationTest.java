@@ -1,9 +1,9 @@
 package ar.edu.utn.frvm.typeit.boero_api;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ar.edu.utn.frvm.typeit.boero_api.support.IntegrationTest;
-import java.util.List;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -67,7 +67,7 @@ class DatabaseMigrationIntegrationTest extends DatabaseMigrationTestSupport {
   void shouldMakeContainsSearchesIndexable() {
     jdbcTemplate.execute("SET enable_seqscan = off");
     try {
-      final List<String> plan =
+      final var plan =
           jdbcTemplate.queryForList(
               """
               EXPLAIN (COSTS OFF)
@@ -77,30 +77,35 @@ class DatabaseMigrationIntegrationTest extends DatabaseMigrationTestSupport {
               """,
               String.class);
 
-      assertThat(plan).anyMatch(line -> line.contains("institutions_name_search_trgm_idx"));
+      assertThat(plan)
+          .doesNotContainNull()
+          .anyMatch(line -> requireNonNull(line).contains("institutions_name_search_trgm_idx"));
     } finally {
       jdbcTemplate.execute("RESET enable_seqscan");
     }
   }
 
   private Integer tableCount() {
-    return jdbcTemplate.queryForObject(
-        """
+    return requireNonNull(
+        jdbcTemplate.queryForObject(
+            """
         SELECT COUNT(*)
         FROM information_schema.tables
         WHERE table_schema = 'public'
           AND table_name <> 'flyway_schema_history'
         """,
-        Integer.class);
+            Integer.class));
   }
 
   private Integer institutionCount() {
-    return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM institutions", Integer.class);
+    return requireNonNull(
+        jdbcTemplate.queryForObject("SELECT COUNT(*) FROM institutions", Integer.class));
   }
 
   private Integer tenantRelationshipConstraintCount() {
-    return jdbcTemplate.queryForObject(
-        """
+    return requireNonNull(
+        jdbcTemplate.queryForObject(
+            """
         SELECT COUNT(*)
         FROM pg_constraint
         WHERE conname IN (
@@ -114,12 +119,13 @@ class DatabaseMigrationIntegrationTest extends DatabaseMigrationTestSupport {
           'course_class_teachers_person_institution_fk'
         )
         """,
-        Integer.class);
+            Integer.class));
   }
 
   private Integer activePersonDocumentIndexCount() {
-    return jdbcTemplate.queryForObject(
-        """
+    return requireNonNull(
+        jdbcTemplate.queryForObject(
+            """
         SELECT COUNT(*)
         FROM pg_indexes
         WHERE schemaname = 'public'
@@ -127,12 +133,13 @@ class DatabaseMigrationIntegrationTest extends DatabaseMigrationTestSupport {
           AND indexname = 'people_active_document_number_unique'
           AND indexdef LIKE '%WHERE (deleted = false)%'
         """,
-        Integer.class);
+            Integer.class));
   }
 
   private Integer passwordResetTokenUserUniqueIndexCount() {
-    return jdbcTemplate.queryForObject(
-        """
+    return requireNonNull(
+        jdbcTemplate.queryForObject(
+            """
         SELECT COUNT(*)
         FROM pg_indexes
         WHERE schemaname = 'public'
@@ -140,17 +147,19 @@ class DatabaseMigrationIntegrationTest extends DatabaseMigrationTestSupport {
           AND indexname = 'institutional_password_reset_tokens_user_unique'
           AND indexdef LIKE 'CREATE UNIQUE INDEX%'
         """,
-        Integer.class);
+            Integer.class));
   }
 
   private Integer pgTrgmExtensionCount() {
-    return jdbcTemplate.queryForObject(
-        "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'", Integer.class);
+    return requireNonNull(
+        jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'", Integer.class));
   }
 
   private Integer utcEventTimestampColumnCount() {
-    return jdbcTemplate.queryForObject(
-        """
+    return requireNonNull(
+        jdbcTemplate.queryForObject(
+            """
         SELECT COUNT(*)
         FROM information_schema.columns
         WHERE table_schema = current_schema()
@@ -160,12 +169,13 @@ class DatabaseMigrationIntegrationTest extends DatabaseMigrationTestSupport {
           )
           AND data_type = 'timestamp with time zone'
         """,
-        Integer.class);
+            Integer.class));
   }
 
   private Integer nonUtcEventTimestampColumnCount() {
-    return jdbcTemplate.queryForObject(
-        """
+    return requireNonNull(
+        jdbcTemplate.queryForObject(
+            """
         SELECT COUNT(*)
         FROM information_schema.columns
         WHERE table_schema = current_schema()
@@ -175,17 +185,18 @@ class DatabaseMigrationIntegrationTest extends DatabaseMigrationTestSupport {
           )
           AND data_type <> 'timestamp with time zone'
         """,
-        Integer.class);
+            Integer.class));
   }
 
   private Integer searchTrigramIndexCount() {
-    return jdbcTemplate.queryForObject(
-        """
+    return requireNonNull(
+        jdbcTemplate.queryForObject(
+            """
         SELECT COUNT(*)
         FROM pg_indexes
         WHERE schemaname = 'public'
           AND indexname LIKE '%_search_trgm_idx'
         """,
-        Integer.class);
+            Integer.class));
   }
 }
