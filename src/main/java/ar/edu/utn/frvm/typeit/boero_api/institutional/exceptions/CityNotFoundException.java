@@ -4,8 +4,12 @@ import static ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.Institut
 
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ApplicationException;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorCategory;
+import java.io.Serial;
 
 public class CityNotFoundException extends ApplicationException {
+
+  @Serial private static final long serialVersionUID = 1L;
+
   public CityNotFoundException() {
     super(ErrorCategory.INVALID_INPUT, CITY_NOT_FOUND);
   }

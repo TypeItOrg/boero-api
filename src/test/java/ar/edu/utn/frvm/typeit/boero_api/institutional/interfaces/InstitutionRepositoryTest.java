@@ -36,7 +36,7 @@ class InstitutionRepositoryTest {
   @Test
   @DisplayName("Should list active and inactive institutions with full location loaded")
   void findAllWithLocation_returnsAllInstitutionsWithLocation() {
-    Institution active = createInstitution(entityManager, "boero-active");
+    createInstitution(entityManager, "boero-active");
     Institution inactive = createInstitution(entityManager, "boero-inactive");
     inactive.updateStatus(false);
     entityManager.merge(inactive);
@@ -47,7 +47,7 @@ class InstitutionRepositoryTest {
 
     assertThat(page.getTotalElements()).isEqualTo(2);
     assertThat(page.getContent())
-        .extracting(Institution::getSlug)
+        .extracting(mappedInstitution -> mappedInstitution.getSlug())
         .contains("boero-active", "boero-inactive");
     assertThat(page.getContent())
         .allSatisfy(
@@ -80,7 +80,9 @@ class InstitutionRepositoryTest {
         institutionRepository.findWithLocationByFilters("musica", true, PageRequest.of(0, 10));
 
     assertThat(page.getTotalElements()).isEqualTo(1);
-    assertThat(page.getContent()).extracting(Institution::getSlug).containsExactly("boero-active");
+    assertThat(page.getContent())
+        .extracting(mappedInstitution -> mappedInstitution.getSlug())
+        .containsExactly("boero-active");
     assertThat(page.getContent())
         .allSatisfy(
             institution -> {
@@ -189,10 +191,13 @@ class InstitutionRepositoryTest {
             Instant.parse("2026-06-01T00:00:00Z"), Instant.parse("2026-08-01T00:00:00Z"));
 
     assertThat(counts)
-        .extracting(MonthlyInstitutionCount::getYear, MonthlyInstitutionCount::getMonth)
+        .extracting(
+            mappedMonthlyInstitutionCount -> mappedMonthlyInstitutionCount.getYear(),
+            mappedMonthlyInstitutionCount -> mappedMonthlyInstitutionCount.getMonth())
         .containsExactly(tuple(2026, 6), tuple(2026, 7));
     assertThat(counts)
-        .extracting(MonthlyInstitutionCount::getInstitutionCount)
+        .extracting(
+            mappedMonthlyInstitutionCount -> mappedMonthlyInstitutionCount.getInstitutionCount())
         .containsExactly(1L, 1L);
   }
 
@@ -212,7 +217,7 @@ class InstitutionRepositoryTest {
     var institutions = institutionRepository.findTop5ByOrderByCreatedAtDesc();
 
     assertThat(institutions)
-        .extracting(Institution::getSlug)
+        .extracting(mappedInstitution -> mappedInstitution.getSlug())
         .containsExactly("boero-5", "boero-4", "boero-3", "boero-2", "boero-1");
     assertThat(institutions)
         .allSatisfy(

@@ -8,6 +8,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.ProvinceReposit
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.CityListItemResponse;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +20,8 @@ public class ListCitiesUseCase {
   private final CityRepository cityRepository;
   private final ProvinceRepository provinceRepository;
 
-  public PaginatedResponse<CityListItemResponse> execute(String search, Pageable pageable) {
+  public PaginatedResponse<CityListItemResponse> execute(
+      @Nullable String search, Pageable pageable) {
     final String normalizedSearch = SearchNormalization.normalizeSearch(search);
     if (normalizedSearch != null) {
       return PaginatedResponse.from(
@@ -33,7 +35,7 @@ public class ListCitiesUseCase {
 
   @Transactional(readOnly = true)
   public PaginatedResponse<CityListItemResponse> executeByProvince(
-      UUID provinceId, String search, Pageable pageable) {
+      UUID provinceId, @Nullable String search, Pageable pageable) {
     if (!provinceRepository.existsById(provinceId)) throw new ProvinceNotFoundException();
 
     final String normalizedSearch = SearchNormalization.normalizeSearch(search);

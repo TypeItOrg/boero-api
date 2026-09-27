@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
@@ -70,7 +72,7 @@ public class CreatePersonUseCase {
         User.builder()
             .institution(institution)
             .person(person)
-            .password(passwordEncoder.encode(request.password()))
+            .password(requireNonNull(passwordEncoder.encode(request.password())))
             .build();
 
     userRepository.save(user);

@@ -112,8 +112,7 @@ class PeopleControllerWebMvcTest {
   @Test
   @DisplayName("Should list people for platform admin")
   void listPeople_returnsOkForPlatformAdmin() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPlatformAdminAccess(true);
     when(listPeopleUseCase.execute(eq(INSTITUTION_ID), eq("ana"), eq(null), any(Pageable.class)))
@@ -134,7 +133,7 @@ class PeopleControllerWebMvcTest {
   @DisplayName("Should list people for authority of same institution")
   void listPeople_returnsOkForSameInstitutionAuthority() throws Exception {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPermission(PermissionCode.INSTITUTION_PERSON_READ_ANY, true);
     when(listPeopleUseCase.execute(eq(INSTITUTION_ID), eq(null), eq(null), any(Pageable.class)))
@@ -151,7 +150,7 @@ class PeopleControllerWebMvcTest {
   @DisplayName("Should list people filtered by role id")
   void listPeople_filtersByRoleId() throws Exception {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPermission(PermissionCode.INSTITUTION_PERSON_READ_ANY, true);
 
@@ -175,7 +174,7 @@ class PeopleControllerWebMvcTest {
   @DisplayName("Should forbid authority of different institution")
   void listPeople_returnsForbiddenForCrossTenant() throws Exception {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPermission(PermissionCode.INSTITUTION_PERSON_READ_ANY, true);
 
@@ -192,7 +191,7 @@ class PeopleControllerWebMvcTest {
   @DisplayName("Should forbid applicant without read permission")
   void listPeople_returnsForbiddenWithoutPermission() throws Exception {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPermission(PermissionCode.INSTITUTION_PERSON_READ_ANY, false);
 
@@ -206,8 +205,7 @@ class PeopleControllerWebMvcTest {
   @Test
   @DisplayName("Should get person for platform admin")
   void getPerson_returnsOkForPlatformAdmin() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPlatformAdminAccess(true);
     when(getPersonByIdUseCase.execute(INSTITUTION_ID, PERSON_ID)).thenReturn(personResponse());
@@ -227,7 +225,7 @@ class PeopleControllerWebMvcTest {
   @DisplayName("Should get person for authority of own institution")
   void getPerson_returnsOkForSameInstitutionAuthority() throws Exception {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPermission(PermissionCode.INSTITUTION_PERSON_READ_ANY, true);
     when(getPersonByIdUseCase.execute(INSTITUTION_ID, PERSON_ID)).thenReturn(personResponse());
@@ -242,8 +240,7 @@ class PeopleControllerWebMvcTest {
   @Test
   @DisplayName("Should create person for platform admin")
   void createPerson_returnsCreatedForPlatformAdmin() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPlatformAdminAccess(true);
     when(createPersonUseCase.execute(eq(INSTITUTION_ID), any())).thenReturn(personResponse());
@@ -262,7 +259,7 @@ class PeopleControllerWebMvcTest {
   @DisplayName("Should create person for authority of own institution")
   void createPerson_returnsCreatedForSameInstitutionAuthority() throws Exception {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPermission(PermissionCode.INSTITUTION_PERSON_CREATE, true);
     when(createPersonUseCase.execute(eq(INSTITUTION_ID), any())).thenReturn(personResponse());
@@ -279,8 +276,7 @@ class PeopleControllerWebMvcTest {
   @Test
   @DisplayName("Should reject people younger than three")
   void createPerson_returnsBadRequestForTooRecentBirthDate() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPlatformAdminAccess(true);
     LocalDate invalidBirthDate =
@@ -302,8 +298,7 @@ class PeopleControllerWebMvcTest {
   @Test
   @DisplayName("Should return 409 when create with duplicate document")
   void createPerson_returns409ForDuplicate() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPlatformAdminAccess(true);
     when(createPersonUseCase.execute(eq(INSTITUTION_ID), any()))
@@ -321,8 +316,7 @@ class PeopleControllerWebMvcTest {
   @Test
   @DisplayName("Should return 404 when create with non-existent institution")
   void createPerson_returns404ForMissingInstitution() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPlatformAdminAccess(true);
     when(createPersonUseCase.execute(eq(INSTITUTION_ID), any()))
@@ -340,8 +334,7 @@ class PeopleControllerWebMvcTest {
   @Test
   @DisplayName("Should update person for platform admin")
   void updatePerson_returnsOkForPlatformAdmin() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPlatformAdminAccess(true);
     when(updatePersonByAdminUseCase.execute(eq(INSTITUTION_ID), eq(PERSON_ID), any()))
@@ -362,8 +355,7 @@ class PeopleControllerWebMvcTest {
   @Test
   @DisplayName("Should return 400 when update with all-null fields")
   void updatePerson_returns400ForAllNullFields() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPlatformAdminAccess(true);
     when(updatePersonByAdminUseCase.execute(eq(INSTITUTION_ID), eq(PERSON_ID), any()))
@@ -384,8 +376,7 @@ class PeopleControllerWebMvcTest {
   @Test
   @DisplayName("Should return 404 when updating person from another institution")
   void updatePerson_returns404ForCrossTenant() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPlatformAdminAccess(true);
     when(updatePersonByAdminUseCase.execute(eq(INSTITUTION_ID), eq(PERSON_ID), any()))
@@ -406,8 +397,7 @@ class PeopleControllerWebMvcTest {
   @Test
   @DisplayName("Should delete person for platform admin")
   void deletePerson_returnsNoContentForPlatformAdmin() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPlatformAdminAccess(true);
 
@@ -426,8 +416,7 @@ class PeopleControllerWebMvcTest {
   @Test
   @DisplayName("Should return 204 on idempotent delete (already deleted)")
   void deletePerson_isIdempotent() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPlatformAdminAccess(true);
 
@@ -453,8 +442,7 @@ class PeopleControllerWebMvcTest {
   @Test
   @DisplayName("Should return 404 when deleting person from another institution")
   void deletePerson_returns404ForCrossTenant() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPlatformAdminAccess(true);
     org.mockito.Mockito.doThrow(new PersonNotFoundInInstitutionException())
@@ -475,7 +463,7 @@ class PeopleControllerWebMvcTest {
   @DisplayName("Should forbid applicant from create without permission")
   void createPerson_returnsForbiddenWithoutPermission() throws Exception {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPermission(PermissionCode.INSTITUTION_PERSON_CREATE, false);
 

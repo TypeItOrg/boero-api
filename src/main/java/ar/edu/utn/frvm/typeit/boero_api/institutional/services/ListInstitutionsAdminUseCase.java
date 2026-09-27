@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +27,7 @@ public class ListInstitutionsAdminUseCase {
 
   @Transactional(readOnly = true)
   public PaginatedResponse<InstitutionAdminListItemResponse> execute(
-      final String search, final Boolean active, final Pageable pageable) {
+      final @Nullable String search, final @Nullable Boolean active, final Pageable pageable) {
     final String normalizedSearch = SearchNormalization.normalizeSearch(search);
     var page = institutionRepository.findWithLocationByFilters(normalizedSearch, active, pageable);
     var items = page.getContent();
@@ -54,7 +55,7 @@ public class ListInstitutionsAdminUseCase {
   }
 
   private static Collection<UUID> toIds(List<Institution> institutions) {
-    return institutions.stream().map(Institution::getId).toList();
+    return institutions.stream().map(mappedInstitution -> mappedInstitution.getId()).toList();
   }
 
   private static Map<UUID, Long> toMap(List<InstitutionUserCount> rows) {

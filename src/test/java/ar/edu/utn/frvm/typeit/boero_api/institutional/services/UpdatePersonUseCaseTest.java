@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -230,8 +231,8 @@ class UpdatePersonUseCaseTest {
 
     var response = updatePersonUseCase.execute(principal, request);
 
-    assertThat(response.address()).isNotNull();
-    assertThat(response.address().street()).isEqualTo("San Martín");
+    assertThat(requireNonNull(response.address())).isNotNull();
+    assertThat(requireNonNull(response.address()).street()).isEqualTo("San Martín");
 
     ArgumentCaptor<Address> captor = ArgumentCaptor.forClass(Address.class);
     verify(addressRepository).save(captor.capture());
@@ -268,10 +269,10 @@ class UpdatePersonUseCaseTest {
 
     var response = updatePersonUseCase.execute(principal, request);
 
-    assertThat(response.address().street()).isEqualTo("Belgrano");
-    assertThat(response.address().number()).isEqualTo("200");
-    assertThat(response.address().apartment()).isEqualTo("3B");
-    assertThat(response.address().city().name()).isEqualTo("Córdoba");
+    assertThat(requireNonNull(response.address()).street()).isEqualTo("Belgrano");
+    assertThat(requireNonNull(response.address()).number()).isEqualTo("200");
+    assertThat(requireNonNull(response.address()).apartment()).isEqualTo("3B");
+    assertThat(requireNonNull(response.address()).city().name()).isEqualTo("Córdoba");
   }
 
   @Test

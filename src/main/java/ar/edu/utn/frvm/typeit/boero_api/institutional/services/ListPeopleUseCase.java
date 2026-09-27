@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,7 +29,10 @@ public class ListPeopleUseCase {
 
   @Transactional(readOnly = true)
   public PaginatedResponse<PersonSummaryResponse> execute(
-      final UUID institutionId, final String search, final UUID roleId, final Pageable pageable) {
+      final UUID institutionId,
+      final @Nullable String search,
+      final @Nullable UUID roleId,
+      final Pageable pageable) {
 
     final String normalizedSearch = SearchNormalization.normalizeSearch(search);
     final boolean hasFilter = normalizedSearch != null || roleId != null;
@@ -42,7 +46,8 @@ public class ListPeopleUseCase {
       return PaginatedResponse.from(peoplePage.map(PersonSummaryResponse::from));
     }
 
-    final List<UUID> personIds = peoplePage.getContent().stream().map(Person::getId).toList();
+    final List<UUID> personIds =
+        peoplePage.getContent().stream().map(mappedPerson -> mappedPerson.getId()).toList();
     final List<PersonRoleAssignment> roleAssignments =
         personRoleAssignmentRepository.findByPerson_IdInAndInstitution_Id(personIds, institutionId);
     final Map<UUID, Boolean> accessByPerson =

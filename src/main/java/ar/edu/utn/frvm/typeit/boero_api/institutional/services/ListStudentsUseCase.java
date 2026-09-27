@@ -7,6 +7,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.StudentReposito
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.student.StudentSummaryResponse;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +20,7 @@ public class ListStudentsUseCase {
 
   @Transactional(readOnly = true)
   public PaginatedResponse<StudentSummaryResponse> execute(
-      final UUID institutionId, final String search, final Pageable pageable) {
+      final UUID institutionId, final @Nullable String search, final Pageable pageable) {
     final String normalizedSearch = SearchNormalization.normalizeSearch(search);
     final var students =
         normalizedSearch == null

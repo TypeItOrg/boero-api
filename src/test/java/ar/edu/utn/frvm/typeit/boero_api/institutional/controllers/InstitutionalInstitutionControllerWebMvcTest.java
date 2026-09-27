@@ -86,7 +86,7 @@ class InstitutionalInstitutionControllerWebMvcTest {
   void update_updatesInstitutionDetailsForAuthorizedUser() throws Exception {
     final var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     when(authorizationService.hasPermission(any(), eq(PermissionCode.INSTITUTION_UPDATE)))
         .thenReturn(true);
     when(updateInstitutionalInstitutionUseCase.execute(
@@ -108,7 +108,7 @@ class InstitutionalInstitutionControllerWebMvcTest {
   void update_returnsForbiddenWhenPermissionMissing() throws Exception {
     final var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     when(authorizationService.hasPermission(any(), eq(PermissionCode.INSTITUTION_UPDATE)))
         .thenReturn(false);
 
@@ -126,7 +126,7 @@ class InstitutionalInstitutionControllerWebMvcTest {
   void update_returnsForbiddenWhenAccessingOtherInstitution() throws Exception {
     final var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), OTHER_INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), OTHER_INSTITUTION_ID), "");
 
     mockMvc
         .perform(
@@ -142,7 +142,7 @@ class InstitutionalInstitutionControllerWebMvcTest {
   void update_returnsBadRequestWhenNameIsBlank() throws Exception {
     final var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     when(authorizationService.hasPermission(any(), eq(PermissionCode.INSTITUTION_UPDATE)))
         .thenReturn(true);
 
@@ -160,7 +160,7 @@ class InstitutionalInstitutionControllerWebMvcTest {
   void update_returnsBadRequestWhenCityNotFound() throws Exception {
     final var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     when(authorizationService.hasPermission(any(), eq(PermissionCode.INSTITUTION_UPDATE)))
         .thenReturn(true);
     when(updateInstitutionalInstitutionUseCase.execute(

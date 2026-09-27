@@ -183,7 +183,7 @@ class InstitutionControllerWebMvcTest {
   void create_returnsForbiddenForInstitutionalPrincipal() throws Exception {
     var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     stubPlatformAdminAccess(false);
 
     mockMvc
@@ -198,8 +198,7 @@ class InstitutionControllerWebMvcTest {
   @Test
   @DisplayName("Should create institution for platform admin")
   void create_returnsCreatedForPlatformAdmin() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     stubPlatformAdminAccess(true);
     when(createInstitutionUseCase.execute(any(CreateInstitutionRequest.class)))
         .thenReturn(detailResponse());
@@ -219,7 +218,7 @@ class InstitutionControllerWebMvcTest {
   void update_returnsForbiddenForInstitutionalPrincipal() throws Exception {
     var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     stubPlatformAdminAccess(false);
 
     mockMvc
@@ -234,8 +233,7 @@ class InstitutionControllerWebMvcTest {
   @Test
   @DisplayName("Should update institution for platform admin")
   void update_returnsOkForPlatformAdmin() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     stubPlatformAdminAccess(true);
     when(updateInstitutionUseCase.execute(eq(INSTITUTION_ID), any(UpdateInstitutionRequest.class)))
         .thenReturn(detailResponse());
@@ -253,8 +251,7 @@ class InstitutionControllerWebMvcTest {
   @Test
   @DisplayName("Should return bad request when city does not exist on create")
   void create_returnsBadRequestWhenCityNotFound() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     stubPlatformAdminAccess(true);
     when(createInstitutionUseCase.execute(any(CreateInstitutionRequest.class)))
         .thenThrow(new CityNotFoundException());
@@ -272,8 +269,7 @@ class InstitutionControllerWebMvcTest {
   @Test
   @DisplayName("Should return bad request when cityId is malformed on create")
   void create_returnsBadRequestWhenCityIdIsInvalid() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     stubPlatformAdminAccess(true);
 
     mockMvc
@@ -288,8 +284,7 @@ class InstitutionControllerWebMvcTest {
   @Test
   @DisplayName("Should return bad request when city does not exist on update")
   void update_returnsBadRequestWhenCityNotFound() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     stubPlatformAdminAccess(true);
     when(updateInstitutionUseCase.execute(eq(INSTITUTION_ID), any(UpdateInstitutionRequest.class)))
         .thenThrow(new CityNotFoundException());
@@ -307,8 +302,7 @@ class InstitutionControllerWebMvcTest {
   @Test
   @DisplayName("Should return bad request when cityId is malformed on update")
   void update_returnsBadRequestWhenCityIdIsInvalid() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     stubPlatformAdminAccess(true);
 
     mockMvc
@@ -331,7 +325,7 @@ class InstitutionControllerWebMvcTest {
   void adminList_returnsForbiddenForInstitutionalPrincipal() throws Exception {
     var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     stubPlatformAdminAccess(false);
 
     mockMvc
@@ -342,8 +336,7 @@ class InstitutionControllerWebMvcTest {
   @Test
   @DisplayName("Should return admin institution list with userCount for platform admin")
   void adminList_returnsAdminListForPlatformAdmin() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     stubPlatformAdminAccess(true);
     when(listInstitutionsAdminUseCase.execute(isNull(), isNull(), any()))
         .thenReturn(
@@ -383,8 +376,7 @@ class InstitutionControllerWebMvcTest {
   @Test
   @DisplayName("Should pass admin institution filters to use case")
   void adminList_passesFiltersToUseCase() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     stubPlatformAdminAccess(true);
     when(listInstitutionsAdminUseCase.execute(eq("boero"), eq(true), any()))
         .thenReturn(

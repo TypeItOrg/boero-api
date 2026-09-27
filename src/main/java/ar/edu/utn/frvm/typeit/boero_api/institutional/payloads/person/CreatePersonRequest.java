@@ -17,6 +17,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
+import org.jspecify.annotations.Nullable;
 
 public record CreatePersonRequest(
     @NotBlank(message = ValidationMessages.FIRST_NAME_REQUIRED)
@@ -40,7 +41,7 @@ public record CreatePersonRequest(
         @Email(message = ValidationMessages.PERSON_EMAIL_FORMAT)
         @Size(max = 150, message = ValidationMessages.PERSON_EMAIL_MAX_LENGTH)
         String email,
-    String phoneNumber,
+    @Nullable String phoneNumber,
     @NotNull(message = ValidationMessages.BIRTH_DATE_REQUIRED) @MinimumAge(MINIMUM_AGE)
         LocalDate birthDate,
     @NotBlank(message = ValidationMessages.PASSWORD_REQUIRED)
@@ -49,4 +50,4 @@ public record CreatePersonRequest(
           @Size(max = PASSWORD_MAX, message = ValidationMessages.PASSWORD_MAX_LENGTH)
         })
         String password,
-    SystemRoleCode initialRole) {}
+    @Nullable SystemRoleCode initialRole) {}

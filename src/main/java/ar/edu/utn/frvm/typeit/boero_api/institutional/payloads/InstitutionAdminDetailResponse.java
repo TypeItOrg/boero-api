@@ -3,6 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.institutional.payloads;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import java.util.UUID;
 import lombok.Builder;
+import org.jspecify.annotations.Nullable;
 
 @Builder
 public record InstitutionAdminDetailResponse(
@@ -12,12 +13,12 @@ public record InstitutionAdminDetailResponse(
     CitySummaryResponse city,
     ProvinceSummaryResponse province,
     CountryLocationResponse country,
-    String street,
-    String number,
-    String neighborhood,
-    String additionalInfo,
-    String phoneNumber,
-    String email,
+    @Nullable String street,
+    @Nullable String number,
+    @Nullable String neighborhood,
+    @Nullable String additionalInfo,
+    @Nullable String phoneNumber,
+    @Nullable String email,
     boolean active,
     long userCount) {
 

@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.controllers;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresInstitutionAccess;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPermission;
@@ -115,7 +117,8 @@ public class PeopleController {
       @PathVariable final UUID personId,
       @RequestBody final UpdateUserStatusRequest request,
       final Authentication authentication) {
-    final JwtAuthenticatedUser actor = (JwtAuthenticatedUser) authentication.getPrincipal();
+    final JwtAuthenticatedUser actor =
+        (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     updateInstitutionalUserStatusUseCase.execute(
         institutionId, actor.personId(), personId, request.enabled());
   }

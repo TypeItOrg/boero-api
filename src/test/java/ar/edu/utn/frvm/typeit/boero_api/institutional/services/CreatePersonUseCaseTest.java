@@ -102,7 +102,14 @@ class CreatePersonUseCaseTest {
     createPersonUseCase.execute(
         institutionId,
         new CreatePersonRequest(
-            "Ana", "García", "12345678", "ana@example.com", null, null, "admin-pass-123", null));
+            "Ana",
+            "García",
+            "12345678",
+            "ana@example.com",
+            null,
+            java.time.LocalDate.of(2000, 1, 1),
+            "admin-pass-123",
+            null));
 
     verify(assignPersonSystemRoleUseCase).execute(any(Person.class), eq(SystemRoleCode.APPLICANT));
   }
@@ -124,7 +131,7 @@ class CreatePersonUseCaseTest {
                         "12345678",
                         "ana@example.com",
                         null,
-                        null,
+                        java.time.LocalDate.of(2000, 1, 1),
                         "admin-pass-123",
                         SystemRoleCode.TEACHER)))
         .isInstanceOf(PersonAlreadyExistsException.class);
@@ -148,7 +155,7 @@ class CreatePersonUseCaseTest {
                         "12345678",
                         "ana@example.com",
                         null,
-                        null,
+                        java.time.LocalDate.of(2000, 1, 1),
                         "admin-pass-123",
                         SystemRoleCode.TEACHER)))
         .isInstanceOf(InstitutionNotFoundException.class);
@@ -176,7 +183,7 @@ class CreatePersonUseCaseTest {
                         "12345678",
                         "ana@example.com",
                         null,
-                        null,
+                        java.time.LocalDate.of(2000, 1, 1),
                         "admin-pass-123",
                         SystemRoleCode.TEACHER)))
         .isInstanceOf(PersonAlreadyExistsException.class);
