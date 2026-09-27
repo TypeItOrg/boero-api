@@ -2,7 +2,7 @@ COMPOSE := docker compose
 .DEFAULT_GOAL := dev
 
 MIGRATION_NAME := $(word 2,$(MAKECMDGOALS))
-KNOWN_TARGETS := discard-legacy-documents dev build down logs clean reset-data ps test format format-check migration seed-demo seed-demo-repair-ids
+KNOWN_TARGETS := discard-legacy-documents dev build down logs clean reset-data ps test format format-check migration seed-demo seed-demo-repair-ids seed-demo-cleanup-legacy
 
 ifeq ($(firstword $(MAKECMDGOALS)),migration)
 ifneq ($(MIGRATION_NAME),)
@@ -17,12 +17,15 @@ endif
 
 .PHONY: dev build down logs clean reset-data ps test format format-check migration
 
-.PHONY: seed-demo seed-demo-repair-ids
+.PHONY: seed-demo seed-demo-repair-ids seed-demo-cleanup-legacy
 seed-demo:
-	cat scripts/seed/enrollment-demo-ids.sql scripts/seed/enrollment-demo-catalog.sql scripts/seed/enrollment-demo.sql | $(COMPOSE) exec -T postgres sh -c 'exec psql -X -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"'
+	@bash scripts/seed/run.sh load
 
 seed-demo-repair-ids:
-	cat scripts/seed/enrollment-demo-ids.sql scripts/seed/enrollment-demo-catalog.sql scripts/seed/enrollment-demo-repair-ids.sql | $(COMPOSE) exec -T postgres sh -c 'exec psql -X -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"'
+	@bash scripts/seed/run.sh repair-ids
+
+seed-demo-cleanup-legacy:
+	@bash scripts/seed/run.sh cleanup-legacy
 
 .PHONY: discard-legacy-documents
 discard-legacy-documents:

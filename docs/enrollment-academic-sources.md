@@ -137,19 +137,21 @@ turno-curso que el modelo actual no tiene.
   y cupos grupales de 20. Los bloques son de 60 minutos, excepto instrumento CAVI
   de 40 minutos. Las clases individuales restantes tienen dos franjas de 30
   minutos. Esta distribución no reproduce horarios ni cargas horarias oficiales.
-- **Períodos:** seis períodos del año corriente, abiertos todo el año, reservan
-  únicamente el nivel 1. Sus fechas facilitan las pruebas, no representan el
+- **Períodos:** seis períodos del ciclo seleccionado con `SEED_YEAR`, abiertos todo
+  el año, reservan únicamente el nivel 1. Sus fechas facilitan las pruebas, no representan el
   calendario oficial de inscripción.
 - **Personas:** se conservan los ocho usuarios anteriores. No se reutilizan datos
   personales de estudiantes reales, ni se crean inscripciones o resultados por SQL.
 
 ## Reemplazo y verificación
 
-El seeder elimina únicamente las dos propuestas ficticias de su primera versión
-cuando no tienen solicitudes ni inscripciones y siguen activas. Una referencia
-inesperada o un cambio de estado aborta toda la transacción. Conserva los usuarios,
+La carga normal conserva las propuestas existentes. El comando separado
+`seed-demo-cleanup-legacy` permite retirar únicamente las dos propuestas ficticias
+de la primera versión cuando no tienen solicitudes ni inscripciones y siguen
+activas. Una referencia inesperada o un cambio de estado aborta toda la transacción. Conserva los usuarios,
 catálogos compartidos y el trayecto CAV con el plan 2008 preexistentes.
 
-La carga en PostgreSQL local confirmó seis planes nuevos, veinte niveles, cien
-ubicaciones, 56 espacios de catálogo y 35 cursos. No se agregaron ni ejecutaron
-tests automatizados. El recorrido de inscripción por la interfaz queda pendiente.
+La carga anterior en PostgreSQL local confirmó seis planes nuevos, veinte niveles,
+cien ubicaciones, 56 espacios de catálogo y 35 cursos. Esa comprobación histórica
+no valida la nueva ejecución portable, todavía no ejecutada contra una base.
+No se agregaron ni ejecutaron tests automatizados. El recorrido de inscripción por la interfaz queda pendiente.
