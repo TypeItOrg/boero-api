@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.search;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ScopedAuthorizationService;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -109,7 +111,7 @@ class SearchRepository {
   }
 
   private String scopeCondition(SearchDefinition definition, MapSqlParameterSource parameters) {
-    var access = authorization.access(definition.permission());
+    var access = authorization.access(requireNonNull(definition.permission()));
     if (access.institutional()) {
       return "";
     }

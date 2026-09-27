@@ -41,7 +41,7 @@ class SearchServiceTest {
     final ArgumentCaptor<List<SearchDefinition>> definitions = ArgumentCaptor.forClass(List.class);
     verify(repository).institutionalSummary(definitions.capture(), any(), eq(institutionId), eq(6));
     assertThat(definitions.getValue())
-        .extracting(SearchDefinition::type)
+        .extracting(mappedSearchDefinition -> mappedSearchDefinition.type())
         .containsExactly(SearchEntityType.USER, SearchEntityType.STUDY_PLAN);
   }
 }

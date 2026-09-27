@@ -149,7 +149,7 @@ SELECT c.course_id AS id, c.institution_id, i.name AS institution_name,
     return permission != null && permissions.contains(permission);
   }
 
-  PermissionCode permission() {
+  @Nullable PermissionCode permission() {
     return permission;
   }
 

@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.search;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import java.util.List;
@@ -57,7 +59,8 @@ public class SearchService {
             .filter(definition -> grouped.containsKey(definition.type()))
             .map(
                 definition -> {
-                  final List<SearchResultResponse> results = grouped.get(definition.type());
+                  final List<SearchResultResponse> results =
+                      requireNonNull(grouped.get(definition.type()));
                   return new SearchGroupResponse(
                       definition.type(),
                       results.stream().limit(limit).toList(),
