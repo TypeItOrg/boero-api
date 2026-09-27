@@ -1,6 +1,5 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
-import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PasskeyCredential;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PasskeyCredentialRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import java.time.Clock;
@@ -8,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.web.webauthn.api.Bytes;
 import org.springframework.security.web.webauthn.api.CredentialRecord;
 import org.springframework.security.web.webauthn.management.UserCredentialRepository;
@@ -26,13 +26,13 @@ public class PasskeyUserCredentialRepository implements UserCredentialRepository
 
   @Override
   @Transactional
-  public CredentialRecord findByCredentialId(final Bytes credentialId) {
+  public @Nullable CredentialRecord findByCredentialId(final Bytes credentialId) {
     if (credentialId == null) {
       return null;
     }
     return passkeyCredentialRepository
         .findWithLockByCredentialId(credentialId.toBase64UrlString())
-        .filter(PasskeyCredential::isActive)
+        .filter(mappedPasskeyCredential -> mappedPasskeyCredential.isActive())
         .map(mapper::toRecord)
         .orElse(null);
   }
@@ -61,7 +61,7 @@ public class PasskeyUserCredentialRepository implements UserCredentialRepository
     }
     passkeyCredentialRepository
         .findWithLockByCredentialId(credentialRecord.getCredentialId().toBase64UrlString())
-        .filter(PasskeyCredential::isActive)
+        .filter(mappedPasskeyCredential -> mappedPasskeyCredential.isActive())
         .ifPresent(
             existing -> {
               existing.markUsed(clock.instant(), credentialRecord.getSignatureCount());

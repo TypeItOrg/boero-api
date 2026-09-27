@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
+import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidCredentialsException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PlatformLoginRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PlatformAuthResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.security.PlatformUsername;
@@ -26,7 +27,9 @@ public class PlatformLoginUseCase {
     final Authentication authentication =
         credentialsAuthenticator.authenticate(principal, request.password());
 
-    final PlatformAccount account = (PlatformAccount) authentication.getPrincipal();
+    if (!(authentication.getPrincipal() instanceof PlatformAccount account)) {
+      throw new InvalidCredentialsException();
+    }
     final boolean rememberMe = Boolean.TRUE.equals(request.rememberMe());
     final PlatformLoginSessionPersistenceService.Result session =
         platformLoginSessionPersistenceService.create(

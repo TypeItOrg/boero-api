@@ -84,7 +84,9 @@ class RegisterUserUseCaseTest {
 
     assertThat(response.emailVerificationRequired()).isTrue();
     verify(emailVerification)
-        .sendInitial(org.mockito.ArgumentMatchers.argThat(User::requiresEmailVerification));
+        .sendInitial(
+            org.mockito.ArgumentMatchers.argThat(
+                mappedUser -> mappedUser.requiresEmailVerification()));
     assertThat(response.userId()).isNotNull();
     assertThat(response.documentNumber()).isEqualTo("12345678");
     assertThat(response.institutionId()).isEqualTo(institutionId);

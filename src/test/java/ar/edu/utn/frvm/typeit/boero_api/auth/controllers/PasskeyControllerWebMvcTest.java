@@ -221,6 +221,6 @@ class PasskeyControllerWebMvcTest {
   }
 
   private static TestingAuthenticationToken authentication(JwtAuthenticatedUser principal) {
-    return new TestingAuthenticationToken(principal, null);
+    return new TestingAuthenticationToken(principal, "");
   }
 }

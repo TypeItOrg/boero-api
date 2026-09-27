@@ -1,7 +1,8 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.InstitutionalPasswordResetToken;
-import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidPasswordRecoveryTokenException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.PasswordConfirmationMismatchException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.InstitutionalPasswordResetTokenRepository;
@@ -34,7 +35,7 @@ public class ResetInstitutionalPasswordUseCase {
     passwordResetTokenRepository
         .findUserIdByTokenHash(hash)
         .flatMap(userRepository::findForEmailVerificationById)
-        .filter(User::isAccountActive)
+        .filter(mappedUser -> mappedUser.isAccountActive())
         .orElseThrow(InvalidPasswordRecoveryTokenException::new);
     final Instant now = clock.instant();
     final InstitutionalPasswordResetToken token =
@@ -43,7 +44,7 @@ public class ResetInstitutionalPasswordUseCase {
             .filter(resetToken -> resetToken.isUsableAt(now))
             .orElseThrow(InvalidPasswordRecoveryTokenException::new);
 
-    token.getUser().changePassword(passwordEncoder.encode(request.password()));
+    token.getUser().changePassword(requireNonNull(passwordEncoder.encode(request.password())));
     token.markUsed(now);
     sessionRevocationService.revokeInstitutionalSessionsForUser(token.getUser().getId());
   }

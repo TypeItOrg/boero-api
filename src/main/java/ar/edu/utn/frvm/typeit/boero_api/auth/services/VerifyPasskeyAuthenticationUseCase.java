@@ -94,7 +94,7 @@ public class VerifyPasskeyAuthenticationUseCase {
     final PasskeyCredential stored =
         passkeyCredentialRepository
             .findByCredentialId(credentialId)
-            .filter(PasskeyCredential::isActive)
+            .filter(mappedPasskeyCredential -> mappedPasskeyCredential.isActive())
             .orElseThrow(WebAuthnVerificationFailedException::new);
     if (!stored.getUser().getId().equals(expected.getId())) {
       throw new WebAuthnVerificationFailedException();

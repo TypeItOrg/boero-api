@@ -51,7 +51,7 @@ public record UserPayload(
         roles,
         permissions,
         scopes.entrySet().stream()
-            .collect(Collectors.toMap(e -> e.getKey().getCode(), Map.Entry::getValue)));
+            .collect(Collectors.toMap(e -> e.getKey().getCode(), entry -> entry.getValue())));
   }
 
   public static UserPayload from(User user, UUID personId, Set<PermissionCode> permissions) {
@@ -72,7 +72,7 @@ public record UserPayload(
         .roles(roles)
         .permissions(
             grantedPermissions.stream()
-                .map(PermissionCode::getCode)
+                .map(mappedPermissionCode -> mappedPermissionCode.getCode())
                 .collect(Collectors.toUnmodifiableSet()))
         .build();
   }

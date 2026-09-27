@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.controllers;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.IdentifyLoginRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PasswordLoginRequest;
@@ -99,7 +101,8 @@ public class AuthController {
       @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
       Authentication authentication) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
-    JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    JwtAuthenticatedUser principal =
+        (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     String token = HeaderUtils.bearerValue(authorization);
     logoutUseCase.execute(principal, token);
   }
@@ -110,14 +113,16 @@ public class AuthController {
       @PageableDefault(size = 20, sort = "startedAt", direction = Sort.Direction.DESC)
           Pageable pageable) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
-    JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    JwtAuthenticatedUser principal =
+        (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     return getActiveSessionsUseCase.execute(principal, pageable);
   }
 
   @GetMapping(version = Version.V1, path = "/me")
   public UserResponse me(Authentication authentication) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
-    JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    JwtAuthenticatedUser principal =
+        (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     return getCurrentUserUseCase.execute(principal);
   }
 }

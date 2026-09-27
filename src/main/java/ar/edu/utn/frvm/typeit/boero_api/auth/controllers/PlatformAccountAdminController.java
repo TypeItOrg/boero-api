@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.controllers;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedPlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.CreatePlatformAccountRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.UpdatePlatformAccountRequest;
@@ -84,7 +86,8 @@ public class PlatformAccountAdminController {
       @PathVariable final UUID id,
       @Valid @RequestBody final UpdatePlatformAccountStatusRequest request,
       final Authentication authentication) {
-    final var principal = (JwtAuthenticatedPlatformAccount) authentication.getPrincipal();
+    final var principal =
+        (JwtAuthenticatedPlatformAccount) requireNonNull(authentication.getPrincipal());
     updatePlatformAccountStatusUseCase.execute(
         id, principal.platformAccountId(), request.enabled());
   }

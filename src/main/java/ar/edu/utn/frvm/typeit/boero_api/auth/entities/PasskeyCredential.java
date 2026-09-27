@@ -82,10 +82,10 @@ public class PasskeyCredential extends Auditable {
   private byte[] userHandle;
 
   @Column(name = "attestation_object")
-  private @Nullable byte[] attestationObject;
+  private byte @Nullable [] attestationObject;
 
   @Column(name = "attestation_client_data_json")
-  private @Nullable byte[] attestationClientDataJson;
+  private byte @Nullable [] attestationClientDataJson;
 
   @Column(name = "label", nullable = false, length = 100)
   private String label;
@@ -128,7 +128,7 @@ public class PasskeyCredential extends Auditable {
     }
     final Set<String> parsed =
         Arrays.stream(transports.split(","))
-            .map(String::trim)
+            .map(mappedString -> mappedString.trim())
             .filter(s -> !s.isEmpty())
             .collect(Collectors.toCollection(LinkedHashSet::new));
     return Collections.unmodifiableSet(parsed);

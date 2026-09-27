@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
@@ -106,7 +107,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
   }
 
-  private JwtPrincipal authenticateInstitutional(Claims claims, String tokenId, UUID sessionId) {
+  private @Nullable JwtPrincipal authenticateInstitutional(
+      Claims claims, String tokenId, UUID sessionId) {
     if (!isSessionActiveUseCase.execute(sessionId)) {
       return null;
     }
@@ -121,7 +123,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         .build();
   }
 
-  private JwtPrincipal authenticatePlatform(Claims claims, String tokenId, UUID sessionId) {
+  private @Nullable JwtPrincipal authenticatePlatform(
+      Claims claims, String tokenId, UUID sessionId) {
     if (!isPlatformSessionActiveUseCase.execute(sessionId)) {
       return null;
     }

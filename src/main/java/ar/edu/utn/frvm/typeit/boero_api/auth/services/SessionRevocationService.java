@@ -74,13 +74,15 @@ public class SessionRevocationService {
   private void deactivateInstitutionalSessions(final List<UserSession> sessions) {
     if (sessions.isEmpty()) return;
 
-    revokeInstitutionalSessionsByIds(sessions.stream().map(UserSession::getId).toList());
+    revokeInstitutionalSessionsByIds(
+        sessions.stream().map(mappedUserSession -> mappedUserSession.getId()).toList());
   }
 
   private void deactivatePlatformSessions(final List<PlatformSession> sessions) {
     if (sessions.isEmpty()) return;
 
-    revokePlatformSessionsByIds(sessions.stream().map(PlatformSession::getId).toList());
+    revokePlatformSessionsByIds(
+        sessions.stream().map(mappedPlatformSession -> mappedPlatformSession.getId()).toList());
   }
 
   private void evictSessions(final AuthRealm realm, final Collection<UUID> sessionIds) {

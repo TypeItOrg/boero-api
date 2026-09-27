@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.PlatformAccountEmailAlreadyExistsException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformAccountRepository;
@@ -43,7 +45,7 @@ public class CreatePlatformAccountUseCase {
               .name(request.name().trim())
               .lastName(request.lastName().trim())
               .email(email)
-              .password(passwordEncoder.encode(request.password()))
+              .password(requireNonNull(passwordEncoder.encode(request.password())))
               .enabled(true)
               .build());
     } catch (final DataIntegrityViolationException exception) {

@@ -139,7 +139,7 @@ public class RefreshTokenUseCase {
   private void revokeReusedFamily(final RefreshToken current) {
     final Set<UUID> sessionIds =
         refreshTokenRepository.findByFamilyId(current.getFamilyId()).stream()
-            .map(RefreshToken::getSessionId)
+            .map(mappedRefreshToken -> mappedRefreshToken.getSessionId())
             .collect(Collectors.toSet());
     refreshTokenRepository.revokeByFamilyId(current.getFamilyId());
     sessionRevocationService.revokeInstitutionalSessionsByIds(sessionIds);

@@ -172,7 +172,7 @@ class PlatformAccountAdminControllerWebMvcTest {
   }
 
   private TestingAuthenticationToken platformAuthentication() {
-    return new TestingAuthenticationToken(platformPrincipal(CURRENT_ACCOUNT_ID), null);
+    return new TestingAuthenticationToken(platformPrincipal(CURRENT_ACCOUNT_ID), "");
   }
 
   private void allowPlatformAdmin() {

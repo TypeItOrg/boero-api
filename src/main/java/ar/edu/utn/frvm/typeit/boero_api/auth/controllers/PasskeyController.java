@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.controllers;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.config.WebAuthnProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PasskeyAuthenticationOptionsRequest;
@@ -76,7 +78,8 @@ public class PasskeyController {
   @GetMapping(version = Version.V1, path = "/passkeys")
   public PasskeyListResponse list(final Authentication authentication) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
-    final JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    final JwtAuthenticatedUser principal =
+        (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     return new PasskeyListResponse(
         listPasskeysUseCase.execute(principal), webAuthnProperties.maxPasskeys());
   }
@@ -86,7 +89,8 @@ public class PasskeyController {
       final Authentication authentication,
       @Valid @RequestBody final PasskeyRegistrationOptionsRequest request) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
-    final JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    final JwtAuthenticatedUser principal =
+        (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     return requestRegistrationOptionsUseCase.execute(principal, request.label());
   }
 
@@ -96,7 +100,8 @@ public class PasskeyController {
       final Authentication authentication,
       @Valid @RequestBody final PasskeyRegistrationVerifyRequest request) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
-    final JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    final JwtAuthenticatedUser principal =
+        (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     return verifyPasskeyRegistrationUseCase.execute(
         principal, request.ceremonyId(), request.credential());
   }
@@ -107,7 +112,8 @@ public class PasskeyController {
       @PathVariable("id") final UUID passkeyId,
       @Valid @RequestBody final PasskeyRenameRequest request) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
-    final JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    final JwtAuthenticatedUser principal =
+        (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     return renamePasskeyUseCase.execute(principal, passkeyId, request.label());
   }
 
@@ -116,7 +122,8 @@ public class PasskeyController {
   public void revoke(
       final Authentication authentication, @PathVariable("id") final UUID passkeyId) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
-    final JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    final JwtAuthenticatedUser principal =
+        (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     revokePasskeyUseCase.execute(principal, passkeyId);
   }
 
@@ -126,7 +133,8 @@ public class PasskeyController {
       final Authentication authentication,
       @Valid @RequestBody final ReAuthenticateRequest request) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
-    final JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    final JwtAuthenticatedUser principal =
+        (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     reAuthenticateUseCase.execute(principal, request.password());
   }
 }
