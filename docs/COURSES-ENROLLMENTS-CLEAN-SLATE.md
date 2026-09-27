@@ -55,7 +55,7 @@ END $$;
 COMMIT;
 ```
 
-No eliminar usuarios, personas, instituciones, roles, estudiantes, trayectos, planes, niveles, espacios académicos, instrumentos ni archivos personales de `storage/enrollments`.
+No eliminar usuarios, personas, instituciones, roles, estudiantes, trayectos, planes, niveles, espacios académicos, instrumentos ni archivos personales de `storage`.
 
 Las solicitudes históricas y sus adjuntos no se convierten automáticamente. Pueden conservarse para consulta; las nuevas solicitudes se crean mediante el contexto de trayecto, ciclo y período del modelo nuevo.
 
