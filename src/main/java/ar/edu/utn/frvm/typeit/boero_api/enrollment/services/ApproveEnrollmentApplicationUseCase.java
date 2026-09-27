@@ -5,6 +5,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentDocumentAction;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidEnrollmentApplicationStateException;
@@ -16,12 +17,14 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.StudentReposito
 import java.time.Clock;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class ApproveEnrollmentApplicationUseCase {
+  private final EnrollmentApplicationResponseFactory responseFactory;
   private final AcademicAccessGuard accessGuard;
 
   private final EnrollmentApplicationRepository enrollmentApplicationRepository;
@@ -32,10 +35,24 @@ public class ApproveEnrollmentApplicationUseCase {
   private final EnrollmentApplicationCourseApprovalService applicationCourseApprovalService;
 
   private final EnrollmentInstitutionLock enrollmentInstitutionLock;
+  private final EnrollmentDocumentRequirementsService documents;
+  private final EnrollmentDocumentAudit audit;
+  private final EnrollmentAdmissionHistory history;
 
   @Transactional
   public EnrollmentApplicationResponse execute(
       final UUID institutionId, final UUID applicationId, final UUID resolvedByPersonId) {
+    return approve(institutionId, applicationId, resolvedByPersonId, false);
+  }
+
+  @Transactional
+  public EnrollmentApplicationResponse executeProvisionally(
+      UUID institutionId, UUID applicationId, UUID resolvedByPersonId) {
+    return approve(institutionId, applicationId, resolvedByPersonId, true);
+  }
+
+  private EnrollmentApplicationResponse approve(
+      UUID institutionId, UUID applicationId, UUID resolvedByPersonId, boolean provisional) {
     accessGuard.require(
         PermissionCode.ENROLLMENT_APPLICATION_APPROVE,
         institutionId,
@@ -61,9 +78,25 @@ public class ApproveEnrollmentApplicationUseCase {
     personRepository
         .findByIdAndInstitutionIdForUpdate(application.getApplicantPerson().getId(), institutionId)
         .orElseThrow(EnrollmentApplicationNotFoundException::new);
-    application.approve(clock.instant(), resolvedByPersonId);
+    documents.requireApproval(application, provisional);
+    final boolean alreadyAdmitted = application.isAdmitted();
+    if (provisional) {
+      application.approveProvisionally();
+    } else {
+      application.approve(clock.instant(), resolvedByPersonId);
+    }
+    history.record(application);
+    audit.record(
+        EnrollmentDocumentAudit.Actor.from(SecurityContextHolder.getContext().getAuthentication()),
+        institutionId,
+        applicationId,
+        null,
+        provisional
+            ? EnrollmentDocumentAction.PROVISIONAL_APPROVAL
+            : EnrollmentDocumentAction.FINAL_APPROVAL,
+        "SUCCESS");
 
-    if (application.getStudyPlan() == null) {
+    if (!alreadyAdmitted && application.getStudyPlan() == null) {
       applicationCourseApprovalService.process(application);
     }
 
@@ -71,7 +104,8 @@ public class ApproveEnrollmentApplicationUseCase {
     // The legacy plan-based flow retains its historical behavior until old clients migrate.
     final boolean legacyApplication =
         application.getStudyPlan() != null || application.hasLegacyStudyPlan();
-    if (legacyApplication
+    if (!alreadyAdmitted
+        && legacyApplication
         && !studentRepository.existsByInstitution_IdAndPerson_Id(
             institutionId, application.getApplicantPerson().getId())) {
       studentRepository.save(
@@ -83,7 +117,7 @@ public class ApproveEnrollmentApplicationUseCase {
               .build());
     }
 
-    return EnrollmentApplicationResponse.from(application);
+    return responseFactory.from(application);
   }
 
   private String generateFileNumber() {

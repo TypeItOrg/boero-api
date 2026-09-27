@@ -9,6 +9,8 @@ import static ar.edu.utn.frvm.typeit.boero_api.security.handlers.SecurityErrorMe
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.InvalidAccessScopeException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;
 import java.util.Map;
@@ -24,9 +26,11 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.transaction.TransactionSystemException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Slf4j
@@ -58,6 +62,25 @@ public class GlobalExceptionHandler {
             "role_scope_training_path_tenant_fk",
             "person_role_assignment_training_paths_pkey");
     for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+      if (cause instanceof org.hibernate.exception.ConstraintViolationException documentViolation) {
+        final String message =
+            switch (Objects.toString(documentViolation.getConstraintName(), "")) {
+              case "enrollment_document_gate_check" ->
+                  EnrollmentMessages.DOCUMENT_CONFIRMATION_REQUIRED;
+              case "enrollment_attachments_current_requirement_unique" ->
+                  EnrollmentMessages.ATTACHMENT_TYPE_CONFLICT;
+              case "enrollment_attachment_requirement_fk" ->
+                  EnrollmentMessages.DOCUMENT_REQUIREMENT_NOT_FOUND;
+              case "enrollment_attachment_review_check",
+                  "enrollment_attachment_observation_check",
+                  "enrollment_attachment_immutable_check" ->
+                  EnrollmentMessages.DOCUMENT_REVIEW_INVALID;
+              default -> null;
+            };
+        if (message != null) {
+          return handleApplicationException(new EnrollmentValidationException(message));
+        }
+      }
       if (cause instanceof org.hibernate.exception.ConstraintViolationException violation
           && scopeConstraints.contains(violation.getConstraintName())) {
         return handleApplicationException(new InvalidAccessScopeException());
@@ -91,6 +114,18 @@ public class GlobalExceptionHandler {
     return ExceptionPayload.builder()
         .status(HttpStatus.BAD_REQUEST.value())
         .message(MALFORMED_REQUEST_BODY)
+        .build();
+  }
+
+  @ExceptionHandler({
+    MissingServletRequestParameterException.class,
+    MethodArgumentTypeMismatchException.class
+  })
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ExceptionPayload handleInvalidRequestParameter(final Exception exception) {
+    return ExceptionPayload.builder()
+        .status(HttpStatus.BAD_REQUEST.value())
+        .message(ErrorMessages.INVALID_REQUEST_PARAMETER)
         .build();
   }
 

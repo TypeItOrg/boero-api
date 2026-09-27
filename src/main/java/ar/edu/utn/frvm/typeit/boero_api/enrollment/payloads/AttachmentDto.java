@@ -9,7 +9,7 @@ import lombok.Builder;
 @Schema(
     requiredProperties = {
       "id",
-      "attachmentType",
+      "requirementId",
       "originalFileName",
       "storagePath",
       "contentType",
@@ -18,7 +18,7 @@ import lombok.Builder;
     })
 public record AttachmentDto(
     @Schema(nullable = true) UUID id,
-    @Schema(nullable = true) String attachmentType,
+    @Schema(nullable = true) UUID requirementId,
     @Schema(nullable = true) String originalFileName,
     @Schema(nullable = true) String storagePath,
     @Schema(nullable = true) String contentType,
@@ -32,8 +32,8 @@ public record AttachmentDto(
     return id;
   }
 
-  public String getAttachmentType() {
-    return attachmentType;
+  public UUID getRequirementId() {
+    return requirementId;
   }
 
   public String getOriginalFileName() {

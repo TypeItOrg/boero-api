@@ -50,7 +50,7 @@ public class RejectEnrollmentApplicationCourseUseCase {
     if (!selection.getEnrollmentApplication().getId().equals(applicationId)) {
       throw new EnrollmentValidationException(EnrollmentMessages.COURSE_APPLICATION_NOT_FOUND);
     }
-    if (!selection.getEnrollmentApplication().isApproved()) {
+    if (!selection.getEnrollmentApplication().isAdmitted()) {
       throw new EnrollmentValidationException(EnrollmentMessages.PARENT_NOT_APPROVED);
     }
     if (request.expectedVersion() != null && request.expectedVersion() != selection.getVersion()) {

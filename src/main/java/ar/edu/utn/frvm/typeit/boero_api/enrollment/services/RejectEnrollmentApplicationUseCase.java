@@ -20,10 +20,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class RejectEnrollmentApplicationUseCase {
+  private final EnrollmentApplicationResponseFactory responseFactory;
   private final AcademicAccessGuard accessGuard;
 
   private final EnrollmentApplicationRepository enrollmentApplicationRepository;
   private final Clock clock;
+  private final EnrollmentAdmissionHistory admissionHistory;
   private EnrollmentApplicationCourseRepository applicationCourseRepository;
 
   @Autowired(required = false)
@@ -52,6 +54,7 @@ public class RejectEnrollmentApplicationUseCase {
             .findByIdAndInstitutionIdForUpdate(institutionId, applicationId)
             .orElseThrow(EnrollmentApplicationNotFoundException::new);
     application.reject(request.rejectionReason(), clock.instant(), resolvedByPersonId);
+    admissionHistory.record(application);
     if (applicationCourseRepository != null) {
       applicationCourseRepository
           .findByApplicationIdAndStatuses(
@@ -65,6 +68,6 @@ public class RejectEnrollmentApplicationUseCase {
                       resolvedByPersonId));
     }
 
-    return EnrollmentApplicationResponse.from(application);
+    return responseFactory.from(application);
   }
 }

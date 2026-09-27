@@ -135,7 +135,9 @@ class EnrollmentApplicationServiceTest {
             new BusinessDateProvider(Clock.systemUTC()),
             Clock.systemUTC(),
             Mockito.mock(EnrollmentInstitutionLock.class),
-            Mockito.mock(AcademicEligibilityService.class));
+            Mockito.mock(AcademicEligibilityService.class),
+            Mockito.mock(EnrollmentDocumentRequirementsService.class),
+            Mockito.mock(EnrollmentAdmissionHistory.class));
   }
 
   @Test

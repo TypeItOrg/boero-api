@@ -1,26 +1,35 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.controllers;
 
+import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.DocumentReviewRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentAttachmentResponse;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentDocumentRequirementResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentAttachmentService;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentAttachmentService.AttachmentContentResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,6 +41,7 @@ import org.springframework.web.multipart.MultipartFile;
  * spoof.
  */
 @RestController
+@PreAuthorize("isAuthenticated()")
 @RequestMapping("/enrollment-applications/{applicationId}/attachments")
 @RequiredArgsConstructor
 @Tag(
@@ -46,11 +56,11 @@ public class EnrollmentAttachmentController {
   public ResponseEntity<EnrollmentAttachmentResponse> uploadAttachment(
       @PathVariable UUID applicationId,
       @RequestParam("file") MultipartFile file,
-      @RequestParam("attachmentType") String attachmentType,
+      @RequestParam("requirementId") UUID requirementId,
       Authentication authentication) {
 
     EnrollmentAttachmentResponse response =
-        attachmentService.uploadAttachment(applicationId, file, attachmentType, authentication);
+        attachmentService.uploadAttachment(applicationId, file, requirementId, authentication);
 
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
@@ -80,6 +90,8 @@ public class EnrollmentAttachmentController {
             .toString();
 
     return ResponseEntity.ok()
+        .header(HttpHeaders.CACHE_CONTROL, "private, no-store")
+        .header("X-Content-Type-Options", "nosniff")
         .contentType(mediaType)
         .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
         .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(result.attachment().getFileSize()))
@@ -107,5 +119,30 @@ public class EnrollmentAttachmentController {
         attachmentService.listAttachments(applicationId, authentication);
 
     return ResponseEntity.ok(response);
+  }
+
+  @PostMapping(value = "/{attachmentId}/review", version = Version.V1)
+  public EnrollmentAttachmentResponse review(
+      @PathVariable UUID applicationId,
+      @PathVariable UUID attachmentId,
+      @Valid @RequestBody DocumentReviewRequest request,
+      Authentication authentication) {
+    return attachmentService.review(applicationId, attachmentId, request, authentication);
+  }
+
+  @GetMapping(value = "/requirements", version = Version.V1)
+  public List<EnrollmentDocumentRequirementResponse> requirements(
+      @PathVariable UUID applicationId, Authentication authentication) {
+    return attachmentService.requirements(applicationId, authentication);
+  }
+
+  @GetMapping(value = "/history", version = Version.V1)
+  public PaginatedResponse<EnrollmentAttachmentResponse> history(
+      @PathVariable UUID applicationId,
+      @RequestParam UUID requirementId,
+      @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+          Pageable pageable,
+      Authentication authentication) {
+    return attachmentService.history(applicationId, requirementId, pageable, authentication);
   }
 }

@@ -109,7 +109,7 @@ public class EnrollmentApplication extends SoftDeletable {
   private EnrollmentPeriod enrollmentPeriod;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "status", nullable = false, length = 20)
+  @Column(name = "status", nullable = false, length = 40)
   private EnrollmentApplicationStatus status;
 
   @Column(name = "rejection_reason", columnDefinition = "text")
@@ -156,6 +156,14 @@ public class EnrollmentApplication extends SoftDeletable {
       orphanRemoval = true)
   @Builder.Default
   private List<EnrollmentAttachment> attachments = new ArrayList<>();
+
+  @OneToMany(mappedBy = "application", cascade = CascadeType.ALL)
+  @Builder.Default
+  private List<EnrollmentDocumentRequirement> documentRequirements = new ArrayList<>();
+
+  public void addDocumentRequirement(EnrollmentDocumentRequirement requirement) {
+    documentRequirements.add(requirement);
+  }
 
   @OneToMany(
       mappedBy = "enrollmentApplication",
@@ -365,6 +373,10 @@ public class EnrollmentApplication extends SoftDeletable {
     return status == EnrollmentApplicationStatus.SUBMITTED;
   }
 
+  public boolean isAdmitted() {
+    return isApproved() || status == EnrollmentApplicationStatus.PROVISIONALLY_APPROVED;
+  }
+
   public boolean isApproved() {
     return status == EnrollmentApplicationStatus.APPROVED;
   }
@@ -384,10 +396,17 @@ public class EnrollmentApplication extends SoftDeletable {
   }
 
   public void approve(final Instant resolvedAt, final UUID resolvedByPersonId) {
-    ensurePendingEvaluation();
+    if (status != EnrollmentApplicationStatus.PROVISIONALLY_APPROVED) {
+      ensurePendingEvaluation();
+    }
     status = EnrollmentApplicationStatus.APPROVED;
     this.resolvedAt = resolvedAt;
     this.resolvedByPersonId = resolvedByPersonId;
+  }
+
+  public void approveProvisionally() {
+    ensurePendingEvaluation();
+    status = EnrollmentApplicationStatus.PROVISIONALLY_APPROVED;
   }
 
   public void reject(

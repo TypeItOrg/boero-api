@@ -21,7 +21,8 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AuthorizationServ
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.GlobalExceptionHandler;
 import ar.edu.utn.frvm.typeit.boero_api.config.WebConfig;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentAttachment;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentAttachmentType;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.DocumentReviewStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.DocumentVersionStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentAttachmentResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentAttachmentService;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentAttachmentService.AttachmentContentResult;
@@ -55,6 +56,9 @@ class EnrollmentAttachmentControllerWebMvcTest {
   private static final UUID PERSON_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
   private static final UUID INSTITUTION_ID =
       UUID.fromString("44444444-4444-4444-4444-444444444444");
+
+  private static final UUID REQUIREMENT_ID =
+      UUID.fromString("55555555-5555-5555-5555-555555555555");
 
   @Autowired private MockMvc mockMvc;
 
@@ -90,23 +94,33 @@ class EnrollmentAttachmentControllerWebMvcTest {
     EnrollmentAttachmentResponse response =
         new EnrollmentAttachmentResponse(
             ATTACHMENT_ID,
-            EnrollmentAttachmentType.DNI_FRONT,
+            REQUIREMENT_ID,
             "dni.pdf",
             13L,
-            Instant.parse("2026-09-08T12:00:00Z"));
+            "application/pdf",
+            Instant.parse("2026-09-08T12:00:00Z"),
+            DocumentVersionStatus.CURRENT,
+            DocumentReviewStatus.PENDING_REVIEW,
+            PERSON_ID,
+            "INSTITUTION",
+            null,
+            null,
+            null,
+            null,
+            null);
 
-    when(attachmentService.uploadAttachment(eq(APPLICATION_ID), any(), eq("DNI_FRONT"), any()))
+    when(attachmentService.uploadAttachment(eq(APPLICATION_ID), any(), eq(REQUIREMENT_ID), any()))
         .thenReturn(response);
 
     mockMvc
         .perform(
             multipart("/api/v1/enrollment-applications/{applicationId}/attachments", APPLICATION_ID)
                 .file(file)
-                .param("attachmentType", "DNI_FRONT")
+                .param("requirementId", REQUIREMENT_ID.toString())
                 .principal(applicantAuthentication()))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.id").value(ATTACHMENT_ID.toString()))
-        .andExpect(jsonPath("$.attachmentType").value("DNI_FRONT"))
+        .andExpect(jsonPath("$.requirementId").value(REQUIREMENT_ID.toString()))
         .andExpect(jsonPath("$.originalFileName").value("dni.pdf"))
         .andExpect(jsonPath("$.size").value(13));
   }
@@ -120,7 +134,6 @@ class EnrollmentAttachmentControllerWebMvcTest {
     EnrollmentAttachment attachment =
         EnrollmentAttachment.builder()
             .id(ATTACHMENT_ID)
-            .attachmentType(EnrollmentAttachmentType.DNI_FRONT)
             .originalFileName("dni.pdf")
             .storagePath(APPLICATION_ID + "/safe-dni.pdf")
             .contentType("application/pdf")
@@ -165,10 +178,20 @@ class EnrollmentAttachmentControllerWebMvcTest {
     EnrollmentAttachmentResponse response =
         new EnrollmentAttachmentResponse(
             ATTACHMENT_ID,
-            EnrollmentAttachmentType.DNI_FRONT,
+            REQUIREMENT_ID,
             "dni.pdf",
             13L,
-            Instant.parse("2026-09-08T12:00:00Z"));
+            "application/pdf",
+            Instant.parse("2026-09-08T12:00:00Z"),
+            DocumentVersionStatus.CURRENT,
+            DocumentReviewStatus.PENDING_REVIEW,
+            PERSON_ID,
+            "INSTITUTION",
+            null,
+            null,
+            null,
+            null,
+            null);
 
     when(attachmentService.listAttachments(eq(APPLICATION_ID), any()))
         .thenReturn(List.of(response));
@@ -179,6 +202,6 @@ class EnrollmentAttachmentControllerWebMvcTest {
                 .principal(applicantAuthentication()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].id").value(ATTACHMENT_ID.toString()))
-        .andExpect(jsonPath("$[0].attachmentType").value("DNI_FRONT"));
+        .andExpect(jsonPath("$[0].requirementId").value(REQUIREMENT_ID.toString()));
   }
 }

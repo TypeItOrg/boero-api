@@ -1,6 +1,35 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions;
 
 public final class EnrollmentMessages {
+  public static final String DOCUMENT_REQUIREMENT_NOT_FOUND =
+      "El requisito documental no pertenece a esta solicitud o trayecto.";
+  public static final String DOCUMENT_SUBMISSION_REQUIRED =
+      "Adjuntá todos los documentos obligatorios para enviar la solicitud.";
+  public static final String DOCUMENT_PROVISIONAL_REQUIRED =
+      "La admisión provisoria requiere los documentos iniciales aceptados y documentación obligatoria posterior pendiente.";
+  public static final String DOCUMENT_CONFIRMATION_REQUIRED =
+      "Todos los documentos obligatorios deben estar aceptados para confirmar la inscripción.";
+  public static final String DOCUMENT_VERSION_LOCKED =
+      "Esta entrega fue reemplazada, retirada o aceptada y no puede modificarse.";
+  public static final String DOCUMENT_REVIEW_INVALID =
+      "Solo se puede aceptar u observar una entrega pendiente de revisión.";
+  public static final String DOCUMENT_OBSERVATION_REQUIRED = "Indicá el motivo de la observación.";
+  public static final String DOCUMENT_WITHDRAW_DENIED =
+      "El documento inicial es obligatorio; podés reemplazarlo, pero no retirarlo.";
+  public static final String DOCUMENT_FORMAT_INVALID =
+      "El formato no está admitido para este requisito documental.";
+  public static final String FILE_CONTENT_INVALID =
+      "El archivo no es un PDF, JPEG o PNG válido, o su contenido no coincide con el tipo indicado.";
+  public static final String FILE_IMAGE_TOO_LARGE =
+      "La imagen no puede superar los 25 millones de píxeles.";
+  public static final String FILE_PDF_ENCRYPTED =
+      "El PDF debe poder leerse sin contraseña y no estar cifrado.";
+  public static final String STORAGE_DESTINATION_PENDING =
+      "Hay documentos o trabajos pendientes asociados a otro destino de almacenamiento. Revisá el procedimiento de migración.";
+  public static final String STORAGE_JOB_UNAVAILABLE =
+      "La operación de almacenamiento ya no está disponible.";
+  public static final String STORAGE_DELETE_FAILED =
+      "No se pudo eliminar el archivo del almacenamiento.";
   public static final String PERIOD_SCOPE_INVALID =
       "Seleccioná planes publicados y al menos un nivel o espacios sin nivel de la misma institución.";
   public static final String PERIOD_SCOPE_REQUIRED =
