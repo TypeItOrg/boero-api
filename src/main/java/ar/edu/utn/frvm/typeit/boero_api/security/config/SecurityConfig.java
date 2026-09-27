@@ -14,7 +14,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -46,11 +45,11 @@ public class SecurityConfig {
   @Bean
   SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-    http.csrf(AbstractHttpConfigurer::disable);
-    http.formLogin(AbstractHttpConfigurer::disable);
-    http.httpBasic(AbstractHttpConfigurer::disable);
-    http.logout(AbstractHttpConfigurer::disable);
-    http.rememberMe(AbstractHttpConfigurer::disable);
+    http.csrf(mappedAbstractHttpConfigurer -> mappedAbstractHttpConfigurer.disable());
+    http.formLogin(mappedAbstractHttpConfigurer -> mappedAbstractHttpConfigurer.disable());
+    http.httpBasic(mappedAbstractHttpConfigurer -> mappedAbstractHttpConfigurer.disable());
+    http.logout(mappedAbstractHttpConfigurer -> mappedAbstractHttpConfigurer.disable());
+    http.rememberMe(mappedAbstractHttpConfigurer -> mappedAbstractHttpConfigurer.disable());
 
     http.sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
