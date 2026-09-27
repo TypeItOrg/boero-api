@@ -54,12 +54,12 @@ public class CachedAuthoritySnapshotResolver {
       } else {
         continue;
       }
-      scopes.merge(permission, access, PermissionAccess::union);
+      scopes.merge(permission, access, (left, right) -> left.union(right));
     }
     Set<PermissionCode> permissions = scopes.keySet();
     List<String> roles =
         rows.stream()
-            .map(PersonRoleAssignmentRepository.AuthorityRow::getRoleName)
+            .map(mappedAuthorityRow -> mappedAuthorityRow.getRoleName())
             .distinct()
             .sorted(String.CASE_INSENSITIVE_ORDER)
             .toList();
@@ -75,15 +75,15 @@ public class CachedAuthoritySnapshotResolver {
 
     Set<PermissionCode> permissions =
         rows.stream()
-            .map(PlatformAccountRoleRepository.AuthorityRow::getPermissionCode)
+            .map(mappedAuthorityRow -> mappedAuthorityRow.getPermissionCode())
             .filter(code -> code != null)
             .map(PermissionCode::fromCode)
             .collect(Collectors.toCollection(() -> EnumSet.noneOf(PermissionCode.class)));
     Set<PlatformRoleCode> roles =
         rows.stream()
-            .map(PlatformAccountRoleRepository.AuthorityRow::getRoleCode)
+            .map(mappedAuthorityRow -> mappedAuthorityRow.getRoleCode())
             .map(this::parsePlatformRoleCode)
-            .flatMap(Optional::stream)
+            .flatMap(mappedOptional -> mappedOptional.stream())
             .collect(Collectors.toUnmodifiableSet());
 
     return new PlatformAuthoritySnapshot(permissions, roles);

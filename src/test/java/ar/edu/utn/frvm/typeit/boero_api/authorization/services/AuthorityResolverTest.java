@@ -47,7 +47,7 @@ class AuthorityResolverTest {
 
   @BeforeEach
   void seedCatalog() {
-    permissionRoleSeed.run(null);
+    permissionRoleSeed.run(new org.springframework.boot.DefaultApplicationArguments());
   }
 
   @Test

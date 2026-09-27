@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
@@ -9,6 +10,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssig
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PlatformAccountRoleRepository;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 class ScopedAuthoritySnapshotTest {
@@ -44,15 +46,13 @@ class ScopedAuthoritySnapshotTest {
                     professor)));
     var snapshot = resolver.resolveFreshForPerson(person, institution);
     assertThat(
-            snapshot
-                .permissionScopes()
-                .get(PermissionCode.ENROLLMENT_APPLICATION_READ)
+            requireNonNull(
+                    snapshot.permissionScopes().get(PermissionCode.ENROLLMENT_APPLICATION_READ))
                 .trainingPathIds())
         .containsExactlyInAnyOrder(professor, technical);
     assertThat(
-            snapshot
-                .permissionScopes()
-                .get(PermissionCode.ENROLLMENT_APPLICATION_APPROVE)
+            requireNonNull(
+                    snapshot.permissionScopes().get(PermissionCode.ENROLLMENT_APPLICATION_APPROVE))
                 .trainingPathIds())
         .containsExactly(professor);
     assertThat(snapshot.permissions()).doesNotContain(PermissionCode.INSTITUTION_PERSON_UPDATE_ANY);
@@ -71,21 +71,19 @@ class ScopedAuthoritySnapshotTest {
                     path)));
     var snapshot = resolver.resolveFreshForPerson(person, institution);
     assertThat(
-            snapshot
-                .permissionScopes()
-                .get(PermissionCode.ENROLLMENT_APPLICATION_READ)
+            requireNonNull(
+                    snapshot.permissionScopes().get(PermissionCode.ENROLLMENT_APPLICATION_READ))
                 .includes(UUID.randomUUID()))
         .isTrue();
     assertThat(
-            snapshot
-                .permissionScopes()
-                .get(PermissionCode.ENROLLMENT_APPLICATION_APPROVE)
+            requireNonNull(
+                    snapshot.permissionScopes().get(PermissionCode.ENROLLMENT_APPLICATION_APPROVE))
                 .includes(UUID.randomUUID()))
         .isFalse();
   }
 
   private PersonRoleAssignmentRepository.AuthorityRow row(
-      PermissionCode permission, AccessScope scope, UUID path) {
+      PermissionCode permission, AccessScope scope, @Nullable UUID path) {
     return new PersonRoleAssignmentRepository.AuthorityRow() {
       public String getRoleName() {
         return "Preceptor";
@@ -99,7 +97,7 @@ class ScopedAuthoritySnapshotTest {
         return scope;
       }
 
-      public UUID getTrainingPathId() {
+      public @Nullable UUID getTrainingPathId() {
         return path;
       }
     };

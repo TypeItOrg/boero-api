@@ -64,7 +64,7 @@ class PermissionCatalogControllerWebMvcTest {
   void list_returnsForbiddenForInstitutionalPrincipal() throws Exception {
     var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     stubPlatformAdminAccess(false);
 
     mockMvc
@@ -75,8 +75,7 @@ class PermissionCatalogControllerWebMvcTest {
   @Test
   @DisplayName("Should return institution permissions for platform admin")
   void list_returnsInstitutionPermissionsForPlatformAdmin() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     stubPlatformAdminAccess(true);
 
     mockMvc

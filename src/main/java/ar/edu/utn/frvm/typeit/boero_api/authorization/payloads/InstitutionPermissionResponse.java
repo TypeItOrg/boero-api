@@ -27,7 +27,7 @@ public record InstitutionPermissionResponse(
         actorPermissions.contains(permission),
         permission.supportsTrainingPaths(),
         permission.requiredPermissions().stream()
-            .map(PermissionCode::getCode)
+            .map(mappedPermissionCode -> mappedPermissionCode.getCode())
             .collect(Collectors.toUnmodifiableSet()));
   }
 }

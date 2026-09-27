@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import lombok.Builder;
+import org.jspecify.annotations.Nullable;
 
 @Builder
 @io.swagger.v3.oas.annotations.media.Schema(
@@ -25,7 +26,8 @@ import lombok.Builder;
 public record InstitutionRoleResponse(
     UUID id,
     String name,
-    @io.swagger.v3.oas.annotations.media.Schema(nullable = true) SystemRoleCode technicalCode,
+    @io.swagger.v3.oas.annotations.media.Schema(nullable = true)
+        @Nullable SystemRoleCode technicalCode,
     boolean editable,
     boolean deletable,
     long assignmentCount,
@@ -41,7 +43,8 @@ public record InstitutionRoleResponse(
 
   public static InstitutionRoleResponse from(
       Role role, long assignmentCount, Set<String> permissions, Set<String> protectedPermissions) {
-    SystemRoleCode technicalCode = role.isSystem() ? SystemRoleCode.valueOf(role.getCode()) : null;
+    @Nullable SystemRoleCode technicalCode =
+        role.isSystem() ? SystemRoleCode.valueOf(role.getCode()) : null;
     boolean authority = technicalCode == SystemRoleCode.INSTITUTIONAL_AUTHORITY;
     return InstitutionRoleResponse.builder()
         .id(role.getId())
@@ -53,12 +56,12 @@ public record InstitutionRoleResponse(
         .supportsTrainingPathScope(
             permissions.stream()
                 .map(PermissionCode::fromCode)
-                .anyMatch(PermissionCode::supportsTrainingPaths))
+                .anyMatch(mappedPermissionCode -> mappedPermissionCode.supportsTrainingPaths()))
         .inactivePermissionDescriptionsWhenScoped(
             permissions.stream()
                 .map(PermissionCode::fromCode)
                 .filter(permission -> !permission.supportsTrainingPaths())
-                .map(PermissionCode::getDescription)
+                .map(mappedPermissionCode -> mappedPermissionCode.getDescription())
                 .sorted()
                 .toList())
         .permissions(permissions)

@@ -7,6 +7,7 @@ import jakarta.persistence.EntityManager;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,7 +19,10 @@ public class AcademicAccessGuard {
 
   @Transactional(readOnly = true)
   public void requireAny(
-      Set<PermissionCode> permissions, UUID institutionId, ScopedResource resource, UUID id) {
+      Set<PermissionCode> permissions,
+      UUID institutionId,
+      ScopedResource resource,
+      @Nullable UUID id) {
     for (var permission : permissions) {
       try {
         require(permission, institutionId, resource, id);
@@ -31,7 +35,7 @@ public class AcademicAccessGuard {
 
   @Transactional(readOnly = true)
   public void require(
-      PermissionCode permission, UUID institutionId, ScopedResource resource, UUID id) {
+      PermissionCode permission, UUID institutionId, ScopedResource resource, @Nullable UUID id) {
     UUID path =
         entityManager
             .createQuery(

@@ -9,12 +9,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(requiredProperties = {"roleId", "accessScope", "trainingPathIds"})
 public record AssignRoleRequest(
     @NotNull UUID roleId,
     @NotNull AccessScope accessScope,
-    @NotNull List<@NotNull UUID> trainingPathIds) {
+    @NotNull @Nullable List<@NotNull UUID> trainingPathIds) {
   public AssignRoleRequest {
     if (trainingPathIds != null) {
       if (new HashSet<>(trainingPathIds).size() != trainingPathIds.size()
@@ -30,6 +31,9 @@ public record AssignRoleRequest(
   }
 
   public Set<UUID> selectedTrainingPathIds() {
-    return trainingPathIds == null ? null : Set.copyOf(trainingPathIds);
+    if (trainingPathIds == null) {
+      throw new InvalidAccessScopeException();
+    }
+    return Set.copyOf(trainingPathIds);
   }
 }

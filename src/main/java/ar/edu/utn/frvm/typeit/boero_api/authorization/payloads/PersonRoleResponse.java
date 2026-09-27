@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import lombok.Builder;
+import org.jspecify.annotations.Nullable;
 
 @Builder
 @io.swagger.v3.oas.annotations.media.Schema(
@@ -21,7 +22,8 @@ import lombok.Builder;
     })
 public record PersonRoleResponse(
     java.util.UUID roleId,
-    @io.swagger.v3.oas.annotations.media.Schema(nullable = true) SystemRoleCode technicalCode,
+    @io.swagger.v3.oas.annotations.media.Schema(nullable = true)
+        @Nullable SystemRoleCode technicalCode,
     String displayName,
     Instant assignedAt,
     AccessScope accessScope,
@@ -29,7 +31,7 @@ public record PersonRoleResponse(
     Map<java.util.UUID, String> trainingPathNames) {
 
   public static PersonRoleResponse from(PersonRoleAssignment assignment) {
-    SystemRoleCode technicalCode =
+    @Nullable SystemRoleCode technicalCode =
         assignment.getRole().isSystem()
             ? SystemRoleCode.valueOf(assignment.getRole().getCode())
             : null;

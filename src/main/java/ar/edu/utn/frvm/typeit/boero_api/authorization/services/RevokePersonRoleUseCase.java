@@ -9,7 +9,6 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.LastPersonRoleR
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.RoleNotAssignableException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RoleRepository;
-import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -34,8 +33,7 @@ public class RevokePersonRoleUseCase {
     if (!allowAuthority) {
       scopeValidator.requireOperation(PermissionCode.INSTITUTION_ROLE_REVOKE);
     }
-    Person person =
-        institutionPersonResolver.requirePersonInInstitutionForUpdate(institutionId, personId);
+    institutionPersonResolver.requirePersonInInstitutionForUpdate(institutionId, personId);
     Role role =
         roleRepository
             .findByIdAndScopeAndInstitution_Id(roleId, RoleScope.INSTITUTION, institutionId)

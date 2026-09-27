@@ -36,7 +36,7 @@ class InitialRoleAssignmentGuardTest {
   @Test
   @DisplayName("Should reject a privileged initial role without role assignment permission")
   void check_rejectsPrivilegedRoleWithoutPermission() {
-    final var authentication = new TestingAuthenticationToken("user", null);
+    final var authentication = new TestingAuthenticationToken("user", "");
 
     assertThatThrownBy(() -> guard.check(authentication, SystemRoleCode.INSTITUTIONAL_AUTHORITY))
         .isInstanceOf(AccessDeniedException.class);
@@ -52,7 +52,7 @@ class InitialRoleAssignmentGuardTest {
             .sessionId(UUID.randomUUID())
             .tokenId("token")
             .build();
-    final var authentication = new TestingAuthenticationToken(principal, null);
+    final var authentication = new TestingAuthenticationToken(principal, "");
     when(authorizationService.hasPlatformRole(authentication, PlatformRoleCode.PLATFORM_ADMIN))
         .thenReturn(true);
 
@@ -63,7 +63,7 @@ class InitialRoleAssignmentGuardTest {
   @Test
   @DisplayName("Should allow a privileged initial role with assignment permission")
   void check_allowsPrivilegedRoleWithPermission() {
-    final var authentication = new TestingAuthenticationToken("authority", null);
+    final var authentication = new TestingAuthenticationToken("authority", "");
     when(authorizationService.hasPermission(authentication, PermissionCode.INSTITUTION_ROLE_ASSIGN))
         .thenReturn(true);
 

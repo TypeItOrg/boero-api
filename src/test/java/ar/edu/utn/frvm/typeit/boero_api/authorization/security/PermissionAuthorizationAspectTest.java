@@ -41,8 +41,7 @@ class PermissionAuthorizationAspectTest {
   @Test
   @DisplayName("Should reject platform admin on institutional permission checks")
   void checkPermission_rejectsPlatformAdmin() {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     when(authorizationService.hasPermission(
             authentication, PermissionCode.INSTITUTION_PERSON_READ_ANY))
@@ -55,8 +54,7 @@ class PermissionAuthorizationAspectTest {
   @Test
   @DisplayName("Should reject platform admin on institutional any-permission checks")
   void checkAnyPermission_rejectsPlatformAdmin() {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     when(authorizationService.hasAnyPermission(
             authentication,
@@ -72,8 +70,7 @@ class PermissionAuthorizationAspectTest {
   @Test
   @DisplayName("Should reject non-admin platform account for permission checks")
   void checkPermission_rejectsNonAdminPlatformAccount() {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     when(authorizationService.hasPermission(
             authentication, PermissionCode.INSTITUTION_PERSON_READ_ANY))
@@ -86,8 +83,7 @@ class PermissionAuthorizationAspectTest {
   @Test
   @DisplayName("Should reject non-admin platform account for any-permission checks")
   void checkAnyPermission_rejectsNonAdminPlatformAccount() {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     when(authorizationService.hasAnyPermission(
             authentication,
@@ -103,7 +99,7 @@ class PermissionAuthorizationAspectTest {
   @Test
   @DisplayName("Should still enforce permissions for non-platform principals")
   void checkPermission_enforcesForNonPlatform() {
-    var authentication = new TestingAuthenticationToken("anonymous", null);
+    var authentication = new TestingAuthenticationToken("anonymous", "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     when(authorizationService.hasPermission(any(), any(PermissionCode.class))).thenReturn(false);
 

@@ -41,8 +41,8 @@ class PermissionRoleSeedTest {
   @Test
   @DisplayName("Should seed permissions and system roles idempotently")
   void run_createsCatalog() {
-    permissionRoleSeed.run(null);
-    permissionRoleSeed.run(null);
+    permissionRoleSeed.run(new org.springframework.boot.DefaultApplicationArguments());
+    permissionRoleSeed.run(new org.springframework.boot.DefaultApplicationArguments());
 
     assertThat(permissionRepository.count()).isEqualTo(PermissionCode.values().length);
     assertThat(
@@ -58,7 +58,7 @@ class PermissionRoleSeedTest {
   @Test
   @DisplayName("Should assign people and granular academic permissions to institutional authority")
   void run_assignsNewPeoplePermissionsToAuthority() {
-    permissionRoleSeed.run(null);
+    permissionRoleSeed.run(new org.springframework.boot.DefaultApplicationArguments());
 
     var authorityRole =
         roleRepository
@@ -111,7 +111,7 @@ class PermissionRoleSeedTest {
   @Test
   @DisplayName("Should grant academic offer access to applicants")
   void run_assignsAcademicOfferPermissionToApplicants() {
-    permissionRoleSeed.run(null);
+    permissionRoleSeed.run(new org.springframework.boot.DefaultApplicationArguments());
 
     final var applicantRole =
         roleRepository
@@ -127,7 +127,7 @@ class PermissionRoleSeedTest {
   @Test
   @DisplayName("Should assign enrollment application resolution permissions to administrative role")
   void run_assignsEnrollmentApplicationPermissionsToAdministrative() {
-    permissionRoleSeed.run(null);
+    permissionRoleSeed.run(new org.springframework.boot.DefaultApplicationArguments());
 
     var administrativeRole =
         roleRepository

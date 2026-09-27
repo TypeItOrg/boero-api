@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.authorization.cache.AuthorizationCacheNames;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Permission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
@@ -265,7 +267,7 @@ public class PermissionRoleSeed implements ApplicationRunner {
     final var requiredPermissionCodes = PermissionCode.withRequiredPermissions(permissionCodes);
     Set<UUID> desiredPermissionIds =
         requiredPermissionCodes.stream()
-            .map(code -> permissions.get(code).getId())
+            .map(code -> requireNonNull(permissions.get(code)).getId())
             .collect(Collectors.toSet());
 
     for (final var rolePermission : rolePermissionRepository.findByRole_Id(role.getId())) {
@@ -275,7 +277,7 @@ public class PermissionRoleSeed implements ApplicationRunner {
     }
 
     for (PermissionCode permissionCode : requiredPermissionCodes) {
-      Permission permission = permissions.get(permissionCode);
+      Permission permission = requireNonNull(permissions.get(permissionCode));
 
       if (!rolePermissionRepository.existsByRoleIdAndPermissionId(
           role.getId(), permission.getId())) {

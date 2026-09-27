@@ -43,7 +43,7 @@ public record PermissionCatalogItemResponse(
         .supportsTrainingPaths(permission.supportsTrainingPaths())
         .requiredPermissions(
             permission.requiredPermissions().stream()
-                .map(PermissionCode::getCode)
+                .map(mappedPermissionCode -> mappedPermissionCode.getCode())
                 .collect(Collectors.toUnmodifiableSet()))
         .build();
   }

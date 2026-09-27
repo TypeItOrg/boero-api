@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,7 +54,7 @@ public class InstitutionRoleManagementService {
   private static final Set<PermissionCode> PLATFORM_ADMIN_PERMISSIONS =
       Arrays.stream(PermissionCode.values())
           .filter(permission -> permission.getScope() == PermissionScope.INSTITUTION)
-          .filter(PermissionCode::isConfigurable)
+          .filter(mappedPermissionCode -> mappedPermissionCode.isConfigurable())
           .collect(Collectors.toUnmodifiableSet());
 
   private final RoleRepository roleRepository;
@@ -182,7 +183,7 @@ public class InstitutionRoleManagementService {
       if (assignment.getAccessScope() == AccessScope.TRAINING_PATHS
           && requestedCodes.stream()
               .map(PermissionCode::fromCode)
-              .noneMatch(PermissionCode::supportsTrainingPaths)) {
+              .noneMatch(mappedPermissionCode -> mappedPermissionCode.supportsTrainingPaths())) {
         throw new InvalidAccessScopeException();
       }
     }
@@ -242,7 +243,7 @@ public class InstitutionRoleManagementService {
     Set<String> expandedRequestedCodes = expandPermissionCodes(requestedCodes);
     if (expandedRequestedCodes.stream()
             .map(PermissionCode::fromCode)
-            .noneMatch(PermissionCode::supportsTrainingPaths)
+            .noneMatch(mappedPermissionCode -> mappedPermissionCode.supportsTrainingPaths())
         && assignmentRepository.findByRole_Id(role.getId()).stream()
             .anyMatch(assignment -> assignment.getAccessScope() == AccessScope.TRAINING_PATHS)) {
       throw new InvalidAccessScopeException();
@@ -250,8 +251,8 @@ public class InstitutionRoleManagementService {
     Set<String> grantableCodes =
         actorPermissions.stream()
             .filter(permission -> permission.getScope() == PermissionScope.INSTITUTION)
-            .filter(PermissionCode::isConfigurable)
-            .map(PermissionCode::getCode)
+            .filter(mappedPermissionCode -> mappedPermissionCode.isConfigurable())
+            .map(mappedPermissionCode -> mappedPermissionCode.getCode())
             .collect(Collectors.toSet());
     if (!grantableCodes.containsAll(expandedRequestedCodes)) {
       throw new PermissionDelegationNotAllowedException();
@@ -285,7 +286,7 @@ public class InstitutionRoleManagementService {
     Set<PermissionCode> requestedPermissions =
         permissionCodes.stream().map(PermissionCode::fromCode).collect(Collectors.toSet());
     return PermissionCode.withRequiredPermissions(requestedPermissions).stream()
-        .map(PermissionCode::getCode)
+        .map(mappedPermissionCode -> mappedPermissionCode.getCode())
         .collect(Collectors.toUnmodifiableSet());
   }
 
@@ -327,7 +328,7 @@ public class InstitutionRoleManagementService {
   private List<InstitutionRoleResponse> toResponses(final List<Role> roles) {
     if (roles.isEmpty()) return List.of();
 
-    final List<UUID> roleIds = roles.stream().map(Role::getId).toList();
+    final List<UUID> roleIds = roles.stream().map(mappedRole -> mappedRole.getId()).toList();
     final Map<UUID, Long> assignmentCounts =
         assignmentRepository.countByRoleIds(roleIds).stream()
             .collect(Collectors.toMap(row -> row.getRoleId(), row -> row.getAssignmentCount()));
@@ -390,7 +391,7 @@ public class InstitutionRoleManagementService {
     }
   }
 
-  private void ensureUniqueName(UUID institutionId, String name, UUID excludedId) {
+  private void ensureUniqueName(UUID institutionId, String name, @Nullable UUID excludedId) {
     boolean exists =
         excludedId == null
             ? roleRepository.existsByScopeAndInstitution_IdAndNameIgnoreCase(

@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.controllers;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresAnyPermission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresInstitutionAccess;
@@ -62,7 +64,7 @@ public class InstitutionRoleController {
   @RequiresPermission(PermissionCode.INSTITUTION_ROLE_READ)
   public InstitutionRoleResponse get(
       @PathVariable UUID institutionId, @PathVariable UUID roleId, Authentication authentication) {
-    var principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    var principal = (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     return roleService.get(institutionId, roleId, true, principal.personId());
   }
 
@@ -98,7 +100,7 @@ public class InstitutionRoleController {
       @PathVariable UUID roleId,
       @Valid @RequestBody InstitutionRoleRequest request,
       Authentication authentication) {
-    var principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    var principal = (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     return roleService.update(
         institutionId,
         roleId,

@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
@@ -78,7 +80,7 @@ public class ReplacePersonRolesUseCase {
     removals.removeAll(desiredIds);
     boolean scopeChanged = false;
     for (var entry : desiredRoles.entrySet()) {
-      var desired = requested.get(entry.getKey());
+      var desired = requireNonNull(requested.get(entry.getKey()));
       var existing =
           current.stream()
               .filter(a -> a.getRole().getId().equals(entry.getKey()))
@@ -129,7 +131,7 @@ public class ReplacePersonRolesUseCase {
     for (Role role : desiredRoles.values()) {
       if (!currentIds.contains(role.getId())) {
         var assignment = PersonRoleAssignment.assign(person, role, person.getInstitution());
-        var desired = requested.get(role.getId());
+        var desired = requireNonNull(requested.get(role.getId()));
         assignment.changeAccessScope(desired.accessScope(), desired.selectedTrainingPathIds());
         assignmentRepository.save(assignment);
       }
@@ -172,19 +174,19 @@ public class ReplacePersonRolesUseCase {
 
     Set<UUID> currentAuthorityIds =
         current.stream()
-            .map(PersonRoleAssignment::getRole)
-            .filter(Role::isInstitutionalAuthority)
-            .map(Role::getId)
+            .map(mappedPersonRoleAssignment -> mappedPersonRoleAssignment.getRole())
+            .filter(mappedRole -> mappedRole.isInstitutionalAuthority())
+            .map(mappedRole -> mappedRole.getId())
             .collect(Collectors.toSet());
     Set<UUID> desiredAuthorityIds =
         desiredRoles.values().stream()
-            .filter(Role::isInstitutionalAuthority)
-            .map(Role::getId)
+            .filter(mappedRole -> mappedRole.isInstitutionalAuthority())
+            .map(mappedRole -> mappedRole.getId())
             .collect(Collectors.toSet());
 
     if (!currentAuthorityIds.equals(desiredAuthorityIds)
         || (!currentAuthorityIds.isEmpty()
-            && desiredRoles.values().stream().anyMatch(Role::isApplicant))) {
+            && desiredRoles.values().stream().anyMatch(mappedRole -> mappedRole.isApplicant()))) {
       throw new InstitutionalAuthorityRoleImmutableException();
     }
   }
@@ -192,7 +194,7 @@ public class ReplacePersonRolesUseCase {
   private void removeApplicantWhenAnotherRoleIsSelected(Map<UUID, Role> roles) {
     boolean hasNonApplicant = roles.values().stream().anyMatch(role -> !role.isApplicant());
     if (hasNonApplicant) {
-      roles.values().removeIf(Role::isApplicant);
+      roles.values().removeIf(mappedRole -> mappedRole.isApplicant());
     }
   }
 

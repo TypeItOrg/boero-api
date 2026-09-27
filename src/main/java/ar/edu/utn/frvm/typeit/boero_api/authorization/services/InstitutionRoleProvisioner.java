@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
 import static ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.AuthorizationMessages.PERMISSION_NOT_SEEDED;
+import static java.util.Objects.requireNonNull;
 
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Permission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
@@ -67,7 +68,7 @@ public class InstitutionRoleProvisioner {
       }
 
       if (existingRole.isEmpty() || code == SystemRoleCode.INSTITUTIONAL_AUTHORITY) {
-        assignDefaults(role, DEFAULT_PERMISSIONS.get(code));
+        assignDefaults(role, requireNonNull(DEFAULT_PERMISSIONS.get(code)));
       }
     }
   }

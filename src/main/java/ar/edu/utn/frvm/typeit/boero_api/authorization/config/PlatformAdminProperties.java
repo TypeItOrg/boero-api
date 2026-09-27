@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.config;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "app.platform-admin")
@@ -8,7 +9,7 @@ public record PlatformAdminProperties(String email, String password, String name
   private static final String DEFAULT_NAME = "Administrador";
   private static final String DEFAULT_LAST_NAME = "Plataforma";
 
-  public String resolvedEmail() {
+  public @Nullable String resolvedEmail() {
     if (email == null || email.isBlank()) {
       return null;
     }

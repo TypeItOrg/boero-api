@@ -39,7 +39,8 @@ public class RoleAssignmentScopeValidator {
       }
     }
     if (request.accessScope() == AccessScope.TRAINING_PATHS
-        && permissions(role).stream().noneMatch(PermissionCode::supportsTrainingPaths)) {
+        && permissions(role).stream()
+            .noneMatch(mappedPermissionCode -> mappedPermissionCode.supportsTrainingPaths())) {
       throw new InvalidAccessScopeException();
     }
   }
