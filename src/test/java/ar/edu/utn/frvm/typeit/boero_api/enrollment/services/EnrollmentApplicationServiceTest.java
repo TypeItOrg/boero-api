@@ -18,6 +18,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearReposito
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.InstrumentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.ApplicantEducationBackground;
@@ -77,6 +78,7 @@ class EnrollmentApplicationServiceTest {
   @Mock private EnrollmentPeriodRepository periodRepository;
   @Mock private PersonRepository personRepository;
   @Mock private PersonGuardianRepository personGuardianRepository;
+  @Mock private PersonRoleAssignmentRepository personRoleAssignmentRepository;
   @Mock private StudyPlanRepository studyPlanRepository;
   @Mock private AcademicYearRepository academicYearRepository;
 
@@ -103,6 +105,7 @@ class EnrollmentApplicationServiceTest {
             periodRepository,
             personRepository,
             personGuardianRepository,
+            personRoleAssignmentRepository,
             studyPlanRepository,
             academicYearRepository,
             studyPlanSpaceRepository,
@@ -110,6 +113,20 @@ class EnrollmentApplicationServiceTest {
             enrollmentDraftDataValidator,
             new BusinessDateProvider(Clock.systemUTC()),
             Clock.systemUTC());
+  }
+
+  @Test
+  @DisplayName("Should reject a guardian applying for themself")
+  void startOrGetApplication_guardianCannotApplyForSelf() {
+    when(personRoleAssignmentRepository.existsByPerson_IdAndInstitution_IdAndRole_Code(
+            personId, institutionId, "GUARDIAN"))
+        .thenReturn(true);
+    StartEnrollmentApplicationRequest request =
+        new StartEnrollmentApplicationRequest(studyPlanId, academicYearId);
+
+    assertThatThrownBy(() -> service.startOrGetApplication(institutionId, personId, request))
+        .isInstanceOf(EnrollmentValidationException.class)
+        .hasMessage(EnrollmentMessages.ENROLLMENT_APPLICATION_GUARDIAN_MUST_USE_DEPENDENT);
   }
 
   @Test

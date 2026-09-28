@@ -8,6 +8,8 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearReposito
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.InstrumentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.common.validation.PersonFieldConstraints;
@@ -72,6 +74,7 @@ public class EnrollmentApplicationService {
   private final EnrollmentPeriodRepository periodRepository;
   private final PersonRepository personRepository;
   private final PersonGuardianRepository personGuardianRepository;
+  private final PersonRoleAssignmentRepository personRoleAssignmentRepository;
   private final StudyPlanRepository studyPlanRepository;
   private final AcademicYearRepository academicYearRepository;
   private final StudyPlanSpaceRepository studyPlanSpaceRepository;
@@ -90,6 +93,13 @@ public class EnrollmentApplicationService {
     final UUID applicantPersonId =
         request.getApplicantPersonId() != null ? request.getApplicantPersonId() : personId;
     final boolean actingForDependent = !applicantPersonId.equals(personId);
+
+    if (!actingForDependent
+        && personRoleAssignmentRepository.existsByPerson_IdAndInstitution_IdAndRole_Code(
+            personId, institutionId, SystemRoleCode.GUARDIAN.name())) {
+      throw new EnrollmentValidationException(
+          EnrollmentMessages.ENROLLMENT_APPLICATION_GUARDIAN_MUST_USE_DEPENDENT);
+    }
 
     if (actingForDependent
         && !personGuardianRepository.existsByInstitution_IdAndTutorPerson_IdAndDependentPerson_Id(
