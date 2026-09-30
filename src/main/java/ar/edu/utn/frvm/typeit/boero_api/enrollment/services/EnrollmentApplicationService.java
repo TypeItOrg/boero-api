@@ -8,6 +8,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearReposito
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.InstrumentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
+import ar.edu.utn.frvm.typeit.boero_api.audit.enums.AuditAction;
+import ar.edu.utn.frvm.typeit.boero_api.audit.enums.AuditEntityType;
+import ar.edu.utn.frvm.typeit.boero_api.audit.services.AuditEventRecorder;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
@@ -82,6 +85,7 @@ public class EnrollmentApplicationService {
   private final EnrollmentDraftDataValidator enrollmentDraftDataValidator;
   private final BusinessDateProvider businessDateProvider;
   private final Clock clock;
+  private final AuditEventRecorder auditEventRecorder;
 
   @Transactional
   public EnrollmentApplicationResponse startOrGetApplication(
@@ -197,6 +201,7 @@ public class EnrollmentApplicationService {
     }
 
     EnrollmentApplication saved = saveAndFlush(newApplication);
+    audit(personId, saved, AuditAction.ENROLLMENT_APPLICATION_STARTED);
 
     return EnrollmentApplicationResponse.from(saved);
   }
@@ -435,8 +440,21 @@ public class EnrollmentApplicationService {
     }
 
     EnrollmentApplication saved = saveAndFlush(application);
+    audit(personId, saved, AuditAction.ENROLLMENT_APPLICATION_DRAFT_UPDATED);
 
     return EnrollmentApplicationResponse.from(saved);
+  }
+
+  /** The subject is always the applicant; the actor may be the applicant or their tutor. */
+  private void audit(
+      final UUID actorPersonId, final EnrollmentApplication application, final AuditAction action) {
+    auditEventRecorder.record(
+        application.getInstitution(),
+        actorPersonId,
+        application.getApplicantPerson().getId(),
+        action,
+        AuditEntityType.ENROLLMENT_APPLICATION,
+        application.getId());
   }
 
   private EnrollmentApplication saveAndFlush(final EnrollmentApplication application) {
@@ -465,6 +483,7 @@ public class EnrollmentApplicationService {
 
     application.cancel();
     EnrollmentApplication saved = applicationRepository.save(application);
+    audit(personId, saved, AuditAction.ENROLLMENT_APPLICATION_CANCELLED);
 
     return EnrollmentApplicationResponse.from(saved);
   }
@@ -579,6 +598,7 @@ public class EnrollmentApplicationService {
 
     application.submit();
     EnrollmentApplication saved = applicationRepository.save(application);
+    audit(personId, saved, AuditAction.ENROLLMENT_APPLICATION_SUBMITTED);
 
     return EnrollmentApplicationResponse.from(saved);
   }

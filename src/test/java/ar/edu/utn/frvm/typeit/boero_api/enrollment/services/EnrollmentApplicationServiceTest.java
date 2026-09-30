@@ -18,6 +18,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearReposito
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.InstrumentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
+import ar.edu.utn.frvm.typeit.boero_api.audit.enums.AuditAction;
+import ar.edu.utn.frvm.typeit.boero_api.audit.enums.AuditEntityType;
+import ar.edu.utn.frvm.typeit.boero_api.audit.services.AuditEventRecorder;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
@@ -87,6 +90,7 @@ class EnrollmentApplicationServiceTest {
   @Mock private InstrumentRepository instrumentRepository;
 
   @Mock private EnrollmentDraftDataValidator enrollmentDraftDataValidator;
+  @Mock private AuditEventRecorder auditEventRecorder;
 
   private EnrollmentApplicationService service;
 
@@ -112,7 +116,8 @@ class EnrollmentApplicationServiceTest {
             instrumentRepository,
             enrollmentDraftDataValidator,
             new BusinessDateProvider(Clock.systemUTC()),
-            Clock.systemUTC());
+            Clock.systemUTC(),
+            auditEventRecorder);
   }
 
   @Test
@@ -277,6 +282,14 @@ class EnrollmentApplicationServiceTest {
 
     assertThat(response.getApplicationId()).isEqualTo(applicationId);
     assertThat(response.getStatus()).isEqualTo(EnrollmentApplicationStatus.DRAFT);
+    verify(auditEventRecorder)
+        .record(
+            institution,
+            personId,
+            personId,
+            AuditAction.ENROLLMENT_APPLICATION_STARTED,
+            AuditEntityType.ENROLLMENT_APPLICATION,
+            applicationId);
   }
 
   @Test
@@ -378,6 +391,14 @@ class EnrollmentApplicationServiceTest {
     assertThat(application.getEducationBackground().getSecondarySchool())
         .isEqualTo("Colegio Nacional");
     verify(applicationRepository).saveAndFlush(application);
+    verify(auditEventRecorder)
+        .record(
+            institution,
+            personId,
+            personId,
+            AuditAction.ENROLLMENT_APPLICATION_DRAFT_UPDATED,
+            AuditEntityType.ENROLLMENT_APPLICATION,
+            applicationId);
   }
 
   @Test
@@ -571,6 +592,14 @@ class EnrollmentApplicationServiceTest {
     EnrollmentApplicationResponse response = service.cancelApplication(personId, applicationId);
 
     assertThat(response.getStatus()).isEqualTo(EnrollmentApplicationStatus.CANCELLED);
+    verify(auditEventRecorder)
+        .record(
+            institution,
+            personId,
+            personId,
+            AuditAction.ENROLLMENT_APPLICATION_CANCELLED,
+            AuditEntityType.ENROLLMENT_APPLICATION,
+            applicationId);
     verify(applicationRepository).save(application);
   }
 
@@ -647,6 +676,14 @@ class EnrollmentApplicationServiceTest {
     EnrollmentApplicationResponse response = service.submitApplication(personId, applicationId);
 
     assertThat(response.getStatus()).isEqualTo(EnrollmentApplicationStatus.SUBMITTED);
+    verify(auditEventRecorder)
+        .record(
+            institution,
+            personId,
+            personId,
+            AuditAction.ENROLLMENT_APPLICATION_SUBMITTED,
+            AuditEntityType.ENROLLMENT_APPLICATION,
+            applicationId);
   }
 
   @Test
