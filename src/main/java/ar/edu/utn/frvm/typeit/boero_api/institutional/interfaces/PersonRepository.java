@@ -52,6 +52,32 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
 
   @Query(
       """
+      SELECT person FROM Person person
+      WHERE person.institution.id = :institutionId
+        AND person.deleted = false
+        AND EXISTS (
+          SELECT assignment.id FROM PersonRoleAssignment assignment
+          WHERE assignment.person = person
+            AND assignment.institution.id = :institutionId
+            AND assignment.role.code = :roleCode
+        )
+        AND (
+          :search IS NULL
+          OR (
+            UNACCENT_LOWER(CONCAT(person.firstName, ' ', person.lastName))
+                LIKE UNACCENT_LOWER(CONCAT('%', CAST(:search AS string), '%'))
+            OR person.documentNumber LIKE CONCAT('%', CAST(:search AS string), '%')
+          )
+        )
+      """)
+  Page<Person> findByInstitutionAndRoleCode(
+      @Param("institutionId") UUID institutionId,
+      @Param("roleCode") String roleCode,
+      @Param("search") @Nullable String search,
+      Pageable pageable);
+
+  @Query(
+      """
       SELECT p FROM Person p
       WHERE p.institution.id = :institutionId
         AND p.deleted = false

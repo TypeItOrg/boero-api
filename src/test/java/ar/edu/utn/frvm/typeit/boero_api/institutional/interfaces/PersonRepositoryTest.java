@@ -147,4 +147,64 @@ class PersonRepositoryTest {
         .extracting(person -> person.getInstitution().getName())
         .containsExactly("Alberdi", "Boero");
   }
+
+  @Test
+  @DisplayName("Should list only teachers within the institution")
+  void findByInstitutionAndRoleCode_listsOnlyTeachers() {
+    Institution institution = createInstitution(entityManager, "boero");
+    Institution otherInstitution = createInstitution(entityManager, "other");
+    Person teacher = persist(entityManager, person(institution, "12345678"));
+    Person nonTeacher = persist(entityManager, person(institution, "87654321"));
+    Person otherTeacher = persist(entityManager, person(otherInstitution, "11111111"));
+    Role teacherRole =
+        persist(
+            entityManager,
+            Role.builder()
+                .code(SystemRoleCode.TEACHER.name())
+                .name(SystemRoleCode.TEACHER.getDisplayName())
+                .scope(RoleScope.INSTITUTION)
+                .system(true)
+                .build());
+    Role studentRole =
+        persist(
+            entityManager,
+            Role.builder()
+                .code(SystemRoleCode.STUDENT.name())
+                .name(SystemRoleCode.STUDENT.getDisplayName())
+                .scope(RoleScope.INSTITUTION)
+                .system(true)
+                .build());
+    persist(
+        entityManager,
+        PersonRoleAssignment.builder()
+            .person(teacher)
+            .institution(institution)
+            .role(teacherRole)
+            .build());
+    persist(
+        entityManager,
+        PersonRoleAssignment.builder()
+            .person(nonTeacher)
+            .institution(institution)
+            .role(studentRole)
+            .build());
+    persist(
+        entityManager,
+        PersonRoleAssignment.builder()
+            .person(otherTeacher)
+            .institution(otherInstitution)
+            .role(teacherRole)
+            .build());
+    entityManager.flush();
+    entityManager.clear();
+
+    var result =
+        personRepository.findByInstitutionAndRoleCode(
+            institution.getId(),
+            SystemRoleCode.TEACHER.name(),
+            null,
+            PageRequest.of(0, 20, Sort.by("lastName")));
+
+    assertThat(result.getContent()).extracting(Person::getId).containsExactly(teacher.getId());
+  }
 }
