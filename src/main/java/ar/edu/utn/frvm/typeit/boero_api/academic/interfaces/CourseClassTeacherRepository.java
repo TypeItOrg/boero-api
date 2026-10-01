@@ -46,6 +46,22 @@ public interface CourseClassTeacherRepository extends JpaRepository<CourseClassT
 
   @Query(
       """
+      SELECT courseClass FROM CourseClassTeacher assignment
+      JOIN assignment.courseClass courseClass
+      JOIN FETCH courseClass.course course
+      JOIN FETCH course.studyPlanSpace placement
+      JOIN FETCH placement.academicSpace
+      LEFT JOIN FETCH course.instrument
+      WHERE assignment.institution.id = :institutionId
+        AND assignment.person.id = :personId
+        AND course.deletedAt IS NULL
+      ORDER BY course.id, courseClass.classNumber
+      """)
+  List<CourseClass> findAssignedClassesForDetail(
+      @Param("institutionId") UUID institutionId, @Param("personId") UUID personId);
+
+  @Query(
+      """
       SELECT DISTINCT courseClass FROM CourseClassTeacher assignment
       JOIN assignment.courseClass courseClass
       JOIN FETCH courseClass.course course
