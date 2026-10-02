@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class IdentifyLoginUseCase {
+  private final InstitutionalHostContext hostContext;
 
   private final UserRepository userRepository;
   private final PasskeyCredentialRepository passkeyCredentialRepository;
@@ -25,6 +26,8 @@ public class IdentifyLoginUseCase {
 
   @Transactional(readOnly = true)
   public IdentifyLoginResponse execute(final IdentifyLoginRequest request) {
+    hostContext.requireInstitution(request.institutionId());
+
     final String normalizedDocument =
         request.documentNumber() == null ? "" : request.documentNumber().trim();
 

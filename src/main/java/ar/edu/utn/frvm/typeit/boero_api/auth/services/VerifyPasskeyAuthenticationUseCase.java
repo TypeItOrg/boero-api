@@ -46,6 +46,13 @@ public class VerifyPasskeyAuthenticationUseCase {
       final Boolean rememberMe,
       final HttpServletRequest httpRequest) {
     final LoginAttempt attempt = loginAttemptService.resolve(loginAttemptId);
+    final User expected =
+        userRepository
+            .findWithPersonAndInstitutionById(attempt.userId())
+            .orElseThrow(InvalidLoginAttemptException::new);
+    if (!expected.getInstitutionId().equals(attempt.institutionId())) {
+      throw new InvalidLoginAttemptException();
+    }
     final AuthenticationCeremony ceremony =
         ceremonyService.consumeAuthentication(ceremonyId).orElse(null);
     if (ceremony == null) {
@@ -74,10 +81,7 @@ public class VerifyPasskeyAuthenticationUseCase {
       log.info("[Auth] Passkey auth failed, userId: {}", attempt.userId());
       throw new WebAuthnVerificationFailedException();
     }
-    final User expected =
-        userRepository
-            .findWithPersonAndInstitutionById(attempt.userId())
-            .orElseThrow(InvalidLoginAttemptException::new);
+
     final boolean ownerMatches =
         owner != null
             && owner.getId() != null

@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.institutional.entities;
 
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.Auditable;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.validation.PublicSubdomainPolicy;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -16,8 +17,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DynamicUpdate;
 import org.jspecify.annotations.Nullable;
 
+@DynamicUpdate
 @Entity
 @Table(
     name = "institutions",
@@ -43,6 +46,21 @@ public class Institution extends Auditable {
   @Column(nullable = false, length = 100)
   private String slug;
 
+  @Column(name = "public_subdomain", length = 63)
+  private @Nullable String publicSubdomain;
+
+  @Column(name = "logo_key")
+  private @Nullable String logoKey;
+
+  @Column(name = "logo_content_type", length = 32)
+  private @Nullable String logoContentType;
+
+  @Column(name = "logo_version", length = 36)
+  private @Nullable String logoVersion;
+
+  @Column(name = "logo_size")
+  private @Nullable Long logoSize;
+
   private @Nullable String street;
 
   @Column(length = 50)
@@ -62,6 +80,26 @@ public class Institution extends Auditable {
   @Column(nullable = false)
   @Builder.Default
   private boolean active = true;
+
+  public void changePublicSubdomain(final @Nullable String publicSubdomain) {
+    PublicSubdomainPolicy.validate(publicSubdomain);
+    this.publicSubdomain = publicSubdomain;
+  }
+
+  public void replaceLogo(
+      final String key, final String contentType, final String version, final long size) {
+    this.logoKey = key;
+    this.logoContentType = contentType;
+    this.logoVersion = version;
+    this.logoSize = size;
+  }
+
+  public void removeLogo() {
+    this.logoKey = null;
+    this.logoContentType = null;
+    this.logoVersion = null;
+    this.logoSize = null;
+  }
 
   public void rename(final String name) {
     this.name = name;

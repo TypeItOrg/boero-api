@@ -8,11 +8,14 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionAdminD
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionAdminListItemResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionDetailResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.requests.CreateInstitutionRequest;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.requests.UpdateInstitutionPublicAccessRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.requests.UpdateInstitutionRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.requests.UpdateInstitutionStatusRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.CreateInstitutionUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.GetInstitutionAdminUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.InstitutionLogoUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ListInstitutionsAdminUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdateInstitutionPublicAccessUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdateInstitutionStatusUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdateInstitutionUseCase;
 import jakarta.validation.Valid;
@@ -24,6 +27,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,8 +36,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @Validated
 @RestController
@@ -47,6 +53,27 @@ public class PlatformInstitutionController {
   private final CreateInstitutionUseCase createInstitutionUseCase;
   private final UpdateInstitutionUseCase updateInstitutionUseCase;
   private final UpdateInstitutionStatusUseCase updateInstitutionStatusUseCase;
+  private final UpdateInstitutionPublicAccessUseCase publicAccess;
+  private final InstitutionLogoUseCase logos;
+
+  @PatchMapping(value = "/{id}/public-access", version = Version.V1)
+  public InstitutionDetailResponse updatePublicAccess(
+      @PathVariable final UUID id,
+      @RequestBody final UpdateInstitutionPublicAccessRequest request) {
+    return publicAccess.execute(id, request.publicSubdomain());
+  }
+
+  @PutMapping(value = "/{id}/logo", version = Version.V1, consumes = "multipart/form-data")
+  public InstitutionDetailResponse replaceLogo(
+      @PathVariable final UUID id, @RequestPart("file") final MultipartFile file) {
+    return logos.replace(id, file);
+  }
+
+  @DeleteMapping(value = "/{id}/logo", version = Version.V1)
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteLogo(@PathVariable final UUID id) {
+    logos.delete(id);
+  }
 
   @GetMapping(version = Version.V1)
   public PaginatedResponse<InstitutionAdminListItemResponse> list(

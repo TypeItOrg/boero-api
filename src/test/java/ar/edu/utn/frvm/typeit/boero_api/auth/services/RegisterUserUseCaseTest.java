@@ -40,6 +40,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class RegisterUserUseCaseTest {
+  @Mock private InstitutionalHostContext hostContext;
 
   @Mock private UserRepository userRepository;
   @Mock private InstitutionRepository institutionRepository;
@@ -55,6 +56,7 @@ class RegisterUserUseCaseTest {
   void setUp() {
     registerUserUseCase =
         new RegisterUserUseCase(
+            hostContext,
             emailVerification,
             userRepository,
             institutionRepository,

@@ -75,6 +75,10 @@ class EmailVerificationPostgresIntegrationTest {
   @Autowired ResetInstitutionalPasswordUseCase resetPassword;
   @Autowired InstitutionalEmailVerificationTokenRepository tokens;
   @Autowired InstitutionalPasswordResetTokenRepository resetTokens;
+
+  @MockitoBean
+  private ar.edu.utn.frvm.typeit.boero_api.auth.services.InstitutionalHostContext hostContext;
+
   @MockitoBean Clock clock;
   @MockitoBean EmailVerificationProperties properties;
   @MockitoBean PasswordEncoder encoder;

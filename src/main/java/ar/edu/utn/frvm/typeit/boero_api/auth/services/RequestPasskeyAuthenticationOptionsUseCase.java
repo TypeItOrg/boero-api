@@ -34,6 +34,9 @@ public class RequestPasskeyAuthenticationOptionsUseCase {
         userRepository
             .findWithPersonAndInstitutionById(attempt.userId())
             .orElseThrow(InvalidLoginAttemptException::new);
+    if (!user.getInstitutionId().equals(attempt.institutionId())) {
+      throw new InvalidLoginAttemptException();
+    }
     final Authentication authentication =
         UsernamePasswordAuthenticationToken.unauthenticated(user.getId().toString(), null);
     final PublicKeyCredentialRequestOptions options =

@@ -66,6 +66,7 @@ class RefreshTokenPostgresIntegrationTest {
   @Autowired private EntityManager entityManager;
   @Autowired private PlatformTransactionManager transactionManager;
 
+  @MockitoBean private InstitutionalHostContext hostContext;
   @MockitoBean private JwtService jwtService;
   @MockitoBean private JwtProperties jwtProperties;
   @MockitoBean private CacheManager cacheManager;

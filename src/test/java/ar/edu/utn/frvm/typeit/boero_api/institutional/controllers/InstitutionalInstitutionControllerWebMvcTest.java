@@ -27,6 +27,8 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionDetail
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.ProvinceSummaryResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.requests.UpdateInstitutionalInstitutionRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.GetInstitutionUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.InstitutionLogoUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ResolveInstitutionPublicAccessUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdateInstitutionalInstitutionUseCase;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -65,6 +67,9 @@ class InstitutionalInstitutionControllerWebMvcTest {
   private static final UUID COUNTRY_ID = UUID.fromString("66666666-6666-6666-6666-666666666666");
 
   @Autowired private MockMvc mockMvc;
+
+  @MockitoBean private InstitutionLogoUseCase logos;
+  @MockitoBean private ResolveInstitutionPublicAccessUseCase resolvePublicAccess;
 
   @MockitoBean private PathMatcher pathMatcher;
   @MockitoBean private AuthenticationEntryPoint authenticationEntryPoint;

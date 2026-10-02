@@ -31,6 +31,7 @@ import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class RequestInstitutionalPasswordRecoveryUseCaseTest {
+  @Mock private InstitutionalHostContext hostContext;
 
   private static final String DOCUMENT_NUMBER = "12345678";
   private static final UUID INSTITUTION_ID = UUID.randomUUID();
@@ -51,6 +52,7 @@ class RequestInstitutionalPasswordRecoveryUseCaseTest {
   void setUp() {
     useCase =
         new RequestInstitutionalPasswordRecoveryUseCase(
+            hostContext,
             CLOCK,
             userRepository,
             passwordResetTokenRepository,

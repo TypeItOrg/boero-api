@@ -23,3 +23,36 @@
 _Centraliza las reglas de negocio, protege el acceso y mantiene aislada la información de cada institución._
 
 </div>
+
+## Desarrollo local
+
+Preparar la configuración sin sobrescribir un archivo privado existente:
+
+```bash
+test -f .env.dev || cp .env.dev.example .env.dev
+make dev
+```
+
+Los comandos Compose de Make cargan `.env.dev` tanto para interpolar `compose.yaml`
+como para definir el entorno del servicio. Si el archivo no existe, se conservan
+los defaults de Compose y del perfil `dev`.
+
+La plantilla conserva `http://localhost:3000` como acceso general y
+`http://cboero.localhost:3000` para una institución con nombre público `cboero`.
+La UI debe tener la misma URL canónica y dominio base. El origen general conserva
+el selector de institución; no se redirige a un namespace local adicional.
+
+En Chromium, los nombres terminados en `.localhost` permiten WebAuthn en HTTP,
+pero `localhost` se considera un dominio de primer nivel y no puede ser el RP común
+de sus subdominios. Con `WEBAUTHN_RP_ID=localhost` en `dev`/`test`, la API resuelve el
+RP ID institucional desde el origen validado por el BFF: `localhost` para el acceso
+general y `cboero.localhost` para el institucional. La política se aplica tanto a
+registro como a autenticación y verificación, manteniendo la validación del origen.
+
+Las passkeys son independientes por hostname local: las existentes de `localhost`
+siguen perteneciendo a ese acceso; ingresar con contraseña en `cboero.localhost`
+y registrar allí una llave propia. No borrar las anteriores ni recrear la base de
+datos. En QA/staging/producción se conserva el RP ID configurado del ambiente, común
+al dominio general y sus instituciones.
+
+Referencia: [orígenes WebAuthn admitidos por Chromium](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/content/browser/webauth/origins.md).

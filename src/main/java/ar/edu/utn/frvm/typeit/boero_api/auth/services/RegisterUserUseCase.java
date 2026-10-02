@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class RegisterUserUseCase {
+  private final InstitutionalHostContext hostContext;
 
   private final InstitutionalEmailVerificationUseCase emailVerification;
   private final UserRepository userRepository;
@@ -40,6 +41,8 @@ public class RegisterUserUseCase {
 
   @Transactional
   public UserRegisteredResponse execute(final RegisterRequest request) {
+    hostContext.requireInstitution(request.institutionId());
+
     Institution institution =
         institutionRepository
             .findById(request.institutionId())

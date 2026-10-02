@@ -36,8 +36,11 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.requests.UpdateIn
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.CreateInstitutionUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.GetInstitutionAdminUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.GetInstitutionUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.InstitutionLogoUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ListInstitutionsAdminUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ListInstitutionsUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ResolveInstitutionPublicAccessUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdateInstitutionPublicAccessUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdateInstitutionStatusUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdateInstitutionUseCase;
 import java.util.List;
@@ -70,6 +73,10 @@ class InstitutionControllerWebMvcTest {
       UUID.fromString("44444444-4444-4444-4444-444444444444");
 
   @Autowired private MockMvc mockMvc;
+
+  @MockitoBean private InstitutionLogoUseCase logos;
+  @MockitoBean private ResolveInstitutionPublicAccessUseCase resolvePublicAccess;
+  @MockitoBean private UpdateInstitutionPublicAccessUseCase publicAccess;
 
   @MockitoBean private PathMatcher pathMatcher;
   @MockitoBean private AuthenticationEntryPoint authenticationEntryPoint;

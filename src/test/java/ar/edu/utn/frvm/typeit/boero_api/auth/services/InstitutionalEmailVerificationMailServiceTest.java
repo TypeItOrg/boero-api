@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.config.EmailVerificationProperties;
+import ar.edu.utn.frvm.typeit.boero_api.auth.config.FrontendPublicProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.events.InstitutionalEmailVerificationRequested;
 import ar.edu.utn.frvm.typeit.boero_api.common.mail.MailMessage;
 import ar.edu.utn.frvm.typeit.boero_api.common.mail.MailProperties;
@@ -44,7 +45,8 @@ class InstitutionalEmailVerificationMailServiceTest {
             new MailProperties("no-reply@example.com"),
             new EmailVerificationProperties(
                 "http://localhost:3000", Duration.ofHours(24), Duration.ofMinutes(1)),
-            templateEngine);
+            templateEngine,
+            new FrontendAccessUrls(new FrontendPublicProperties("http://localhost:3000", "")));
   }
 
   @Test
@@ -68,7 +70,7 @@ class InstitutionalEmailVerificationMailServiceTest {
     assertThat(message.subject()).isEqualTo("Confirmá tu email");
     assertThat(message.htmlBody())
         .contains("http://localhost:3000/auth/email-verification/confirm?token=token-123")
-        .contains("https://staging.typeit.com.ar/brand/boero-logo.webp")
+        .contains("http://localhost:3000/brand/boero-logo.webp")
         .contains("Conservatorio Superior de Música Felipe Boero")
         .contains("Hola,")
         .contains("Ana García")

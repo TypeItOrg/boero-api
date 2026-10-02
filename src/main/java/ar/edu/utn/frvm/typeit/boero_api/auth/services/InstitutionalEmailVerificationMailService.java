@@ -10,7 +10,6 @@ import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.stereotype.Service;
-import org.springframework.web.util.UriComponentsBuilder;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
@@ -19,18 +18,21 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 @NullMarked
 public class InstitutionalEmailVerificationMailService {
 
-  private static final String LOGO_URL = "https://staging.typeit.com.ar/brand/boero-logo.webp";
   private static final String TEMPLATE_NAME = "mail/institutional-email-verification";
 
   private final MailSender mailSender;
   private final MailProperties mailProperties;
   private final EmailVerificationProperties emailVerificationProperties;
   private final SpringTemplateEngine templateEngine;
+  private final FrontendAccessUrls accessUrls;
 
   public void send(final InstitutionalEmailVerificationRequested event) {
     final Context context = new Context(Locale.forLanguageTag("es"));
-    context.setVariable("verificationUrl", buildVerificationUrl(event.token()));
-    context.setVariable("logoUrl", LOGO_URL);
+    context.setVariable(
+        "verificationUrl",
+        accessUrls.tokenUrl(
+            event.publicSubdomain(), "/auth/email-verification/confirm", event.token()));
+    context.setVariable("logoUrl", accessUrls.boeroLogoUrl());
     context.setVariable("institutionName", event.institutionName());
     context.setVariable("fullName", event.fullName());
     context.setVariable("expirationHours", emailVerificationProperties.tokenExpiration().toHours());
@@ -41,13 +43,5 @@ public class InstitutionalEmailVerificationMailService {
             event.recipientEmail(),
             MailMessages.EMAIL_VERIFICATION_SUBJECT,
             templateEngine.process(TEMPLATE_NAME, context)));
-  }
-
-  private String buildVerificationUrl(final String token) {
-    return UriComponentsBuilder.fromUriString(emailVerificationProperties.frontendUrl())
-        .pathSegment("auth", "email-verification", "confirm")
-        .queryParam("token", token)
-        .build()
-        .toUriString();
   }
 }

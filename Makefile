@@ -1,4 +1,5 @@
-COMPOSE := docker compose
+# env_file injects service variables; --env-file also supplies Compose interpolation.
+COMPOSE := docker compose $(if $(wildcard .env.dev),--env-file .env.dev)
 .DEFAULT_GOAL := dev
 
 MIGRATION_NAME := $(word 2,$(MAKECMDGOALS))

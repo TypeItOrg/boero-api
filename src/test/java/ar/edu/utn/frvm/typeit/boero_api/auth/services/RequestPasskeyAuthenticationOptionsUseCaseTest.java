@@ -137,6 +137,7 @@ class RequestPasskeyAuthenticationOptionsUseCaseTest {
   void execute_exposesDiscoverableOptionsAndStoresConsistentCeremony() {
     final User user = Mockito.mock(User.class);
     when(user.getId()).thenReturn(USER_ID);
+    when(user.getInstitutionId()).thenReturn(INSTITUTION_ID);
     when(loginAttemptService.resolve("attempt"))
         .thenReturn(new LoginAttempt("attempt", USER_ID, INSTITUTION_ID, true, Instant.now()));
     when(userRepository.findWithPersonAndInstitutionById(USER_ID)).thenReturn(Optional.of(user));

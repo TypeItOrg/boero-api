@@ -47,6 +47,7 @@ class LoginAttemptServiceRedisIntegrationTest {
     redisTemplate.afterPropertiesSet();
     service =
         new LoginAttemptService(
+            org.mockito.Mockito.mock(InstitutionalHostContext.class),
             redisTemplate,
             new WebAuthnProperties(
                 "localhost",

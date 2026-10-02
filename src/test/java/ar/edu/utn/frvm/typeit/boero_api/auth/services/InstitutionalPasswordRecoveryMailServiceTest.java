@@ -3,6 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.config.FrontendPublicProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.config.PasswordRecoveryProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.events.InstitutionalPasswordRecoveryRequested;
 import ar.edu.utn.frvm.typeit.boero_api.common.mail.MailMessage;
@@ -43,7 +44,8 @@ class InstitutionalPasswordRecoveryMailServiceTest {
             mailSender,
             new MailProperties("no-reply@example.com"),
             new PasswordRecoveryProperties("http://localhost:3000", Duration.ofMinutes(30)),
-            templateEngine);
+            templateEngine,
+            new FrontendAccessUrls(new FrontendPublicProperties("http://localhost:3000", "")));
   }
 
   @Test
@@ -67,7 +69,7 @@ class InstitutionalPasswordRecoveryMailServiceTest {
     assertThat(message.subject()).isEqualTo("Recuperación de contraseña");
     assertThat(message.htmlBody())
         .contains("http://localhost:3000/auth/password-recovery/reset?token=token-123")
-        .contains("https://staging.typeit.com.ar/brand/boero-logo.webp")
+        .contains("http://localhost:3000/brand/boero-logo.webp")
         .contains("Conservatorio Superior de Música Felipe Boero")
         .contains("Hola,")
         .contains("Ana García")

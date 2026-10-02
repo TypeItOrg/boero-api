@@ -4,6 +4,8 @@ import static java.util.Objects.requireNonNull;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.config.WebAuthnProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
+import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.DiscoverablePasskeyOptionsRequest;
+import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.DiscoverablePasskeyVerifyRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PasskeyAuthenticationOptionsRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PasskeyAuthenticationVerifyRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PasskeyRegistrationOptionsRequest;
@@ -15,6 +17,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PasskeyAuthentic
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PasskeyListResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PasskeyRegistrationOptionsResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PasskeyResponse;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.DiscoverablePasskeyLoginUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.ListPasskeysUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.ReAuthenticateUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RenamePasskeyUseCase;
@@ -56,6 +59,21 @@ public class PasskeyController {
   private final ReAuthenticateUseCase reAuthenticateUseCase;
   private final InstitutionalCallerGuard institutionalCallerGuard;
   private final WebAuthnProperties webAuthnProperties;
+  private final DiscoverablePasskeyLoginUseCase discoverablePasskeyLoginUseCase;
+
+  @PostMapping(version = Version.V1, path = "/passkeys/authentication/discoverable/options")
+  public PasskeyAuthenticationOptionsResponse discoverableOptions(
+      @Valid @RequestBody final DiscoverablePasskeyOptionsRequest request) {
+    return discoverablePasskeyLoginUseCase.options(request.institutionId());
+  }
+
+  @PostMapping(version = Version.V1, path = "/passkeys/authentication/discoverable/verify")
+  public AuthResponse discoverableVerify(
+      @Valid @RequestBody final DiscoverablePasskeyVerifyRequest request,
+      final HttpServletRequest httpRequest) {
+    return discoverablePasskeyLoginUseCase.verify(
+        request.ceremonyId(), request.credential(), request.rememberMe(), httpRequest);
+  }
 
   @PostMapping(version = Version.V1, path = "/passkeys/authentication/options")
   public PasskeyAuthenticationOptionsResponse authenticationOptions(

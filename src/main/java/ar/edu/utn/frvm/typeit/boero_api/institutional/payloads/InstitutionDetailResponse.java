@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.payloads;
 
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.UUID;
 import lombok.Builder;
 import org.jspecify.annotations.Nullable;
@@ -10,6 +11,9 @@ public record InstitutionDetailResponse(
     UUID id,
     String name,
     String slug,
+    @Schema(nullable = true, requiredMode = Schema.RequiredMode.REQUIRED)
+        @Nullable String publicSubdomain,
+    @Schema(nullable = true, requiredMode = Schema.RequiredMode.REQUIRED) @Nullable String logoUrl,
     CitySummaryResponse city,
     ProvinceSummaryResponse province,
     CountryLocationResponse country,
@@ -30,6 +34,8 @@ public record InstitutionDetailResponse(
         .id(institution.getId())
         .name(institution.getName())
         .slug(institution.getSlug())
+        .publicSubdomain(institution.getPublicSubdomain())
+        .logoUrl(InstitutionPublicAccessResponse.logoUrl(institution))
         .city(CitySummaryResponse.from(city))
         .province(ProvinceSummaryResponse.from(province))
         .country(CountryLocationResponse.from(country))

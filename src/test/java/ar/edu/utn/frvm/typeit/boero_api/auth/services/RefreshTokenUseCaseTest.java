@@ -45,6 +45,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RefreshTokenUseCaseTest {
+  @Mock private InstitutionalHostContext hostContext;
 
   @Mock private RefreshTokenRepository refreshTokenRepository;
   @Mock private UserSessionRepository userSessionRepository;
@@ -63,6 +64,7 @@ class RefreshTokenUseCaseTest {
     jwtProperties = jwtProperties();
     refreshTokenUseCase =
         new RefreshTokenUseCase(
+            hostContext,
             Clock.systemUTC(),
             refreshTokenRepository,
             userSessionRepository,

@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ResetInstitutionalPasswordUseCase {
+  private final InstitutionalHostContext hostContext;
   private final Clock clock;
   private final UserRepository userRepository;
 
@@ -32,11 +33,13 @@ public class ResetInstitutionalPasswordUseCase {
     }
 
     final String hash = RequestInstitutionalPasswordRecoveryUseCase.hash(request.token());
-    passwordResetTokenRepository
-        .findUserIdByTokenHash(hash)
-        .flatMap(userRepository::findForEmailVerificationById)
-        .filter(mappedUser -> mappedUser.isAccountActive())
-        .orElseThrow(InvalidPasswordRecoveryTokenException::new);
+    final var owner =
+        passwordResetTokenRepository
+            .findUserIdByTokenHash(hash)
+            .flatMap(userRepository::findForEmailVerificationById)
+            .filter(mappedUser -> mappedUser.isAccountActive())
+            .orElseThrow(InvalidPasswordRecoveryTokenException::new);
+    hostContext.requireInstitution(owner.getInstitutionId());
     final Instant now = clock.instant();
     final InstitutionalPasswordResetToken token =
         passwordResetTokenRepository

@@ -13,6 +13,8 @@ public final class PublicRoutes {
     "/api/v1/auth/login/password",
     "/api/v1/auth/passkeys/authentication/options",
     "/api/v1/auth/passkeys/authentication/verify",
+    "/api/v1/auth/passkeys/authentication/discoverable/options",
+    "/api/v1/auth/passkeys/authentication/discoverable/verify",
     "/api/v1/auth/password-recovery",
     "/api/v1/auth/password-recovery/reset",
     "/api/v1/auth/refresh",
@@ -29,7 +31,10 @@ public final class PublicRoutes {
   private static final String[] GREETING_ROUTES = {"/api/v1/greeting/**"};
 
   private static final String[] INSTITUTION_READ_ROUTES = {
-    "/api/v1/institutions", "/api/v1/institutions/*"
+    "/api/v1/institutions",
+    "/api/v1/institutions/*",
+    "/api/v1/institutions/by-subdomain/*",
+    "/api/v1/institutions/*/logo"
   };
 
   private static final String[] LOCATION_READ_ROUTES = {

@@ -23,6 +23,7 @@ public class ApplicationExceptionHttpMapper {
       case AUTHENTICATION -> HttpStatus.UNAUTHORIZED;
       case AUTHORIZATION -> HttpStatus.FORBIDDEN;
       case NOT_FOUND -> HttpStatus.NOT_FOUND;
+      case UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
       case CONFLICT -> HttpStatus.CONFLICT;
     };
   }
