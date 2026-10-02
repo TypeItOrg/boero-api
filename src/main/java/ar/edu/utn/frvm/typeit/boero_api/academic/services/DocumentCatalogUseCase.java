@@ -7,6 +7,8 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.*;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.*;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.*;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorCategory;
+import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentInstitutionLock;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.SynchronizeDraftDocumentsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
@@ -20,9 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class DocumentCatalogUseCase {
-  private final ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces
-          .EnrollmentApplicationRepository
-      applications;
+  private final EnrollmentApplicationRepository applications;
   private final DocumentDefinitionRepository definitions;
   private final TrainingPathDocumentRequirementRepository assignments;
   private final TrainingPathRepository paths;
@@ -78,12 +78,7 @@ public class DocumentCatalogUseCase {
               }
               if (!search.isBlank()) {
                 String text =
-                    search
-                        .trim()
-                        .toLowerCase(Locale.ROOT)
-                        .replace("\\", "\\\\")
-                        .replace("%", "\\%")
-                        .replace("_", "\\_");
+                    SearchNormalization.escapeLike(search.trim().toLowerCase(Locale.ROOT));
                 predicate =
                     cb.and(predicate, cb.like(cb.lower(root.get("name")), "%" + text + "%", '\\'));
               }
@@ -117,6 +112,12 @@ public class DocumentCatalogUseCase {
       final Pageable pageable) {
     require(PermissionCode.DOCUMENT_CATALOG_READ, institutionId);
     definition(institutionId, id);
+    final var readAccess = authorization.managementAccess(PermissionCode.TRAINING_PATH_READ);
+    final var readablePaths =
+        readAccess.trainingPathIds().isEmpty()
+            ? Set.of(new UUID(0, 0))
+            : readAccess.trainingPathIds();
+
     return assignments
         .findAll(
             (root, query, cb) ->
@@ -127,13 +128,9 @@ public class DocumentCatalogUseCase {
                     pathId == null
                         ? cb.conjunction()
                         : cb.equal(root.get("trainingPath").get("id"), pathId),
-                    authorization
-                            .managementAccess(PermissionCode.TRAINING_PATH_READ)
-                            .institutional()
+                    readAccess.institutional()
                         ? cb.conjunction()
-                        : root.get("trainingPath")
-                            .get("id")
-                            .in(authorization.paths("TRAINING_PATH_READ"))),
+                        : root.get("trainingPath").get("id").in(readablePaths)),
             pageable)
         .map(DocumentRequirementResponse::from);
   }
@@ -297,13 +294,10 @@ public class DocumentCatalogUseCase {
 
   private DocumentCatalogSaveResponse result(
       final UUID institutionId, final UUID id, final int pathCount, final int draftCount) {
+    final var readAccess = authorization.managementAccess(PermissionCode.TRAINING_PATH_READ);
     var visible =
         assignments.findByDocumentId(id).stream()
-            .filter(
-                value ->
-                    authorization
-                        .managementAccess(PermissionCode.TRAINING_PATH_READ)
-                        .includes(value.getTrainingPath().getId()))
+            .filter(value -> readAccess.includes(value.getTrainingPath().getId()))
             .map(DocumentRequirementResponse::from)
             .toList();
     return new DocumentCatalogSaveResponse(
