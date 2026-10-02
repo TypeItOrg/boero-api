@@ -8,6 +8,16 @@ import org.jspecify.annotations.Nullable;
 
 @Schema(
     requiredProperties = {
+      "sourceRequirementId",
+      "appliedDefinitionRevision",
+      "appliedAssignmentRevision",
+      "origin",
+      "requestId",
+      "documentId",
+      "active",
+      "specificInstructions",
+      "needsReplacement",
+      "changes",
       "id",
       "name",
       "instructions",
@@ -33,4 +43,14 @@ public record EnrollmentDocumentRequirementResponse(
     boolean canUpload,
     boolean canReplace,
     boolean canWithdraw,
-    boolean canReview) {}
+    boolean canReview,
+    UUID documentId,
+    boolean active,
+    @Schema(nullable = true) @Nullable String specificInstructions,
+    boolean needsReplacement,
+    List<EnrollmentRequirementChangeResponse> changes,
+    ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.DocumentRequirementOrigin origin,
+    @Schema(nullable = true) @Nullable UUID requestId,
+    @Schema(nullable = true) @Nullable UUID sourceRequirementId,
+    @Schema(nullable = true) @Nullable Long appliedDefinitionRevision,
+    @Schema(nullable = true) @Nullable Long appliedAssignmentRevision) {}

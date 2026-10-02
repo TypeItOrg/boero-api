@@ -1,12 +1,24 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions;
 
 public final class EnrollmentMessages {
+  public static final String DOCUMENT_REQUEST_CLOSED =
+      "Solo se puede solicitar documentación en inscripciones enviadas o aprobadas provisionalmente.";
+  public static final String DOCUMENT_REQUEST_DUPLICATE =
+      "El documento ya está requerido en esta inscripción. Consultá su requisito existente.";
+  public static final String DOCUMENT_REQUEST_INACTIVE =
+      "El documento no está activo en el catálogo de esta institución.";
+  public static final String DOCUMENT_REQUEST_IMMUTABLE =
+      "El pedido y sus condiciones no se pueden modificar.";
+  public static final String DOCUMENT_REQUIREMENT_RETIRED =
+      "Este requisito fue retirado. Su documentación se conserva como historial.";
+  public static final String DOCUMENT_FORMAT_CHANGED =
+      "El formato admitido cambió. Reemplazá el archivo o retiralo si es opcional.";
   public static final String DOCUMENT_REQUIREMENT_NOT_FOUND =
       "El requisito documental no pertenece a esta solicitud o trayecto.";
   public static final String DOCUMENT_SUBMISSION_REQUIRED =
       "Adjuntá todos los documentos obligatorios para enviar la solicitud.";
   public static final String DOCUMENT_PROVISIONAL_REQUIRED =
-      "La admisión provisoria requiere los documentos iniciales aceptados y documentación obligatoria posterior pendiente.";
+      "Para admitir provisoriamente, aceptá todos los documentos exigidos antes de aprobar. Debe quedar documentación obligatoria para confirmar pendiente.";
   public static final String DOCUMENT_CONFIRMATION_REQUIRED =
       "Todos los documentos obligatorios deben estar aceptados para confirmar la inscripción.";
   public static final String DOCUMENT_VERSION_LOCKED =

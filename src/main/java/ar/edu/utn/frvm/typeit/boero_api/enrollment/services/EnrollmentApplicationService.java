@@ -718,6 +718,7 @@ public class EnrollmentApplicationService {
               .toList());
       applicationCourseApprovalService.markSubmitted(application);
     }
+    documentRequirements.synchronize(application, clock.instant());
     documentRequirements.requireSubmission(application);
     application.submit();
     admissionHistory.record(application);

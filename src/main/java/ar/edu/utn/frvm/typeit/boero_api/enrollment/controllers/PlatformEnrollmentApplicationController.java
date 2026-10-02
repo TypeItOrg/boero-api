@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.controllers;
 
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPlatformRole;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
@@ -33,10 +34,26 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class PlatformEnrollmentApplicationController {
 
+  private final ar.edu.utn.frvm.typeit.boero_api.enrollment.services
+          .RequestEnrollmentDocumentsUseCase
+      documentRequests;
   private final ListEnrollmentApplicationsUseCase listEnrollmentApplicationsUseCase;
   private final GetEnrollmentApplicationUseCase getEnrollmentApplicationUseCase;
   private final ApproveEnrollmentApplicationUseCase approveEnrollmentApplicationUseCase;
   private final RejectEnrollmentApplicationUseCase rejectEnrollmentApplicationUseCase;
+
+  @PostMapping(value = "/{institutionId}/{applicationId}/document-requests", version = Version.V1)
+  @ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPermission(
+      PermissionCode.ENROLLMENT_DOCUMENT_REQUEST_CREATE)
+  public ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentDocumentRequestResponse
+      requestDocuments(
+          @PathVariable UUID institutionId,
+          @PathVariable UUID applicationId,
+          @Valid @RequestBody
+              ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CreateEnrollmentDocumentRequest
+                  input) {
+    return documentRequests.execute(institutionId, applicationId, input);
+  }
 
   @GetMapping(version = Version.V1)
   public PaginatedResponse<EnrollmentApplicationResponse> list(

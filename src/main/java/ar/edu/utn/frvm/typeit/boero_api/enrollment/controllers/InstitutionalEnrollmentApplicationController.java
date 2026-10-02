@@ -47,6 +47,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InstitutionalEnrollmentApplicationController {
 
+  private final ar.edu.utn.frvm.typeit.boero_api.enrollment.services
+          .RequestEnrollmentDocumentsUseCase
+      documentRequests;
   private final ListEnrollmentApplicationsUseCase listEnrollmentApplicationsUseCase;
   private final GetEnrollmentApplicationUseCase getEnrollmentApplicationUseCase;
   private final ApproveEnrollmentApplicationUseCase approveEnrollmentApplicationUseCase;
@@ -57,6 +60,19 @@ public class InstitutionalEnrollmentApplicationController {
 
   @Autowired(required = false)
   private RejectEnrollmentApplicationCourseUseCase rejectEnrollmentApplicationCourseUseCase;
+
+  @PostMapping(value = "/{applicationId}/document-requests", version = Version.V1)
+  @ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresPermission(
+      PermissionCode.ENROLLMENT_DOCUMENT_REQUEST_CREATE)
+  public ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentDocumentRequestResponse
+      requestDocuments(
+          @PathVariable UUID institutionId,
+          @PathVariable UUID applicationId,
+          @Valid @RequestBody
+              ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CreateEnrollmentDocumentRequest
+                  input) {
+    return documentRequests.execute(institutionId, applicationId, input);
+  }
 
   @GetMapping(version = Version.V1)
   @RequiresPermission(PermissionCode.ENROLLMENT_APPLICATION_READ)

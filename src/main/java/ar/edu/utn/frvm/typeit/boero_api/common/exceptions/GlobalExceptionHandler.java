@@ -50,6 +50,23 @@ public class GlobalExceptionHandler {
         .build();
   }
 
+  @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+  public ResponseEntity<ExceptionPayload> handleDocumentRevisionConflict(
+      final org.springframework.orm.ObjectOptimisticLockingFailureException exception) {
+    if (!Set.of(
+            "ar.edu.utn.frvm.typeit.boero_api.academic.entities.DocumentDefinition",
+            "ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPathDocumentRequirement")
+        .contains(Objects.toString(exception.getPersistentClassName(), ""))) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(handleException(exception));
+    }
+    return handleApplicationException(
+        new ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.DocumentCatalogException(
+            ErrorCategory.CONFLICT,
+            ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages
+                .DOCUMENT_REVISION_CONFLICT));
+  }
+
   @ExceptionHandler({DataIntegrityViolationException.class, TransactionSystemException.class})
   public ResponseEntity<ExceptionPayload> handlePersistenceException(
       final RuntimeException exception) {
@@ -63,8 +80,43 @@ public class GlobalExceptionHandler {
             "person_role_assignment_training_paths_pkey");
     for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
       if (cause instanceof org.hibernate.exception.ConstraintViolationException documentViolation) {
+        final String constraint = Objects.toString(documentViolation.getConstraintName(), "");
+        if (constraint.equals("training_path_document_identity_check")) {
+          return handleApplicationException(
+              new ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.DocumentCatalogException(
+                  ErrorCategory.CONFLICT,
+                  ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages
+                      .DOCUMENT_ASSIGNMENT_IMMUTABLE));
+        }
+        if (Set.of("training_path_document_unique", "enrollment_document_definition_unique")
+            .contains(constraint)) {
+          return handleApplicationException(
+              new ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.DocumentCatalogException(
+                  ErrorCategory.CONFLICT,
+                  constraint.equals("training_path_document_unique")
+                      ? ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages
+                          .DOCUMENT_DUPLICATE_ASSIGNMENT
+                      : EnrollmentMessages.DOCUMENT_REQUEST_DUPLICATE));
+        }
         final String message =
             switch (Objects.toString(documentViolation.getConstraintName(), "")) {
+              case "enrollment_document_request_closed_check" ->
+                  EnrollmentMessages.DOCUMENT_REQUEST_CLOSED;
+              case "enrollment_document_request_inactive_check" ->
+                  EnrollmentMessages.DOCUMENT_REQUEST_INACTIVE;
+              case "enrollment_document_request_immutable_check",
+                  "enrollment_requirement_frozen_check",
+                  "enrollment_requirement_identity_check" ->
+                  EnrollmentMessages.DOCUMENT_REQUEST_IMMUTABLE;
+              case "enrollment_requirement_retired_check" ->
+                  EnrollmentMessages.DOCUMENT_REQUIREMENT_RETIRED;
+              case "enrollment_document_format_check" -> EnrollmentMessages.DOCUMENT_FORMAT_CHANGED;
+              case "training_path_document_tenant_fk",
+                  "training_path_document_path_tenant_fk",
+                  "enrollment_document_tenant_fk",
+                  "enrollment_document_application_tenant_fk",
+                  "enrollment_requirement_request_tenant_fk" ->
+                  EnrollmentMessages.DOCUMENT_REQUIREMENT_NOT_FOUND;
               case "enrollment_document_gate_check" ->
                   EnrollmentMessages.DOCUMENT_CONFIRMATION_REQUIRED;
               case "enrollment_attachments_current_requirement_unique" ->

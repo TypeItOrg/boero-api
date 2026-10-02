@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPathDocumentRequirement;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathDocumentRequirementRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
@@ -13,6 +14,8 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidati
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentAttachmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentAttachmentResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentDocumentRequirementResponse;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentRequirementChangeResponse;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +24,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,11 +42,68 @@ public class EnrollmentDocumentRequirementsService {
     definitions
         .findByTrainingPathIdOrderByDisplayOrderAscIdAsc(application.getTrainingPathId())
         .stream()
-        .filter(value -> value.isActive())
+        .filter(value -> value.isEffectiveActive())
         .forEach(
             value ->
                 application.addDocumentRequirement(
                     EnrollmentDocumentRequirement.snapshot(application, value)));
+  }
+
+  @Transactional(propagation = Propagation.MANDATORY)
+  public void synchronize(final EnrollmentApplication application, final Instant at) {
+    synchronize(
+        application,
+        definitions.findByTrainingPathIdOrderByDisplayOrderAscIdAsc(
+            application.getTrainingPathId()),
+        at);
+  }
+
+  @Transactional(propagation = Propagation.MANDATORY)
+  public void synchronize(
+      final EnrollmentApplication application,
+      final List<TrainingPathDocumentRequirement> sources,
+      final Instant at) {
+    if (application.getStatus() != EnrollmentApplicationStatus.DRAFT) {
+      return;
+    }
+    var actor =
+        EnrollmentDocumentAudit.Actor.from(SecurityContextHolder.getContext().getAuthentication());
+    var originals = new HashMap<UUID, EnrollmentDocumentRequirement>();
+    for (var requirement : application.getDocumentRequirements()) {
+      final var sourceId = requirement.getSourceRequirementId();
+      if (sourceId != null) {
+        originals.put(sourceId, requirement);
+      }
+    }
+    for (var source : sources) {
+      var existing = originals.remove(source.getId());
+      if (!source.isEffectiveActive()) {
+        if (existing != null && existing.retire()) {
+          existing.recordChange("RETIRED", at, actor.id(), actor.accountType());
+        }
+      } else if (existing == null) {
+        var added = EnrollmentDocumentRequirement.snapshot(application, source);
+        application.addDocumentRequirement(added);
+        added.recordChange("ADDED", at, actor.id(), actor.accountType());
+      } else {
+        boolean wasActive = existing.isActive();
+        if (existing.synchronize(source)) {
+          existing.recordChange(
+              wasActive ? "UPDATED" : "REACTIVATED", at, actor.id(), actor.accountType());
+        }
+      }
+    }
+    for (var removed : originals.values()) {
+      if (removed.retire()) {
+        removed.recordChange("RETIRED", at, actor.id(), actor.accountType());
+      }
+    }
+  }
+
+  public void requireActive(final EnrollmentDocumentRequirement requirement) {
+    if (!requirement.isActive()) {
+      throw new EnrollmentValidationException(EnrollmentMessages.DOCUMENT_REQUIREMENT_RETIRED);
+    }
   }
 
   public EnrollmentDocumentRequirement requirement(EnrollmentApplication application, UUID id) {
@@ -57,12 +118,31 @@ public class EnrollmentDocumentRequirementsService {
 
   public void requireSubmission(EnrollmentApplication application) {
     var current = current(application);
-    if (application.getDocumentRequirements().stream()
-        .anyMatch(
-            value ->
-                value.getLevel() == DocumentRequirementLevel.AT_SUBMISSION
-                    && !current.containsKey(value.getId()))) {
-      throw new EnrollmentValidationException(EnrollmentMessages.DOCUMENT_SUBMISSION_REQUIRED);
+    for (var requirement : application.getDocumentRequirements()) {
+      var file = current.get(requirement.getId());
+      if (requirement.isActive()
+          && file != null
+          && !requirement.getAllowedFormats().contains(file.getContentType())) {
+        throw new EnrollmentValidationException(
+            requirement.getName() + ": " + EnrollmentMessages.DOCUMENT_FORMAT_CHANGED,
+            Map.of(
+                "documents." + requirement.getId(),
+                requirement.getName() + ": " + EnrollmentMessages.DOCUMENT_FORMAT_CHANGED));
+      }
+    }
+    var missing =
+        application.getDocumentRequirements().stream()
+            .filter(
+                value ->
+                    value.isActive()
+                        && value.getLevel() == DocumentRequirementLevel.AT_SUBMISSION
+                        && !current.containsKey(value.getId()))
+            .map(value -> value.getName())
+            .toList();
+    if (!missing.isEmpty()) {
+      var message =
+          EnrollmentMessages.DOCUMENT_SUBMISSION_REQUIRED + " " + String.join(", ", missing) + ".";
+      throw new EnrollmentValidationException(message, Map.of("documents", message));
     }
   }
 
@@ -77,6 +157,7 @@ public class EnrollmentDocumentRequirementsService {
   private boolean accepted(EnrollmentApplication application, boolean initialOnly) {
     var current = current(application);
     return application.getDocumentRequirements().stream()
+        .filter(value -> value.isActive())
         .filter(
             value ->
                 initialOnly
@@ -85,6 +166,9 @@ public class EnrollmentDocumentRequirementsService {
         .allMatch(
             value ->
                 current.containsKey(value.getId())
+                    && value
+                        .getAllowedFormats()
+                        .contains(current.get(value.getId()).getContentType())
                     && current.get(value.getId()).getReviewStatus()
                         == DocumentReviewStatus.ACCEPTED);
   }
@@ -137,6 +221,7 @@ public class EnrollmentDocumentRequirementsService {
               var file = current.get(value.getId());
               boolean mutable =
                   file == null || file.getReviewStatus() != DocumentReviewStatus.ACCEPTED;
+              final var request = value.getRequest();
               return new EnrollmentDocumentRequirementResponse(
                   value.getId(),
                   value.getName(),
@@ -146,16 +231,36 @@ public class EnrollmentDocumentRequirementsService {
                   value.getDisplayOrder(),
                   file == null ? "MISSING" : file.getReviewStatus().name(),
                   file == null ? null : EnrollmentAttachmentResponse.from(file),
-                  upload && file == null,
-                  upload && delete && file != null && mutable,
-                  delete
+                  value.isActive() && upload && file == null,
+                  value.isActive() && upload && delete && file != null && mutable,
+                  value.isActive()
+                      && delete
                       && file != null
                       && mutable
                       && (application.isEditable()
+                          || value.getOrigin()
+                              == ar.edu.utn.frvm.typeit.boero_api.enrollment.enums
+                                  .DocumentRequirementOrigin.ADDITIONAL
                           || value.getLevel() != DocumentRequirementLevel.AT_SUBMISSION),
-                  review
+                  value.isActive()
+                      && review
                       && file != null
-                      && file.getReviewStatus() == DocumentReviewStatus.PENDING_REVIEW);
+                      && file.getReviewStatus() == DocumentReviewStatus.PENDING_REVIEW,
+                  value.getDocument().getId(),
+                  value.isActive(),
+                  value.getSpecificInstructions(),
+                  value.isActive()
+                      && file != null
+                      && !value.getAllowedFormats().contains(file.getContentType()),
+                  value.getChanges().stream()
+                      .sorted(Comparator.comparing(change -> change.getOccurredAt()))
+                      .map(EnrollmentRequirementChangeResponse::from)
+                      .toList(),
+                  value.getOrigin(),
+                  request == null ? null : request.getId(),
+                  value.getSourceRequirementId(),
+                  value.getDefinitionRevision(),
+                  value.getAssignmentRevision());
             })
         .toList();
   }

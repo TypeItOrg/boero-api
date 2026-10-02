@@ -52,6 +52,8 @@ import org.jspecify.annotations.Nullable;
       "documents",
       "canApproveProvisionally",
       "canConfirm",
+      "documentRequests",
+      "canRequestDocuments",
       "admissionHistory"
     })
 public record EnrollmentApplicationResponse(
@@ -86,7 +88,9 @@ public record EnrollmentApplicationResponse(
     List<EnrollmentDocumentRequirementResponse> documents,
     boolean canApproveProvisionally,
     boolean canConfirm,
-    List<EnrollmentAdmissionHistoryResponse> admissionHistory) {
+    List<EnrollmentAdmissionHistoryResponse> admissionHistory,
+    boolean canRequestDocuments,
+    List<EnrollmentDocumentRequestResponse> documentRequests) {
   public EnrollmentApplicationResponse() {
     this(
         null,
@@ -120,11 +124,14 @@ public record EnrollmentApplicationResponse(
         List.of(),
         false,
         false,
+        List.of(),
+        false,
         List.of());
   }
 
   public EnrollmentApplicationResponse {
     documents = documents == null ? List.of() : documents;
+    documentRequests = documentRequests == null ? List.of() : documentRequests;
     admissionHistory = admissionHistory == null ? List.of() : admissionHistory;
     spaces = spaces == null ? new ArrayList<>() : spaces;
     courses = courses == null ? new ArrayList<>() : courses;

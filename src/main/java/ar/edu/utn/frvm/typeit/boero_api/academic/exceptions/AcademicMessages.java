@@ -1,6 +1,13 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.exceptions;
 
 public final class AcademicMessages {
+  public static final String DOCUMENT_NOT_FOUND = "El documento no existe en esta institución.";
+  public static final String DOCUMENT_REVISION_CONFLICT =
+      "El documento o su asignación cambió. Recargá la información antes de guardar.";
+  public static final String DOCUMENT_DUPLICATE_ASSIGNMENT =
+      "El documento está asignado al trayecto. Recargá para configurar o reactivar esa asignación.";
+  public static final String DOCUMENT_ASSIGNMENT_IMMUTABLE =
+      "No se puede cambiar el documento de una asignación. Retirala y seleccioná otro documento.";
 
   public static final String ACADEMIC_YEAR_NOT_FOUND = "El ciclo lectivo especificado no existe.";
   public static final String TRAINING_PATH_NOT_FOUND =

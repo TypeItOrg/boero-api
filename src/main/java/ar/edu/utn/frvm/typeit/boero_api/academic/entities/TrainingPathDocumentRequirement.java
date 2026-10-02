@@ -2,22 +2,11 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.entities;
 
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.DocumentRequirementLevel;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.UUID;
+import jakarta.persistence.*;
+import java.util.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "training_path_document_requirements")
@@ -30,19 +19,16 @@ public class TrainingPathDocumentRequirement {
   @JoinColumn(name = "training_path_id")
   private TrainingPath trainingPath;
 
-  @Column(nullable = false, length = 150)
-  private String name;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "document_id")
+  private DocumentDefinition document;
 
-  @Column(nullable = false, length = 1000)
-  private String instructions;
+  @Column(name = "institution_id", nullable = false)
+  private UUID institutionId;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private DocumentRequirementLevel level;
-
-  @JdbcTypeCode(SqlTypes.JSON)
-  @Column(name = "allowed_formats", nullable = false, columnDefinition = "jsonb")
-  private List<String> allowedFormats;
 
   @Column(name = "display_order", nullable = false)
   private int displayOrder;
@@ -50,24 +36,45 @@ public class TrainingPathDocumentRequirement {
   @Column(nullable = false)
   private boolean active;
 
-  public static TrainingPathDocumentRequirement create(TrainingPath path) {
-    var requirement = new TrainingPathDocumentRequirement();
-    requirement.trainingPath = path;
-    return requirement;
+  @Column(name = "specific_instructions", length = 1000)
+  private @Nullable String specificInstructions;
+
+  @Version private long revision;
+
+  public static TrainingPathDocumentRequirement create(
+      final TrainingPath path, final DocumentDefinition document) {
+    var value = new TrainingPathDocumentRequirement();
+    value.trainingPath = path;
+    value.document = document;
+    value.institutionId = path.getInstitution().getId();
+    return value;
   }
 
   public void update(
-      String name,
-      String instructions,
-      DocumentRequirementLevel level,
-      List<String> formats,
-      int order,
-      boolean active) {
-    this.name = name.trim();
-    this.instructions = instructions.trim();
+      final DocumentRequirementLevel level,
+      final int order,
+      final boolean active,
+      final @Nullable String instructions) {
     this.level = level;
-    this.allowedFormats = List.copyOf(new LinkedHashSet<>(formats));
     this.displayOrder = order;
     this.active = active;
+    this.specificInstructions =
+        instructions == null || instructions.isBlank() ? null : instructions.trim();
+  }
+
+  public String getName() {
+    return document.getName();
+  }
+
+  public String getInstructions() {
+    return document.getInstructions();
+  }
+
+  public List<String> getAllowedFormats() {
+    return document.getAllowedFormats();
+  }
+
+  public boolean isEffectiveActive() {
+    return active && document.isActive() && trainingPath.getDeletedAt() == null;
   }
 }

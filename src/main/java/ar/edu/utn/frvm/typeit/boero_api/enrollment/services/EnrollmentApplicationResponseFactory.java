@@ -55,6 +55,23 @@ public class EnrollmentApplicationResponseFactory {
             && documents.allAccepted(application);
 
     return response
+        .canRequestDocuments(
+            canRead
+                && (application.getStatus() == EnrollmentApplicationStatus.SUBMITTED
+                    || application.getStatus()
+                        == EnrollmentApplicationStatus.PROVISIONALLY_APPROVED)
+                && authorization.canAccess(
+                    application, authentication, PermissionCode.ENROLLMENT_DOCUMENT_REQUEST_CREATE))
+        .documentRequests(
+            canRead
+                ? application.getDocumentRequests().stream()
+                    .sorted(java.util.Comparator.comparing(request -> request.getCreatedAt()))
+                    .map(
+                        ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads
+                                .EnrollmentDocumentRequestResponse
+                            ::from)
+                    .toList()
+                : List.of())
         .canApproveProvisionally(
             canRead
                 && canApprove

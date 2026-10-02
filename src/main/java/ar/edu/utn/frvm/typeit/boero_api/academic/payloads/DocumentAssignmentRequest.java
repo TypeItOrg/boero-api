@@ -5,8 +5,8 @@ import jakarta.validation.constraints.*;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
-public record DocumentRequirementRequest(
-    @NotNull UUID documentId,
+public record DocumentAssignmentRequest(
+    @NotNull UUID trainingPathId,
     @PositiveOrZero @Nullable Long revision,
     @NotNull DocumentRequirementLevel level,
     @Min(0) int displayOrder,

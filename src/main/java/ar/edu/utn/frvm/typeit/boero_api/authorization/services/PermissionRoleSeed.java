@@ -53,7 +53,9 @@ public class PermissionRoleSeed implements ApplicationRunner {
           EnumSet.of(PermissionCode.STUDY_PLAN_READ, PermissionCode.ACADEMIC_YEAR_READ),
           SystemRoleCode.ADMINISTRATIVE,
           EnumSet.of(
+              PermissionCode.DOCUMENT_CATALOG_READ,
               PermissionCode.ENROLLMENT_APPLICATION_READ,
+              PermissionCode.ENROLLMENT_DOCUMENT_REQUEST_CREATE,
               PermissionCode.ENROLLMENT_ATTACHMENT_READ,
               PermissionCode.ENROLLMENT_ATTACHMENT_UPLOAD,
               PermissionCode.ENROLLMENT_ATTACHMENT_DELETE,
@@ -70,6 +72,7 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.COURSE_WAITLIST_READ),
           SystemRoleCode.INSTITUTIONAL_AUTHORITY,
           EnumSet.of(
+              PermissionCode.DOCUMENT_CATALOG_MANAGE,
               PermissionCode.INSTITUTION_ROLE_ASSIGN,
               PermissionCode.INSTITUTION_ROLE_REVOKE,
               PermissionCode.INSTITUTION_PERSON_READ_ANY,
@@ -121,7 +124,9 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.COURSE_STATUS_UPDATE,
               PermissionCode.COURSE_DELETE,
               PermissionCode.COURSE_RESTORE,
+              PermissionCode.DOCUMENT_CATALOG_READ,
               PermissionCode.ENROLLMENT_APPLICATION_READ,
+              PermissionCode.ENROLLMENT_DOCUMENT_REQUEST_CREATE,
               PermissionCode.ENROLLMENT_ATTACHMENT_READ,
               PermissionCode.ENROLLMENT_ATTACHMENT_UPLOAD,
               PermissionCode.ENROLLMENT_ATTACHMENT_DELETE,

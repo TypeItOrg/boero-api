@@ -70,6 +70,7 @@ public class EnrollmentAttachmentService {
     requireEditable(application);
 
     final var requirement = documents.requirement(application, requirementId);
+    documents.requireActive(requirement);
     final var previous =
         attachmentRepository
             .findByEnrollmentApplicationIdAndRequirementIdAndVersionStatusAndDeletedAtIsNull(
@@ -195,8 +196,11 @@ public class EnrollmentAttachmentService {
             .orElseThrow(() -> new AttachmentNotFoundException(attachmentId));
     final var actor = Actor.from(authentication);
 
+    documents.requireActive(attachment.getRequirement());
     attachment.requireMutable();
     if (!application.isEditable()
+        && attachment.getRequirement().getOrigin()
+            == ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.DocumentRequirementOrigin.ORIGINAL
         && attachment.getRequirement().getLevel() == DocumentRequirementLevel.AT_SUBMISSION) {
       throw new EnrollmentValidationException(EnrollmentMessages.DOCUMENT_WITHDRAW_DENIED);
     }
@@ -293,6 +297,7 @@ public class EnrollmentAttachmentService {
             .findByIdAndEnrollmentApplicationIdAndDeletedAtIsNull(attachmentId, applicationId)
             .orElseThrow(() -> new AttachmentNotFoundException(attachmentId));
     var actor = Actor.from(authentication);
+    documents.requireActive(attachment.getRequirement());
     attachment.review(
         request.status(),
         request.observation(),

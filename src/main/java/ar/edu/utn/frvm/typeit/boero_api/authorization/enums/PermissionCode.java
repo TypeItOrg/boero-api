@@ -111,6 +111,16 @@ public enum PermissionCode {
       PermissionScope.INSTITUTION,
       PermissionGroup.ACADEMIC,
       "Restaurar ciclos lectivos"),
+  DOCUMENT_CATALOG_READ(
+      "institution:document-catalog:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Ver catálogo documental"),
+  DOCUMENT_CATALOG_MANAGE(
+      "institution:document-catalog:manage",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Administrar catálogo documental"),
   TRAINING_PATH_READ(
       "institution:training-path:read",
       PermissionScope.INSTITUTION,
@@ -331,6 +341,11 @@ public enum PermissionCode {
       PermissionScope.INSTITUTION,
       PermissionGroup.ENROLLMENT,
       "Ver solicitudes de inscripción"),
+  ENROLLMENT_DOCUMENT_REQUEST_CREATE(
+      "institution:enrollment-document-request:create",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Solicitar documentación adicional"),
   ENROLLMENT_ATTACHMENT_READ(
       "institution:enrollment-attachment:read",
       PermissionScope.INSTITUTION,
@@ -434,6 +449,7 @@ public enum PermissionCode {
           ENROLLMENT_PERIOD_STATUS_UPDATE,
           ENROLLMENT_PERIOD_DELETE,
           ENROLLMENT_APPLICATION_READ,
+          ENROLLMENT_DOCUMENT_REQUEST_CREATE,
           ENROLLMENT_ATTACHMENT_READ,
           ENROLLMENT_ATTACHMENT_UPLOAD,
           ENROLLMENT_ATTACHMENT_DELETE,
@@ -509,8 +525,10 @@ public enum PermissionCode {
           Set.of(SHIFT_READ);
       case COURSE_CREATE, COURSE_UPDATE, COURSE_STATUS_UPDATE, COURSE_DELETE, COURSE_RESTORE ->
           Set.of(COURSE_READ);
+      case DOCUMENT_CATALOG_MANAGE -> Set.of(DOCUMENT_CATALOG_READ);
       case ENROLLMENT_ATTACHMENT_READ -> Set.of(ENROLLMENT_APPLICATION_READ);
-      case ENROLLMENT_ATTACHMENT_UPLOAD,
+      case ENROLLMENT_DOCUMENT_REQUEST_CREATE,
+          ENROLLMENT_ATTACHMENT_UPLOAD,
           ENROLLMENT_ATTACHMENT_DELETE,
           ENROLLMENT_ATTACHMENT_REVIEW ->
           Set.of(ENROLLMENT_ATTACHMENT_READ);

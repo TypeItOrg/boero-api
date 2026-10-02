@@ -7,8 +7,17 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface TrainingPathDocumentRequirementRepository
-    extends JpaRepository<TrainingPathDocumentRequirement, UUID> {
+    extends JpaRepository<TrainingPathDocumentRequirement, UUID>,
+        org.springframework.data.jpa.repository.JpaSpecificationExecutor<
+            TrainingPathDocumentRequirement> {
   List<TrainingPathDocumentRequirement> findByTrainingPathIdOrderByDisplayOrderAscIdAsc(UUID id);
+
+  long countByDocumentId(UUID documentId);
+
+  List<TrainingPathDocumentRequirement> findByDocumentId(UUID documentId);
+
+  Optional<TrainingPathDocumentRequirement> findByTrainingPathIdAndDocumentId(
+      UUID pathId, UUID documentId);
 
   Optional<TrainingPathDocumentRequirement> findByIdAndTrainingPathId(UUID id, UUID pathId);
 }

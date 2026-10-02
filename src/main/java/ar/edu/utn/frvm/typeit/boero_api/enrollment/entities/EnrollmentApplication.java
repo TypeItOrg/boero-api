@@ -162,6 +162,14 @@ public class EnrollmentApplication extends SoftDeletable {
   @Builder.Default
   private List<EnrollmentDocumentRequirement> documentRequirements = new ArrayList<>();
 
+  @OneToMany(mappedBy = "application", cascade = CascadeType.ALL)
+  @Builder.Default
+  private List<EnrollmentDocumentRequest> documentRequests = new ArrayList<>();
+
+  public void addDocumentRequest(final EnrollmentDocumentRequest request) {
+    documentRequests.add(request);
+  }
+
   public void addDocumentRequirement(EnrollmentDocumentRequirement requirement) {
     documentRequirements.add(requirement);
   }
