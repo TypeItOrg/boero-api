@@ -117,6 +117,7 @@ class EnrollmentAttachmentServiceTest {
             .build();
     application.addDocumentRequirement(requirement);
     when(requirement.getId()).thenReturn(requirementId);
+    when(requirement.isActive()).thenReturn(true);
     when(requirement.getAllowedFormats()).thenReturn(List.of("application/pdf", "image/png"));
     when(requirement.getLevel()).thenReturn(DocumentRequirementLevel.AT_SUBMISSION);
     when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));

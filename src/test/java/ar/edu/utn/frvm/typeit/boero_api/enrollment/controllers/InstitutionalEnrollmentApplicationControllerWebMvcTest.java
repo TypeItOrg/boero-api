@@ -34,6 +34,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ApproveEnrollmentApp
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.GetEnrollmentApplicationUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.RejectEnrollmentApplicationUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.RequestEnrollmentDocumentsUseCase;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -83,6 +84,7 @@ class InstitutionalEnrollmentApplicationControllerWebMvcTest {
   @MockitoBean private GetEnrollmentApplicationUseCase getEnrollmentApplicationUseCase;
   @MockitoBean private ApproveEnrollmentApplicationUseCase approveEnrollmentApplicationUseCase;
   @MockitoBean private RejectEnrollmentApplicationUseCase rejectEnrollmentApplicationUseCase;
+  @MockitoBean private RequestEnrollmentDocumentsUseCase requestEnrollmentDocumentsUseCase;
 
   @Autowired private MockMvc mockMvc;
 
