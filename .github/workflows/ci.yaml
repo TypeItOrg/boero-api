@@ -106,8 +106,8 @@ jobs:
   publish-image:
     if: >-
       github.event_name == 'push' &&
-      (github.ref_name == 'staging' || github.ref_name == 'main')
-    needs: test
+      (github.ref_name == 'develop' || github.ref_name == 'staging' || github.ref_name == 'main')
+    needs: [static-analysis, test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
