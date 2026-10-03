@@ -42,6 +42,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.PreferenceDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.ResponsibleDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.StartEnrollmentApplicationRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentDraftRequest;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.GuardianLinkStatus;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.UnauthorizedGuardianshipException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonGuardianRepository;
@@ -106,8 +107,9 @@ public class EnrollmentApplicationService {
     }
 
     if (actingForDependent
-        && !personGuardianRepository.existsByInstitution_IdAndTutorPerson_IdAndDependentPerson_Id(
-            institutionId, personId, applicantPersonId)) {
+        && !personGuardianRepository
+            .existsByInstitution_IdAndTutorPerson_IdAndDependentPerson_IdAndStatusIn(
+                institutionId, personId, applicantPersonId, List.of(GuardianLinkStatus.ACTIVE))) {
       throw new UnauthorizedGuardianshipException();
     }
 

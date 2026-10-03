@@ -49,6 +49,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.InstrumentSelectionD
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.PersonalDataDto;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.StartEnrollmentApplicationRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.UpdateEnrollmentDraftRequest;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.GuardianLinkStatus;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.UnauthorizedGuardianshipException;
@@ -690,8 +691,9 @@ class EnrollmentApplicationServiceTest {
   @DisplayName("Should forbid starting an application for a person the caller does not guard")
   void startOrGetApplication_forUnguardedPerson_isForbidden() {
     UUID dependentId = UUID.randomUUID();
-    when(personGuardianRepository.existsByInstitution_IdAndTutorPerson_IdAndDependentPerson_Id(
-            institutionId, personId, dependentId))
+    when(personGuardianRepository
+            .existsByInstitution_IdAndTutorPerson_IdAndDependentPerson_IdAndStatusIn(
+                institutionId, personId, dependentId, List.of(GuardianLinkStatus.ACTIVE)))
         .thenReturn(false);
 
     assertThatThrownBy(

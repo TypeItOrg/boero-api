@@ -21,16 +21,18 @@ public interface EnrollmentApplicationRepository
         JpaSpecificationExecutor<EnrollmentApplication> {
 
   /**
-   * Applications a person may act on: their own, or the ones of a dependent they have a
+   * Applications a person may act on: their own, or the ones of a dependent they have an active
    * guardianship link with. Any tutor of the applicant qualifies, not only whoever submitted it,
-   * and the access ends as soon as the link is removed. Expects the {@code application} alias and a
-   * {@code :personId} parameter.
+   * and the access ends as soon as the link is no longer active. Expects the {@code application}
+   * alias and a {@code :personId} parameter.
    */
   String ACCESSIBLE_BY_PERSON =
       "(application.applicantPerson.id = :personId "
           + "OR EXISTS (SELECT 1 FROM PersonGuardian guardianship "
           + "WHERE guardianship.institution.id = application.institution.id "
           + "AND guardianship.tutorPerson.id = :personId "
+          + "AND guardianship.status = "
+          + "ar.edu.utn.frvm.typeit.boero_api.institutional.entities.GuardianLinkStatus.ACTIVE "
           + "AND guardianship.dependentPerson.id = application.applicantPerson.id))";
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
