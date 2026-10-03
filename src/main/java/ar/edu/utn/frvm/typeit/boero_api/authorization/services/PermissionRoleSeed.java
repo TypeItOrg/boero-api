@@ -62,7 +62,8 @@ public class PermissionRoleSeed implements ApplicationRunner {
           EnumSet.of(
               PermissionCode.ENROLLMENT_APPLICATION_READ,
               PermissionCode.ENROLLMENT_APPLICATION_APPROVE,
-              PermissionCode.ENROLLMENT_APPLICATION_REJECT),
+              PermissionCode.ENROLLMENT_APPLICATION_REJECT,
+              PermissionCode.GUARDIAN_LINK_REVIEW),
           SystemRoleCode.INSTITUTIONAL_AUTHORITY,
           EnumSet.of(
               PermissionCode.INSTITUTION_ROLE_ASSIGN,
@@ -118,7 +119,8 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.COURSE_RESTORE,
               PermissionCode.ENROLLMENT_APPLICATION_READ,
               PermissionCode.ENROLLMENT_APPLICATION_APPROVE,
-              PermissionCode.ENROLLMENT_APPLICATION_REJECT));
+              PermissionCode.ENROLLMENT_APPLICATION_REJECT,
+              PermissionCode.GUARDIAN_LINK_REVIEW));
 
   private final PermissionRepository permissionRepository;
   private final RoleRepository roleRepository;
