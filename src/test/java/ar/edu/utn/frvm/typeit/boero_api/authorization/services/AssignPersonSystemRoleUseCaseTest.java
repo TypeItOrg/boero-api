@@ -82,6 +82,25 @@ class AssignPersonSystemRoleUseCaseTest {
   }
 
   @Test
+  @DisplayName("Should preserve existing roles when assigning applicant explicitly")
+  void executePreservingRoles_keepsExistingRoles() {
+    Role applicant = roleWith(SystemRoleCode.APPLICANT);
+    Role guardian = roleWith(SystemRoleCode.GUARDIAN);
+    PersonRoleAssignment guardianAssignment = assignmentWith(guardian);
+    when(roleRepository.findByScopeAndCodeAndInstitution_Id(
+            RoleScope.INSTITUTION, SystemRoleCode.APPLICANT.name(), institutionId))
+        .thenReturn(Optional.of(applicant));
+    when(personRoleAssignmentRepository.findByPerson_IdAndInstitution_Id(
+            person.getId(), institutionId))
+        .thenReturn(List.of(guardianAssignment));
+
+    assignPersonSystemRoleUseCase.executePreservingRoles(person, SystemRoleCode.APPLICANT);
+
+    verify(personRoleAssignmentRepository, org.mockito.Mockito.never()).delete(guardianAssignment);
+    verify(personRoleAssignmentRepository).save(org.mockito.ArgumentMatchers.any());
+  }
+
+  @Test
   @DisplayName("Should allow replacing the last institutional authority with applicant")
   void execute_replacesLastAuthorityWithApplicant() {
     Role applicant = roleWith(SystemRoleCode.APPLICANT);

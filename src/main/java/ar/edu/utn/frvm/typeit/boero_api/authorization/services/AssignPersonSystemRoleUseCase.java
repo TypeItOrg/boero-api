@@ -35,6 +35,16 @@ public class AssignPersonSystemRoleUseCase {
 
   @Transactional
   public void execute(Person person, SystemRoleCode roleCode, boolean revokeSessions) {
+    execute(person, roleCode, revokeSessions, true);
+  }
+
+  @Transactional
+  public void executePreservingRoles(Person person, SystemRoleCode roleCode) {
+    execute(person, roleCode, false, false);
+  }
+
+  private void execute(
+      Person person, SystemRoleCode roleCode, boolean revokeSessions, boolean applyRolePolicy) {
     Institution institution = person.getInstitution();
     institutionRepository
         .findByIdForUpdate(institution.getId())
@@ -46,19 +56,23 @@ public class AssignPersonSystemRoleUseCase {
             .orElseThrow(
                 () -> new IllegalStateException(String.format(SYSTEM_ROLE_NOT_SEEDED, roleCode)));
 
-    assign(person, role, roleCode, revokeSessions);
+    assign(person, role, roleCode, revokeSessions, applyRolePolicy);
     authorizationCacheInvalidator.evictPerson(person.getId(), institution.getId());
   }
 
   @Transactional
   public void execute(Person person, Role role, boolean revokeSessions) {
     SystemRoleCode technicalCode = role.isSystem() ? SystemRoleCode.valueOf(role.getCode()) : null;
-    assign(person, role, technicalCode, revokeSessions);
+    assign(person, role, technicalCode, revokeSessions, true);
     authorizationCacheInvalidator.evictPerson(person.getId(), person.getInstitution().getId());
   }
 
   private void assign(
-      Person person, Role role, SystemRoleCode technicalCode, boolean revokeSessions) {
+      Person person,
+      Role role,
+      SystemRoleCode technicalCode,
+      boolean revokeSessions,
+      boolean applyRolePolicy) {
     Institution institution = person.getInstitution();
     List<PersonRoleAssignment> currentAssignments =
         personRoleAssignmentRepository.findByPerson_IdAndInstitution_Id(
@@ -67,7 +81,9 @@ public class AssignPersonSystemRoleUseCase {
         currentAssignments.stream()
             .anyMatch(assignment -> assignment.getRole().getId().equals(role.getId()));
 
-    applyApplicantRolePolicy(currentAssignments, technicalCode);
+    if (applyRolePolicy) {
+      applyApplicantRolePolicy(currentAssignments, technicalCode);
+    }
     if (alreadyAssigned) {
       return;
     }
