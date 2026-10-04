@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
+import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
@@ -29,6 +31,7 @@ class ListPlatformPeopleUseCaseTest {
 
   @Mock private PersonRepository personRepository;
   @Mock private PersonRoleAssignmentRepository personRoleAssignmentRepository;
+  @Mock private UserRepository userRepository;
 
   @InjectMocks private ListPlatformPeopleUseCase listPlatformPeopleUseCase;
 
@@ -60,6 +63,8 @@ class ListPlatformPeopleUseCaseTest {
         .thenReturn(new PageImpl<>(List.of(person), repositoryPageable, 1));
     when(personRoleAssignmentRepository.findByPerson_IdIn(List.of(person.getId())))
         .thenReturn(List.of(assignment));
+    when(userRepository.findByPerson_IdIn(List.of(person.getId())))
+        .thenReturn(List.of(User.builder().person(person).enabled(true).build()));
 
     var response =
         listPlatformPeopleUseCase.execute(
@@ -68,6 +73,7 @@ class ListPlatformPeopleUseCaseTest {
     assertThat(response.items()).hasSize(1);
     assertThat(response.items().getFirst().institutionId()).isEqualTo(institutionId);
     assertThat(response.items().getFirst().institutionName()).isEqualTo("Instituto Boero");
+    assertThat(response.items().getFirst().enabled()).isTrue();
     assertThat(response.items().getFirst().roles())
         .extracting(roleResponse -> roleResponse.roleCode())
         .containsExactly(SystemRoleCode.TEACHER.name());

@@ -1,6 +1,5 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
-import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
@@ -65,7 +64,7 @@ public class ListPlatformPeopleUseCase {
                     Collectors.mapping(this::toRoleResponse, Collectors.toList())));
     final Map<UUID, Boolean> accessByPerson =
         userRepository.findByPerson_IdIn(personIds).stream()
-            .collect(Collectors.toMap(user -> user.getPerson().getId(), User::isEnabled));
+            .collect(Collectors.toMap(user -> user.getPerson().getId(), user -> user.isEnabled()));
 
     return PaginatedResponse.from(
         peoplePage.map(
