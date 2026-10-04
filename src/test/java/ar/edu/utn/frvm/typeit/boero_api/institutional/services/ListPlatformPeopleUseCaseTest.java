@@ -64,7 +64,8 @@ class ListPlatformPeopleUseCaseTest {
     when(personRoleAssignmentRepository.findByPerson_IdIn(List.of(person.getId())))
         .thenReturn(List.of(assignment));
     when(userRepository.findByPerson_IdIn(List.of(person.getId())))
-        .thenReturn(List.of(User.builder().person(person).enabled(true).build()));
+        .thenReturn(
+            List.of(User.builder().institution(institution).person(person).enabled(true).build()));
 
     var response =
         listPlatformPeopleUseCase.execute(
