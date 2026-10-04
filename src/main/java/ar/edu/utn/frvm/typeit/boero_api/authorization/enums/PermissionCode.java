@@ -61,16 +61,31 @@ public enum PermissionCode {
       PermissionScope.INSTITUTION,
       PermissionGroup.ROLES,
       "Eliminar roles"),
-  INSTITUTION_GRADES_ENTER(
-      "institution:grades:enter",
+  COURSE_ENROLLMENT_GRADE_READ(
+      "institution:course-enrollment-grade:read",
       PermissionScope.INSTITUTION,
-      PermissionGroup.GRADES,
-      "Cargar calificaciones"),
-  INSTITUTION_GRADES_ENTER_FINAL(
-      "institution:grades:enter-final",
+      PermissionGroup.ENROLLMENT,
+      "Consultar notas de estudiantes"),
+  COURSE_ENROLLMENT_GRADE_CREATE(
+      "institution:course-enrollment-grade:create",
       PermissionScope.INSTITUTION,
-      PermissionGroup.GRADES,
-      "Cargar calificaciones finales"),
+      PermissionGroup.ENROLLMENT,
+      "Añadir notas de estudiantes"),
+  COURSE_ENROLLMENT_GRADE_UPDATE(
+      "institution:course-enrollment-grade:update",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Modificar notas de estudiantes"),
+  COURSE_ENROLLMENT_GRADE_DELETE(
+      "institution:course-enrollment-grade:delete",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Eliminar notas de estudiantes"),
+  COURSE_ENROLLMENT_GRADE_PUBLISH(
+      "institution:course-enrollment-grade:publish",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Publicar notas de estudiantes"),
   INSTITUTION_READ(
       "institution:read",
       PermissionScope.INSTITUTION,
@@ -460,6 +475,11 @@ public enum PermissionCode {
           COURSE_ENROLLMENT_CREATE,
           COURSE_ENROLLMENT_WITHDRAW,
           COURSE_ENROLLMENT_ACADEMIC_STATUS_UPDATE,
+          COURSE_ENROLLMENT_GRADE_READ,
+          COURSE_ENROLLMENT_GRADE_CREATE,
+          COURSE_ENROLLMENT_GRADE_UPDATE,
+          COURSE_ENROLLMENT_GRADE_DELETE,
+          COURSE_ENROLLMENT_GRADE_PUBLISH,
           ENROLLMENT_APPLICATION_COURSE_READ,
           ENROLLMENT_APPLICATION_COURSE_ENROLL,
           ENROLLMENT_APPLICATION_COURSE_REJECT,
@@ -470,7 +490,7 @@ public enum PermissionCode {
   }
 
   public boolean isConfigurable() {
-    return group != PermissionGroup.GRADES;
+    return true;
   }
 
   public Set<PermissionCode> requiredPermissions() {
@@ -539,6 +559,12 @@ public enum PermissionCode {
           COURSE_ENROLLMENT_ACADEMIC_STATUS_UPDATE,
           COURSE_WAITLIST_READ ->
           Set.of(COURSE_ENROLLMENT_READ);
+      case COURSE_ENROLLMENT_GRADE_CREATE,
+          COURSE_ENROLLMENT_GRADE_UPDATE,
+          COURSE_ENROLLMENT_GRADE_DELETE,
+          COURSE_ENROLLMENT_GRADE_PUBLISH ->
+          Set.of(COURSE_ENROLLMENT_GRADE_READ);
+      case COURSE_ENROLLMENT_GRADE_READ -> Set.of(COURSE_ENROLLMENT_READ);
       case ENROLLMENT_APPLICATION_COURSE_ENROLL, ENROLLMENT_APPLICATION_COURSE_REJECT ->
           Set.of(ENROLLMENT_APPLICATION_COURSE_READ, ENROLLMENT_APPLICATION_READ);
       default -> Set.of();

@@ -69,6 +69,11 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.COURSE_ENROLLMENT_CREATE,
               PermissionCode.COURSE_ENROLLMENT_WITHDRAW,
               PermissionCode.COURSE_ENROLLMENT_ACADEMIC_STATUS_UPDATE,
+              PermissionCode.COURSE_ENROLLMENT_GRADE_READ,
+              PermissionCode.COURSE_ENROLLMENT_GRADE_CREATE,
+              PermissionCode.COURSE_ENROLLMENT_GRADE_UPDATE,
+              PermissionCode.COURSE_ENROLLMENT_GRADE_DELETE,
+              PermissionCode.COURSE_ENROLLMENT_GRADE_PUBLISH,
               PermissionCode.COURSE_WAITLIST_READ),
           SystemRoleCode.INSTITUTIONAL_AUTHORITY,
           EnumSet.of(
@@ -140,6 +145,11 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.COURSE_ENROLLMENT_CREATE,
               PermissionCode.COURSE_ENROLLMENT_WITHDRAW,
               PermissionCode.COURSE_ENROLLMENT_ACADEMIC_STATUS_UPDATE,
+              PermissionCode.COURSE_ENROLLMENT_GRADE_READ,
+              PermissionCode.COURSE_ENROLLMENT_GRADE_CREATE,
+              PermissionCode.COURSE_ENROLLMENT_GRADE_UPDATE,
+              PermissionCode.COURSE_ENROLLMENT_GRADE_DELETE,
+              PermissionCode.COURSE_ENROLLMENT_GRADE_PUBLISH,
               PermissionCode.COURSE_WAITLIST_READ));
 
   private final PermissionRepository permissionRepository;
