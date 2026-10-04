@@ -422,6 +422,10 @@ public record EnrollmentApplicationResponse(
               .birthDate(applicant.getBirthDate())
               .phoneNumber(applicant.getPhoneNumber())
               .email(applicant.getEmail())
+              .nationality(
+                  applicant.getNationalityCountry() == null
+                      ? null
+                      : applicant.getNationalityCountry().getName())
               .build();
     }
 
