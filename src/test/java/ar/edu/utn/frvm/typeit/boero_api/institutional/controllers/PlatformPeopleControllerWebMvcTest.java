@@ -119,6 +119,7 @@ class PlatformPeopleControllerWebMvcTest {
         null,
         INSTITUTION_ID,
         "Instituto Boero",
+        true,
         List.of(new PersonSummaryResponse.PersonRoleSummaryResponse("TEACHER", "Docente")));
   }
 }
