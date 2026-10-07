@@ -13,6 +13,7 @@ import org.jspecify.annotations.Nullable;
       "documentNumber",
       "birthDate",
       "phoneNumber",
+      "nationality",
       "email"
     })
 public record PersonalDataDto(
@@ -21,9 +22,10 @@ public record PersonalDataDto(
     @Schema(nullable = true) @Nullable String documentNumber,
     @Schema(nullable = true) @Nullable LocalDate birthDate,
     @Schema(nullable = true) @Nullable String phoneNumber,
-    @Schema(nullable = true) @Nullable String email) {
+    @Schema(nullable = true) @Nullable String email,
+    @Schema(nullable = true) @Nullable String nationality) {
   public PersonalDataDto() {
-    this(null, null, null, null, null, null);
+    this(null, null, null, null, null, null, null);
   }
 
   public @Nullable String getFirstName() {
@@ -48,5 +50,9 @@ public record PersonalDataDto(
 
   public @Nullable String getEmail() {
     return email;
+  }
+
+  public @Nullable String getNationality() {
+    return nationality;
   }
 }

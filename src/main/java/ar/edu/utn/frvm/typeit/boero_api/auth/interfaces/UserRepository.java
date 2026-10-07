@@ -62,6 +62,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
   List<User> findByPerson_IdInAndInstitution_Id(List<UUID> personIds, UUID institutionId);
 
   @EntityGraph(attributePaths = {"person", "institution"})
+  List<User> findByPerson_IdIn(List<UUID> personIds);
+
+  @EntityGraph(attributePaths = {"person", "institution"})
   Optional<User> findWithPersonAndInstitutionById(UUID id);
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)

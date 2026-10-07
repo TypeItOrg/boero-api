@@ -54,6 +54,10 @@ public final class EnrollmentMessages {
       "El curso no está habilitado por el período de esta solicitud.";
   public static final String ACADEMIC_REQUIREMENTS_PENDING =
       "No se puede solicitar ni matricular este curso sin cumplir sus correlatividades.";
+  public static final String APPLICANT_PHONE_REQUIRED =
+      "El teléfono de contacto del postulante es obligatorio.";
+  public static final String APPLICANT_NATIONALITY_REQUIRED =
+      "La nacionalidad del postulante es obligatoria.";
 
   public static final String SCHEDULE_WEEK_INVALID =
       "La fecha debe estar entre los años 1900 y 2100.";

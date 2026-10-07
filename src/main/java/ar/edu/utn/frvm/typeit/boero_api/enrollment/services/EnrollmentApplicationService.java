@@ -618,6 +618,14 @@ public class EnrollmentApplicationService {
         errors.put("personalData.email", EnrollmentMessages.EMAIL_REQUIRED);
       }
 
+      if (applicant.getPhoneNumber() == null || applicant.getPhoneNumber().isBlank()) {
+        errors.put("personalData.phoneNumber", EnrollmentMessages.APPLICANT_PHONE_REQUIRED);
+      }
+
+      if (applicant.getNationalityCountry() == null) {
+        errors.put("personalData.nationality", EnrollmentMessages.APPLICANT_NATIONALITY_REQUIRED);
+      }
+
       if (applicant.getBirthDate() != null) {
         int age = Period.between(applicant.getBirthDate(), businessDateProvider.today()).getYears();
 

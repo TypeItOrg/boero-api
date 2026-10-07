@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
@@ -31,6 +32,7 @@ public class ListPlatformPeopleUseCase {
 
   private final PersonRepository personRepository;
   private final PersonRoleAssignmentRepository personRoleAssignmentRepository;
+  private final UserRepository userRepository;
 
   @Transactional(readOnly = true)
   public PaginatedResponse<PlatformPersonSummaryResponse> execute(
@@ -48,7 +50,8 @@ public class ListPlatformPeopleUseCase {
             repositoryPageable);
 
     if (peoplePage.isEmpty()) {
-      return PaginatedResponse.from(peoplePage.map(this::withoutRoles));
+      return PaginatedResponse.from(
+          peoplePage.map(person -> PlatformPersonSummaryResponse.from(person, false, List.of())));
     }
 
     final List<UUID> personIds =
@@ -59,12 +62,17 @@ public class ListPlatformPeopleUseCase {
                 Collectors.groupingBy(
                     assignment -> assignment.getPerson().getId(),
                     Collectors.mapping(this::toRoleResponse, Collectors.toList())));
+    final Map<UUID, Boolean> accessByPerson =
+        userRepository.findByPerson_IdIn(personIds).stream()
+            .collect(Collectors.toMap(user -> user.getPerson().getId(), user -> user.isEnabled()));
 
     return PaginatedResponse.from(
         peoplePage.map(
             person ->
                 PlatformPersonSummaryResponse.from(
-                    person, rolesByPerson.getOrDefault(person.getId(), List.of()))));
+                    person,
+                    accessByPerson.getOrDefault(person.getId(), false),
+                    rolesByPerson.getOrDefault(person.getId(), List.of()))));
   }
 
   private Pageable mapInstitutionSort(final Pageable pageable) {
@@ -79,10 +87,6 @@ public class ListPlatformPeopleUseCase {
             .toList();
     final Sort mappedSort = Sort.by(mappedOrders);
     return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), mappedSort);
-  }
-
-  private PlatformPersonSummaryResponse withoutRoles(final Person person) {
-    return PlatformPersonSummaryResponse.from(person, List.of());
   }
 
   private PersonSummaryResponse.PersonRoleSummaryResponse toRoleResponse(
