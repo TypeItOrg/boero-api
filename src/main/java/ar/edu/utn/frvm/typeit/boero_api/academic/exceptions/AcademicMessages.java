@@ -1,6 +1,8 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.exceptions;
 
 public final class AcademicMessages {
+  public static final String DOCUMENT_INSTITUTION_CHANGE_BLOCKED =
+      "No se puede cambiar la institución porque el documento ya fue utilizado. Creá una copia en la otra institución.";
   public static final String DOCUMENT_NOT_FOUND = "El documento no existe en esta institución.";
   public static final String DOCUMENT_REVISION_CONFLICT =
       "El documento o su asignación cambió. Recargá la información antes de guardar.";

@@ -5,6 +5,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.*;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.*;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.*;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.*;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.ScopedResourceNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.*;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorCategory;
 import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
@@ -16,6 +17,7 @@ import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,29 +72,58 @@ public class DocumentCatalogUseCase {
           PermissionCode.TRAINING_PATH_READ, institutionId, ScopedResource.TRAINING_PATH, pathId);
     }
     return definitions
-        .findAll(
-            (root, query, cb) -> {
-              var predicate = cb.equal(root.get("institution").get("id"), institutionId);
-              if (active != null) {
-                predicate = cb.and(predicate, cb.equal(root.get("active"), active));
-              }
-              if (!search.isBlank()) {
-                String text =
-                    SearchNormalization.escapeLike(search.trim().toLowerCase(Locale.ROOT));
-                predicate =
-                    cb.and(predicate, cb.like(cb.lower(root.get("name")), "%" + text + "%", '\\'));
-              }
-              return predicate;
-            },
-            pageable)
+        .findAll(filters(institutionId, search, active), pageable)
         .map(DocumentDefinitionResponse::from);
+  }
+
+  @Transactional(readOnly = true)
+  public Page<PlatformDocumentDefinitionResponse> listPlatform(
+      final @Nullable UUID institutionId,
+      final String search,
+      final @Nullable Boolean active,
+      final Pageable pageable) {
+    if (!authorization.isPlatformAdministrator()) {
+      throw new ScopedResourceNotFoundException();
+    }
+
+    return definitions
+        .findAll(filters(institutionId, search, active), pageable)
+        .map(PlatformDocumentDefinitionResponse::from);
+  }
+
+  private Specification<DocumentDefinition> filters(
+      final @Nullable UUID institutionId, final String search, final @Nullable Boolean active) {
+    return (root, query, cb) -> {
+      var predicate = cb.conjunction();
+      if (institutionId != null) {
+        predicate = cb.and(predicate, cb.equal(root.get("institution").get("id"), institutionId));
+      }
+      if (active != null) {
+        predicate = cb.and(predicate, cb.equal(root.get("active"), active));
+      }
+      if (!search.isBlank()) {
+        String text = SearchNormalization.escapeLike(search.trim().toLowerCase(Locale.ROOT));
+        predicate = cb.and(predicate, cb.like(cb.lower(root.get("name")), "%" + text + "%", '\\'));
+      }
+      return predicate;
+    };
   }
 
   @Transactional(readOnly = true)
   public DocumentDefinitionResponse get(final UUID institutionId, final UUID id) {
     require(PermissionCode.DOCUMENT_CATALOG_READ, institutionId);
-    return DocumentDefinitionResponse.from(definition(institutionId, id))
-        .withImpact(assignments.countByDocumentId(id), applications.countDraftsUsingDocument(id));
+    var value = definition(institutionId, id);
+    long pathCount = assignments.countByDocumentId(id);
+    long draftCount = applications.countDraftsUsingDocument(id);
+    return DocumentDefinitionResponse.from(value, canChangeInstitution(value, pathCount))
+        .withImpact(pathCount, draftCount);
+  }
+
+  private boolean canChangeInstitution(final DocumentDefinition value, final long assignmentCount) {
+    return authorization.isPlatformAdministrator()
+        && value.getUsedAt() == null
+        && assignmentCount == 0
+        && !definitions.hasEnrollmentUsage(value.getId());
   }
 
   private DocumentDefinition definition(final UUID institutionId, final UUID id) {
@@ -109,6 +140,7 @@ public class DocumentCatalogUseCase {
       final UUID institutionId,
       final UUID id,
       final @Nullable UUID pathId,
+      final @Nullable Boolean active,
       final Pageable pageable) {
     require(PermissionCode.DOCUMENT_CATALOG_READ, institutionId);
     definition(institutionId, id);
@@ -125,6 +157,7 @@ public class DocumentCatalogUseCase {
                     cb.equal(root.get("document").get("id"), id),
                     cb.equal(root.get("institutionId"), institutionId),
                     cb.isNull(root.get("trainingPath").get("deletedAt")),
+                    active == null ? cb.conjunction() : cb.equal(root.get("active"), active),
                     pathId == null
                         ? cb.conjunction()
                         : cb.equal(root.get("trainingPath").get("id"), pathId),
@@ -139,7 +172,16 @@ public class DocumentCatalogUseCase {
   public DocumentCatalogSaveResponse save(
       final UUID institutionId, final @Nullable UUID id, final DocumentDefinitionRequest request) {
     require(PermissionCode.DOCUMENT_CATALOG_MANAGE, institutionId);
-    lock.lock(institutionId);
+    final UUID destinationId =
+        request.targetInstitutionId() == null ? institutionId : request.targetInstitutionId();
+    final boolean transferring = !destinationId.equals(institutionId);
+    if (transferring && (id == null || !authorization.isPlatformAdministrator())) {
+      throw new ScopedResourceNotFoundException();
+    }
+
+    for (UUID tenantId : new TreeSet<>(List.of(institutionId, destinationId))) {
+      lock.lock(tenantId);
+    }
     var value =
         id == null
             ? DocumentDefinition.create(
@@ -153,11 +195,21 @@ public class DocumentCatalogUseCase {
     if (id != null) {
       revision(value.getRevision(), request.revision());
     }
+    if (transferring) {
+      if (value.getUsedAt() != null
+          || assignments.countByDocumentId(value.getId()) > 0
+          || definitions.hasEnrollmentUsage(value.getId())) {
+        throw new DocumentCatalogException(
+            ErrorCategory.CONFLICT, AcademicMessages.DOCUMENT_INSTITUTION_CHANGE_BLOCKED);
+      }
+      value.changeInstitution(institutions.findById(destinationId).orElseThrow());
+    }
+
     var changes =
         request.assignments() == null
             ? List.<DocumentAssignmentRequest>of()
             : request.assignments();
-    validateAssignments(institutionId, value, changes);
+    validateAssignments(destinationId, value, changes);
     value.update(
         request.name(), request.instructions(), request.allowedFormats(), request.active());
     definitions.saveAndFlush(value);
@@ -166,12 +218,12 @@ public class DocumentCatalogUseCase {
       affected.add(assignment.getTrainingPath().getId());
     }
     for (var change : changes) {
-      apply(institutionId, value, change);
+      apply(destinationId, value, change);
       affected.add(change.trainingPathId());
     }
     assignments.flush();
-    int drafts = synchronize.execute(institutionId, affected);
-    return result(institutionId, value.getId(), affected.size(), drafts);
+    int drafts = synchronize.execute(destinationId, affected);
+    return result(destinationId, value.getId(), affected.size(), drafts);
   }
 
   @Transactional
@@ -295,13 +347,15 @@ public class DocumentCatalogUseCase {
   private DocumentCatalogSaveResponse result(
       final UUID institutionId, final UUID id, final int pathCount, final int draftCount) {
     final var readAccess = authorization.managementAccess(PermissionCode.TRAINING_PATH_READ);
+    var allAssignments = assignments.findByDocumentId(id);
+    var value = definition(institutionId, id);
     var visible =
-        assignments.findByDocumentId(id).stream()
-            .filter(value -> readAccess.includes(value.getTrainingPath().getId()))
+        allAssignments.stream()
+            .filter(assignment -> readAccess.includes(assignment.getTrainingPath().getId()))
             .map(DocumentRequirementResponse::from)
             .toList();
     return new DocumentCatalogSaveResponse(
-        DocumentDefinitionResponse.from(definition(institutionId, id)),
+        DocumentDefinitionResponse.from(value, canChangeInstitution(value, allAssignments.size())),
         visible,
         pathCount,
         draftCount);

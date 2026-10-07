@@ -82,6 +82,14 @@ public class GlobalExceptionHandler {
     for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
       if (cause instanceof org.hibernate.exception.ConstraintViolationException violation) {
         final String constraint = Objects.toString(violation.getConstraintName(), "");
+        if (Set.of(
+                "document_definition_institution_change_check",
+                "document_definition_usage_immutable_check")
+            .contains(constraint)) {
+          return handleApplicationException(
+              new DocumentCatalogException(
+                  ErrorCategory.CONFLICT, AcademicMessages.DOCUMENT_INSTITUTION_CHANGE_BLOCKED));
+        }
         if (constraint.equals("training_path_document_identity_check")) {
           return handleApplicationException(
               new DocumentCatalogException(
