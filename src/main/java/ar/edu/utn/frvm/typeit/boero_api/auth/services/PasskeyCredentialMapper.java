@@ -98,7 +98,7 @@ public class PasskeyCredentialMapper {
       return Set.of();
     }
     return transports.stream()
-        .map(AuthenticatorTransport::getValue)
+        .map(mappedAuthenticatorTransport -> mappedAuthenticatorTransport.getValue())
         .collect(Collectors.toUnmodifiableSet());
   }
 

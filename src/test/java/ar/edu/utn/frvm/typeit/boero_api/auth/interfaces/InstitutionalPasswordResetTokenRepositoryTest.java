@@ -39,7 +39,7 @@ class InstitutionalPasswordResetTokenRepositoryTest {
 
     assertThat(tokenRepository.findAll())
         .singleElement()
-        .extracting(InstitutionalPasswordResetToken::getTokenHash)
+        .extracting(token -> token.getTokenHash())
         .isEqualTo("new-token");
   }
 

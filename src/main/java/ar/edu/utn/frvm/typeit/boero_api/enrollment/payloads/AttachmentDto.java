@@ -4,12 +4,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.Builder;
+import org.jspecify.annotations.Nullable;
 
 @Builder
 @Schema(
     requiredProperties = {
       "id",
-      "attachmentType",
+      "requirementId",
       "originalFileName",
       "storagePath",
       "contentType",
@@ -17,42 +18,42 @@ import lombok.Builder;
       "createdAt"
     })
 public record AttachmentDto(
-    @Schema(nullable = true) UUID id,
-    @Schema(nullable = true) String attachmentType,
-    @Schema(nullable = true) String originalFileName,
-    @Schema(nullable = true) String storagePath,
-    @Schema(nullable = true) String contentType,
-    @Schema(nullable = true) Long fileSize,
-    @Schema(nullable = true) Instant createdAt) {
+    @Schema(nullable = true) @Nullable UUID id,
+    @Schema(nullable = true) @Nullable UUID requirementId,
+    @Schema(nullable = true) @Nullable String originalFileName,
+    @Schema(nullable = true) @Nullable String storagePath,
+    @Schema(nullable = true) @Nullable String contentType,
+    @Schema(nullable = true) @Nullable Long fileSize,
+    @Schema(nullable = true) @Nullable Instant createdAt) {
   public AttachmentDto() {
     this(null, null, null, null, null, null, null);
   }
 
-  public UUID getId() {
+  public @Nullable UUID getId() {
     return id;
   }
 
-  public String getAttachmentType() {
-    return attachmentType;
+  public @Nullable UUID getRequirementId() {
+    return requirementId;
   }
 
-  public String getOriginalFileName() {
+  public @Nullable String getOriginalFileName() {
     return originalFileName;
   }
 
-  public String getStoragePath() {
+  public @Nullable String getStoragePath() {
     return storagePath;
   }
 
-  public String getContentType() {
+  public @Nullable String getContentType() {
     return contentType;
   }
 
-  public Long getFileSize() {
+  public @Nullable Long getFileSize() {
     return fileSize;
   }
 
-  public Instant getCreatedAt() {
+  public @Nullable Instant getCreatedAt() {
     return createdAt;
   }
 }

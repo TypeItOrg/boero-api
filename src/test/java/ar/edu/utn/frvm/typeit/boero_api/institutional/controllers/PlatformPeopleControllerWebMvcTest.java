@@ -66,7 +66,7 @@ class PlatformPeopleControllerWebMvcTest {
   @DisplayName("Should return filtered people for platform administrator")
   void list_returnsFilteredPeopleForPlatformAdministrator() throws Exception {
     final var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     when(authorizationService.hasPlatformRole(any(), eq(PlatformRoleCode.PLATFORM_ADMIN)))
         .thenReturn(true);
     when(listPlatformPeopleUseCase.execute(
@@ -100,7 +100,7 @@ class PlatformPeopleControllerWebMvcTest {
   void list_forbidsInstitutionalAccounts() throws Exception {
     final var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     when(authorizationService.hasPlatformRole(any(), eq(PlatformRoleCode.PLATFORM_ADMIN)))
         .thenReturn(false);
 

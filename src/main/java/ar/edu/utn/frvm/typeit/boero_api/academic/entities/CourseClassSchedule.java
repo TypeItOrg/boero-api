@@ -59,12 +59,38 @@ public class CourseClassSchedule extends Auditable {
           AcademicMessages.COURSE_SCHEDULE_INVALID,
           Map.of("schedules", AcademicMessages.COURSE_SCHEDULE_INVALID));
     }
-    return CourseClassSchedule.builder()
-        .institution(institution)
-        .day(day)
-        .startTime(startTime)
-        .endTime(endTime)
-        .build();
+    final var schedule =
+        CourseClassSchedule.builder()
+            .institution(institution)
+            .day(day)
+            .startTime(startTime)
+            .endTime(endTime)
+            .build();
+    schedule.individualPeriodCount();
+    return schedule;
+  }
+
+  public int individualPeriodCount() {
+    final Integer periodMinutes = day.getPeriodDurationMinutes();
+    if (periodMinutes == null) {
+      return 0;
+    }
+    if (periodMinutes <= 0) {
+      throw new AcademicValidationException(
+          AcademicMessages.COURSE_PERIOD_DURATION_REQUIRED,
+          Map.of("classes", AcademicMessages.COURSE_PERIOD_DURATION_REQUIRED));
+    }
+
+    final var period = Duration.ofMinutes(periodMinutes);
+    final var duration = Duration.between(startTime, endTime);
+    final long count = duration.dividedBy(period);
+    if (count <= 0 || !period.multipliedBy(count).equals(duration)) {
+      throw new AcademicValidationException(
+          AcademicMessages.COURSE_PERIOD_DURATION_NOT_DIVISIBLE,
+          Map.of("classes", AcademicMessages.COURSE_PERIOD_DURATION_NOT_DIVISIBLE));
+    }
+
+    return Math.toIntExact(count);
   }
 
   public int durationMinutes() {

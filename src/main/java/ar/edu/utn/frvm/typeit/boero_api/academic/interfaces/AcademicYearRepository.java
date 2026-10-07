@@ -3,6 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.interfaces;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
 import jakarta.persistence.LockModeType;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -45,4 +46,9 @@ public interface AcademicYearRepository
 
   boolean existsByInstitution_IdAndStatusAndDeletedAtIsNull(
       UUID institutionId, AcademicYearStatus status);
+
+  @Query(
+      "SELECT year FROM AcademicYear year WHERE year.institution.id = :institutionId AND year.status = :status AND year.deletedAt IS NULL")
+  List<AcademicYear> findAllByInstitutionIdAndStatus(
+      @Param("institutionId") UUID institutionId, @Param("status") AcademicYearStatus status);
 }

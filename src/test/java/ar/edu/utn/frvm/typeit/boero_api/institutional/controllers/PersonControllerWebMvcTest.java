@@ -67,7 +67,7 @@ class PersonControllerWebMvcTest {
   @DisplayName("Should return person profile for an authenticated user")
   void me_returnsPersonProfile() throws Exception {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
     when(getPersonUseCase.execute(any()))
         .thenReturn(
             PersonResponse.builder()
@@ -92,7 +92,7 @@ class PersonControllerWebMvcTest {
   @DisplayName("Should update person profile for an authenticated user")
   void updateMe_returnsUpdatedProfile() throws Exception {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
     when(updatePersonUseCase.execute(any(), any(UpdatePersonRequest.class)))
         .thenReturn(
             PersonResponse.builder()
@@ -148,7 +148,7 @@ class PersonControllerWebMvcTest {
   @DisplayName("Should return bad request when email is invalid")
   void updateMe_returnsBadRequestForInvalidEmail() throws Exception {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
 
     mockMvc
         .perform(

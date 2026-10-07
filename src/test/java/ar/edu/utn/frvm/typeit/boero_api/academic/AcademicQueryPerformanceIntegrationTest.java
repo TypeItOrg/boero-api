@@ -1,6 +1,9 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicLevel;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace;
@@ -37,6 +40,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListStudyPlanSpacesUse
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListStudyPlansUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListTrainingPathStudyPlansUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.academic.services.ListTrainingPathsUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.PermissionAccess;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ScopedAuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.config.JpaAuditingConfig;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
@@ -64,6 +70,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -83,6 +90,7 @@ import org.testcontainers.utility.DockerImageName;
 @IntegrationTest
 @Import({
   JpaAuditingConfig.class,
+  AcademicAccessGuard.class,
   GetStudyPlanCurriculumUseCase.class,
   GetStudyPlanSpaceUseCase.class,
   GetAcademicSpaceUsageUseCase.class,
@@ -129,6 +137,9 @@ class AcademicQueryPerformanceIntegrationTest {
   @Autowired private GetStudyPlanCurriculumUseCase getStudyPlanCurriculumUseCase;
   @Autowired private GetAcademicSpaceUsageUseCase getAcademicSpaceUsageUseCase;
 
+  @MockitoBean(name = "scopedAuthorization")
+  private ScopedAuthorizationService scopedAuthorization;
+
   private Statistics statistics;
   private UUID institutionId;
   private String institutionName;
@@ -147,6 +158,9 @@ class AcademicQueryPerformanceIntegrationTest {
 
   @BeforeEach
   void setUp() {
+    when(scopedAuthorization.managementAccess(any())).thenReturn(PermissionAccess.institution());
+    when(scopedAuthorization.unrestricted(anyString())).thenReturn(true);
+    when(scopedAuthorization.paths(anyString())).thenReturn(java.util.Set.of(new UUID(0, 0)));
     statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
     final var institution = institutionRepository.findAll().getFirst();
     institutionId = institution.getId();
@@ -388,7 +402,8 @@ class AcademicQueryPerformanceIntegrationTest {
     final var response = listAcademicLevelsUseCase.execute(institutionId, studyPlanId);
 
     assertThat(response).hasSize(COLLECTION_SIZE);
-    assertPreparedStatementCount(2);
+    // Includes the scoped resource lookup performed by AcademicAccessGuard.
+    assertPreparedStatementCount(3);
   }
 
   @Test
@@ -433,7 +448,8 @@ class AcademicQueryPerformanceIntegrationTest {
     final var response = listStudyPlanSpacesUseCase.execute(institutionId, studyPlanId);
 
     assertThat(response).hasSize(COLLECTION_SIZE);
-    assertPreparedStatementCount(3);
+    // Includes the scoped resource lookup performed by AcademicAccessGuard.
+    assertPreparedStatementCount(4);
   }
 
   @Test
@@ -442,7 +458,8 @@ class AcademicQueryPerformanceIntegrationTest {
     final var response = listPrerequisitesUseCase.execute(institutionId, targetStudyPlanSpaceId);
 
     assertThat(response).hasSize(COLLECTION_SIZE - 1);
-    assertPreparedStatementCount(2);
+    // Includes the scoped resource lookup performed by AcademicAccessGuard.
+    assertPreparedStatementCount(3);
   }
 
   @Test
@@ -452,7 +469,8 @@ class AcademicQueryPerformanceIntegrationTest {
 
     assertThat(response.academicSpaceName()).isNotBlank();
     assertThat(response.academicLevelName()).isNotBlank();
-    assertPreparedStatementCount(2);
+    // Includes the scoped resource lookup performed by AcademicAccessGuard.
+    assertPreparedStatementCount(3);
   }
 
   @Test
@@ -463,7 +481,8 @@ class AcademicQueryPerformanceIntegrationTest {
     assertThat(response.studyPlan().trainingPathName()).isNotBlank();
     assertThat(response.levels()).hasSize(COLLECTION_SIZE);
     assertThat(response.prerequisites()).hasSize(COLLECTION_SIZE - 1);
-    assertPreparedStatementCount(4);
+    // Includes the scoped resource lookup performed by AcademicAccessGuard.
+    assertPreparedStatementCount(5);
   }
 
   private void persistAcademicYears(final Institution institution) {

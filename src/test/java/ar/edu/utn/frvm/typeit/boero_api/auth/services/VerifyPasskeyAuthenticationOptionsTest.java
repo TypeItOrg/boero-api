@@ -33,6 +33,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.security.web.webauthn.api.AuthenticatorAssertionResponse;
 import org.springframework.security.web.webauthn.api.Bytes;
 import org.springframework.security.web.webauthn.api.ImmutablePublicKeyCredentialUserEntity;
 import org.springframework.security.web.webauthn.api.PublicKeyCredential;
@@ -64,6 +65,10 @@ class VerifyPasskeyAuthenticationOptionsTest {
     final LoginAttempt attempt =
         new LoginAttempt("attempt", userId, institutionId, true, Instant.now());
     when(loginAttemptService.resolve("attempt")).thenReturn(attempt);
+    final User expected = Mockito.mock(User.class);
+    when(expected.getInstitutionId()).thenReturn(attempt.institutionId());
+    when(userRepository.findWithPersonAndInstitutionById(attempt.userId()))
+        .thenReturn(Optional.of(expected));
     when(codec.decodeRequestOptions("not-json")).thenThrow(new IllegalStateException("unreadable"));
     when(ceremonyService.consumeAuthentication("ceremony"))
         .thenReturn(
@@ -128,6 +133,10 @@ class VerifyPasskeyAuthenticationOptionsTest {
     final LoginAttempt attempt =
         new LoginAttempt("attempt", userId, UUID.randomUUID(), true, Instant.now());
     when(loginAttemptService.resolve("attempt")).thenReturn(attempt);
+    final User expected = Mockito.mock(User.class);
+    when(expected.getInstitutionId()).thenReturn(attempt.institutionId());
+    when(userRepository.findWithPersonAndInstitutionById(attempt.userId()))
+        .thenReturn(Optional.of(expected));
     when(ceremonyService.consumeAuthentication("ceremony"))
         .thenReturn(
             Optional.of(
@@ -196,8 +205,8 @@ class VerifyPasskeyAuthenticationOptionsTest {
         .build();
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private static PublicKeyCredential assertionCredential() {
+  @SuppressWarnings("unchecked")
+  private static PublicKeyCredential<AuthenticatorAssertionResponse> assertionCredential() {
     return Mockito.mock(PublicKeyCredential.class);
   }
 

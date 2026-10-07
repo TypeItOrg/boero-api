@@ -8,6 +8,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
 import java.util.Arrays;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
@@ -17,16 +18,17 @@ public class AuthorizationService {
 
   private final AuthorityResolver authorityResolver;
 
-  public boolean hasPermission(Authentication authentication, PermissionCode permission) {
+  public boolean hasPermission(@Nullable Authentication authentication, PermissionCode permission) {
     return resolvePermissions(authentication).contains(permission);
   }
 
-  public boolean hasAnyPermission(Authentication authentication, PermissionCode... permissions) {
+  public boolean hasAnyPermission(
+      @Nullable Authentication authentication, PermissionCode... permissions) {
     Set<PermissionCode> granted = resolvePermissions(authentication);
     return Arrays.stream(permissions).anyMatch(granted::contains);
   }
 
-  public boolean hasPlatformRole(Authentication authentication, PlatformRoleCode role) {
+  public boolean hasPlatformRole(@Nullable Authentication authentication, PlatformRoleCode role) {
     if (authentication == null
         || !(authentication.getPrincipal() instanceof JwtAuthenticatedPlatformAccount platform)) {
       return false;
@@ -34,7 +36,7 @@ public class AuthorizationService {
     return authorityResolver.resolvePlatformRoles(platform.platformAccountId()).contains(role);
   }
 
-  public Set<PermissionCode> resolvePermissions(Authentication authentication) {
+  public Set<PermissionCode> resolvePermissions(@Nullable Authentication authentication) {
     if (authentication == null
         || !(authentication.getPrincipal() instanceof JwtPrincipal principal)) {
       return Set.of();

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class LoginAttemptService {
+  private final InstitutionalHostContext hostContext;
 
   private static final String KEY_PREFIX = "boero:auth:login-attempt:";
 
@@ -34,17 +35,24 @@ public class LoginAttemptService {
       throw new InvalidLoginAttemptException();
     }
     final String value = redisTemplate.opsForValue().get(key(loginAttemptId));
-    return deserialize(loginAttemptId, Optional.ofNullable(value))
-        .orElseThrow(InvalidLoginAttemptException::new);
+    final var attempt =
+        deserialize(loginAttemptId, Optional.ofNullable(value))
+            .orElseThrow(InvalidLoginAttemptException::new);
+    hostContext.requireInstitution(attempt.institutionId());
+    return attempt;
   }
 
   public LoginAttempt claim(final String loginAttemptId) {
     if (loginAttemptId == null || loginAttemptId.isBlank()) {
       throw new InvalidLoginAttemptException();
     }
+    resolve(loginAttemptId);
     final String value = redisTemplate.opsForValue().getAndDelete(key(loginAttemptId));
-    return deserialize(loginAttemptId, Optional.ofNullable(value))
-        .orElseThrow(InvalidLoginAttemptException::new);
+    final var attempt =
+        deserialize(loginAttemptId, Optional.ofNullable(value))
+            .orElseThrow(InvalidLoginAttemptException::new);
+    hostContext.requireInstitution(attempt.institutionId());
+    return attempt;
   }
 
   public void invalidate(final String loginAttemptId) {

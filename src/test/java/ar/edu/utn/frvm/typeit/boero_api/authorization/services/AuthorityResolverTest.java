@@ -47,7 +47,7 @@ class AuthorityResolverTest {
 
   @BeforeEach
   void seedCatalog() {
-    permissionRoleSeed.run(null);
+    permissionRoleSeed.run(new org.springframework.boot.DefaultApplicationArguments());
   }
 
   @Test
@@ -64,10 +64,7 @@ class AuthorityResolverTest {
         authorityResolver.resolvePersonAuthorities(person.getId(), institution.getId());
 
     assertThat(authorities.permissions())
-        .containsExactlyInAnyOrder(
-            PermissionCode.ACADEMIC_OFFER_READ,
-            PermissionCode.STUDY_PLAN_READ,
-            PermissionCode.ACADEMIC_YEAR_READ);
+        .containsExactlyInAnyOrder(PermissionCode.ACADEMIC_OFFER_READ);
     assertThat(authorities.roles()).containsExactly(SystemRoleCode.APPLICANT.getDisplayName());
   }
 

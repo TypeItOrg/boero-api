@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 public record CreateInstitutionRequest(
     @NotBlank(message = ValidationMessages.NAME_REQUIRED)
@@ -20,11 +21,11 @@ public record CreateInstitutionRequest(
         @Pattern(regexp = SLUG_PATTERN, message = ValidationMessages.SLUG_FORMAT)
         String slug,
     @NotNull(message = ValidationMessages.CITY_REQUIRED) UUID cityId,
-    String street,
-    @Size(max = 50, message = ValidationMessages.NUMBER_MAX_LENGTH) String number,
-    String neighborhood,
-    String additionalInfo,
-    @Size(max = 30, message = ValidationMessages.PHONE_MAX_LENGTH) String phoneNumber,
+    @Nullable String street,
+    @Size(max = 50, message = ValidationMessages.NUMBER_MAX_LENGTH) @Nullable String number,
+    @Nullable String neighborhood,
+    @Nullable String additionalInfo,
+    @Size(max = 30, message = ValidationMessages.PHONE_MAX_LENGTH) @Nullable String phoneNumber,
     @Email(message = ValidationMessages.EMAIL_FORMAT)
         @Size(max = 150, message = ValidationMessages.EMAIL_MAX_LENGTH)
-        String email) {}
+        @Nullable String email) {}

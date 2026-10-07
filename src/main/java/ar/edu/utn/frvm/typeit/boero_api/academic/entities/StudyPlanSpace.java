@@ -21,6 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(
@@ -58,7 +59,7 @@ public class StudyPlanSpace extends Auditable {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "academic_level_id")
-  private AcademicLevel academicLevel;
+  private @Nullable AcademicLevel academicLevel;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "requirement_type", nullable = false, length = 20)
@@ -75,7 +76,7 @@ public class StudyPlanSpace extends Auditable {
       final Institution institution,
       final StudyPlan studyPlan,
       final AcademicSpace academicSpace,
-      final AcademicLevel academicLevel,
+      final @Nullable AcademicLevel academicLevel,
       final RequirementType requirementType,
       final int displayOrder,
       final ApprovalMode approvalMode) {
@@ -92,7 +93,7 @@ public class StudyPlanSpace extends Auditable {
 
   public void update(
       final AcademicSpace academicSpace,
-      final AcademicLevel academicLevel,
+      final @Nullable AcademicLevel academicLevel,
       final RequirementType requirementType,
       final int displayOrder,
       final ApprovalMode approvalMode) {

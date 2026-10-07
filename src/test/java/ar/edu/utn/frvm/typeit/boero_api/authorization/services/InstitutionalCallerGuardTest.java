@@ -39,8 +39,7 @@ class InstitutionalCallerGuardTest {
   @Test
   @DisplayName("Should allow platform admin on institution guard")
   void ensureCallerBelongsToInstitution_allowsPlatformAdmin() {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     when(authorizationService.hasPlatformRole(authentication, PlatformRoleCode.PLATFORM_ADMIN))
         .thenReturn(true);
 
@@ -54,8 +53,7 @@ class InstitutionalCallerGuardTest {
   @Test
   @DisplayName("Should reject platform account without platform admin role")
   void ensureCallerBelongsToInstitution_rejectsNonAdminPlatformAccount() {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     when(authorizationService.hasPlatformRole(authentication, PlatformRoleCode.PLATFORM_ADMIN))
         .thenReturn(false);
 
@@ -70,7 +68,7 @@ class InstitutionalCallerGuardTest {
   @DisplayName("Should allow institutional user from same institution")
   void ensureCallerBelongsToInstitution_allowsSameInstitution() {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
 
     assertThatCode(
             () ->
@@ -83,7 +81,7 @@ class InstitutionalCallerGuardTest {
   @DisplayName("Should reject institutional user from different institution")
   void ensureCallerBelongsToInstitution_rejectsDifferentInstitution() {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
 
     assertThatThrownBy(
             () ->
@@ -95,8 +93,7 @@ class InstitutionalCallerGuardTest {
   @Test
   @DisplayName("Should reject platform admin on institutional principal guard")
   void ensureInstitutionalPrincipal_rejectsPlatformAdmin() {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     assertThatThrownBy(() -> institutionalCallerGuard.ensureInstitutionalPrincipal(authentication))
         .isInstanceOf(AccessDeniedException.class);
   }
@@ -104,8 +101,7 @@ class InstitutionalCallerGuardTest {
   @Test
   @DisplayName("Should reject non-admin platform account on institutional principal guard")
   void ensureInstitutionalPrincipal_rejectsNonAdminPlatformAccount() {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     assertThatThrownBy(() -> institutionalCallerGuard.ensureInstitutionalPrincipal(authentication))
         .isInstanceOf(AccessDeniedException.class);
   }
@@ -114,7 +110,7 @@ class InstitutionalCallerGuardTest {
   @DisplayName("Should allow institutional user on institutional principal guard")
   void ensureInstitutionalPrincipal_allowsInstitutionalUser() {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
 
     assertThatCode(() -> institutionalCallerGuard.ensureInstitutionalPrincipal(authentication))
         .doesNotThrowAnyException();

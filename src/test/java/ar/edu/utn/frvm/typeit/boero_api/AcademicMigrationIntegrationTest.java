@@ -194,7 +194,8 @@ class AcademicMigrationIntegrationTest extends DatabaseMigrationTestSupport {
   @Test
   @DisplayName("Should allow only one active academic year per institution")
   void shouldAllowOnlyOneActiveAcademicYearPerInstitution() {
-    final UUID institutionId = fixtures.firstInstitutionId();
+    final UUID institutionId = UUID.randomUUID();
+    fixtures.insertTestInstitution(institutionId);
     final UUID firstYearId = UUID.randomUUID();
     final UUID secondYearId = UUID.randomUUID();
     try {
@@ -204,6 +205,7 @@ class AcademicMigrationIntegrationTest extends DatabaseMigrationTestSupport {
     } finally {
       jdbcTemplate.update(
           "DELETE FROM academic_years WHERE academic_year_id IN (?, ?)", firstYearId, secondYearId);
+      jdbcTemplate.update("DELETE FROM institutions WHERE institution_id = ?", institutionId);
     }
   }
 

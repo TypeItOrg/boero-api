@@ -53,11 +53,11 @@ class RefreshTokenRepositoryTest {
     refreshTokenRepository.revokeByFamilyId("family-1");
 
     assertThat(refreshTokenRepository.findByFamilyId("family-1"))
-        .extracting(RefreshToken::isRevoked)
+        .extracting(mappedRefreshToken -> mappedRefreshToken.isRevoked())
         .containsOnly(true);
     assertThat(refreshTokenRepository.findByTokenHash("hash-3"))
         .get()
-        .returns(false, RefreshToken::isRevoked);
+        .returns(false, mappedRefreshToken -> mappedRefreshToken.isRevoked());
   }
 
   @Test
@@ -77,11 +77,11 @@ class RefreshTokenRepositoryTest {
     refreshTokenRepository.revokeBySessionId(sessionId);
 
     assertThat(refreshTokenRepository.findBySessionId(sessionId))
-        .extracting(RefreshToken::isRevoked)
+        .extracting(mappedRefreshToken -> mappedRefreshToken.isRevoked())
         .containsOnly(true);
     assertThat(refreshTokenRepository.findByTokenHash("hash-3"))
         .get()
-        .returns(false, RefreshToken::isRevoked);
+        .returns(false, mappedRefreshToken -> mappedRefreshToken.isRevoked());
   }
 
   private static RefreshToken refreshToken(String hash, String familyId, UUID sessionId) {

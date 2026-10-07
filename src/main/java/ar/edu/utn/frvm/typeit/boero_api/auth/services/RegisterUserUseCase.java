@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.enums.EmailVerificationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.GuardianMustBeAdultException;
@@ -33,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class RegisterUserUseCase {
+  private final InstitutionalHostContext hostContext;
 
   private final InstitutionalEmailVerificationUseCase emailVerification;
   private final UserRepository userRepository;
@@ -48,6 +51,8 @@ public class RegisterUserUseCase {
     if (request.registersAsGuardian() && isUnderage(request.birthDate())) {
       throw new GuardianMustBeAdultException();
     }
+
+    hostContext.requireInstitution(request.institutionId());
 
     Institution institution =
         institutionRepository
@@ -106,7 +111,7 @@ public class RegisterUserUseCase {
             .institution(institution)
             .person(person)
             .emailVerificationStatus(EmailVerificationStatus.PENDING)
-            .password(passwordEncoder.encode(request.password()))
+            .password(requireNonNull(passwordEncoder.encode(request.password())))
             .build();
     user = userRepository.save(user);
     if (preserveExistingRoles) {

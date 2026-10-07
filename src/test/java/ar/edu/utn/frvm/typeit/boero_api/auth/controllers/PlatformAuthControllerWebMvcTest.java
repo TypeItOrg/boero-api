@@ -67,7 +67,7 @@ class PlatformAuthControllerWebMvcTest {
 
     mockMvc
         .perform(
-            get("/api/v1/admin/auth/me").principal(new TestingAuthenticationToken(principal, null)))
+            get("/api/v1/admin/auth/me").principal(new TestingAuthenticationToken(principal, "")))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.account.platformAccountId").value(PLATFORM_ACCOUNT_ID.toString()))
         .andExpect(jsonPath("$.account.email").value("admin@plataforma.com"))

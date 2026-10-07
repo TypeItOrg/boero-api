@@ -8,7 +8,12 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicOfferDetailRes
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicOfferLevelResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicOfferSpaceResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicOfferSummaryResponse;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentPeriodRepository;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -20,7 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class GetAcademicOfferUseCase {
+  private final AcademicAccessGuard accessGuard;
   private final BusinessDateProvider businessDateProvider;
+  private final Clock clock;
+  private final EnrollmentPeriodRepository enrollmentPeriodRepository;
 
   private final StudyPlanRepository studyPlanRepository;
   private final AcademicLevelRepository academicLevelRepository;
@@ -28,6 +36,9 @@ public class GetAcademicOfferUseCase {
 
   @Transactional(readOnly = true)
   public AcademicOfferDetailResponse execute(final UUID institutionId, final UUID studyPlanId) {
+    accessGuard.require(
+        PermissionCode.ACADEMIC_OFFER_READ, institutionId, ScopedResource.STUDY_PLAN, studyPlanId);
+
     final var plan =
         studyPlanRepository
             .findAvailableOfferById(institutionId, studyPlanId, businessDateProvider.today())
@@ -39,7 +50,10 @@ public class GetAcademicOfferUseCase {
     final Map<UUID, List<AcademicOfferSpaceResponse>> spacesByLevel =
         spaces.stream()
             .filter(space -> space.academicLevelId() != null)
-            .collect(Collectors.groupingBy(AcademicOfferSpaceResponse::academicLevelId));
+            .collect(
+                Collectors.groupingBy(
+                    mappedAcademicOfferSpaceResponse ->
+                        mappedAcademicOfferSpaceResponse.academicLevelId()));
     final var levels =
         academicLevelRepository.findByStudyPlan_IdOrderByDisplayOrderAsc(studyPlanId).stream()
             .map(
@@ -49,7 +63,13 @@ public class GetAcademicOfferUseCase {
             .toList();
     final var unassignedSpaces =
         spaces.stream().filter(space -> space.academicLevelId() == null).toList();
+    final boolean enrollmentOpen =
+        enrollmentPeriodRepository
+            .findStudyPlanIdsWithOpenEnrollment(
+                institutionId, List.of(studyPlanId), clock.instant())
+            .contains(studyPlanId);
+
     return new AcademicOfferDetailResponse(
-        AcademicOfferSummaryResponse.from(plan), levels, unassignedSpaces);
+        AcademicOfferSummaryResponse.from(plan, enrollmentOpen), levels, unassignedSpaces);
   }
 }

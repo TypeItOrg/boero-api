@@ -2,7 +2,10 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.entities;
 
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentAttachmentType;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.DocumentReviewStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.DocumentVersionStatus;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -20,6 +23,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "enrollment_attachments")
@@ -39,9 +43,68 @@ public class EnrollmentAttachment extends SoftDeletable {
   @Setter
   private EnrollmentApplication enrollmentApplication;
 
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "requirement_id", nullable = false)
+  private EnrollmentDocumentRequirement requirement;
+
   @Enumerated(EnumType.STRING)
-  @Column(name = "attachment_type", nullable = false, length = 50)
-  private EnrollmentAttachmentType attachmentType;
+  @Column(name = "version_status", nullable = false)
+  @Builder.Default
+  private DocumentVersionStatus versionStatus = DocumentVersionStatus.CURRENT;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "review_status", nullable = false)
+  @Builder.Default
+  private DocumentReviewStatus reviewStatus = DocumentReviewStatus.PENDING_REVIEW;
+
+  private UUID uploadedBy;
+
+  @Column(nullable = false)
+  private String uploaderType;
+
+  private @Nullable UUID reviewedBy;
+  private @Nullable String reviewerType;
+  private @Nullable Instant reviewedAt;
+
+  @Column(length = 2000)
+  private @Nullable String observation;
+
+  public boolean isCurrent() {
+    return versionStatus == DocumentVersionStatus.CURRENT;
+  }
+
+  public void requireMutable() {
+    if (!isCurrent() || reviewStatus == DocumentReviewStatus.ACCEPTED) {
+      throw new EnrollmentValidationException(EnrollmentMessages.DOCUMENT_VERSION_LOCKED);
+    }
+  }
+
+  public void supersede() {
+    requireMutable();
+    versionStatus = DocumentVersionStatus.SUPERSEDED;
+  }
+
+  public void withdraw() {
+    requireMutable();
+    versionStatus = DocumentVersionStatus.WITHDRAWN;
+  }
+
+  public void review(
+      DocumentReviewStatus status, String note, UUID actorId, String actorType, Instant now) {
+    requireMutable();
+    if (reviewStatus != DocumentReviewStatus.PENDING_REVIEW
+        || status == DocumentReviewStatus.PENDING_REVIEW) {
+      throw new EnrollmentValidationException(EnrollmentMessages.DOCUMENT_REVIEW_INVALID);
+    }
+    if (status == DocumentReviewStatus.OBSERVED && (note == null || note.isBlank())) {
+      throw new EnrollmentValidationException(EnrollmentMessages.DOCUMENT_OBSERVATION_REQUIRED);
+    }
+    reviewStatus = status;
+    observation = note == null ? null : note.trim();
+    reviewedBy = actorId;
+    reviewerType = actorType;
+    reviewedAt = now;
+  }
 
   @Column(name = "original_file_name", nullable = false, length = 255)
   private String originalFileName;
@@ -63,6 +126,8 @@ public class EnrollmentAttachment extends SoftDeletable {
     return storagePath;
   }
 
+  // Lombok initializes the entity at build(); builder fields are intentionally incomplete.
+  @SuppressWarnings("NullAway.Init")
   public static class EnrollmentAttachmentBuilder {
     public EnrollmentAttachmentBuilder filePath(String filePath) {
       this.storagePath = filePath;

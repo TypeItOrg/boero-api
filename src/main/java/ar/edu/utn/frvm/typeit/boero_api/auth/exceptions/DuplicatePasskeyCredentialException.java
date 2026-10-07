@@ -4,8 +4,12 @@ import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.PASS
 
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ApplicationException;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorCategory;
+import java.io.Serial;
 
 public class DuplicatePasskeyCredentialException extends ApplicationException {
+
+  @Serial private static final long serialVersionUID = 1L;
+
   public DuplicatePasskeyCredentialException() {
     super(ErrorCategory.CONFLICT, PASSKEY_ALREADY_REGISTERED);
   }

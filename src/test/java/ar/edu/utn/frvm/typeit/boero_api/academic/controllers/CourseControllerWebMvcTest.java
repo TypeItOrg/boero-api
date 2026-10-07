@@ -260,7 +260,7 @@ class CourseControllerWebMvcTest {
   private static void assertThatSortIs(final Pageable pageable, final String property) {
     assertThat(pageable.getSort().getOrderFor(property))
         .isNotNull()
-        .extracting(Sort.Order::getDirection)
+        .extracting(mappedOrder -> mappedOrder.getDirection())
         .isEqualTo(Sort.Direction.ASC);
   }
 }

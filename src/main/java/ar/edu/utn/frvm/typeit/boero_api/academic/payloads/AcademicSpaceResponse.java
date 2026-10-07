@@ -6,6 +6,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(
     requiredProperties = {
@@ -16,6 +17,7 @@ import java.util.UUID;
       "description",
       "type",
       "format",
+      "instrumental",
       "active",
       "deletedAt"
     })
@@ -24,11 +26,12 @@ public record AcademicSpaceResponse(
     UUID institutionId,
     String institutionName,
     String name,
-    @Schema(nullable = true) String description,
+    @Schema(nullable = true) @Nullable String description,
     AcademicSpaceType type,
     AcademicSpaceFormat format,
+    boolean instrumental,
     boolean active,
-    @Schema(nullable = true) Instant deletedAt) {
+    @Schema(nullable = true) @Nullable Instant deletedAt) {
 
   public static AcademicSpaceResponse from(final AcademicSpace space) {
     return new AcademicSpaceResponse(
@@ -39,6 +42,7 @@ public record AcademicSpaceResponse(
         space.getDescription(),
         space.getType(),
         space.getFormat(),
+        space.isInstrumental(),
         space.isActive(),
         space.getDeletedAt());
   }

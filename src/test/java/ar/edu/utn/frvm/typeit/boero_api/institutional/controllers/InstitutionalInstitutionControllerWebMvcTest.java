@@ -27,6 +27,8 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.InstitutionDetail
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.ProvinceSummaryResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.requests.UpdateInstitutionalInstitutionRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.GetInstitutionUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.InstitutionLogoUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.institutional.services.ResolveInstitutionPublicAccessUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.services.UpdateInstitutionalInstitutionUseCase;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -66,6 +68,9 @@ class InstitutionalInstitutionControllerWebMvcTest {
 
   @Autowired private MockMvc mockMvc;
 
+  @MockitoBean private InstitutionLogoUseCase logos;
+  @MockitoBean private ResolveInstitutionPublicAccessUseCase resolvePublicAccess;
+
   @MockitoBean private PathMatcher pathMatcher;
   @MockitoBean private AuthenticationEntryPoint authenticationEntryPoint;
   @MockitoBean private JwtService jwtService;
@@ -86,7 +91,7 @@ class InstitutionalInstitutionControllerWebMvcTest {
   void update_updatesInstitutionDetailsForAuthorizedUser() throws Exception {
     final var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     when(authorizationService.hasPermission(any(), eq(PermissionCode.INSTITUTION_UPDATE)))
         .thenReturn(true);
     when(updateInstitutionalInstitutionUseCase.execute(
@@ -108,7 +113,7 @@ class InstitutionalInstitutionControllerWebMvcTest {
   void update_returnsForbiddenWhenPermissionMissing() throws Exception {
     final var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     when(authorizationService.hasPermission(any(), eq(PermissionCode.INSTITUTION_UPDATE)))
         .thenReturn(false);
 
@@ -126,7 +131,7 @@ class InstitutionalInstitutionControllerWebMvcTest {
   void update_returnsForbiddenWhenAccessingOtherInstitution() throws Exception {
     final var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), OTHER_INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), OTHER_INSTITUTION_ID), "");
 
     mockMvc
         .perform(
@@ -142,7 +147,7 @@ class InstitutionalInstitutionControllerWebMvcTest {
   void update_returnsBadRequestWhenNameIsBlank() throws Exception {
     final var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     when(authorizationService.hasPermission(any(), eq(PermissionCode.INSTITUTION_UPDATE)))
         .thenReturn(true);
 
@@ -160,7 +165,7 @@ class InstitutionalInstitutionControllerWebMvcTest {
   void update_returnsBadRequestWhenCityNotFound() throws Exception {
     final var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     when(authorizationService.hasPermission(any(), eq(PermissionCode.INSTITUTION_UPDATE)))
         .thenReturn(true);
     when(updateInstitutionalInstitutionUseCase.execute(

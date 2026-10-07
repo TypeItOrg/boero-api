@@ -1,7 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.CourseClass;
-import ar.edu.utn.frvm.typeit.boero_api.academic.entities.CourseClassDay;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassDayRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassScheduleRepository;
@@ -28,18 +27,26 @@ public class CourseTreeReader {
 
   @Transactional(readOnly = true)
   public List<CourseClassResponse> read(final UUID courseId) {
-    final var classes = courseClassRepository.findByCourse_IdOrderByIdAsc(courseId);
+    return readClasses(courseClassRepository.findByCourse_IdOrderByClassNumberAsc(courseId));
+  }
+
+  @Transactional(readOnly = true)
+  public List<CourseClassResponse> readClasses(final List<CourseClass> classes) {
     if (classes.isEmpty()) {
       return List.of();
     }
-    final var classIds = classes.stream().map(CourseClass::getId).toList();
+    final var classIds =
+        classes.stream().map(mappedCourseClass -> mappedCourseClass.getId()).toList();
     final var days =
         courseClassDayRepository.findByCourseClass_IdIn(classIds).stream()
             .collect(Collectors.groupingBy(day -> day.getCourseClass().getId()));
     final var schedules =
         courseClassScheduleRepository
             .findByDay_IdIn(
-                days.values().stream().flatMap(List::stream).map(CourseClassDay::getId).toList())
+                days.values().stream()
+                    .flatMap(mappedList -> mappedList.stream())
+                    .map(mappedCourseClassDay -> mappedCourseClassDay.getId())
+                    .toList())
             .stream()
             .collect(Collectors.groupingBy(schedule -> schedule.getDay().getId()));
     final var teachers =

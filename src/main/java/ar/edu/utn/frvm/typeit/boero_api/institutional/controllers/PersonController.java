@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.controllers;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.services.InstitutionalCallerGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.Version;
@@ -28,7 +30,8 @@ public class PersonController {
   @GetMapping(value = "/me", version = Version.V1)
   public PersonResponse me(Authentication authentication) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
-    JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    JwtAuthenticatedUser principal =
+        (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     return getPersonUseCase.execute(principal);
   }
 
@@ -36,7 +39,8 @@ public class PersonController {
   public PersonResponse updateMe(
       Authentication authentication, @Valid @RequestBody UpdatePersonRequest request) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
-    JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    JwtAuthenticatedUser principal =
+        (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     return updatePersonUseCase.execute(principal, request);
   }
 }

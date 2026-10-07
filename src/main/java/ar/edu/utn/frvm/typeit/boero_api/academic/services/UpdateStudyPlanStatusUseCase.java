@@ -10,6 +10,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanStatusRequest;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class UpdateStudyPlanStatusUseCase {
+  private final AcademicAccessGuard accessGuard;
   private final BusinessDateProvider businessDateProvider;
 
   private final StudyPlanRepository studyPlanRepository;
@@ -28,6 +32,9 @@ public class UpdateStudyPlanStatusUseCase {
   @Transactional
   public void execute(
       final UUID institutionId, final UUID id, final StudyPlanStatusRequest request) {
+    accessGuard.require(
+        PermissionCode.STUDY_PLAN_STATUS_UPDATE, institutionId, ScopedResource.STUDY_PLAN, id);
+
     final var plan =
         studyPlanRepository
             .findByIdAndInstitution_IdForUpdate(id, institutionId)
@@ -57,11 +64,7 @@ public class UpdateStudyPlanStatusUseCase {
           && request.effectiveTo().isBefore(plan.getEffectiveFrom())) {
         throw new AcademicValidationException(AcademicMessages.STUDY_PLAN_END_DATE_INVALID);
       }
-      if (courseRepository
-          .existsByInstitution_IdAndStudyPlan_IdAndStatusNotClosedAndDeletedAtIsNull(
-              institutionId, id)) {
-        throw new AcademicConflictException(AcademicMessages.STUDY_PLAN_HAS_ACTIVE_COURSES);
-      }
+      requireAllCoursesClosed(institutionId, id);
       plan.deactivate(request.effectiveTo());
       studyPlanRepository.flush();
       return;
@@ -88,6 +91,9 @@ public class UpdateStudyPlanStatusUseCase {
       if (!plan.getEffectiveFrom().isAfter(lockedPrevious.getEffectiveFrom())) {
         throw new AcademicConflictException(AcademicMessages.STUDY_PLAN_VERSION_DATE_OVERLAP);
       }
+
+      requireAllCoursesClosed(plan.getInstitution().getId(), lockedPrevious.getId());
+
       final var newVersionEnd = plan.getEffectiveFrom().minusDays(1);
       final var previousEnd = lockedPrevious.getEffectiveTo();
       lockedPrevious.deactivate(
@@ -98,6 +104,13 @@ public class UpdateStudyPlanStatusUseCase {
         || lockedPrevious.getEffectiveTo() == null
         || !plan.getEffectiveFrom().isAfter(lockedPrevious.getEffectiveTo())) {
       throw new AcademicConflictException(AcademicMessages.STUDY_PLAN_VERSION_DATE_OVERLAP);
+    }
+  }
+
+  private void requireAllCoursesClosed(final UUID institutionId, final UUID studyPlanId) {
+    if (courseRepository.existsByInstitution_IdAndStudyPlan_IdAndStatusNotClosedAndDeletedAtIsNull(
+        institutionId, studyPlanId)) {
+      throw new AcademicConflictException(AcademicMessages.STUDY_PLAN_HAS_ACTIVE_COURSES);
     }
   }
 }

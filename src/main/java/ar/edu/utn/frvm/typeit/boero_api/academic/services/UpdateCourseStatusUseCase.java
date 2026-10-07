@@ -12,6 +12,11 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearReposito
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseStatusRequest;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CourseClosureService;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentInstitutionLock;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,12 +25,21 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class UpdateCourseStatusUseCase {
+  private final AcademicAccessGuard accessGuard;
   private final CourseRepository courseRepository;
   private final AcademicYearRepository academicYearRepository;
   private final StudyPlanRepository studyPlanRepository;
 
+  private final CourseClosureService courseClosureService;
+
+  private final EnrollmentInstitutionLock enrollmentInstitutionLock;
+
   @Transactional
   public void execute(final UUID institutionId, final UUID id, final CourseStatusRequest request) {
+    accessGuard.require(
+        PermissionCode.COURSE_STATUS_UPDATE, institutionId, ScopedResource.COURSE, id);
+
+    enrollmentInstitutionLock.lock(institutionId);
     final var context =
         courseRepository
             .findAcademicContextByIdAndInstitution_Id(id, institutionId)
@@ -43,14 +57,27 @@ public class UpdateCourseStatusUseCase {
             .findByIdAndInstitution_IdForUpdate(id, institutionId)
             .orElseThrow(CourseNotFoundException::new);
     if (request.status() == CourseStatus.ACTIVE) {
-      if (studyPlan.getStatus() != StudyPlanStatus.ACTIVE) {
+      if (studyPlan.getStatus() == StudyPlanStatus.DRAFT) {
         throw new AcademicConflictException(AcademicMessages.COURSE_STUDY_PLAN_NOT_ACTIVE);
       }
       if (academicYear.getStatus() != AcademicYearStatus.ACTIVE) {
         throw new AcademicConflictException(AcademicMessages.COURSE_YEAR_NOT_ACTIVE);
       }
+      if (course.getAcademicSpace() != null
+          && course.getAcademicSpace().isInstrumental()
+          && (course.getInstrument() == null || !course.getInstrument().isActive())) {
+        throw new AcademicConflictException(AcademicMessages.INSTRUMENT_REQUIRED);
+      }
+      if (course.getAcademicSpace() != null
+          && !course.getAcademicSpace().isInstrumental()
+          && course.getInstrument() != null) {
+        throw new AcademicConflictException(AcademicMessages.INSTRUMENT_NOT_ALLOWED);
+      }
     }
     course.updateStatus(request.status());
     courseRepository.flush();
+    if (request.status() == CourseStatus.CLOSED) {
+      courseClosureService.close(institutionId, id, null);
+    }
   }
 }

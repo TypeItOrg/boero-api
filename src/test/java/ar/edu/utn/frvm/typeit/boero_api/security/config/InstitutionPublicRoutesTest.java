@@ -18,6 +18,8 @@ class InstitutionPublicRoutesTest {
     UUID institutionId = UUID.randomUUID();
 
     assertThat(matchesGetOnlyRoute("/api/v1/institutions")).isTrue();
+    assertThat(matchesGetOnlyRoute("/api/v1/institutions/by-subdomain/cboero")).isTrue();
+    assertThat(matchesGetOnlyRoute("/api/v1/institutions/" + institutionId + "/logo")).isTrue();
     assertThat(matchesGetOnlyRoute("/api/v1/institutions/" + institutionId)).isTrue();
   }
 

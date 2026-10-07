@@ -17,7 +17,7 @@ public record InstitutionPermissionGroupResponse(
     List<InstitutionPermissionResponse> permissions =
         Arrays.stream(PermissionCode.values())
             .filter(permission -> permission.getGroup() == group)
-            .filter(PermissionCode::isConfigurable)
+            .filter(mappedPermissionCode -> mappedPermissionCode.isConfigurable())
             .map(permission -> InstitutionPermissionResponse.from(permission, actorPermissions))
             .toList();
 

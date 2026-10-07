@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -8,7 +9,6 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlanSpace;
-import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceFormat;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicSpaceType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.ApprovalMode;
@@ -18,14 +18,14 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceInstru
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
-import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriodOffering;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
-import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -61,7 +61,7 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
     final var studyPlanSpace =
         StudyPlanSpace.create(
             application.getInstitution(),
-            application.getStudyPlan(),
+            requireNonNull(application.getStudyPlan()),
             academicSpace,
             null,
             RequirementType.REQUIRED,
@@ -81,8 +81,7 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
         new ListEnrollmentApplicationStudyPlanSpacesUseCase(
             new ApplicantEnrollmentGuard(personRepository, personRoleAssignmentRepository),
             enrollmentApplicationRepository,
-            new EnrollmentEffectiveStudyPlanResolver(
-                studyPlanRepository, new BusinessDateProvider(Clock.systemUTC())),
+            new EnrollmentEffectiveStudyPlanResolver(),
             studyPlanSpaceRepository,
             studyPlanSpaceInstrumentRepository);
     givenApplicant(principal, application.getApplicantPerson());
@@ -92,7 +91,7 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
         .willReturn(Optional.of(application));
     given(
             studyPlanSpaceRepository.findEligibleByStudyPlanId(
-                principal.institutionId(), application.getStudyPlan().getId()))
+                principal.institutionId(), requireNonNull(application.getStudyPlan()).getId()))
         .willReturn(List.of(persistedStudyPlanSpace));
     given(
             studyPlanSpaceInstrumentRepository.findActiveByStudyPlanSpaceIds(
@@ -102,7 +101,8 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
     final var response = useCase.execute(principal, application.getId());
 
     assertThat(response).hasSize(1);
-    assertThat(response.getFirst().studyPlanId()).isEqualTo(application.getStudyPlan().getId());
+    assertThat(response.getFirst().studyPlanId())
+        .isEqualTo(requireNonNull(application.getStudyPlan()).getId());
     assertThat(response.getFirst().academicSpaceName()).isEqualTo("Armonia I");
   }
 
@@ -128,8 +128,12 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
             .documentNumber("12345678")
             .email("ana@example.com")
             .build();
-    final var path = TrainingPath.create(institution, "Base", null);
-    final var plan = StudyPlan.create(institution, path, "Plan", LocalDate.of(2026, 3, 1), null);
+    final var plan = mock(StudyPlan.class);
+    given(plan.getId()).willReturn(UUID.randomUUID());
+    final var period = EnrollmentPeriod.builder().scopeConfigured(true).build();
+    final var offering = EnrollmentPeriodOffering.create(period, plan);
+    offering.selectLevels(List.of(), true);
+    period.getOfferings().add(offering);
     final var year =
         AcademicYear.create(
             institution,
@@ -142,6 +146,7 @@ class ListEnrollmentApplicationStudyPlanSpacesUseCaseTest {
         .institution(institution)
         .applicantPerson(person)
         .studyPlan(plan)
+        .enrollmentPeriod(period)
         .academicYear(year)
         .status(EnrollmentApplicationStatus.DRAFT)
         .build();

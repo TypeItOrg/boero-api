@@ -5,6 +5,7 @@ import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.CountryRepository;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.CountrySummaryResponse;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -14,7 +15,8 @@ public class ListCountriesUseCase {
 
   private final CountryRepository countryRepository;
 
-  public PaginatedResponse<CountrySummaryResponse> execute(String search, Pageable pageable) {
+  public PaginatedResponse<CountrySummaryResponse> execute(
+      @Nullable String search, Pageable pageable) {
     final String normalizedSearch = SearchNormalization.normalizeSearch(search);
     if (normalizedSearch != null) {
       return PaginatedResponse.from(

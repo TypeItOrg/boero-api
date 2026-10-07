@@ -7,6 +7,7 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -17,7 +18,8 @@ public class InitialRoleAssignmentGuard {
 
   private final AuthorizationService authorizationService;
 
-  public void check(final Authentication authentication, final SystemRoleCode initialRole) {
+  public void check(
+      final @Nullable Authentication authentication, final @Nullable SystemRoleCode initialRole) {
     if (initialRole == null || initialRole == SystemRoleCode.APPLICANT) {
       return;
     }

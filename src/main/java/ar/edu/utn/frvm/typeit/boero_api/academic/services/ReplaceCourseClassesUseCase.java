@@ -8,6 +8,14 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseClassRepositor
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.CourseRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.ReplaceCourseClassesRequest;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.CourseEnrollmentRepository;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.CourseIndividualSlotRepository;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentInstitutionLock;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -17,14 +25,23 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ReplaceCourseClassesUseCase {
+  private final AcademicAccessGuard accessGuard;
   private final CourseRepository courseRepository;
   private final CourseClassRepository courseClassRepository;
   private final CourseClassAssembler courseClassAssembler;
   private final CourseTreeReader courseTreeReader;
+  private final CourseIndividualSlotRepository slotRepository;
+  private final CourseEnrollmentRepository enrollmentRepository;
+
+  private final EnrollmentInstitutionLock enrollmentInstitutionLock;
 
   @Transactional
   public CourseResponse execute(
       final UUID institutionId, final UUID courseId, final ReplaceCourseClassesRequest request) {
+    accessGuard.require(
+        PermissionCode.COURSE_UPDATE, institutionId, ScopedResource.COURSE, courseId);
+
+    enrollmentInstitutionLock.lock(institutionId);
     final var course =
         courseRepository
             .findByIdAndInstitution_IdForUpdate(courseId, institutionId)
@@ -32,7 +49,11 @@ public class ReplaceCourseClassesUseCase {
     if (course.getStatus() == CourseStatus.CLOSED) {
       throw new InvalidAcademicStateException();
     }
+    if (enrollmentRepository.existsByCourseIncludingHistorical(institutionId, courseId)) {
+      throw new EnrollmentValidationException(EnrollmentMessages.COURSE_CLASSES_HAVE_ENROLLMENTS);
+    }
     try {
+      slotRepository.deleteByCourseId(courseId);
       deleteCurrentClasses(courseId);
       courseClassAssembler.assemble(
           course.getInstitution(),

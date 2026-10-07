@@ -1,8 +1,12 @@
 package ar.edu.utn.frvm.typeit.boero_api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.PermissionAccess;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ScopedAuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.search.SearchEntityType;
 import ar.edu.utn.frvm.typeit.boero_api.search.SearchService;
 import ar.edu.utn.frvm.typeit.boero_api.search.SearchSummaryResponse;
@@ -10,14 +14,24 @@ import ar.edu.utn.frvm.typeit.boero_api.support.IntegrationTest;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @IntegrationTest
 class SearchMigrationIntegrationTest extends DatabaseMigrationTestSupport {
 
   @Autowired private SearchService searchService;
+
+  @MockitoBean(name = "scopedAuthorization")
+  private ScopedAuthorizationService authorization;
+
+  @BeforeEach
+  void allowInstitutionalSearch() {
+    when(authorization.access(any())).thenReturn(PermissionAccess.institution());
+  }
 
   @Test
   @DisplayName("Should search accent-insensitively with unordered prefixes")

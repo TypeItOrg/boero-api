@@ -7,7 +7,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicMessages;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicLevelRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicLevelResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreateAcademicLevelRequest;
-import ar.edu.utn.frvm.typeit.boero_api.academic.validation.AcademicNameNormalizer;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -17,17 +19,21 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class CreateAcademicLevelUseCase {
+  private final AcademicAccessGuard accessGuard;
   private final AcademicLevelRepository academicLevelRepository;
   private final StudyPlanDraftGuard studyPlanDraftGuard;
 
   @Transactional
   public AcademicLevelResponse execute(
       final UUID institutionId, final UUID studyPlanId, final CreateAcademicLevelRequest request) {
+    accessGuard.require(
+        PermissionCode.STUDY_PLAN_CURRICULUM_UPDATE,
+        institutionId,
+        ScopedResource.STUDY_PLAN,
+        studyPlanId);
+
     final var plan = studyPlanDraftGuard.lock(institutionId, studyPlanId);
-    final var name = AcademicNameNormalizer.display(request.name());
-    if (academicLevelRepository.existsByNormalizedName(studyPlanId, name)) {
-      throw AcademicConflictException.forField("name", AcademicMessages.DUPLICATE_NAME);
-    }
+    final var name = AcademicLevel.derivedName(request.displayOrder());
     if (academicLevelRepository.existsByStudyPlan_IdAndDisplayOrder(
         studyPlanId, request.displayOrder())) {
       throw AcademicConflictException.forField("displayOrder", AcademicMessages.DUPLICATE_ORDER);

@@ -4,12 +4,13 @@ import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import java.util.UUID;
 import lombok.Builder;
+import org.jspecify.annotations.Nullable;
 
 @Builder
 public record PlatformRoleListItemResponse(
     UUID id,
     String name,
-    SystemRoleCode technicalCode,
+    @Nullable SystemRoleCode technicalCode,
     boolean editable,
     boolean deletable,
     long assignmentCount,
@@ -18,7 +19,8 @@ public record PlatformRoleListItemResponse(
 
   public static PlatformRoleListItemResponse from(
       Role role, long assignmentCount, int permissionCount) {
-    SystemRoleCode technicalCode = role.isSystem() ? SystemRoleCode.valueOf(role.getCode()) : null;
+    @Nullable SystemRoleCode technicalCode =
+        role.isSystem() ? SystemRoleCode.valueOf(role.getCode()) : null;
     boolean authority = technicalCode == SystemRoleCode.INSTITUTIONAL_AUTHORITY;
     boolean institutionActive = role.getInstitution().isActive();
     return PlatformRoleListItemResponse.builder()

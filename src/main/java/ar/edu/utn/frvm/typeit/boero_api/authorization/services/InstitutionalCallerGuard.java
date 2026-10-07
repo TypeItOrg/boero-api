@@ -7,6 +7,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PlatformRoleCode;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -17,14 +18,15 @@ public class InstitutionalCallerGuard {
 
   private final AuthorizationService authorizationService;
 
-  public void ensureInstitutionalPrincipal(Authentication authentication) {
+  public void ensureInstitutionalPrincipal(@Nullable Authentication authentication) {
     if (authentication == null
         || !(authentication.getPrincipal() instanceof JwtAuthenticatedUser)) {
       throw new AccessDeniedException(DEFAULT_FORBIDDEN_MESSAGE);
     }
   }
 
-  public void ensureCallerBelongsToInstitution(Authentication authentication, UUID institutionId) {
+  public void ensureCallerBelongsToInstitution(
+      @Nullable Authentication authentication, UUID institutionId) {
     if (authentication == null || authentication.getPrincipal() == null) {
       throw new AccessDeniedException(DEFAULT_FORBIDDEN_MESSAGE);
     }

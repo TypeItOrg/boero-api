@@ -1,7 +1,11 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.controllers;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.config.WebAuthnProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
+import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.DiscoverablePasskeyOptionsRequest;
+import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.DiscoverablePasskeyVerifyRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PasskeyAuthenticationOptionsRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PasskeyAuthenticationVerifyRequest;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PasskeyRegistrationOptionsRequest;
@@ -13,6 +17,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PasskeyAuthentic
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PasskeyListResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PasskeyRegistrationOptionsResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PasskeyResponse;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.DiscoverablePasskeyLoginUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.ListPasskeysUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.ReAuthenticateUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.RenamePasskeyUseCase;
@@ -54,6 +59,21 @@ public class PasskeyController {
   private final ReAuthenticateUseCase reAuthenticateUseCase;
   private final InstitutionalCallerGuard institutionalCallerGuard;
   private final WebAuthnProperties webAuthnProperties;
+  private final DiscoverablePasskeyLoginUseCase discoverablePasskeyLoginUseCase;
+
+  @PostMapping(version = Version.V1, path = "/passkeys/authentication/discoverable/options")
+  public PasskeyAuthenticationOptionsResponse discoverableOptions(
+      @Valid @RequestBody final DiscoverablePasskeyOptionsRequest request) {
+    return discoverablePasskeyLoginUseCase.options(request.institutionId());
+  }
+
+  @PostMapping(version = Version.V1, path = "/passkeys/authentication/discoverable/verify")
+  public AuthResponse discoverableVerify(
+      @Valid @RequestBody final DiscoverablePasskeyVerifyRequest request,
+      final HttpServletRequest httpRequest) {
+    return discoverablePasskeyLoginUseCase.verify(
+        request.ceremonyId(), request.credential(), request.rememberMe(), httpRequest);
+  }
 
   @PostMapping(version = Version.V1, path = "/passkeys/authentication/options")
   public PasskeyAuthenticationOptionsResponse authenticationOptions(
@@ -76,7 +96,8 @@ public class PasskeyController {
   @GetMapping(version = Version.V1, path = "/passkeys")
   public PasskeyListResponse list(final Authentication authentication) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
-    final JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    final JwtAuthenticatedUser principal =
+        (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     return new PasskeyListResponse(
         listPasskeysUseCase.execute(principal), webAuthnProperties.maxPasskeys());
   }
@@ -86,7 +107,8 @@ public class PasskeyController {
       final Authentication authentication,
       @Valid @RequestBody final PasskeyRegistrationOptionsRequest request) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
-    final JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    final JwtAuthenticatedUser principal =
+        (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     return requestRegistrationOptionsUseCase.execute(principal, request.label());
   }
 
@@ -96,7 +118,8 @@ public class PasskeyController {
       final Authentication authentication,
       @Valid @RequestBody final PasskeyRegistrationVerifyRequest request) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
-    final JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    final JwtAuthenticatedUser principal =
+        (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     return verifyPasskeyRegistrationUseCase.execute(
         principal, request.ceremonyId(), request.credential());
   }
@@ -107,7 +130,8 @@ public class PasskeyController {
       @PathVariable("id") final UUID passkeyId,
       @Valid @RequestBody final PasskeyRenameRequest request) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
-    final JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    final JwtAuthenticatedUser principal =
+        (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     return renamePasskeyUseCase.execute(principal, passkeyId, request.label());
   }
 
@@ -116,7 +140,8 @@ public class PasskeyController {
   public void revoke(
       final Authentication authentication, @PathVariable("id") final UUID passkeyId) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
-    final JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    final JwtAuthenticatedUser principal =
+        (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     revokePasskeyUseCase.execute(principal, passkeyId);
   }
 
@@ -126,7 +151,8 @@ public class PasskeyController {
       final Authentication authentication,
       @Valid @RequestBody final ReAuthenticateRequest request) {
     institutionalCallerGuard.ensureInstitutionalPrincipal(authentication);
-    final JwtAuthenticatedUser principal = (JwtAuthenticatedUser) authentication.getPrincipal();
+    final JwtAuthenticatedUser principal =
+        (JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal());
     reAuthenticateUseCase.execute(principal, request.password());
   }
 }

@@ -6,6 +6,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.web.webauthn.api.AttestationConveyancePreference;
 import org.springframework.security.web.webauthn.api.AuthenticationExtensionsClientInputs;
 import org.springframework.security.web.webauthn.api.AuthenticatorAttachment;
@@ -87,7 +88,7 @@ final class WebAuthnOptionsReader {
     return Duration.ofMillis(node.asLong());
   }
 
-  static AuthenticationExtensionsClientInputs extensions(final JsonNode node) {
+  static @Nullable AuthenticationExtensionsClientInputs extensions(final JsonNode node) {
     if (node == null || node.isNull()) {
       return null;
     }
@@ -96,8 +97,7 @@ final class WebAuthnOptionsReader {
       return new ImmutableAuthenticationExtensionsClientInputs(List.of());
     }
     final JsonNode credProps = node.get("credProps");
-    final boolean onlyCredProps = node.size() == 1 && credProps != null && !credProps.isNull();
-    if (!onlyCredProps || !credProps.isBoolean()) {
+    if (node.size() != 1 || credProps == null || !credProps.isBoolean()) {
       throw new IllegalArgumentException("Unsupported WebAuthn options extensions");
     }
     return new ImmutableAuthenticationExtensionsClientInputs(

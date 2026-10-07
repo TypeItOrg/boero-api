@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.config;
 
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "app.institutional-dev-user")
@@ -10,7 +11,7 @@ public record InstitutionalDevUserProperties(
   private static final String DEFAULT_NAME = "Ana";
   private static final String DEFAULT_LAST_NAME = "Garcia";
 
-  public String resolvedDocumentNumber() {
+  public @Nullable String resolvedDocumentNumber() {
     if (documentNumber == null || documentNumber.isBlank()) {
       return null;
     }

@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.exceptions;
 
 import java.util.Map;
 import org.hibernate.exception.ConstraintViolationException;
+import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
 
 public final class AcademicIntegrityViolationTranslator {
@@ -68,6 +69,12 @@ public final class AcademicIntegrityViolationTranslator {
           "course_class_days_period_duration_check",
           "course_class_schedules_time_range_check" ->
           validation(AcademicMessages.INVALID_VALUE, "classes");
+      case "course_individual_slots_schedule_bounds_check" ->
+          validation(AcademicMessages.COURSE_PERIOD_DURATION_NOT_DIVISIBLE, "classes");
+      case "courses_curriculum_instrument_check" ->
+          validation(AcademicMessages.INVALID_RELATIONSHIP, "instrumentId");
+      case "academic_spaces_instantiated_shape_check" ->
+          conflict(AcademicMessages.ACADEMIC_SPACE_INSTRUMENTAL_HAS_COURSES, "instrumental");
       case "courses_deleted_state_check" -> new InvalidAcademicStateException();
       case "academic_years_deleted_state_check",
           "training_paths_deleted_state_check",
@@ -124,7 +131,7 @@ public final class AcademicIntegrityViolationTranslator {
     return new AcademicValidationException(message, Map.of(field, message));
   }
 
-  private static String constraintName(final DataIntegrityViolationException exception) {
+  private static @Nullable String constraintName(final DataIntegrityViolationException exception) {
     Throwable cause = exception;
     while (cause != null) {
       if (cause instanceof ConstraintViolationException constraintViolation) {

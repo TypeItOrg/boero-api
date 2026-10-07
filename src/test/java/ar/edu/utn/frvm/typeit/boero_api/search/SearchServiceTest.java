@@ -44,7 +44,7 @@ class SearchServiceTest {
     verify(repository)
         .institutionalSummary(definitions.capture(), any(), eq(institutionId), eq(personId), eq(6));
     assertThat(definitions.getValue())
-        .extracting(SearchDefinition::type)
+        .extracting(mappedSearchDefinition -> mappedSearchDefinition.type())
         .containsExactly(SearchEntityType.USER, SearchEntityType.STUDY_PLAN);
   }
 

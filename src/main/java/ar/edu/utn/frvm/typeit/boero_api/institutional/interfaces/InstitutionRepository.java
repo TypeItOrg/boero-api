@@ -14,9 +14,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface InstitutionRepository extends JpaRepository<Institution, UUID> {
   Optional<Institution> findBySlug(String slug);
+
+  @Transactional(readOnly = true)
+  Optional<Institution> findByPublicSubdomainAndActiveTrue(String publicSubdomain);
+
+  boolean existsByPublicSubdomainAndIdNot(String publicSubdomain, UUID id);
 
   @EntityGraph(attributePaths = {"city", "city.province"})
   Page<Institution> findByActiveTrue(Pageable pageable);
@@ -49,6 +55,11 @@ public interface InstitutionRepository extends JpaRepository<Institution, UUID> 
 
   @EntityGraph(attributePaths = {"city", "city.province"})
   Optional<Institution> findByIdAndActiveTrue(UUID id);
+
+  @Lock(LockModeType.PESSIMISTIC_READ)
+  @Query(
+      "SELECT institution FROM Institution institution WHERE institution.id = :id AND institution.active = true")
+  Optional<Institution> findActiveByIdForShare(@Param("id") UUID id);
 
   @EntityGraph(attributePaths = {"city", "city.province", "city.province.country"})
   Optional<Institution> findWithLocationById(UUID id);

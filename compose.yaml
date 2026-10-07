@@ -12,7 +12,7 @@ services:
         required: false
     environment:
       SERVER_PORT: ${SERVER_PORT:-8080}
-      ENROLLMENT_STORAGE_DIR: /workspace/storage/enrollments
+      STORAGE_LOCAL_DIR: /workspace/storage
       DB_HOST: ${DB_HOST:-postgres}
       DB_PORT: ${DB_PORT:-5432}
       DB_NAME: ${DB_NAME:-boero_db}
@@ -53,8 +53,8 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - gradle-cache:/root/.gradle
-      - enrollment-storage:/workspace/storage/enrollments
+      - gradle-cache:/home/gradle/.gradle
+      - storage:/workspace/storage
     logging:
       driver: "local"
       options:
@@ -83,8 +83,6 @@ services:
     container_name: boero-api-redis-dev
     image: redis:7-alpine
     command: ["redis-server", "--save", "", "--appendonly", "no"]
-    ports:
-      - "6379:6379"
     logging:
       driver: "local"
       options:
@@ -131,8 +129,8 @@ services:
       start_period: 45s
 
 volumes:
-  enrollment-storage:
-    name: boero-api-enrollment-storage-dev
+  storage:
+    name: boero-api-storage-dev
   gradle-cache:
     name: boero-api-gradle-cache-dev
   postgres-data:

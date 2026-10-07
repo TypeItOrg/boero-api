@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenUseCase {
+  private final InstitutionalHostContext hostContext;
   private final Clock clock;
 
   private final RefreshTokenRepository refreshTokenRepository;
@@ -42,6 +43,17 @@ public class RefreshTokenUseCase {
     final RefreshToken current =
         refreshTokenRepository.findByTokenHash(hash).orElseThrow(InvalidRefreshTokenException::new);
 
+    if (hostContext.current().isPresent()) {
+      final var ownerSession =
+          userSessionRepository
+              .findById(current.getSessionId())
+              .orElseThrow(InvalidRefreshTokenException::new);
+      final var owner =
+          userRepository
+              .findWithPersonAndInstitutionById(ownerSession.getUserId())
+              .orElseThrow(InvalidRefreshTokenException::new);
+      hostContext.requireInstitution(owner.getInstitutionId());
+    }
     final Optional<RefreshReplay> replay = replayCache.get(AuthRealm.INSTITUTIONAL, hash);
     final RefreshRotationDecision decision =
         RefreshRotationPolicy.decide(
@@ -139,7 +151,7 @@ public class RefreshTokenUseCase {
   private void revokeReusedFamily(final RefreshToken current) {
     final Set<UUID> sessionIds =
         refreshTokenRepository.findByFamilyId(current.getFamilyId()).stream()
-            .map(RefreshToken::getSessionId)
+            .map(mappedRefreshToken -> mappedRefreshToken.getSessionId())
             .collect(Collectors.toSet());
     refreshTokenRepository.revokeByFamilyId(current.getFamilyId());
     sessionRevocationService.revokeInstitutionalSessionsByIds(sessionIds);

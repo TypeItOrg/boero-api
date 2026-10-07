@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
 import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.createInstitution;
 import static ar.edu.utn.frvm.typeit.boero_api.support.InstitutionalTestData.createUser;
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -175,6 +176,7 @@ class PasskeyConcurrencyPostgresIntegrationTest {
                     Instant.now())));
     when(codec.decodeCreationOptions("{}"))
         .thenReturn(Mockito.mock(PublicKeyCredentialCreationOptions.class));
+    @SuppressWarnings("unchecked")
     final PublicKeyCredential<AuthenticatorAttestationResponse> credential =
         Mockito.mock(PublicKeyCredential.class);
     when(codec.decodeAttestationCredential(any())).thenReturn(credential);
@@ -192,7 +194,7 @@ class PasskeyConcurrencyPostgresIntegrationTest {
             ImmutableCredentialRecord.builder()
                 .credentialType(PublicKeyCredentialType.PUBLIC_KEY)
                 .credentialId(fixture.externalId())
-                .userEntityUserId(new Bytes(handle))
+                .userEntityUserId(new Bytes(requireNonNull(handle)))
                 .publicKey(new ImmutablePublicKeyCose(new byte[] {1, 2, 3}))
                 .signatureCount(0)
                 .transports(Set.of())
@@ -224,7 +226,7 @@ class PasskeyConcurrencyPostgresIntegrationTest {
                           .user(user)
                           .credentialId(externalId.toBase64UrlString())
                           .publicKeyCose(new byte[] {1, 2, 3})
-                          .userHandle(user.getWebauthnUserHandle())
+                          .userHandle(requireNonNull(user.getWebauthnUserHandle()))
                           .label("Test key")
                           .build());
               return new Fixture(

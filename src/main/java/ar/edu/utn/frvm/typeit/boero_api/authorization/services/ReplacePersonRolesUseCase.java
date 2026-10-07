@@ -1,17 +1,21 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.InstitutionalAuthorityRoleImmutableException;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.InvalidAccessScopeException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.LastPersonRoleRevocationException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.RoleAssignmentNotAllowedException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.RoleNotAssignableException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.RoleRevocationNotAllowedException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RoleRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.AssignRoleRequest;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.PersonRoleResponse;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.payloads.ReplacePersonRolesRequest;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
@@ -29,7 +33,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ReplacePersonRolesUseCase {
+  private final PersonRoleResponseFactory responseFactory;
+  private final RoleAdministrationLock administrationLock;
 
+  private final RoleAssignmentScopeValidator scopeValidator;
   private final InstitutionPersonResolver institutionPersonResolver;
   private final RoleRepository roleRepository;
   private final PersonRoleAssignmentRepository assignmentRepository;
@@ -43,12 +50,19 @@ public class ReplacePersonRolesUseCase {
       ReplacePersonRolesRequest request,
       boolean allowAuthority,
       Set<PermissionCode> actorPermissions) {
+    administrationLock.lock(institutionId);
     Person person =
         institutionPersonResolver.requirePersonInInstitutionForUpdate(institutionId, personId);
     List<PersonRoleAssignment> current =
         assignmentRepository.findByPerson_IdAndInstitution_Id(personId, institutionId);
 
-    Map<UUID, Role> desiredRoles = loadRoles(institutionId, request.roleIds());
+    Map<UUID, AssignRoleRequest> requested = new HashMap<>();
+    for (var assignment : request.assignments()) {
+      if (requested.put(assignment.roleId(), assignment) != null) {
+        throw new InvalidAccessScopeException();
+      }
+    }
+    Map<UUID, Role> desiredRoles = loadRoles(institutionId, requested.keySet());
     ensureInstitutionalAuthorityIsUnchanged(current, desiredRoles, allowAuthority);
     removeApplicantWhenAnotherRoleIsSelected(desiredRoles);
     if (desiredRoles.isEmpty()) {
@@ -64,25 +78,79 @@ public class ReplacePersonRolesUseCase {
     additions.removeAll(currentIds);
     Set<UUID> removals = new HashSet<>(currentIds);
     removals.removeAll(desiredIds);
-    requirePermissionForChanges(additions, removals, allowAuthority, actorPermissions);
+    boolean scopeChanged = false;
+    for (var entry : desiredRoles.entrySet()) {
+      var desired = requireNonNull(requested.get(entry.getKey()));
+      var existing =
+          current.stream()
+              .filter(a -> a.getRole().getId().equals(entry.getKey()))
+              .findFirst()
+              .orElse(null);
+      scopeValidator.validate(
+          institutionId,
+          entry.getValue(),
+          desired,
+          existing == null ? Set.of() : existing.getTrainingPathIds());
+      PermissionAccess next =
+          new PermissionAccess(desired.accessScope(), desired.selectedTrainingPathIds());
+      PermissionAccess previous =
+          existing == null
+              ? PermissionAccess.none()
+              : new PermissionAccess(existing.getAccessScope(), existing.getTrainingPathIds());
+      if (!next.equals(previous)) {
+        scopeChanged = true;
+        if (!previous.contains(next)) {
+          additions.add(entry.getKey());
+        }
+        if (!next.contains(previous)) {
+          removals.add(entry.getKey());
+        }
+        if (!allowAuthority) {
+          scopeValidator.requireDelegation(
+              entry.getValue(), desired.accessScope(), desired.selectedTrainingPathIds());
+          if (existing != null) {
+            scopeValidator.requireDelegation(existing);
+          }
+        }
+      }
+    }
+    if (!allowAuthority) {
+      current.stream()
+          .filter(a -> !desiredIds.contains(a.getRole().getId()))
+          .forEach(scopeValidator::requireDelegation);
+    }
+    requirePermissionForChanges(
+        additions,
+        removals,
+        allowAuthority,
+        allowAuthority ? actorPermissions : scopeValidator.freshPermissions());
 
     current.stream()
         .filter(assignment -> !desiredIds.contains(assignment.getRole().getId()))
         .forEach(assignmentRepository::delete);
     for (Role role : desiredRoles.values()) {
       if (!currentIds.contains(role.getId())) {
-        assignmentRepository.save(
-            PersonRoleAssignment.assign(person, role, person.getInstitution()));
+        var assignment = PersonRoleAssignment.assign(person, role, person.getInstitution());
+        var desired = requireNonNull(requested.get(role.getId()));
+        assignment.changeAccessScope(desired.accessScope(), desired.selectedTrainingPathIds());
+        assignmentRepository.save(assignment);
       }
     }
 
-    if (!additions.isEmpty() || !removals.isEmpty()) {
+    for (var assignment : current) {
+      var desired = requested.get(assignment.getRole().getId());
+      if (desired != null && desiredIds.contains(desired.roleId())) {
+        assignment.changeAccessScope(desired.accessScope(), desired.selectedTrainingPathIds());
+      }
+    }
+
+    if (scopeChanged || !additions.isEmpty() || !removals.isEmpty()) {
       sessionRevocationService.revokeInstitutionalSessionsForPerson(personId, institutionId);
       authorizationCacheInvalidator.evictPerson(personId, institutionId);
     }
 
     return assignmentRepository.findByPerson_IdAndInstitution_Id(personId, institutionId).stream()
-        .map(PersonRoleResponse::from)
+        .map(responseFactory::from)
         .toList();
   }
 
@@ -100,23 +168,25 @@ public class ReplacePersonRolesUseCase {
 
   private void ensureInstitutionalAuthorityIsUnchanged(
       List<PersonRoleAssignment> current, Map<UUID, Role> desiredRoles, boolean allowAuthority) {
-    if (allowAuthority) return;
+    if (allowAuthority) {
+      return;
+    }
 
     Set<UUID> currentAuthorityIds =
         current.stream()
-            .map(PersonRoleAssignment::getRole)
-            .filter(Role::isInstitutionalAuthority)
-            .map(Role::getId)
+            .map(mappedPersonRoleAssignment -> mappedPersonRoleAssignment.getRole())
+            .filter(mappedRole -> mappedRole.isInstitutionalAuthority())
+            .map(mappedRole -> mappedRole.getId())
             .collect(Collectors.toSet());
     Set<UUID> desiredAuthorityIds =
         desiredRoles.values().stream()
-            .filter(Role::isInstitutionalAuthority)
-            .map(Role::getId)
+            .filter(mappedRole -> mappedRole.isInstitutionalAuthority())
+            .map(mappedRole -> mappedRole.getId())
             .collect(Collectors.toSet());
 
     if (!currentAuthorityIds.equals(desiredAuthorityIds)
         || (!currentAuthorityIds.isEmpty()
-            && desiredRoles.values().stream().anyMatch(Role::isApplicant))) {
+            && desiredRoles.values().stream().anyMatch(mappedRole -> mappedRole.isApplicant()))) {
       throw new InstitutionalAuthorityRoleImmutableException();
     }
   }
@@ -124,7 +194,7 @@ public class ReplacePersonRolesUseCase {
   private void removeApplicantWhenAnotherRoleIsSelected(Map<UUID, Role> roles) {
     boolean hasNonApplicant = roles.values().stream().anyMatch(role -> !role.isApplicant());
     if (hasNonApplicant) {
-      roles.values().removeIf(Role::isApplicant);
+      roles.values().removeIf(mappedRole -> mappedRole.isApplicant());
     }
   }
 
@@ -133,7 +203,9 @@ public class ReplacePersonRolesUseCase {
       Set<UUID> removals,
       boolean allowAuthority,
       Set<PermissionCode> actorPermissions) {
-    if (allowAuthority) return;
+    if (allowAuthority) {
+      return;
+    }
     if (!additions.isEmpty()
         && !actorPermissions.contains(PermissionCode.INSTITUTION_ROLE_ASSIGN)) {
       throw new RoleAssignmentNotAllowedException();

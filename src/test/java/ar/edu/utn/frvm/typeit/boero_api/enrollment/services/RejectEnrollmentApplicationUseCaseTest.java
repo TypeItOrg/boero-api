@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentApplicationNotFoundException;
@@ -27,6 +28,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -113,7 +115,12 @@ class RejectEnrollmentApplicationUseCaseTest {
 
   private RejectEnrollmentApplicationUseCase useCase() {
     return new RejectEnrollmentApplicationUseCase(
-        enrollmentApplicationRepository, Clock.systemUTC());
+        Mockito.mock(EnrollmentApplicationResponseFactory.class),
+        org.mockito.Mockito.mock(AcademicAccessGuard.class),
+        enrollmentApplicationRepository,
+        Clock.systemUTC(),
+        Mockito.mock(EnrollmentAdmissionHistory.class),
+        Mockito.mock(EnrollmentInstitutionLock.class));
   }
 
   private void stubApplication() {

@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.authorization.cache.AuthorizationCacheNames;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Permission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
@@ -46,10 +48,7 @@ public class PermissionRoleSeed implements ApplicationRunner {
   private static final Map<SystemRoleCode, Set<PermissionCode>> INSTITUTIONAL_ROLE_PERMISSIONS =
       Map.of(
           SystemRoleCode.APPLICANT,
-          EnumSet.of(
-              PermissionCode.ACADEMIC_OFFER_READ,
-              PermissionCode.STUDY_PLAN_READ,
-              PermissionCode.ACADEMIC_YEAR_READ),
+          EnumSet.of(PermissionCode.ACADEMIC_OFFER_READ),
           SystemRoleCode.STUDENT,
           EnumSet.of(PermissionCode.STUDY_PLAN_READ, PermissionCode.ACADEMIC_YEAR_READ),
           SystemRoleCode.GUARDIAN,
@@ -60,12 +59,27 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.GUARDIAN_DEPENDENT_MANAGE),
           SystemRoleCode.ADMINISTRATIVE,
           EnumSet.of(
+              PermissionCode.DOCUMENT_CATALOG_READ,
               PermissionCode.ENROLLMENT_APPLICATION_READ,
+              PermissionCode.ENROLLMENT_DOCUMENT_REQUEST_CREATE,
+              PermissionCode.ENROLLMENT_ATTACHMENT_READ,
+              PermissionCode.ENROLLMENT_ATTACHMENT_UPLOAD,
+              PermissionCode.ENROLLMENT_ATTACHMENT_DELETE,
+              PermissionCode.ENROLLMENT_ATTACHMENT_REVIEW,
               PermissionCode.ENROLLMENT_APPLICATION_APPROVE,
               PermissionCode.ENROLLMENT_APPLICATION_REJECT,
-              PermissionCode.GUARDIAN_LINK_REVIEW),
+              PermissionCode.GUARDIAN_LINK_REVIEW,
+              PermissionCode.ENROLLMENT_APPLICATION_COURSE_READ,
+              PermissionCode.ENROLLMENT_APPLICATION_COURSE_ENROLL,
+              PermissionCode.ENROLLMENT_APPLICATION_COURSE_REJECT,
+              PermissionCode.COURSE_ENROLLMENT_READ,
+              PermissionCode.COURSE_ENROLLMENT_CREATE,
+              PermissionCode.COURSE_ENROLLMENT_WITHDRAW,
+              PermissionCode.COURSE_ENROLLMENT_ACADEMIC_STATUS_UPDATE,
+              PermissionCode.COURSE_WAITLIST_READ),
           SystemRoleCode.INSTITUTIONAL_AUTHORITY,
           EnumSet.of(
+              PermissionCode.DOCUMENT_CATALOG_MANAGE,
               PermissionCode.INSTITUTION_ROLE_ASSIGN,
               PermissionCode.INSTITUTION_ROLE_REVOKE,
               PermissionCode.INSTITUTION_PERSON_READ_ANY,
@@ -117,10 +131,24 @@ public class PermissionRoleSeed implements ApplicationRunner {
               PermissionCode.COURSE_STATUS_UPDATE,
               PermissionCode.COURSE_DELETE,
               PermissionCode.COURSE_RESTORE,
+              PermissionCode.DOCUMENT_CATALOG_READ,
               PermissionCode.ENROLLMENT_APPLICATION_READ,
+              PermissionCode.ENROLLMENT_DOCUMENT_REQUEST_CREATE,
+              PermissionCode.ENROLLMENT_ATTACHMENT_READ,
+              PermissionCode.ENROLLMENT_ATTACHMENT_UPLOAD,
+              PermissionCode.ENROLLMENT_ATTACHMENT_DELETE,
+              PermissionCode.ENROLLMENT_ATTACHMENT_REVIEW,
               PermissionCode.ENROLLMENT_APPLICATION_APPROVE,
               PermissionCode.ENROLLMENT_APPLICATION_REJECT,
-              PermissionCode.GUARDIAN_LINK_REVIEW));
+              PermissionCode.GUARDIAN_LINK_REVIEW,
+              PermissionCode.ENROLLMENT_APPLICATION_COURSE_READ,
+              PermissionCode.ENROLLMENT_APPLICATION_COURSE_ENROLL,
+              PermissionCode.ENROLLMENT_APPLICATION_COURSE_REJECT,
+              PermissionCode.COURSE_ENROLLMENT_READ,
+              PermissionCode.COURSE_ENROLLMENT_CREATE,
+              PermissionCode.COURSE_ENROLLMENT_WITHDRAW,
+              PermissionCode.COURSE_ENROLLMENT_ACADEMIC_STATUS_UPDATE,
+              PermissionCode.COURSE_WAITLIST_READ));
 
   private final PermissionRepository permissionRepository;
   private final RoleRepository roleRepository;
@@ -252,7 +280,7 @@ public class PermissionRoleSeed implements ApplicationRunner {
     final var requiredPermissionCodes = PermissionCode.withRequiredPermissions(permissionCodes);
     Set<UUID> desiredPermissionIds =
         requiredPermissionCodes.stream()
-            .map(code -> permissions.get(code).getId())
+            .map(code -> requireNonNull(permissions.get(code)).getId())
             .collect(Collectors.toSet());
 
     for (final var rolePermission : rolePermissionRepository.findByRole_Id(role.getId())) {
@@ -262,7 +290,7 @@ public class PermissionRoleSeed implements ApplicationRunner {
     }
 
     for (PermissionCode permissionCode : requiredPermissionCodes) {
-      Permission permission = permissions.get(permissionCode);
+      Permission permission = requireNonNull(permissions.get(permissionCode));
 
       if (!rolePermissionRepository.existsByRoleIdAndPermissionId(
           role.getId(), permission.getId())) {

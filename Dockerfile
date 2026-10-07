@@ -41,7 +41,7 @@ RUN apt-get update \
         --shell "/usr/sbin/nologin" \
         --uid "${UID}" \
         appuser \
-    && install -d -o appuser -g appuser /app/logs /app/storage/enrollments
+    && install -d -o appuser -g appuser /app/logs /app/storage
 
 WORKDIR /app
 USER appuser

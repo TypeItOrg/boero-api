@@ -31,6 +31,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.UpdateEnrollmentPeri
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -83,7 +84,7 @@ class EnrollmentPeriodControllerWebMvcTest {
   void create_success() throws Exception {
     var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     when(authorizationService.hasPermission(any(), eq(PermissionCode.ENROLLMENT_PERIOD_CREATE)))
         .thenReturn(true);
 
@@ -97,7 +98,13 @@ class EnrollmentPeriodControllerWebMvcTest {
             LocalDateTime.of(2026, 11, 1, 8, 0).toInstant(ZoneOffset.UTC),
             LocalDateTime.of(2026, 12, 1, 20, 0).toInstant(ZoneOffset.UTC),
             EnrollmentPeriodStatus.PLANNED,
-            null);
+            null,
+            false,
+            List.of(),
+            false,
+            true,
+            true,
+            true);
 
     when(createEnrollmentPeriodUseCase.execute(eq(INSTITUTION_ID), any())).thenReturn(response);
 
@@ -106,7 +113,16 @@ class EnrollmentPeriodControllerWebMvcTest {
             "academicYearId", ACADEMIC_YEAR_ID,
             "name", "Inscripción 2026",
             "startDate", "2026-11-01T08:00:00Z",
-            "endDate", "2026-12-01T20:00:00Z");
+            "endDate", "2026-12-01T20:00:00Z",
+            "offerings",
+                List.of(
+                    Map.of(
+                        "studyPlanId",
+                        UUID.randomUUID(),
+                        "academicLevelIds",
+                        List.of(),
+                        "includeUnassigned",
+                        true)));
 
     mockMvc
         .perform(
@@ -124,7 +140,7 @@ class EnrollmentPeriodControllerWebMvcTest {
   void create_forbidden() throws Exception {
     var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     when(authorizationService.hasPermission(any(), eq(PermissionCode.ENROLLMENT_PERIOD_CREATE)))
         .thenReturn(false);
 
@@ -133,7 +149,16 @@ class EnrollmentPeriodControllerWebMvcTest {
             "academicYearId", ACADEMIC_YEAR_ID,
             "name", "Inscripción 2026",
             "startDate", "2026-11-01T08:00:00Z",
-            "endDate", "2026-12-01T20:00:00Z");
+            "endDate", "2026-12-01T20:00:00Z",
+            "offerings",
+                List.of(
+                    Map.of(
+                        "studyPlanId",
+                        UUID.randomUUID(),
+                        "academicLevelIds",
+                        List.of(),
+                        "includeUnassigned",
+                        true)));
 
     mockMvc
         .perform(
@@ -149,7 +174,7 @@ class EnrollmentPeriodControllerWebMvcTest {
   void updateStatus_success() throws Exception {
     var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     when(authorizationService.hasPermission(
             any(), eq(PermissionCode.ENROLLMENT_PERIOD_STATUS_UPDATE)))
         .thenReturn(true);
@@ -175,7 +200,7 @@ class EnrollmentPeriodControllerWebMvcTest {
   void delete_success() throws Exception {
     var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     when(authorizationService.hasPermission(any(), eq(PermissionCode.ENROLLMENT_PERIOD_DELETE)))
         .thenReturn(true);
 

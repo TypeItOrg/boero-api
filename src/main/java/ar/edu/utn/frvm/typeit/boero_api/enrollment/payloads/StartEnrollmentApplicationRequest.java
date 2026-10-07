@@ -5,35 +5,47 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 import lombok.Builder;
+import org.jspecify.annotations.Nullable;
 
 @Builder
 public record StartEnrollmentApplicationRequest(
-    @NotNull(message = EnrollmentMessages.STUDY_PLAN_REQUIRED) @Schema(nullable = true)
-        UUID studyPlanId,
-    @NotNull(message = EnrollmentMessages.ACADEMIC_YEAR_REQUIRED) @Schema(nullable = true)
-        UUID academicYearId,
+    @NotNull(message = EnrollmentMessages.COURSE_SELECTION_REQUIRED)
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+        @Nullable UUID trainingPathId,
+    @Schema(nullable = true) @Nullable UUID studyPlanId,
+    @Schema(nullable = true) @Nullable UUID academicYearId,
+    @Schema(nullable = true) @Nullable UUID enrollmentPeriodId,
     @Schema(
             nullable = true,
             description =
                 "Person the application is for. Omit to apply for yourself; when set, the caller must be a guardian of that person.")
-        UUID applicantPersonId) {
+        @Nullable UUID applicantPersonId) {
   public StartEnrollmentApplicationRequest() {
-    this(null, null, null);
+    this(null, null, null, null, null);
   }
 
   public StartEnrollmentApplicationRequest(final UUID studyPlanId, final UUID academicYearId) {
-    this(studyPlanId, academicYearId, null);
+    this(null, studyPlanId, academicYearId, null, null);
   }
 
-  public UUID getApplicantPersonId() {
+  public StartEnrollmentApplicationRequest(
+      @Nullable UUID trainingPathId, @Nullable UUID studyPlanId, @Nullable UUID academicYearId) {
+    this(trainingPathId, studyPlanId, academicYearId, null, null);
+  }
+
+  public @Nullable UUID getTrainingPathId() {
+    return trainingPathId;
+  }
+
+  public @Nullable UUID getApplicantPersonId() {
     return applicantPersonId;
   }
 
-  public UUID getStudyPlanId() {
+  public @Nullable UUID getStudyPlanId() {
     return studyPlanId;
   }
 
-  public UUID getAcademicYearId() {
+  public @Nullable UUID getAcademicYearId() {
     return academicYearId;
   }
 }

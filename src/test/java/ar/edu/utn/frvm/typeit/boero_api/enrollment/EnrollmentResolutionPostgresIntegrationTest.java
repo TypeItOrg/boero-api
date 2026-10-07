@@ -1,11 +1,14 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ScopedAuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
@@ -15,6 +18,14 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.MissingRejectionRe
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentApplicationRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.RejectEnrollmentApplicationRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ApproveEnrollmentApplicationUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentAdmissionHistory;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentApplicationCourseApprovalService;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentApplicationPeriodService;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentApplicationResponseFactory;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentDocumentAudit;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentDocumentAuthorization;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentDocumentRequirementsService;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.EnrollmentInstitutionLock;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.RejectEnrollmentApplicationUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
@@ -38,6 +49,7 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -55,6 +67,12 @@ import org.testcontainers.utility.DockerImageName;
 @IntegrationTest
 @Import({
   JpaAuditingTestConfig.class,
+  EnrollmentInstitutionLock.class,
+  AcademicAccessGuard.class,
+  EnrollmentApplicationResponseFactory.class,
+  EnrollmentDocumentRequirementsService.class,
+  EnrollmentDocumentAudit.class,
+  EnrollmentAdmissionHistory.class,
   ApproveEnrollmentApplicationUseCase.class,
   RejectEnrollmentApplicationUseCase.class
 })
@@ -63,6 +81,14 @@ class EnrollmentResolutionPostgresIntegrationTest {
   @Container
   static final PostgreSQLContainer<?> POSTGRES =
       new PostgreSQLContainer<>(DockerImageName.parse("postgres:18-alpine"));
+
+  @MockitoBean private EnrollmentApplicationCourseApprovalService applicationCourseApprovalService;
+
+  @MockitoBean(name = "scopedAuthorization")
+  private ScopedAuthorizationService authorization;
+
+  @MockitoBean private EnrollmentApplicationPeriodService periods;
+  @MockitoBean private EnrollmentDocumentAuthorization documentAuthorization;
 
   @Autowired private EntityManager entityManager;
   @Autowired private EnrollmentApplicationRepository enrollmentApplicationRepository;
@@ -242,10 +268,11 @@ class EnrollmentResolutionPostgresIntegrationTest {
                     .setParameter("academicYearId", academicYearId)
                     .setParameter(
                         "periodId",
-                        enrollmentApplicationRepository
-                            .findById(applicationId)
-                            .orElseThrow()
-                            .getEnrollmentPeriod()
+                        requireNonNull(
+                                enrollmentApplicationRepository
+                                    .findById(applicationId)
+                                    .orElseThrow()
+                                    .getEnrollmentPeriod())
                             .getId())
                     .executeUpdate())
         .isInstanceOf(PersistenceException.class)
@@ -278,10 +305,11 @@ class EnrollmentResolutionPostgresIntegrationTest {
                     .setParameter("academicYearId", academicYearId)
                     .setParameter(
                         "periodId",
-                        enrollmentApplicationRepository
-                            .findById(applicationId)
-                            .orElseThrow()
-                            .getEnrollmentPeriod()
+                        requireNonNull(
+                                enrollmentApplicationRepository
+                                    .findById(applicationId)
+                                    .orElseThrow()
+                                    .getEnrollmentPeriod())
                             .getId())
                     .executeUpdate())
         .isInstanceOf(PersistenceException.class)

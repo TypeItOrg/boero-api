@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,9 +34,9 @@ public class ListPlatformPeopleUseCase {
 
   @Transactional(readOnly = true)
   public PaginatedResponse<PlatformPersonSummaryResponse> execute(
-      final String search,
-      final UUID institutionId,
-      final SystemRoleCode roleCode,
+      final @Nullable String search,
+      final @Nullable UUID institutionId,
+      final @Nullable SystemRoleCode roleCode,
       final Pageable pageable) {
     final String normalizedSearch = SearchNormalization.normalizeSearch(search);
     final Pageable repositoryPageable = mapInstitutionSort(pageable);
@@ -50,7 +51,8 @@ public class ListPlatformPeopleUseCase {
       return PaginatedResponse.from(peoplePage.map(this::withoutRoles));
     }
 
-    final List<UUID> personIds = peoplePage.getContent().stream().map(Person::getId).toList();
+    final List<UUID> personIds =
+        peoplePage.getContent().stream().map(mappedPerson -> mappedPerson.getId()).toList();
     final Map<UUID, List<PersonSummaryResponse.PersonRoleSummaryResponse>> rolesByPerson =
         personRoleAssignmentRepository.findByPerson_IdIn(personIds).stream()
             .collect(

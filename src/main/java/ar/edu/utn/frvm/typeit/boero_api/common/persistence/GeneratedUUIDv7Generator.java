@@ -4,12 +4,15 @@ import static org.hibernate.generator.EventTypeSets.INSERT_ONLY;
 
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.TimeBasedEpochGenerator;
+import java.io.Serial;
 import java.util.EnumSet;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.EventType;
 
 public class GeneratedUUIDv7Generator implements BeforeExecutionGenerator {
+
+  @Serial private static final long serialVersionUID = 1L;
 
   private static final TimeBasedEpochGenerator GENERATOR = Generators.timeBasedEpochGenerator();
 

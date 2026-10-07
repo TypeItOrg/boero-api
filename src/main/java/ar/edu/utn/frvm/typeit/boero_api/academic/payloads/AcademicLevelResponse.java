@@ -3,6 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.academic.payloads;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicLevel;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(requiredProperties = {"id", "studyPlanId", "name", "displayOrder", "description"})
 public record AcademicLevelResponse(
@@ -10,7 +11,7 @@ public record AcademicLevelResponse(
     UUID studyPlanId,
     String name,
     int displayOrder,
-    @Schema(nullable = true) String description) {
+    @Schema(nullable = true) @Nullable String description) {
 
   public static AcademicLevelResponse from(final AcademicLevel level) {
     return new AcademicLevelResponse(

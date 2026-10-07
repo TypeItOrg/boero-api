@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.enums.AcademicYearStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
@@ -44,12 +46,12 @@ public class ListAcademicYearsUseCase {
   @Transactional(readOnly = true)
   public PaginatedResponse<AcademicYearResponse> execute(
       final @Nullable UUID institutionId,
-      final String search,
-      final AcademicYearStatus status,
-      final Integer year,
-      final LocalDate startDate,
-      final LocalDate endDate,
-      final LocalDate validOn,
+      final @Nullable String search,
+      final @Nullable AcademicYearStatus status,
+      final @Nullable Integer year,
+      final @Nullable LocalDate startDate,
+      final @Nullable LocalDate endDate,
+      final @Nullable LocalDate validOn,
       final boolean deleted,
       final Pageable pageable) {
     final var page =
@@ -62,23 +64,23 @@ public class ListAcademicYearsUseCase {
   @Transactional(readOnly = true)
   public PaginatedResponse<AcademicYearResponse> execute(
       final @Nullable UUID institutionId,
-      final String search,
-      final AcademicYearStatus status,
-      final Integer year,
-      final LocalDate startDate,
-      final LocalDate endDate,
+      final @Nullable String search,
+      final @Nullable AcademicYearStatus status,
+      final @Nullable Integer year,
+      final @Nullable LocalDate startDate,
+      final @Nullable LocalDate endDate,
       final Pageable pageable) {
     return execute(institutionId, search, status, year, startDate, endDate, null, false, pageable);
   }
 
   public PaginatedResponse<AcademicYearResponse> execute(
       final UUID institutionId,
-      final String search,
-      final AcademicYearStatus status,
-      final Integer year,
-      final LocalDate startDate,
-      final LocalDate endDate,
-      final LocalDate validOn,
+      final @Nullable String search,
+      final @Nullable AcademicYearStatus status,
+      final @Nullable Integer year,
+      final @Nullable LocalDate startDate,
+      final @Nullable LocalDate endDate,
+      final @Nullable LocalDate validOn,
       final Pageable pageable) {
     return execute(
         institutionId, search, status, year, startDate, endDate, validOn, false, pageable);
@@ -86,12 +88,12 @@ public class ListAcademicYearsUseCase {
 
   private static Specification<AcademicYear> byFilters(
       final @Nullable UUID institutionId,
-      final String search,
-      final AcademicYearStatus status,
-      final Integer year,
-      final LocalDate startDate,
-      final LocalDate endDate,
-      final LocalDate validOn,
+      final @Nullable String search,
+      final @Nullable AcademicYearStatus status,
+      final @Nullable Integer year,
+      final @Nullable LocalDate startDate,
+      final @Nullable LocalDate endDate,
+      final @Nullable LocalDate validOn,
       final boolean deleted) {
     return (root, query, criteriaBuilder) -> {
       final List<Predicate> predicates = new ArrayList<>();
@@ -211,7 +213,8 @@ public class ListAcademicYearsUseCase {
         .filter(
             status ->
                 SearchNormalization.normalizeForComparison(status.name()).contains(normalizedSearch)
-                    || SearchNormalization.normalizeForComparison(STATUS_LABELS.get(status))
+                    || SearchNormalization.normalizeForComparison(
+                            requireNonNull(STATUS_LABELS.get(status)))
                         .contains(normalizedSearch))
         .collect(Collectors.toUnmodifiableSet());
   }

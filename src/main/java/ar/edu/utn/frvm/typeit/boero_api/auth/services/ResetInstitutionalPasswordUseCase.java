@@ -1,7 +1,8 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.InstitutionalPasswordResetToken;
-import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidPasswordRecoveryTokenException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.PasswordConfirmationMismatchException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.InstitutionalPasswordResetTokenRepository;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ResetInstitutionalPasswordUseCase {
+  private final InstitutionalHostContext hostContext;
   private final Clock clock;
   private final UserRepository userRepository;
 
@@ -31,11 +33,13 @@ public class ResetInstitutionalPasswordUseCase {
     }
 
     final String hash = RequestInstitutionalPasswordRecoveryUseCase.hash(request.token());
-    passwordResetTokenRepository
-        .findUserIdByTokenHash(hash)
-        .flatMap(userRepository::findForEmailVerificationById)
-        .filter(User::isAccountActive)
-        .orElseThrow(InvalidPasswordRecoveryTokenException::new);
+    final var owner =
+        passwordResetTokenRepository
+            .findUserIdByTokenHash(hash)
+            .flatMap(userRepository::findForEmailVerificationById)
+            .filter(mappedUser -> mappedUser.isAccountActive())
+            .orElseThrow(InvalidPasswordRecoveryTokenException::new);
+    hostContext.requireInstitution(owner.getInstitutionId());
     final Instant now = clock.instant();
     final InstitutionalPasswordResetToken token =
         passwordResetTokenRepository
@@ -43,7 +47,7 @@ public class ResetInstitutionalPasswordUseCase {
             .filter(resetToken -> resetToken.isUsableAt(now))
             .orElseThrow(InvalidPasswordRecoveryTokenException::new);
 
-    token.getUser().changePassword(passwordEncoder.encode(request.password()));
+    token.getUser().changePassword(requireNonNull(passwordEncoder.encode(request.password())));
     token.markUsed(now);
     sessionRevocationService.revokeInstitutionalSessionsForUser(token.getUser().getId());
   }

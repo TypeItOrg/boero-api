@@ -111,6 +111,16 @@ public enum PermissionCode {
       PermissionScope.INSTITUTION,
       PermissionGroup.ACADEMIC,
       "Restaurar ciclos lectivos"),
+  DOCUMENT_CATALOG_READ(
+      "institution:document-catalog:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Ver catálogo documental"),
+  DOCUMENT_CATALOG_MANAGE(
+      "institution:document-catalog:manage",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ACADEMIC,
+      "Administrar catálogo documental"),
   TRAINING_PATH_READ(
       "institution:training-path:read",
       PermissionScope.INSTITUTION,
@@ -331,6 +341,31 @@ public enum PermissionCode {
       PermissionScope.INSTITUTION,
       PermissionGroup.ENROLLMENT,
       "Ver solicitudes de inscripción"),
+  ENROLLMENT_DOCUMENT_REQUEST_CREATE(
+      "institution:enrollment-document-request:create",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Solicitar documentación adicional"),
+  ENROLLMENT_ATTACHMENT_READ(
+      "institution:enrollment-attachment:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Consultar documentación de inscripción"),
+  ENROLLMENT_ATTACHMENT_UPLOAD(
+      "institution:enrollment-attachment:upload",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Cargar documentación de inscripción"),
+  ENROLLMENT_ATTACHMENT_REVIEW(
+      "institution:enrollment-attachment:review",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Revisar documentación de inscripción"),
+  ENROLLMENT_ATTACHMENT_DELETE(
+      "institution:enrollment-attachment:delete",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Eliminar documentación de inscripción"),
   ENROLLMENT_APPLICATION_APPROVE(
       "institution:enrollment-application:approve",
       PermissionScope.INSTITUTION,
@@ -355,12 +390,99 @@ public enum PermissionCode {
       "institution:audit:read",
       PermissionScope.INSTITUTION,
       PermissionGroup.INSTITUTION,
-      "Ver registro de auditoría");
+      "Ver registro de auditoría"),
+  COURSE_ENROLLMENT_READ(
+      "institution:course-enrollment:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Ver cursadas institucionales"),
+  COURSE_ENROLLMENT_CREATE(
+      "institution:course-enrollment:create",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Crear cursadas manuales"),
+  COURSE_ENROLLMENT_WITHDRAW(
+      "institution:course-enrollment:withdraw",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Registrar bajas de cursadas"),
+  COURSE_ENROLLMENT_ACADEMIC_STATUS_UPDATE(
+      "institution:course-enrollment:academic-status-update",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Modificar resultados académicos"),
+  ENROLLMENT_APPLICATION_COURSE_READ(
+      "institution:enrollment-application-course:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Ver solicitudes de cursada"),
+  ENROLLMENT_APPLICATION_COURSE_ENROLL(
+      "institution:enrollment-application-course:enroll",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Inscribir solicitudes de cursada"),
+  ENROLLMENT_APPLICATION_COURSE_REJECT(
+      "institution:enrollment-application-course:reject",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Rechazar solicitudes de cursada"),
+  COURSE_WAITLIST_READ(
+      "institution:course-waitlist:read",
+      PermissionScope.INSTITUTION,
+      PermissionGroup.ENROLLMENT,
+      "Ver listas de espera");
 
   private final String code;
   private final PermissionScope scope;
   private final PermissionGroup group;
   private final String description;
+
+  public boolean supportsTrainingPaths() {
+    return switch (this) {
+      case TRAINING_PATH_READ,
+          TRAINING_PATH_UPDATE,
+          TRAINING_PATH_STATUS_UPDATE,
+          TRAINING_PATH_DELETE,
+          TRAINING_PATH_RESTORE,
+          STUDY_PLAN_READ,
+          STUDY_PLAN_CREATE,
+          STUDY_PLAN_UPDATE,
+          STUDY_PLAN_STATUS_UPDATE,
+          STUDY_PLAN_CURRICULUM_UPDATE,
+          STUDY_PLAN_DELETE,
+          STUDY_PLAN_RESTORE,
+          ACADEMIC_OFFER_READ,
+          COURSE_READ,
+          COURSE_CREATE,
+          COURSE_UPDATE,
+          COURSE_STATUS_UPDATE,
+          COURSE_DELETE,
+          COURSE_RESTORE,
+          ENROLLMENT_PERIOD_READ,
+          ENROLLMENT_PERIOD_CREATE,
+          ENROLLMENT_PERIOD_UPDATE,
+          ENROLLMENT_PERIOD_STATUS_UPDATE,
+          ENROLLMENT_PERIOD_DELETE,
+          ENROLLMENT_APPLICATION_READ,
+          ENROLLMENT_DOCUMENT_REQUEST_CREATE,
+          ENROLLMENT_ATTACHMENT_READ,
+          ENROLLMENT_ATTACHMENT_UPLOAD,
+          ENROLLMENT_ATTACHMENT_DELETE,
+          ENROLLMENT_ATTACHMENT_REVIEW,
+          ENROLLMENT_APPLICATION_APPROVE,
+          ENROLLMENT_APPLICATION_REJECT,
+          COURSE_ENROLLMENT_READ,
+          COURSE_ENROLLMENT_CREATE,
+          COURSE_ENROLLMENT_WITHDRAW,
+          COURSE_ENROLLMENT_ACADEMIC_STATUS_UPDATE,
+          ENROLLMENT_APPLICATION_COURSE_READ,
+          ENROLLMENT_APPLICATION_COURSE_ENROLL,
+          ENROLLMENT_APPLICATION_COURSE_REJECT,
+          COURSE_WAITLIST_READ ->
+          true;
+      default -> false;
+    };
+  }
 
   public boolean isConfigurable() {
     return group != PermissionGroup.GRADES;
@@ -418,8 +540,22 @@ public enum PermissionCode {
           Set.of(SHIFT_READ);
       case COURSE_CREATE, COURSE_UPDATE, COURSE_STATUS_UPDATE, COURSE_DELETE, COURSE_RESTORE ->
           Set.of(COURSE_READ);
+      case DOCUMENT_CATALOG_MANAGE -> Set.of(DOCUMENT_CATALOG_READ);
+      case ENROLLMENT_ATTACHMENT_READ -> Set.of(ENROLLMENT_APPLICATION_READ);
+      case ENROLLMENT_DOCUMENT_REQUEST_CREATE,
+          ENROLLMENT_ATTACHMENT_UPLOAD,
+          ENROLLMENT_ATTACHMENT_DELETE,
+          ENROLLMENT_ATTACHMENT_REVIEW ->
+          Set.of(ENROLLMENT_ATTACHMENT_READ);
       case ENROLLMENT_APPLICATION_APPROVE, ENROLLMENT_APPLICATION_REJECT ->
           Set.of(ENROLLMENT_APPLICATION_READ);
+      case COURSE_ENROLLMENT_CREATE,
+          COURSE_ENROLLMENT_WITHDRAW,
+          COURSE_ENROLLMENT_ACADEMIC_STATUS_UPDATE,
+          COURSE_WAITLIST_READ ->
+          Set.of(COURSE_ENROLLMENT_READ);
+      case ENROLLMENT_APPLICATION_COURSE_ENROLL, ENROLLMENT_APPLICATION_COURSE_REJECT ->
+          Set.of(ENROLLMENT_APPLICATION_COURSE_READ, ENROLLMENT_APPLICATION_READ);
       default -> Set.of();
     };
   }

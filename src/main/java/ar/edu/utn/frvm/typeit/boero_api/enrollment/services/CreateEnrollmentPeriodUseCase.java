@@ -2,10 +2,10 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicYearNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicYearRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidEnrollmentPeriodDatesException;
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentPeriodRepository;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.CreateEnrollmentPeriodRequest;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads.EnrollmentPeriodResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotFoundException;
@@ -18,14 +18,18 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class CreateEnrollmentPeriodUseCase {
+  private final EnrollmentPeriodAccessService periodAccess;
 
-  private final EnrollmentPeriodRepository periodRepository;
+  private final EnrollmentInstitutionLock institutionLock;
+  private final EnrollmentPeriodScopeService scopeService;
   private final InstitutionRepository institutionRepository;
   private final AcademicYearRepository academicYearRepository;
 
   @Transactional
   public EnrollmentPeriodResponse execute(
       final UUID institutionId, final CreateEnrollmentPeriodRequest request) {
+    institutionLock.lock(institutionId);
+
     if (request.startDate().isAfter(request.endDate())) {
       throw new InvalidEnrollmentPeriodDatesException();
     }
@@ -52,8 +56,10 @@ public class CreateEnrollmentPeriodUseCase {
             .status(EnrollmentPeriodStatus.PLANNED)
             .build();
 
-    final var saved = periodRepository.save(period);
+    scopeService.configure(period, request.offerings());
+    periodAccess.requireManage(period, PermissionCode.ENROLLMENT_PERIOD_CREATE);
+    final var saved = scopeService.save(period);
 
-    return EnrollmentPeriodResponse.from(saved);
+    return periodAccess.responseAfterMutation(saved, PermissionCode.ENROLLMENT_PERIOD_CREATE);
   }
 }

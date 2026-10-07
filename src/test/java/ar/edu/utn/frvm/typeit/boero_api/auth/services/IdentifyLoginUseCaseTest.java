@@ -26,6 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class IdentifyLoginUseCaseTest {
+  @Mock private InstitutionalHostContext hostContext;
 
   @Mock private UserRepository userRepository;
   @Mock private PasskeyCredentialRepository passkeyCredentialRepository;
@@ -36,7 +37,8 @@ class IdentifyLoginUseCaseTest {
   @BeforeEach
   void setUp() {
     useCase =
-        new IdentifyLoginUseCase(userRepository, passkeyCredentialRepository, loginAttemptService);
+        new IdentifyLoginUseCase(
+            hostContext, userRepository, passkeyCredentialRepository, loginAttemptService);
   }
 
   @Test

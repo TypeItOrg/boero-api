@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.config.InstitutionalDevUserProperties;
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
@@ -104,7 +106,8 @@ public class InstitutionalDevUserBootstrap implements ApplicationRunner {
         User.builder()
             .institution(institution)
             .person(person)
-            .password(passwordEncoder.encode(institutionalDevUserProperties.password()))
+            .password(
+                requireNonNull(passwordEncoder.encode(institutionalDevUserProperties.password())))
             .build();
     userRepository.save(user);
     assignPersonSystemRoleUseCase.execute(person, SystemRoleCode.APPLICANT, false);

@@ -20,9 +20,10 @@ public class ApplicantEnrollmentGuard {
   private final PersonRoleAssignmentRepository personRoleAssignmentRepository;
 
   public Person requireApplicant(final JwtAuthenticatedUser principal) {
-    // Guardians go through the same enrollment flow, acting for their dependents.
     final boolean canApply =
-        hasRole(principal, SystemRoleCode.APPLICANT) || hasRole(principal, SystemRoleCode.GUARDIAN);
+        hasRole(principal, SystemRoleCode.APPLICANT)
+            || hasRole(principal, SystemRoleCode.STUDENT)
+            || hasRole(principal, SystemRoleCode.GUARDIAN);
 
     if (!canApply) {
       throw new AccessDeniedException(DEFAULT_FORBIDDEN_MESSAGE);

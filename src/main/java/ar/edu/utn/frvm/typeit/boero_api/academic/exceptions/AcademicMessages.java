@@ -1,6 +1,15 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.exceptions;
 
 public final class AcademicMessages {
+  public static final String DOCUMENT_INSTITUTION_CHANGE_BLOCKED =
+      "No se puede cambiar la institución porque el documento ya fue utilizado. Creá una copia en la otra institución.";
+  public static final String DOCUMENT_NOT_FOUND = "El documento no existe en esta institución.";
+  public static final String DOCUMENT_REVISION_CONFLICT =
+      "El documento o su asignación cambió. Recargá la información antes de guardar.";
+  public static final String DOCUMENT_DUPLICATE_ASSIGNMENT =
+      "El documento está asignado al trayecto. Recargá para configurar o reactivar esa asignación.";
+  public static final String DOCUMENT_ASSIGNMENT_IMMUTABLE =
+      "No se puede cambiar el documento de una asignación. Retirala y seleccioná otro documento.";
 
   public static final String ACADEMIC_YEAR_NOT_FOUND = "El ciclo lectivo especificado no existe.";
   public static final String TRAINING_PATH_NOT_FOUND =
@@ -37,7 +46,7 @@ public final class AcademicMessages {
   public static final String STUDY_PLAN_HAS_ACTIVE_COURSES =
       "El plan de estudio no puede desactivarse porque tiene cursos que no están cerrados asociados.";
   public static final String COURSE_STUDY_PLAN_NOT_ACTIVE =
-      "El plan de estudio seleccionado debe estar activo.";
+      "El plan de estudio seleccionado debe estar publicado y no eliminado.";
   public static final String COURSE_YEAR_NOT_ACTIVE =
       "El ciclo lectivo seleccionado debe estar activo.";
   public static final String COURSE_SPACE_NOT_IN_PLAN =
@@ -47,6 +56,16 @@ public final class AcademicMessages {
       "El espacio académico no puede desactivarse porque está utilizado en un plan de estudio activo o en borrador.";
   public static final String ACADEMIC_SPACE_FORMAT_HAS_COURSES =
       "El formato del espacio académico no puede modificarse porque ya tiene cursos asociados.";
+  public static final String ACADEMIC_SPACE_INSTRUMENTAL_HAS_COURSES =
+      "La instrumentalidad del espacio académico no puede modificarse porque ya tiene cursos asociados.";
+  public static final String COURSE_DUPLICATE =
+      "Ya existe un curso con la misma identidad curricular en el ciclo lectivo indicado.";
+  public static final String INSTRUMENT_REQUIRED =
+      "El espacio académico instrumental requiere un instrumento.";
+  public static final String INSTRUMENT_NOT_ALLOWED =
+      "El espacio académico no instrumental no admite un instrumento.";
+  public static final String INSTRUMENT_IN_USE =
+      "El instrumento no puede desactivarse porque está siendo utilizado por cursos activos.";
   public static final String STUDY_PLAN_ACTIVATION_REQUIRES_START_AND_ACTIVE_PATH =
       "El plan no puede activarse hasta completar la fecha de inicio y tener un trayecto formativo activo.";
   public static final String STUDY_PLAN_ACTIVATION_REQUIRES_SPACES =
@@ -110,6 +129,8 @@ public final class AcademicMessages {
       "El recurso no puede restaurarse porque su elemento superior no está disponible.";
   public static final String RESTORE_CONFLICT =
       "El recurso no puede restaurarse porque sus datos ya están en uso.";
+  public static final String COURSE_RESTORE_INSTRUMENT_MISMATCH =
+      "El curso no puede restaurarse porque su instrumento no coincide con la instrumentalidad actual del espacio académico.";
   public static final String ACADEMIC_LIFECYCLE_ACTOR_NOT_FOUND =
       "No fue posible identificar al actor de la operación.";
 

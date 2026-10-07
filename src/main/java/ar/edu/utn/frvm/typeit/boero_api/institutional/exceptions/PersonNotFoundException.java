@@ -4,8 +4,12 @@ import static ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.Institut
 
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ApplicationException;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorCategory;
+import java.io.Serial;
 
 public class PersonNotFoundException extends ApplicationException {
+
+  @Serial private static final long serialVersionUID = 1L;
+
   public PersonNotFoundException() {
     super(ErrorCategory.NOT_FOUND, PERSON_NOT_FOUND);
   }

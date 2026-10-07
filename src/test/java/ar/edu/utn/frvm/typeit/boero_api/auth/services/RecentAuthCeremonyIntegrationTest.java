@@ -36,6 +36,7 @@ import org.mockito.Mockito;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.web.webauthn.api.AttestationConveyancePreference;
+import org.springframework.security.web.webauthn.api.AuthenticatorAttestationResponse;
 import org.springframework.security.web.webauthn.api.AuthenticatorSelectionCriteria;
 import org.springframework.security.web.webauthn.api.AuthenticatorTransport;
 import org.springframework.security.web.webauthn.api.Bytes;
@@ -64,6 +65,8 @@ class RecentAuthCeremonyIntegrationTest {
   private static final String RECENT_KEY_PREFIX = "boero:auth:recent:";
 
   @Container
+  // The Testcontainers lifecycle owns and stops this shared container.
+  @SuppressWarnings("resource")
   static final GenericContainer<?> REDIS =
       new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
 
@@ -279,8 +282,8 @@ class RecentAuthCeremonyIntegrationTest {
         .build();
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private static PublicKeyCredential attestationCredential() {
+  @SuppressWarnings("unchecked")
+  private static PublicKeyCredential<AuthenticatorAttestationResponse> attestationCredential() {
     return Mockito.mock(PublicKeyCredential.class);
   }
 }

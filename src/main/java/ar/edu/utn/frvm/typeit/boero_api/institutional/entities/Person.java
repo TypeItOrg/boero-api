@@ -36,6 +36,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(
@@ -113,7 +114,7 @@ public class Person extends Auditable {
   private LocalDate birthDate;
 
   @Column(name = "phone_number", length = 30)
-  private String phoneNumber;
+  private @Nullable String phoneNumber;
 
   // Null for dependents (e.g. minors) who have no email of their own. Accounts still require one
   // at registration (RegisterRequest).
@@ -139,7 +140,7 @@ public class Person extends Auditable {
     this.nationalityCountry = nationalityCountry;
   }
 
-  public void updateContact(final String email, final String phoneNumber) {
+  public void updateContact(final String email, final @Nullable String phoneNumber) {
     this.email = email;
     this.phoneNumber = phoneNumber;
   }

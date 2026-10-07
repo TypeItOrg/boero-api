@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.entities;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
+import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.GeneratedUUIDv7;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
@@ -22,9 +23,11 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.PostLoad;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -36,6 +39,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(
@@ -68,47 +72,67 @@ public class EnrollmentApplication extends SoftDeletable {
   @JoinColumn(name = "submitted_by_person_id")
   private Person submittedByPerson;
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "study_plan_id", nullable = false)
-  private StudyPlan studyPlan;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "study_plan_id")
+  private @Nullable StudyPlan studyPlan;
+
+  @Column(name = "study_plan_id", insertable = false, updatable = false)
+  private @Nullable UUID legacyStudyPlanId;
+
+  @Transient private boolean legacyPlanLoaded;
+
+  @PostLoad
+  private void detectLegacyPlan() {
+    legacyPlanLoaded = studyPlan != null;
+  }
+
+  public boolean hasLegacyStudyPlan() {
+    return legacyPlanLoaded || legacyStudyPlanId != null || studyPlan != null;
+  }
 
   @Setter(AccessLevel.NONE)
   @Column(name = "training_path_id", nullable = false)
   private UUID trainingPathId;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "training_path_id", insertable = false, updatable = false)
+  private TrainingPath trainingPath;
+
   @PrePersist
   @PreUpdate
   private void synchronizeTrainingPath() {
-    trainingPathId = studyPlan.getTrainingPath().getId();
+    if (trainingPathId == null && studyPlan != null) {
+      trainingPathId = studyPlan.getTrainingPath().getId();
+    }
   }
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "academic_year_id", nullable = false)
-  private AcademicYear academicYear;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "academic_year_id")
+  private @Nullable AcademicYear academicYear;
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "enrollment_period_id", nullable = false)
-  private EnrollmentPeriod enrollmentPeriod;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "enrollment_period_id")
+  private @Nullable EnrollmentPeriod enrollmentPeriod;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "status", nullable = false, length = 20)
+  @Column(name = "status", nullable = false, length = 40)
   private EnrollmentApplicationStatus status;
 
   @Column(name = "rejection_reason", columnDefinition = "text")
-  private String rejectionReason;
+  private @Nullable String rejectionReason;
 
   @Column(name = "resolved_at")
-  private Instant resolvedAt;
+  private @Nullable Instant resolvedAt;
 
   @Column(name = "resolved_by_person_id")
-  private UUID resolvedByPersonId;
+  private @Nullable UUID resolvedByPersonId;
 
   @OneToOne(
       mappedBy = "enrollmentApplication",
       cascade = CascadeType.ALL,
       fetch = FetchType.LAZY,
       orphanRemoval = true)
-  private ApplicantEducationBackground educationBackground;
+  private @Nullable ApplicantEducationBackground educationBackground;
 
   @OneToOne(
       mappedBy = "enrollmentApplication",
@@ -139,6 +163,22 @@ public class EnrollmentApplication extends SoftDeletable {
   @Builder.Default
   private List<EnrollmentAttachment> attachments = new ArrayList<>();
 
+  @OneToMany(mappedBy = "application", cascade = CascadeType.ALL)
+  @Builder.Default
+  private List<EnrollmentDocumentRequirement> documentRequirements = new ArrayList<>();
+
+  @OneToMany(mappedBy = "application", cascade = CascadeType.ALL)
+  @Builder.Default
+  private List<EnrollmentDocumentRequest> documentRequests = new ArrayList<>();
+
+  public void addDocumentRequest(final EnrollmentDocumentRequest request) {
+    documentRequests.add(request);
+  }
+
+  public void addDocumentRequirement(EnrollmentDocumentRequirement requirement) {
+    documentRequirements.add(requirement);
+  }
+
   @OneToMany(
       mappedBy = "enrollmentApplication",
       cascade = CascadeType.ALL,
@@ -146,6 +186,14 @@ public class EnrollmentApplication extends SoftDeletable {
       orphanRemoval = true)
   @Builder.Default
   private List<EnrollmentApplicationSpace> selectedSpaces = new ArrayList<>();
+
+  @OneToMany(
+      mappedBy = "enrollmentApplication",
+      cascade = CascadeType.ALL,
+      fetch = FetchType.LAZY,
+      orphanRemoval = true)
+  @Builder.Default
+  private List<EnrollmentApplicationCourse> courseSelections = new ArrayList<>();
 
   public void setEducationBackground(ApplicantEducationBackground educationBackground) {
     this.educationBackground = educationBackground;
@@ -193,13 +241,35 @@ public class EnrollmentApplication extends SoftDeletable {
     selectedSpaces.clear();
   }
 
+  public void addCourseSelection(final EnrollmentApplicationCourse selection) {
+    courseSelections.add(selection);
+  }
+
+  public void clearCourseSelections() {
+    courseSelections.clear();
+  }
+
   public void changeStudyPlan(final StudyPlan studyPlan) {
     if (!isEditable()) {
       throw new ApplicationNotEditableException(id);
     }
 
     this.studyPlan = studyPlan;
+    this.trainingPathId = studyPlan.getTrainingPath().getId();
+    this.trainingPath = studyPlan.getTrainingPath();
     clearSelectedSpaces();
+  }
+
+  public void changeTrainingPath(final TrainingPath trainingPath) {
+    if (!isEditable()) {
+      throw new ApplicationNotEditableException(id);
+    }
+
+    this.trainingPath = trainingPath;
+    this.trainingPathId = trainingPath.getId();
+    this.studyPlan = null;
+    clearSelectedSpaces();
+    clearCourseSelections();
   }
 
   public static EnrollmentApplication create(
@@ -212,6 +282,63 @@ public class EnrollmentApplication extends SoftDeletable {
         .institution(institution)
         .applicantPerson(applicantPerson)
         .studyPlan(studyPlan)
+        .academicYear(academicYear)
+        .enrollmentPeriod(enrollmentPeriod)
+        .status(EnrollmentApplicationStatus.DRAFT)
+        .build();
+  }
+
+  public @Nullable AcademicYear commonAcademicYear() {
+    if (academicYear != null) {
+      return academicYear;
+    }
+    if (courseSelections.isEmpty()) {
+      return null;
+    }
+    final var year = courseSelections.getFirst().getCourse().getAcademicYear();
+    return courseSelections.stream()
+            .allMatch(
+                selection -> selection.getCourse().getAcademicYear().getId().equals(year.getId()))
+        ? year
+        : null;
+  }
+
+  public void useCoursePeriods() {
+    if (status != EnrollmentApplicationStatus.DRAFT) {
+      throw new IllegalStateException("Only drafts can change their enrollment scope");
+    }
+    enrollmentPeriod = null;
+    academicYear = null;
+  }
+
+  public void assignSubmitter(final Person submitter) {
+    submittedByPerson = submitter;
+  }
+
+  public static EnrollmentApplication createForTrainingPath(
+      final Institution institution,
+      final Person applicantPerson,
+      final TrainingPath trainingPath) {
+    return EnrollmentApplication.builder()
+        .institution(institution)
+        .applicantPerson(applicantPerson)
+        .trainingPathId(trainingPath.getId())
+        .trainingPath(trainingPath)
+        .status(EnrollmentApplicationStatus.DRAFT)
+        .build();
+  }
+
+  public static EnrollmentApplication createForTrainingPath(
+      final Institution institution,
+      final Person applicantPerson,
+      final TrainingPath trainingPath,
+      final AcademicYear academicYear,
+      final EnrollmentPeriod enrollmentPeriod) {
+    return EnrollmentApplication.builder()
+        .institution(institution)
+        .applicantPerson(applicantPerson)
+        .trainingPathId(trainingPath.getId())
+        .trainingPath(trainingPath)
         .academicYear(academicYear)
         .enrollmentPeriod(enrollmentPeriod)
         .status(EnrollmentApplicationStatus.DRAFT)
@@ -264,6 +391,10 @@ public class EnrollmentApplication extends SoftDeletable {
     return status == EnrollmentApplicationStatus.SUBMITTED;
   }
 
+  public boolean isAdmitted() {
+    return isApproved() || status == EnrollmentApplicationStatus.PROVISIONALLY_APPROVED;
+  }
+
   public boolean isApproved() {
     return status == EnrollmentApplicationStatus.APPROVED;
   }
@@ -274,15 +405,32 @@ public class EnrollmentApplication extends SoftDeletable {
         || status == EnrollmentApplicationStatus.CANCELLED;
   }
 
-  public void approve(final Instant resolvedAt, final UUID resolvedByPersonId) {
-    ensurePendingEvaluation();
+  public @Nullable TrainingPath getTrainingPath() {
+    if (trainingPath != null) {
+      return trainingPath;
+    }
+
+    return studyPlan == null ? null : studyPlan.getTrainingPath();
+  }
+
+  public void approve(final Instant resolvedAt, final @Nullable UUID resolvedByPersonId) {
+    if (status != EnrollmentApplicationStatus.PROVISIONALLY_APPROVED) {
+      ensurePendingEvaluation();
+    }
     status = EnrollmentApplicationStatus.APPROVED;
     this.resolvedAt = resolvedAt;
     this.resolvedByPersonId = resolvedByPersonId;
   }
 
+  public void approveProvisionally() {
+    ensurePendingEvaluation();
+    status = EnrollmentApplicationStatus.PROVISIONALLY_APPROVED;
+  }
+
   public void reject(
-      final String rejectionReason, final Instant resolvedAt, final UUID resolvedByPersonId) {
+      final @Nullable String rejectionReason,
+      final Instant resolvedAt,
+      final @Nullable UUID resolvedByPersonId) {
     ensurePendingEvaluation();
 
     if (rejectionReason == null || rejectionReason.isBlank()) {

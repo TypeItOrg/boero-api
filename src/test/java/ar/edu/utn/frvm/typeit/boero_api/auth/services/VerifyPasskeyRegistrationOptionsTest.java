@@ -39,6 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.web.webauthn.api.AttestationConveyancePreference;
+import org.springframework.security.web.webauthn.api.AuthenticatorAttestationResponse;
 import org.springframework.security.web.webauthn.api.AuthenticatorSelectionCriteria;
 import org.springframework.security.web.webauthn.api.AuthenticatorTransport;
 import org.springframework.security.web.webauthn.api.Bytes;
@@ -227,8 +228,8 @@ class VerifyPasskeyRegistrationOptionsTest {
     return Mockito.mock(JsonNode.class);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private PublicKeyCredential attestationCredential() {
+  @SuppressWarnings("unchecked")
+  private PublicKeyCredential<AuthenticatorAttestationResponse> attestationCredential() {
     return Mockito.mock(PublicKeyCredential.class);
   }
 

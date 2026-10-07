@@ -5,6 +5,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.CountrySummaryRes
 import java.time.LocalDate;
 import java.util.UUID;
 import lombok.Builder;
+import org.jspecify.annotations.Nullable;
 
 @Builder
 public record PersonResponse(
@@ -13,13 +14,13 @@ public record PersonResponse(
     String lastName,
     String documentNumber,
     LocalDate birthDate,
-    String phoneNumber,
+    @Nullable String phoneNumber,
     String email,
     UUID institutionId,
     String institutionName,
-    AddressResponse address,
-    CitySummaryResponse birthCity,
-    CountrySummaryResponse nationalityCountry,
+    @Nullable AddressResponse address,
+    @Nullable CitySummaryResponse birthCity,
+    @Nullable CountrySummaryResponse nationalityCountry,
     boolean deleted) {
 
   public static PersonResponse from(Person person) {

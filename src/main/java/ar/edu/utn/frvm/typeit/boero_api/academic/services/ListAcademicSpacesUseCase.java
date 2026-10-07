@@ -21,10 +21,10 @@ public class ListAcademicSpacesUseCase {
   @Transactional(readOnly = true)
   public PaginatedResponse<AcademicSpaceResponse> execute(
       final @Nullable UUID institutionId,
-      final String search,
-      final Boolean active,
-      final AcademicSpaceType type,
-      final AcademicSpaceFormat format,
+      final @Nullable String search,
+      final @Nullable Boolean active,
+      final @Nullable AcademicSpaceType type,
+      final @Nullable AcademicSpaceFormat format,
       final boolean deleted,
       final Pageable pageable) {
     return PaginatedResponse.from(
@@ -41,10 +41,10 @@ public class ListAcademicSpacesUseCase {
   }
 
   public PaginatedResponse<AcademicSpaceResponse> execute(
-      final UUID institutionId,
-      final String search,
-      final Boolean active,
-      final AcademicSpaceType type,
+      final @Nullable UUID institutionId,
+      final @Nullable String search,
+      final @Nullable Boolean active,
+      final @Nullable AcademicSpaceType type,
       final Pageable pageable) {
     return execute(institutionId, search, active, type, null, false, pageable);
   }

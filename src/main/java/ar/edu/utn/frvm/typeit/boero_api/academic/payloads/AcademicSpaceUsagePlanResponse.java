@@ -6,11 +6,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(
     requiredProperties = {
       "studyPlanId",
       "name",
+      "versionNumber",
       "trainingPathName",
       "effectiveFrom",
       "effectiveTo",
@@ -20,9 +22,10 @@ import java.util.UUID;
 public record AcademicSpaceUsagePlanResponse(
     UUID studyPlanId,
     String name,
+    int versionNumber,
     String trainingPathName,
-    @Schema(nullable = true) LocalDate effectiveFrom,
-    @Schema(nullable = true) LocalDate effectiveTo,
+    @Schema(nullable = true) @Nullable LocalDate effectiveFrom,
+    @Schema(nullable = true) @Nullable LocalDate effectiveTo,
     StudyPlanStatus status,
     List<AcademicSpaceUsagePlacementResponse> placements) {
 
@@ -31,6 +34,7 @@ public record AcademicSpaceUsagePlanResponse(
     return new AcademicSpaceUsagePlanResponse(
         plan.getId(),
         plan.getName(),
+        plan.getVersionNumber(),
         plan.getTrainingPath().getName(),
         plan.getEffectiveFrom(),
         plan.getEffectiveTo(),

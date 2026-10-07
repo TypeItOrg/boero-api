@@ -34,5 +34,16 @@ public final class InstitutionMessages {
   public static final String GUARDIAN_LINK_ALREADY_RESOLVED =
       "La solicitud de vinculación ya fue resuelta.";
 
+  public static final String PUBLIC_SUBDOMAIN_INVALID =
+      "El nombre público debe ser un nombre DNS en minúsculas de hasta 63 caracteres.";
+  public static final String PUBLIC_SUBDOMAIN_RESERVED = "Ese nombre público está reservado.";
+  public static final String PUBLIC_SUBDOMAIN_ALREADY_EXISTS =
+      "Ya existe una institución con ese nombre público.";
+  public static final String PUBLIC_ACCESS_UNAVAILABLE =
+      "El acceso institucional no está disponible temporalmente.";
+  public static final String LOGO_INVALID =
+      "El logo debe ser una imagen PNG o JPEG válida de hasta 2 MiB.";
+  public static final String LOGO_NOT_FOUND = "La institución no tiene un logo disponible.";
+
   private InstitutionMessages() {}
 }

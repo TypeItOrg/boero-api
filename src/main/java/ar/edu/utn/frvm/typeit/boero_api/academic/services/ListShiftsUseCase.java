@@ -6,6 +6,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.validation.AcademicNameNormaliz
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,9 +18,9 @@ public class ListShiftsUseCase {
 
   @Transactional(readOnly = true)
   public PaginatedResponse<ShiftResponse> execute(
-      final UUID institutionId,
-      final String search,
-      final Boolean active,
+      final @Nullable UUID institutionId,
+      final @Nullable String search,
+      final @Nullable Boolean active,
       final boolean deleted,
       final Pageable pageable) {
     return PaginatedResponse.from(
@@ -31,8 +32,8 @@ public class ListShiftsUseCase {
 
   public PaginatedResponse<ShiftResponse> execute(
       final UUID institutionId,
-      final String search,
-      final Boolean active,
+      final @Nullable String search,
+      final @Nullable Boolean active,
       final Pageable pageable) {
     return execute(institutionId, search, active, false, pageable);
   }

@@ -12,6 +12,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseSpaceOptionResponse;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -55,7 +56,10 @@ class ListCourseSpaceOptionsUseCaseTest {
   }
 
   private ListCourseSpaceOptionsUseCase useCase() {
-    return new ListCourseSpaceOptionsUseCase(studyPlanRepository, studyPlanSpaceRepository);
+    return new ListCourseSpaceOptionsUseCase(
+        org.mockito.Mockito.mock(AcademicAccessGuard.class),
+        studyPlanRepository,
+        studyPlanSpaceRepository);
   }
 
   private void stubActivePlanAndSpace(final String name) {

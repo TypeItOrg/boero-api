@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.validation;
 
+import org.jspecify.annotations.Nullable;
+
 public final class AcademicNameNormalizer {
 
   private AcademicNameNormalizer() {}
@@ -8,7 +10,7 @@ public final class AcademicNameNormalizer {
     return value.trim().replaceAll("\\s+", " ");
   }
 
-  public static String search(final String value) {
+  public static @Nullable String search(final @Nullable String value) {
     if (value == null || value.isBlank()) {
       return null;
     }
