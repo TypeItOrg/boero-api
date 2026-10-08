@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ListMyEnrollmentApplicationsUseCase {
 
   private final EnrollmentApplicationRepository enrollmentApplicationRepository;
+  private final EnrollmentApplicationResponseFactory responses;
 
   @Transactional(readOnly = true)
   public Page<EnrollmentApplicationResponse> execute(
@@ -25,6 +26,6 @@ public class ListMyEnrollmentApplicationsUseCase {
       final Pageable pageable) {
     return enrollmentApplicationRepository
         .findMyApplications(institutionId, personId, status, pageable)
-        .map(EnrollmentApplicationResponse::summary);
+        .map(application -> responses.summary(application));
   }
 }

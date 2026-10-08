@@ -119,34 +119,44 @@ class EnrollmentApplicationServiceTest {
             applicationRepository.findOwnedInstitutionId(
                 ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Optional.of(institutionId));
-    service =
-        new EnrollmentApplicationService(
-            Mockito.mock(ScopedAuthorizationService.class),
-            applicationRepository,
+    final var authorization = Mockito.mock(ScopedAuthorizationService.class);
+    final var responses =
+        new EnrollmentApplicationResponseFactory(
             applicationPeriods,
-            new EnrollmentApplicationResponseFactory(
-                applicationPeriods,
-                Mockito.mock(EnrollmentDocumentAuthorization.class),
-                Mockito.mock(EnrollmentDocumentAudit.class),
-                documentRequirements,
-                admissionHistory),
-            personRepository,
-            trainingPathRepository,
+            Mockito.mock(EnrollmentDocumentAuthorization.class),
+            Mockito.mock(EnrollmentDocumentAudit.class),
+            documentRequirements,
+            admissionHistory);
+    final var courses =
+        new EnrollmentCourseSelectionService(
             courseRepository,
             courseClassTeacherRepository,
+            personRepository,
             applicationCourseRepository,
             courseEnrollmentRepository,
             studentRepository,
-            studyPlanSpaceRepository,
-            instrumentRepository,
-            enrollmentDraftDataValidator,
+            applicationPeriods,
+            Mockito.mock(AcademicEligibilityService.class));
+    final var spaces =
+        new EnrollmentLegacySpaceSelectionService(
+            enrollmentDraftDataValidator, courses, studyPlanSpaceRepository, instrumentRepository);
+    service =
+        new EnrollmentApplicationService(
+            applicationRepository,
+            applicationPeriods,
+            responses,
+            personRepository,
+            trainingPathRepository,
+            new EnrollmentDraftUpdater(spaces, courses),
+            courses,
+            new EnrollmentSubmissionValidator(new BusinessDateProvider(CLOCK)),
             applicationCourseApprovalService,
-            new BusinessDateProvider(CLOCK),
             CLOCK,
             Mockito.mock(EnrollmentInstitutionLock.class),
-            Mockito.mock(AcademicEligibilityService.class),
             documentRequirements,
-            admissionHistory);
+            admissionHistory,
+            new QueryEnrollmentApplicationsUseCase(
+                applicationRepository, responses, authorization));
   }
 
   @Test
