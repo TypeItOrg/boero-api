@@ -75,6 +75,8 @@ public final class AuthMessages {
       "La ceremonia WebAuthn es inválida o ha expirado.";
   public static final String WEBAUTHN_VERIFICATION_FAILED =
       "No pudimos usar una passkey. Podés reintentar o ingresar con tu contraseña.";
+  public static final String PASSKEY_EMAIL_VERIFICATION_REQUIRED =
+      "Confirmá tu correo electrónico antes de ingresar. Para continuar, ingresá tu documento.";
 
   public static final String EMAIL_VERIFICATION_DURATION_INVALID =
       "Los intervalos de verificación de email deben ser positivos.";
@@ -88,6 +90,11 @@ public final class AuthMessages {
       "El enlace de verificación es obligatorio.";
   public static final String EMAIL_VERIFICATION_TOKEN_FORMAT =
       "El enlace de verificación es inválido.";
+
+  public static final String INSTITUTIONAL_HOST_INVALID =
+      "El acceso institucional solicitado no es válido.";
+  public static final String INSTITUTIONAL_CONTEXT_MISMATCH =
+      "Este acceso pertenece a otra institución.";
 
   private AuthMessages() {}
 }

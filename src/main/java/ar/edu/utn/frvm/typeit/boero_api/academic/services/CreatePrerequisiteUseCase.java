@@ -10,6 +10,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.PrerequisiteReposito
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreatePrerequisiteRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.PrerequisiteResponse;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -19,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class CreatePrerequisiteUseCase {
+  private final AcademicAccessGuard accessGuard;
   private final PrerequisiteRepository prerequisiteRepository;
   private final StudyPlanSpaceRepository studyPlanSpaceRepository;
   private final StudyPlanDraftGuard studyPlanDraftGuard;
@@ -27,6 +31,12 @@ public class CreatePrerequisiteUseCase {
   @Transactional
   public PrerequisiteResponse execute(
       final UUID institutionId, final UUID targetId, final CreatePrerequisiteRequest request) {
+    accessGuard.require(
+        PermissionCode.STUDY_PLAN_CURRICULUM_UPDATE,
+        institutionId,
+        ScopedResource.STUDY_PLAN_SPACE,
+        targetId);
+
     final var target = requireSpace(institutionId, targetId);
     final var plan = studyPlanDraftGuard.lock(institutionId, target.getStudyPlan().getId());
     final var required = requireSpace(institutionId, request.requiredStudyPlanSpaceId());

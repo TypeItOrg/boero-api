@@ -1,6 +1,8 @@
 package ar.edu.utn.frvm.typeit.boero_api.common.exceptions;
 
 public final class ErrorMessages {
+  public static final String INVALID_REQUEST_PARAMETER =
+      "Falta un parámetro obligatorio o su formato es inválido.";
   public static final String INTERNAL_SERVER_ERROR_MESSAGE =
       "Se ha producido un error interno en el servidor.";
 

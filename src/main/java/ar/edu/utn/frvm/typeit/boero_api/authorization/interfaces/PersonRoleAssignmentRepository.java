@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces;
 
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.AccessScope;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import java.util.List;
 import java.util.Optional;
@@ -17,6 +18,10 @@ public interface PersonRoleAssignmentRepository extends JpaRepository<PersonRole
     String getRoleName();
 
     @Nullable String getPermissionCode();
+
+    AccessScope getAccessScope();
+
+    @Nullable UUID getTrainingPathId();
   }
 
   interface RoleAssignmentCount {
@@ -94,8 +99,9 @@ public interface PersonRoleAssignmentRepository extends JpaRepository<PersonRole
 
   @Query(
       """
-      SELECT pra.role.name AS roleName, permission.code AS permissionCode
+      SELECT pra.role.name AS roleName, permission.code AS permissionCode, pra.accessScope AS accessScope, pathId AS trainingPathId
       FROM PersonRoleAssignment pra
+      LEFT JOIN pra.trainingPathIds pathId
       LEFT JOIN RolePermission rp ON rp.role.id = pra.role.id
       LEFT JOIN rp.permission permission
       WHERE pra.person.id = :personId

@@ -1,36 +1,54 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads;
 
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EducationLevel;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Size;
 import lombok.Builder;
+import org.jspecify.annotations.Nullable;
 
 @Builder
 public record AcademicBackgroundDto(
-    @Schema(nullable = true) String secondarySchool,
-    @Schema(nullable = true) String schoolOrigin,
-    @Schema(nullable = true) String currentGradeYear,
-    @Schema(nullable = true) Boolean secondaryCompleted,
-    @Schema(nullable = true) String secondaryDegreeTitle) {
+    @Schema(nullable = true) @Size(max = 255) @Nullable String secondarySchool,
+    @Schema(nullable = true) @Nullable Boolean currentlyStudying,
+    @Schema(nullable = true) @Nullable EducationLevel educationLevel,
+    @Schema(nullable = true) @Size(max = 150) @Nullable String schoolOrigin,
+    @Schema(nullable = true) @Size(max = 50) @Nullable String currentGradeYear,
+    @Schema(nullable = true) @Nullable Boolean levelCompleted,
+    @Schema(nullable = true) @Nullable Boolean secondaryCompleted,
+    @Schema(nullable = true) @Size(max = 150) @Nullable String secondaryDegreeTitle) {
   public AcademicBackgroundDto() {
-    this(null, null, null, null, null);
+    this(null, null, null, null, null, null, null, null);
   }
 
-  public String getSecondarySchool() {
+  public @Nullable String getSecondarySchool() {
     return secondarySchool;
   }
 
-  public String getSchoolOrigin() {
+  public @Nullable String getSchoolOrigin() {
     return schoolOrigin;
   }
 
-  public String getCurrentGradeYear() {
+  public @Nullable Boolean getCurrentlyStudying() {
+    return currentlyStudying;
+  }
+
+  public @Nullable EducationLevel getEducationLevel() {
+    return educationLevel;
+  }
+
+  public @Nullable String getCurrentGradeYear() {
     return currentGradeYear;
   }
 
-  public Boolean getSecondaryCompleted() {
+  public @Nullable Boolean getSecondaryCompleted() {
     return secondaryCompleted;
   }
 
-  public String getSecondaryDegreeTitle() {
+  public @Nullable Boolean getLevelCompleted() {
+    return levelCompleted;
+  }
+
+  public @Nullable String getSecondaryDegreeTitle() {
     return secondaryDegreeTitle;
   }
 }

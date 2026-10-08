@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidCredentialsException;
 import ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.InvalidCurrentPasswordException;
@@ -108,7 +110,7 @@ public class UpdatePersonUseCase {
 
     passwordUser.ifPresent(
         user -> {
-          user.changePassword(passwordEncoder.encode(password));
+          user.changePassword(requireNonNull(passwordEncoder.encode(password)));
           userRepository.save(user);
           sessionRevocationService.revokeInstitutionalSessionsForUser(user.getId());
         });

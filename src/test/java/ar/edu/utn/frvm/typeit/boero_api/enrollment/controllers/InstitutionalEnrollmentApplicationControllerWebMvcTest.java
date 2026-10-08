@@ -34,9 +34,11 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ApproveEnrollmentApp
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.GetEnrollmentApplicationUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListEnrollmentApplicationsUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.RejectEnrollmentApplicationUseCase;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.RequestEnrollmentDocumentsUseCase;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -82,6 +84,7 @@ class InstitutionalEnrollmentApplicationControllerWebMvcTest {
   @MockitoBean private GetEnrollmentApplicationUseCase getEnrollmentApplicationUseCase;
   @MockitoBean private ApproveEnrollmentApplicationUseCase approveEnrollmentApplicationUseCase;
   @MockitoBean private RejectEnrollmentApplicationUseCase rejectEnrollmentApplicationUseCase;
+  @MockitoBean private RequestEnrollmentDocumentsUseCase requestEnrollmentDocumentsUseCase;
 
   @Autowired private MockMvc mockMvc;
 
@@ -103,7 +106,7 @@ class InstitutionalEnrollmentApplicationControllerWebMvcTest {
     final var authentication = authentication();
     stubPermission(PermissionCode.ENROLLMENT_APPLICATION_READ, true);
     when(listEnrollmentApplicationsUseCase.execute(
-            eq(INSTITUTION_ID), isNull(), isNull(), eq(false), any(Pageable.class)))
+            eq(INSTITUTION_ID), isNull(), isNull(), eq(false), eq(false), any(Pageable.class)))
         .thenReturn(
             new PageImpl<>(
                 List.of(response(EnrollmentApplicationStatus.SUBMITTED)), Pageable.ofSize(20), 1));
@@ -117,7 +120,7 @@ class InstitutionalEnrollmentApplicationControllerWebMvcTest {
         .andExpect(jsonPath("$.items[0].status").value("SUBMITTED"));
 
     verify(listEnrollmentApplicationsUseCase)
-        .execute(eq(INSTITUTION_ID), isNull(), isNull(), eq(false), any(Pageable.class));
+        .execute(eq(INSTITUTION_ID), isNull(), isNull(), eq(false), eq(false), any(Pageable.class));
   }
 
   @Test
@@ -133,7 +136,7 @@ class InstitutionalEnrollmentApplicationControllerWebMvcTest {
         .andExpect(status().isForbidden());
 
     verify(listEnrollmentApplicationsUseCase, never())
-        .execute(any(), any(), any(), anyBoolean(), any());
+        .execute(any(), any(), any(), anyBoolean(), anyBoolean(), any());
   }
 
   @Test
@@ -256,7 +259,7 @@ class InstitutionalEnrollmentApplicationControllerWebMvcTest {
             .sessionId(UUID.randomUUID())
             .tokenId("token-id")
             .build();
-    final var auth = new TestingAuthenticationToken(principal, null);
+    final var auth = new TestingAuthenticationToken(principal, "");
     auth.setAuthenticated(true);
     SecurityContextHolder.getContext().setAuthentication(auth);
     return auth;
@@ -272,7 +275,7 @@ class InstitutionalEnrollmentApplicationControllerWebMvcTest {
   }
 
   private EnrollmentApplicationResponse response(
-      final EnrollmentApplicationStatus status, final String rejectionReason) {
+      final EnrollmentApplicationStatus status, final @Nullable String rejectionReason) {
     return EnrollmentApplicationResponse.builder()
         .applicationId(APPLICATION_ID)
         .institutionId(INSTITUTION_ID)

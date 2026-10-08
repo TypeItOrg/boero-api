@@ -1,13 +1,14 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.LastPersonRoleRevocationException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.RoleNotAssignableException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.RoleRepository;
-import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class RevokePersonRoleUseCase {
+  private final RoleAdministrationLock administrationLock;
 
+  private final RoleAssignmentScopeValidator scopeValidator;
+  private final SessionRevocationService sessionRevocationService;
   private final InstitutionPersonResolver institutionPersonResolver;
   private final RoleRepository roleRepository;
   private final PersonRoleAssignmentRepository personRoleAssignmentRepository;
@@ -25,8 +29,11 @@ public class RevokePersonRoleUseCase {
 
   @Transactional
   public void execute(UUID institutionId, UUID personId, UUID roleId, boolean allowAuthority) {
-    Person person =
-        institutionPersonResolver.requirePersonInInstitutionForUpdate(institutionId, personId);
+    administrationLock.lock(institutionId);
+    if (!allowAuthority) {
+      scopeValidator.requireOperation(PermissionCode.INSTITUTION_ROLE_REVOKE);
+    }
+    institutionPersonResolver.requirePersonInInstitutionForUpdate(institutionId, personId);
     Role role =
         roleRepository
             .findByIdAndScopeAndInstitution_Id(roleId, RoleScope.INSTITUTION, institutionId)
@@ -38,10 +45,16 @@ public class RevokePersonRoleUseCase {
     List<PersonRoleAssignment> currentAssignments =
         personRoleAssignmentRepository.findByPerson_IdAndInstitution_Id(personId, institutionId);
 
+    if (!allowAuthority) {
+      currentAssignments.stream()
+          .filter(a -> a.getRole().getId().equals(roleId))
+          .forEach(scopeValidator::requireDelegation);
+    }
     preventRevokingOnlyRole(currentAssignments, role.getId());
     personRoleAssignmentRepository
         .findByPerson_IdAndRole_IdAndInstitution_Id(personId, roleId, institutionId)
         .ifPresent(personRoleAssignmentRepository::delete);
+    sessionRevocationService.revokeInstitutionalSessionsForPerson(personId, institutionId);
     authorizationCacheInvalidator.evictPerson(personId, institutionId);
   }
 

@@ -16,6 +16,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(
@@ -47,28 +48,28 @@ public class Address extends Auditable {
   private String street;
 
   @Column(length = 50)
-  private String number;
+  private @Nullable String number;
 
   @Column(length = 50)
-  private String floor;
+  private @Nullable String floor;
 
   @Column(length = 50)
-  private String apartment;
+  private @Nullable String apartment;
 
-  private String neighborhood;
+  private @Nullable String neighborhood;
 
   @Column(name = "additional_info")
-  private String additionalInfo;
+  private @Nullable String additionalInfo;
 
   public static Address create(
       final Institution institution,
       final City city,
       final String street,
-      final String number,
-      final String floor,
-      final String apartment,
-      final String neighborhood,
-      final String additionalInfo) {
+      final @Nullable String number,
+      final @Nullable String floor,
+      final @Nullable String apartment,
+      final @Nullable String neighborhood,
+      final @Nullable String additionalInfo) {
     return Address.builder()
         .institution(institution)
         .city(city)
@@ -84,11 +85,11 @@ public class Address extends Auditable {
   public void update(
       final City city,
       final String street,
-      final String number,
-      final String floor,
-      final String apartment,
-      final String neighborhood,
-      final String additionalInfo) {
+      final @Nullable String number,
+      final @Nullable String floor,
+      final @Nullable String apartment,
+      final @Nullable String neighborhood,
+      final @Nullable String additionalInfo) {
     this.city = city;
     this.street = street;
     this.number = number;

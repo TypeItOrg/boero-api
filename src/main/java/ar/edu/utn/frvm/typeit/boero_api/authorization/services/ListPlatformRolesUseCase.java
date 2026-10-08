@@ -50,7 +50,8 @@ public class ListPlatformRolesUseCase {
           rolesPage.map(role -> PlatformRoleListItemResponse.from(role, 0, 0)));
     }
 
-    final List<UUID> roleIds = rolesPage.getContent().stream().map(Role::getId).toList();
+    final List<UUID> roleIds =
+        rolesPage.getContent().stream().map(mappedRole -> mappedRole.getId()).toList();
     final Map<UUID, Long> assignmentCounts =
         assignmentRepository.countByRoleIds(roleIds).stream()
             .collect(Collectors.toMap(row -> row.getRoleId(), row -> row.getAssignmentCount()));

@@ -4,8 +4,12 @@ import static ar.edu.utn.frvm.typeit.boero_api.auth.exceptions.AuthMessages.PASS
 
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ApplicationException;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorCategory;
+import java.io.Serial;
 
 public class PasskeyNotFoundException extends ApplicationException {
+
+  @Serial private static final long serialVersionUID = 1L;
+
   public PasskeyNotFoundException() {
     super(ErrorCategory.NOT_FOUND, PASSKEY_NOT_FOUND);
   }

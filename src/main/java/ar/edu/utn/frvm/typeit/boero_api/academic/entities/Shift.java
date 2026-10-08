@@ -20,6 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(
@@ -47,13 +48,13 @@ public class Shift extends SoftDeletable {
   private String name;
 
   @Column(length = 1000)
-  private String description;
+  private @Nullable String description;
 
   @Column(nullable = false)
   private boolean active;
 
   public static Shift create(
-      final Institution institution, final String name, final String description) {
+      final Institution institution, final String name, final @Nullable String description) {
     return Shift.builder()
         .institution(institution)
         .name(AcademicNameNormalizer.display(name))
@@ -62,7 +63,7 @@ public class Shift extends SoftDeletable {
         .build();
   }
 
-  public void update(final String name, final String description) {
+  public void update(final String name, final @Nullable String description) {
     this.name = AcademicNameNormalizer.display(name);
     this.description = description;
   }

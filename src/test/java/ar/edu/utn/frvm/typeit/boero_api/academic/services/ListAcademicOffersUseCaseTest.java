@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.academic.services;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -10,6 +11,7 @@ import static org.mockito.Mockito.when;
 import ar.edu.utn.frvm.typeit.boero_api.academic.exceptions.AcademicValidationException;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentPeriodRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -34,6 +36,8 @@ class ListAcademicOffersUseCaseTest {
   private static final UUID INSTITUTION_ID = UUID.randomUUID();
 
   @Mock private StudyPlanRepository studyPlanRepository;
+  @Mock private EnrollmentPeriodRepository enrollmentPeriodRepository;
+  @Mock private Clock clock;
 
   @Spy
   private BusinessDateProvider businessDateProvider =
@@ -60,9 +64,9 @@ class ListAcademicOffersUseCaseTest {
     assertThat(mappedPageable.getPageNumber()).isEqualTo(2);
     assertThat(mappedPageable.getPageSize()).isEqualTo(10);
     assertThat(mappedPageable.getSort().toList())
-        .extracting(Sort.Order::getProperty)
+        .extracting(mappedOrder -> mappedOrder.getProperty())
         .containsExactly("trainingPath.name", "effectiveFrom", "id");
-    assertThat(mappedPageable.getSort().getOrderFor("id").getDirection())
+    assertThat(requireNonNull(mappedPageable.getSort().getOrderFor("id")).getDirection())
         .isEqualTo(Sort.Direction.ASC);
   }
 

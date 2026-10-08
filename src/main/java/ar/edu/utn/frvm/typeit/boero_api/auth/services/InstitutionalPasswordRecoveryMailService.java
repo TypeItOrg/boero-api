@@ -6,7 +6,6 @@ import ar.edu.utn.frvm.typeit.boero_api.common.mail.MailMessage;
 import ar.edu.utn.frvm.typeit.boero_api.common.mail.MailMessages;
 import ar.edu.utn.frvm.typeit.boero_api.common.mail.MailProperties;
 import ar.edu.utn.frvm.typeit.boero_api.common.mail.MailSender;
-import java.net.URI;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
@@ -19,18 +18,21 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 @NullMarked
 public class InstitutionalPasswordRecoveryMailService {
 
-  private static final String LOGO_URL = "https://i.ibb.co/RGwrB7B8/boero-logo.png";
   private static final String TEMPLATE_NAME = "mail/institutional-password-recovery";
 
   private final MailSender mailSender;
   private final MailProperties mailProperties;
   private final PasswordRecoveryProperties passwordRecoveryProperties;
   private final SpringTemplateEngine templateEngine;
+  private final FrontendAccessUrls accessUrls;
 
   public void send(final InstitutionalPasswordRecoveryRequested event) {
     final Context context = new Context(Locale.forLanguageTag("es"));
-    context.setVariable("resetUrl", buildResetUrl(event.token()));
-    context.setVariable("logoUrl", buildLogoUrl());
+    context.setVariable(
+        "resetUrl",
+        accessUrls.tokenUrl(
+            event.publicSubdomain(), "/auth/password-recovery/reset", event.token()));
+    context.setVariable("logoUrl", accessUrls.boeroLogoUrl());
     context.setVariable("institutionName", event.institutionName());
     context.setVariable("fullName", event.fullName());
     context.setVariable(
@@ -42,19 +44,5 @@ public class InstitutionalPasswordRecoveryMailService {
             event.recipientEmail(),
             MailMessages.PASSWORD_RECOVERY_SUBJECT,
             templateEngine.process(TEMPLATE_NAME, context)));
-  }
-
-  private String buildLogoUrl() {
-    return LOGO_URL;
-  }
-
-  private String buildResetUrl(final String token) {
-    final URI frontendUri = URI.create(passwordRecoveryProperties.frontendUrl());
-    final String separator = frontendUri.getQuery() == null ? "?" : "&";
-    return frontendUri.toString().replaceAll("/$", "")
-        + "/auth/password-recovery/reset"
-        + separator
-        + "token="
-        + token;
   }
 }

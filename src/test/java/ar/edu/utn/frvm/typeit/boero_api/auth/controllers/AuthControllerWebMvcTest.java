@@ -249,21 +249,11 @@ class AuthControllerWebMvcTest {
         .build();
   }
 
-  private static UserPayload userPayload() {
-    return UserPayload.builder()
-        .userId(USER_ID)
-        .name("Ana")
-        .lastName("Garcia")
-        .documentNumber("12345678")
-        .institutionId(INSTITUTION_ID)
-        .build();
-  }
-
   private static JwtAuthenticatedUser principal() {
     return institutionalPrincipal(USER_ID, INSTITUTION_ID, SESSION_ID);
   }
 
   private static TestingAuthenticationToken authentication(JwtAuthenticatedUser principal) {
-    return new TestingAuthenticationToken(principal, null);
+    return new TestingAuthenticationToken(principal, "");
   }
 }

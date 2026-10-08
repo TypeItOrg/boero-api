@@ -41,7 +41,7 @@ class PasskeyCredentialRepositoryTest {
     entityManager.flush();
 
     assertThat(passkeyCredentialRepository.findActiveByUserId(user.getId()))
-        .extracting(PasskeyCredential::getCredentialId)
+        .extracting(credential -> credential.getCredentialId())
         .containsExactly("credential-active");
     assertThat(passkeyCredentialRepository.countActiveByUserId(user.getId())).isEqualTo(1L);
     assertThat(passkeyCredentialRepository.existsActiveByUserId(user.getId())).isTrue();
@@ -95,7 +95,7 @@ class PasskeyCredentialRepositoryTest {
     final byte[] handle = user.getWebauthnUserHandle();
     assertThat(handle).hasSize(32);
     assertThat(userRepository.findByWebauthnUserHandle(handle.clone()))
-        .map(User::getId)
+        .map(foundUser -> foundUser.getId())
         .contains(user.getId());
   }
 
@@ -109,7 +109,7 @@ class PasskeyCredentialRepositoryTest {
     entityManager.clear();
 
     assertThat(passkeyCredentialRepository.findByCredentialId(largeCredentialId))
-        .map(PasskeyCredential::getCredentialId)
+        .map(credential -> credential.getCredentialId())
         .contains(largeCredentialId);
   }
 

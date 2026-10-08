@@ -26,6 +26,7 @@ import org.springframework.data.redis.core.ValueOperations;
 
 @ExtendWith(MockitoExtension.class)
 class LoginAttemptServiceTest {
+  @Mock private InstitutionalHostContext hostContext;
 
   @Mock private StringRedisTemplate redisTemplate;
   @Mock private ValueOperations<String, String> valueOperations;
@@ -37,6 +38,7 @@ class LoginAttemptServiceTest {
     lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
     service =
         new LoginAttemptService(
+            hostContext,
             redisTemplate,
             new WebAuthnProperties(
                 "localhost",
@@ -91,6 +93,7 @@ class LoginAttemptServiceTest {
     final UUID userId = UUID.randomUUID();
     final UUID institutionId = UUID.randomUUID();
     final String stored = userId + "|" + institutionId + "|true|" + Instant.now().toEpochMilli();
+    when(valueOperations.get("boero:auth:login-attempt:" + id)).thenReturn(stored);
     when(valueOperations.getAndDelete("boero:auth:login-attempt:" + id)).thenReturn(stored);
 
     final LoginAttempt claimed = service.claim(id);
@@ -104,7 +107,7 @@ class LoginAttemptServiceTest {
   @Test
   @DisplayName("Should reject claim for blank and already consumed attempt ids")
   void claim_rejectsMissingIds() {
-    when(valueOperations.getAndDelete(anyString())).thenReturn(null);
+    when(valueOperations.get(anyString())).thenReturn(null);
 
     assertThatThrownBy(() -> service.claim("consumed"))
         .isInstanceOf(InvalidLoginAttemptException.class);

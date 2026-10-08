@@ -38,7 +38,9 @@ public class PasswordLoginWithAttemptUseCase {
         InstitutionalUsername.format(user.getInstitutionId(), user.getDocumentNumber());
     final Authentication authentication =
         credentialsAuthenticator.authenticate(principal, request.password());
-    final User authenticated = (User) authentication.getPrincipal();
+    if (!(authentication.getPrincipal() instanceof User authenticated)) {
+      throw new InvalidCredentialsException();
+    }
     if (!authenticated.isEnabled()) {
       throw new InvalidCredentialsException();
     }

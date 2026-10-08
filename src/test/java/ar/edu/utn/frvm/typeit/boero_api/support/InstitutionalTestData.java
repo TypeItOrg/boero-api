@@ -7,9 +7,13 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Province;
 import jakarta.persistence.EntityManager;
+import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class InstitutionalTestData {
+
+  private static final AtomicInteger ISO_COUNTER = new AtomicInteger(1);
 
   private InstitutionalTestData() {}
 
@@ -78,6 +82,14 @@ public final class InstitutionalTestData {
   }
 
   private static String isoCode() {
-    return UUID.randomUUID().toString().replace("-", "").substring(0, 3).toUpperCase();
+    int next = (ISO_COUNTER.getAndIncrement() - 1) % 46655 + 1;
+    String code =
+        String.format(Locale.ROOT, "%3s", Integer.toString(next, 36))
+            .replace(' ', '0')
+            .toUpperCase(Locale.ROOT);
+    if ("ARG".equals(code)) {
+      return isoCode();
+    }
+    return code;
   }
 }

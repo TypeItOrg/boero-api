@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.controllers;
 
 import static ar.edu.utn.frvm.typeit.boero_api.security.handlers.SecurityErrorMessages.DEFAULT_FORBIDDEN_MESSAGE;
+import static java.util.Objects.requireNonNull;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedPlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.requests.PlatformLoginRequest;
@@ -52,7 +53,7 @@ public class PlatformAuthController {
   @GetMapping(version = Version.V1, path = "/me")
   public PlatformAccountResponse me(Authentication authentication) {
     JwtAuthenticatedPlatformAccount principal =
-        (JwtAuthenticatedPlatformAccount) authentication.getPrincipal();
+        (JwtAuthenticatedPlatformAccount) requireNonNull(authentication.getPrincipal());
     return getCurrentPlatformAccountUseCase.execute(principal);
   }
 

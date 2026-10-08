@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.institutional.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.SessionRevocationService;
@@ -57,7 +59,7 @@ public class UpdatePersonByAdminUseCase {
           userRepository
               .findByPerson_IdAndInstitution_Id(personId, institutionId)
               .orElseThrow(PersonNotFoundException::new);
-      user.changePassword(passwordEncoder.encode(request.password()));
+      user.changePassword(requireNonNull(passwordEncoder.encode(request.password())));
       userRepository.save(user);
       sessionRevocationService.revokeInstitutionalSessionsForUser(user.getId());
     }

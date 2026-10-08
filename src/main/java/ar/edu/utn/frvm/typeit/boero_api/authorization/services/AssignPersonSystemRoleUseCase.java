@@ -15,6 +15,7 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.InstitutionNotF
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.InstitutionRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,7 +63,11 @@ public class AssignPersonSystemRoleUseCase {
 
   @Transactional
   public void execute(Person person, Role role, boolean revokeSessions) {
-    SystemRoleCode technicalCode = role.isSystem() ? SystemRoleCode.valueOf(role.getCode()) : null;
+    institutionRepository
+        .findByIdForUpdate(person.getInstitution().getId())
+        .orElseThrow(InstitutionNotFoundException::new);
+    @Nullable SystemRoleCode technicalCode =
+        role.isSystem() ? SystemRoleCode.valueOf(role.getCode()) : null;
     assign(person, role, technicalCode, revokeSessions, true);
     authorizationCacheInvalidator.evictPerson(person.getId(), person.getInstitution().getId());
   }
@@ -97,7 +102,8 @@ public class AssignPersonSystemRoleUseCase {
   }
 
   private void applyApplicantRolePolicy(
-      final List<PersonRoleAssignment> currentAssignments, final SystemRoleCode roleCode) {
+      final List<PersonRoleAssignment> currentAssignments,
+      final @Nullable SystemRoleCode roleCode) {
     for (final PersonRoleAssignment assignment : currentAssignments) {
       final boolean assignmentIsApplicant =
           assignment.getRole().getCode().equals(SystemRoleCode.APPLICANT.name());

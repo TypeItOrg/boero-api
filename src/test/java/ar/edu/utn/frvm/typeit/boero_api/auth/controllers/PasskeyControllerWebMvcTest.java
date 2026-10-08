@@ -17,6 +17,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PasskeyAuthenticationOptionsResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PasskeyRegistrationOptionsResponse;
 import ar.edu.utn.frvm.typeit.boero_api.auth.payloads.responses.PasskeyResponse;
+import ar.edu.utn.frvm.typeit.boero_api.auth.services.DiscoverablePasskeyLoginUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsPlatformSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.IsSessionActiveUseCase;
 import ar.edu.utn.frvm.typeit.boero_api.auth.services.JwtService;
@@ -71,6 +72,7 @@ class PasskeyControllerWebMvcTest {
   private RequestPasskeyAuthenticationOptionsUseCase requestAuthenticationOptionsUseCase;
 
   @MockitoBean private VerifyPasskeyAuthenticationUseCase verifyPasskeyAuthenticationUseCase;
+  @MockitoBean private DiscoverablePasskeyLoginUseCase discoverablePasskeyLoginUseCase;
   @MockitoBean private ReAuthenticateUseCase reAuthenticateUseCase;
   @MockitoBean private JwtService jwtService;
   @MockitoBean private WebAuthnProperties webAuthnProperties;
@@ -221,6 +223,6 @@ class PasskeyControllerWebMvcTest {
   }
 
   private static TestingAuthenticationToken authentication(JwtAuthenticatedUser principal) {
-    return new TestingAuthenticationToken(principal, null);
+    return new TestingAuthenticationToken(principal, "");
   }
 }

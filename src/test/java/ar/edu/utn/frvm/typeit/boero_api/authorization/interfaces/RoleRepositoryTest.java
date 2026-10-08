@@ -69,7 +69,9 @@ class RoleRepositoryTest {
             null,
             PageRequest.of(0, 10, Sort.by("name")));
 
-    assertThat(result.getContent()).extracting(Role::getName).containsExactly("Preceptores");
+    assertThat(result.getContent())
+        .extracting(mappedRole -> mappedRole.getName())
+        .containsExactly("Preceptores");
   }
 
   private static Role role(String name, Institution institution, boolean system) {

@@ -29,6 +29,7 @@ import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.ListMyEnrollmentAppl
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -161,7 +162,7 @@ class MyEnrollmentApplicationControllerWebMvcTest {
             .sessionId(UUID.randomUUID())
             .tokenId("token-id")
             .build();
-    final var auth = new TestingAuthenticationToken(user, null);
+    final var auth = new TestingAuthenticationToken(user, "");
     auth.setAuthenticated(true);
     return auth;
   }
@@ -171,7 +172,7 @@ class MyEnrollmentApplicationControllerWebMvcTest {
   }
 
   private EnrollmentApplicationResponse response(
-      final EnrollmentApplicationStatus status, final String rejectionReason) {
+      final EnrollmentApplicationStatus status, final @Nullable String rejectionReason) {
     return EnrollmentApplicationResponse.builder()
         .applicationId(APPLICATION_ID)
         .institutionId(INSTITUTION_ID)

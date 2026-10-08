@@ -4,13 +4,14 @@ import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
 import java.time.Instant;
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 
 @MappedSuperclass
 @Getter
 public abstract class SoftDeletable extends Auditable {
 
   @Column(name = "deleted_at")
-  private Instant deletedAt;
+  private @Nullable Instant deletedAt;
 
   public boolean isDeleted() {
     return deletedAt != null;

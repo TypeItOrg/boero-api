@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.PersonRoleAssignment;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
@@ -22,6 +23,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ListPersonRolesUseCaseTest {
+
+  @org.mockito.Spy
+  private PersonRoleResponseFactory responseFactory =
+      new PersonRoleResponseFactory(org.mockito.Mockito.mock(TrainingPathRepository.class));
 
   @Mock private InstitutionPersonResolver institutionPersonResolver;
   @Mock private PersonRoleAssignmentRepository personRoleAssignmentRepository;

@@ -64,7 +64,7 @@ class PermissionCatalogControllerWebMvcTest {
   void list_returnsForbiddenForInstitutionalPrincipal() throws Exception {
     var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     stubPlatformAdminAccess(false);
 
     mockMvc
@@ -75,14 +75,13 @@ class PermissionCatalogControllerWebMvcTest {
   @Test
   @DisplayName("Should return institution permissions for platform admin")
   void list_returnsInstitutionPermissionsForPlatformAdmin() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     stubPlatformAdminAccess(true);
 
     mockMvc
         .perform(get("/api/v1/admin/permissions").principal(authentication))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(70))
+        .andExpect(jsonPath("$.length()").value(85))
         .andExpect(jsonPath("$[0].scope").value("INSTITUTION"))
         .andExpect(jsonPath("$[?(@.code == 'institution:study-plan:delete')]").isNotEmpty())
         .andExpect(jsonPath("$[?(@.code == 'institution:study-plan:restore')]").isNotEmpty())
@@ -90,6 +89,11 @@ class PermissionCatalogControllerWebMvcTest {
         .andExpect(jsonPath("$[?(@.code == 'institution:shift:restore')]").isNotEmpty())
         .andExpect(jsonPath("$[?(@.code == 'institution:academic-offer:read')]").isNotEmpty())
         .andExpect(jsonPath("$[?(@.code == 'institution:audit:read')]").isNotEmpty())
+        .andExpect(jsonPath("$[?(@.code == 'institution:document-catalog:read')]").isNotEmpty())
+        .andExpect(jsonPath("$[?(@.code == 'institution:document-catalog:manage')]").isNotEmpty())
+        .andExpect(
+            jsonPath("$[?(@.code == 'institution:enrollment-document-request:create')]")
+                .isNotEmpty())
         .andExpect(jsonPath("$[?(@.scope == 'PLATFORM')]").isEmpty());
   }
 

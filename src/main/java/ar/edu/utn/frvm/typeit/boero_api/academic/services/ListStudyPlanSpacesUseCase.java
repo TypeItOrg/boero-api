@@ -6,6 +6,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceInstru
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceInstrumentOptionResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceResponse;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -16,12 +19,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ListStudyPlanSpacesUseCase {
+  private final AcademicAccessGuard accessGuard;
   private final StudyPlanSpaceRepository studyPlanSpaceRepository;
   private final StudyPlanRepository studyPlanRepository;
   private final StudyPlanSpaceInstrumentRepository studyPlanSpaceInstrumentRepository;
 
   @Transactional(readOnly = true)
   public List<StudyPlanSpaceResponse> execute(final UUID institutionId, final UUID studyPlanId) {
+    accessGuard.require(
+        PermissionCode.STUDY_PLAN_READ, institutionId, ScopedResource.STUDY_PLAN, studyPlanId);
+
     studyPlanRepository
         .findByIdAndInstitution_Id(studyPlanId, institutionId)
         .orElseThrow(StudyPlanNotFoundException::new);

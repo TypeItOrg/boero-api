@@ -4,6 +4,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.entities.TrainingPath;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(
     requiredProperties = {
@@ -20,9 +21,9 @@ public record TrainingPathResponse(
     UUID institutionId,
     String institutionName,
     String name,
-    @Schema(nullable = true) String description,
+    @Schema(nullable = true) @Nullable String description,
     boolean active,
-    @Schema(nullable = true) Instant deletedAt) {
+    @Schema(nullable = true) @Nullable Instant deletedAt) {
 
   public static TrainingPathResponse from(final TrainingPath path) {
     return new TrainingPathResponse(

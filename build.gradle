@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'net.ltgt.errorprone' version '5.1.1'
     id 'org.springframework.boot' version '4.0.6'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'com.diffplug.spotless' version '8.7.0'
@@ -20,6 +21,7 @@ repositories {
 dependencies {
     implementation platform('software.amazon.awssdk:bom:2.54.4')
     implementation 'software.amazon.awssdk:s3'
+    implementation 'org.apache.pdfbox:pdfbox:3.0.8'
     annotationProcessor 'org.projectlombok:lombok'
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
@@ -90,3 +92,5 @@ tasks.register('integrationTest', Test) {
     }
     shouldRunAfter tasks.named('fastTest')
 }
+
+apply from: "gradle/static-analysis.gradle"

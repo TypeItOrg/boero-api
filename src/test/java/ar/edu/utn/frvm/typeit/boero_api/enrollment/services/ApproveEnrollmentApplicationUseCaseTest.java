@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
@@ -30,6 +31,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -110,11 +112,18 @@ class ApproveEnrollmentApplicationUseCaseTest {
 
   private ApproveEnrollmentApplicationUseCase useCase() {
     return new ApproveEnrollmentApplicationUseCase(
+        Mockito.mock(EnrollmentApplicationResponseFactory.class),
+        org.mockito.Mockito.mock(AcademicAccessGuard.class),
         enrollmentApplicationRepository,
         studentRepository,
         personRepository,
         Clock.systemUTC(),
-        new BusinessDateProvider(Clock.systemUTC()));
+        new BusinessDateProvider(Clock.systemUTC()),
+        Mockito.mock(EnrollmentApplicationCourseApprovalService.class),
+        Mockito.mock(EnrollmentInstitutionLock.class),
+        Mockito.mock(EnrollmentDocumentRequirementsService.class),
+        Mockito.mock(EnrollmentDocumentAudit.class),
+        Mockito.mock(EnrollmentAdmissionHistory.class));
   }
 
   private void stubApplication() {

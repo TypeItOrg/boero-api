@@ -105,7 +105,7 @@ class RoleControllerWebMvcTest {
   @DisplayName("Should list paginated institutional roles for an authorized caller")
   void listInstitutionRoles_returnsPaginatedRolesForAuthorizedCaller() throws Exception {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
     stubAnyRolePermission(true);
     when(institutionRoleManagementService.list(eq(INSTITUTION_ID), eq("doc"), any(Pageable.class)))
         .thenReturn(
@@ -153,7 +153,7 @@ class RoleControllerWebMvcTest {
   @DisplayName("Should list person roles for institutional authority")
   void listPersonRoles_returnsRolesForAuthorizedCaller() throws Exception {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
     stubPermission(PermissionCode.INSTITUTION_ROLE_ASSIGN, true);
     stubAnyRolePermission(true);
     when(listPersonRolesUseCase.execute(INSTITUTION_ID, PERSON_ID))
@@ -175,7 +175,7 @@ class RoleControllerWebMvcTest {
   @DisplayName("Should forbid listing roles from another institution")
   void listPersonRoles_returnsForbiddenForDifferentInstitution() throws Exception {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
     stubPermission(PermissionCode.INSTITUTION_ROLE_ASSIGN, true);
     stubAnyRolePermission(true);
 
@@ -196,7 +196,7 @@ class RoleControllerWebMvcTest {
       "Should forbid institutional principal without assign permission from assigning roles")
   void assignPersonRole_returnsForbiddenWithoutPermission() throws Exception {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
     stubPermission(PermissionCode.INSTITUTION_ROLE_ASSIGN, false);
 
     mockMvc
@@ -207,7 +207,10 @@ class RoleControllerWebMvcTest {
                     PERSON_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
-                .content("{\"roleId\":\"" + ROLE_ID + "\"}"))
+                .content(
+                    "{\"roleId\":\""
+                        + ROLE_ID
+                        + "\",\"accessScope\":\"INSTITUTION\",\"trainingPathIds\":[]}"))
         .andExpect(status().isForbidden());
   }
 
@@ -215,7 +218,7 @@ class RoleControllerWebMvcTest {
   @DisplayName("Should assign role for institutional authority")
   void assignPersonRole_returnsCreatedForAuthorizedCaller() throws Exception {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
     stubPermission(PermissionCode.INSTITUTION_ROLE_ASSIGN, true);
     stubAnyRolePermission(true);
     when(assignPersonRoleUseCase.execute(
@@ -230,7 +233,10 @@ class RoleControllerWebMvcTest {
                     PERSON_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
-                .content("{\"roleId\":\"" + ROLE_ID + "\"}"))
+                .content(
+                    "{\"roleId\":\""
+                        + ROLE_ID
+                        + "\",\"accessScope\":\"INSTITUTION\",\"trainingPathIds\":[]}"))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.technicalCode").value("TEACHER"));
   }
@@ -239,7 +245,7 @@ class RoleControllerWebMvcTest {
   @DisplayName("Should revoke role for institutional authority with revoke permission")
   void revokePersonRole_returnsNoContentForAuthorizedCaller() throws Exception {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
     stubPermission(PermissionCode.INSTITUTION_ROLE_REVOKE, true);
 
     mockMvc
@@ -259,7 +265,7 @@ class RoleControllerWebMvcTest {
   @DisplayName("Should list system roles for institutional authority")
   void listSystemRoles_returnsCatalogForAuthorizedCaller() throws Exception {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
     stubPermission(PermissionCode.INSTITUTION_ROLE_ASSIGN, true);
     stubAnyRolePermission(true);
     when(listSystemRolesUseCase.execute())
@@ -279,8 +285,7 @@ class RoleControllerWebMvcTest {
   @Test
   @DisplayName("Should bootstrap institutional authority for platform admin")
   void bootstrapInstitutionalAuthority_returnsCreatedForPlatformAdmin() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     stubPlatformAdminAccess(true);
     when(bootstrapInstitutionalAuthorityUseCase.execute(INSTITUTION_ID, PERSON_ID))
         .thenReturn(personRoleResponse(SystemRoleCode.INSTITUTIONAL_AUTHORITY));
@@ -301,7 +306,7 @@ class RoleControllerWebMvcTest {
   void bootstrapInstitutionalAuthority_returnsForbiddenForInstitutionalPrincipal()
       throws Exception {
     var authentication =
-        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), null);
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
     stubPlatformAdminAccess(false);
 
     mockMvc
@@ -317,8 +322,7 @@ class RoleControllerWebMvcTest {
   @Test
   @DisplayName("Should allow platform admin to list roles for any institution")
   void listPersonRoles_returnsRolesForPlatformAdmin() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPlatformAdminAccess(true);
     when(listPersonRolesUseCase.execute(INSTITUTION_ID, PERSON_ID))
@@ -338,8 +342,7 @@ class RoleControllerWebMvcTest {
   @Test
   @DisplayName("Should allow platform admin to assign roles for any institution")
   void assignPersonRole_returnsCreatedForPlatformAdmin() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPlatformAdminAccess(true);
     when(assignPersonRoleUseCase.execute(
@@ -354,7 +357,10 @@ class RoleControllerWebMvcTest {
                     PERSON_ID)
                 .principal(authentication)
                 .contentType(APPLICATION_JSON)
-                .content("{\"roleId\":\"" + ROLE_ID + "\"}"))
+                .content(
+                    "{\"roleId\":\""
+                        + ROLE_ID
+                        + "\",\"accessScope\":\"INSTITUTION\",\"trainingPathIds\":[]}"))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.technicalCode").value("TEACHER"));
   }
@@ -362,8 +368,7 @@ class RoleControllerWebMvcTest {
   @Test
   @DisplayName("Should allow platform admin to revoke roles for any institution")
   void revokePersonRole_returnsNoContentForPlatformAdmin() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPlatformAdminAccess(true);
 
@@ -383,8 +388,7 @@ class RoleControllerWebMvcTest {
   @Test
   @DisplayName("Should allow platform admin to list system roles through admin endpoint")
   void listSystemRoles_returnsCatalogForPlatformAdmin() throws Exception {
-    var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+    var authentication = new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     stubPlatformAdminAccess(true);
     when(listSystemRolesUseCase.execute())
@@ -403,6 +407,47 @@ class RoleControllerWebMvcTest {
 
   private void stubPermission(PermissionCode permission, boolean allowed) {
     when(authorizationService.hasPermission(any(), eq(permission))).thenReturn(allowed);
+  }
+
+  @Test
+  void rejectsLegacyRoleWriteWithoutExplicitScope() throws Exception {
+    var authentication =
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
+    mockMvc
+        .perform(
+            post(
+                    "/api/v1/institutions/{institutionId}/people/{personId}/roles",
+                    INSTITUTION_ID,
+                    PERSON_ID)
+                .principal(authentication)
+                .contentType(APPLICATION_JSON)
+                .content("{\"roleId\":\"" + ROLE_ID + "\"}"))
+        .andExpect(status().isBadRequest());
+    org.mockito.Mockito.verifyNoInteractions(assignPersonRoleUseCase);
+  }
+
+  @Test
+  void rejectsDuplicatedTrainingPathsBeforeCallingTheUseCase() throws Exception {
+    var authentication =
+        new TestingAuthenticationToken(institutionalPrincipal(USER_ID, INSTITUTION_ID), "");
+    mockMvc
+        .perform(
+            post(
+                    "/api/v1/institutions/{institutionId}/people/{personId}/roles",
+                    INSTITUTION_ID,
+                    PERSON_ID)
+                .principal(authentication)
+                .contentType(APPLICATION_JSON)
+                .content(
+                    "{\"roleId\":\""
+                        + ROLE_ID
+                        + "\",\"accessScope\":\"TRAINING_PATHS\",\"trainingPathIds\":[\""
+                        + INSTITUTION_ID
+                        + "\",\""
+                        + INSTITUTION_ID
+                        + "\"]}"))
+        .andExpect(status().isBadRequest());
+    org.mockito.Mockito.verifyNoInteractions(assignPersonRoleUseCase);
   }
 
   private void stubAnyRolePermission(boolean allowed) {

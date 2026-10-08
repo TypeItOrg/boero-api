@@ -4,6 +4,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.entities.User;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.UserRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.web.webauthn.api.Bytes;
 import org.springframework.security.web.webauthn.api.ImmutablePublicKeyCredentialUserEntity;
 import org.springframework.security.web.webauthn.api.PublicKeyCredentialUserEntity;
@@ -19,7 +20,7 @@ public class PasskeyUserEntityRepository implements PublicKeyCredentialUserEntit
 
   @Override
   @Transactional(readOnly = true)
-  public PublicKeyCredentialUserEntity findById(final Bytes id) {
+  public @Nullable PublicKeyCredentialUserEntity findById(final Bytes id) {
     if (id == null) {
       return null;
     }
@@ -31,7 +32,7 @@ public class PasskeyUserEntityRepository implements PublicKeyCredentialUserEntit
 
   @Override
   @Transactional(readOnly = true)
-  public PublicKeyCredentialUserEntity findByUsername(final String username) {
+  public @Nullable PublicKeyCredentialUserEntity findByUsername(final String username) {
     if (username == null || username.isBlank()) {
       return null;
     }
@@ -53,7 +54,7 @@ public class PasskeyUserEntityRepository implements PublicKeyCredentialUserEntit
   @Override
   public void delete(final Bytes id) {}
 
-  private PublicKeyCredentialUserEntity toUserEntity(final User user) {
+  private @Nullable PublicKeyCredentialUserEntity toUserEntity(final User user) {
     final byte[] handle = user.getWebauthnUserHandle();
     if (handle == null) {
       return null;

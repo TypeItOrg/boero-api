@@ -53,7 +53,7 @@ class PersonRoleAssignmentRepositoryTest {
   @BeforeEach
   void setUp() {
     institution = createInstitution(entityManager, "boero");
-    permissionRoleSeed.run(null);
+    permissionRoleSeed.run(new org.springframework.boot.DefaultApplicationArguments());
     authority = persist(entityManager, person(institution, "11111111"));
     student = persist(entityManager, person(institution, "22222222"));
     assignPersonSystemRoleUseCase.execute(authority, SystemRoleCode.INSTITUTIONAL_AUTHORITY, false);
@@ -91,6 +91,8 @@ class PersonRoleAssignmentRepositoryTest {
             RoleScope.INSTITUTION);
 
     assertThat(roles).hasSize(SystemRoleCode.values().length);
-    assertThat(roles).extracting(Role::getCode).contains(SystemRoleCode.TEACHER.name());
+    assertThat(roles)
+        .extracting(mappedRole -> mappedRole.getCode())
+        .contains(SystemRoleCode.TEACHER.name());
   }
 }

@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import org.jspecify.annotations.Nullable;
 
 public record UpdatePlatformAccountRequest(
     @NotBlank(message = ValidationMessages.FIRST_NAME_REQUIRED)
@@ -28,4 +29,4 @@ public record UpdatePlatformAccountRequest(
     @Pattern(
             regexp = "^$|(?s:.{" + PASSWORD_MIN + "," + PASSWORD_MAX + "})$",
             message = ValidationMessages.PASSWORD_RANGE)
-        String password) {}
+        @Nullable String password) {}

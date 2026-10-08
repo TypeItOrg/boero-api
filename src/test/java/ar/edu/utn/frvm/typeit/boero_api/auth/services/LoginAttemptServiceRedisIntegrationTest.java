@@ -31,6 +31,8 @@ import org.testcontainers.utility.DockerImageName;
 class LoginAttemptServiceRedisIntegrationTest {
 
   @Container
+  // The Testcontainers lifecycle owns and stops this shared container.
+  @SuppressWarnings("resource")
   static final GenericContainer<?> REDIS =
       new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
 
@@ -45,6 +47,7 @@ class LoginAttemptServiceRedisIntegrationTest {
     redisTemplate.afterPropertiesSet();
     service =
         new LoginAttemptService(
+            org.mockito.Mockito.mock(InstitutionalHostContext.class),
             redisTemplate,
             new WebAuthnProperties(
                 "localhost",

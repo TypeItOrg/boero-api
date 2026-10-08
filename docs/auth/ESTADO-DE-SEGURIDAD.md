@@ -1,4 +1,4 @@
-# Estado de Seguridad, Aislamiento y Concurrencia
+# ESTADO DE SEGURIDAD, AISLAMIENTO Y CONCURRENCIA
 
 ## Propósito
 

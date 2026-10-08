@@ -66,6 +66,7 @@ class RefreshTokenPostgresIntegrationTest {
   @Autowired private EntityManager entityManager;
   @Autowired private PlatformTransactionManager transactionManager;
 
+  @MockitoBean private InstitutionalHostContext hostContext;
   @MockitoBean private JwtService jwtService;
   @MockitoBean private JwtProperties jwtProperties;
   @MockitoBean private CacheManager cacheManager;
@@ -94,10 +95,10 @@ class RefreshTokenPostgresIntegrationTest {
     inTransaction(
         () -> {
           assertThat(refreshTokenRepository.findByFamilyId(fixture.familyId()))
-              .allMatch(RefreshToken::isRevoked);
+              .allMatch(mappedRefreshToken -> mappedRefreshToken.isRevoked());
           assertThat(userSessionRepository.findById(fixture.sessionId()))
               .get()
-              .returns(false, UserSession::isActive);
+              .returns(false, mappedUserSession -> mappedUserSession.isActive());
           return null;
         });
   }
@@ -136,10 +137,10 @@ class RefreshTokenPostgresIntegrationTest {
     inTransaction(
         () -> {
           assertThat(refreshTokenRepository.findByFamilyId(fixture.familyId()))
-              .allMatch(RefreshToken::isRevoked);
+              .allMatch(mappedRefreshToken -> mappedRefreshToken.isRevoked());
           assertThat(userSessionRepository.findById(fixture.sessionId()))
               .get()
-              .returns(false, UserSession::isActive);
+              .returns(false, mappedUserSession -> mappedUserSession.isActive());
           return null;
         });
   }

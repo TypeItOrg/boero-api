@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -24,8 +26,9 @@ final class MigrationFixtures {
   }
 
   UUID firstInstitutionId() {
-    return jdbcTemplate.queryForObject(
-        "SELECT institution_id FROM institutions ORDER BY institution_id LIMIT 1", UUID.class);
+    return requireNonNull(
+        jdbcTemplate.queryForObject(
+            "SELECT institution_id FROM institutions ORDER BY institution_id LIMIT 1", UUID.class));
   }
 
   void insertTestInstitution(final UUID institutionId) {
@@ -131,16 +134,22 @@ final class MigrationFixtures {
       final UUID studyPlanId,
       final UUID academicSpaceId,
       final UUID academicYearId) {
+    final UUID studyPlanSpaceId = UUID.randomUUID();
+    insertStudyPlanSpace(studyPlanSpaceId, institutionId, studyPlanId, academicSpaceId);
     jdbcTemplate.update(
         """
         INSERT INTO courses (
-          course_id, institution_id, study_plan_id, academic_space_id, academic_year_id,
-          status, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          course_id, institution_id, study_plan_space_id, training_path_id, academic_space_id, academic_year_id,
+          academic_level_id, instrument_id, status, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         """,
         id,
         institutionId,
-        studyPlanId,
+        studyPlanSpaceId,
+        jdbcTemplate.queryForObject(
+            "SELECT training_path_id FROM study_plans WHERE study_plan_id = ?",
+            UUID.class,
+            studyPlanId),
         academicSpaceId,
         academicYearId);
   }
@@ -149,8 +158,8 @@ final class MigrationFixtures {
     jdbcTemplate.update(
         """
         INSERT INTO course_classes (
-          course_class_id, institution_id, course_id, created_at, updated_at
-        ) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          course_class_id, institution_id, course_id, class_number, created_at, updated_at
+        ) VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         """,
         id,
         institutionId,
@@ -187,8 +196,9 @@ final class MigrationFixtures {
   }
 
   String randomDocumentNumber() {
-    return jdbcTemplate.queryForObject(
-        "SELECT LPAD((floor(random() * 100000000))::bigint::text, 8, '0')", String.class);
+    return requireNonNull(
+        jdbcTemplate.queryForObject(
+            "SELECT LPAD((floor(random() * 100000000))::bigint::text, 8, '0')", String.class));
   }
 
   void insertPerson(UUID personId, UUID institutionId, String documentNumber, boolean deleted) {

@@ -5,6 +5,7 @@ import jakarta.persistence.criteria.Expression;
 import java.text.Normalizer;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 
 public final class SearchNormalization {
 
@@ -22,7 +23,7 @@ public final class SearchNormalization {
     return builder.function(UNACCENT_LOWER_FUNCTION, String.class, expression);
   }
 
-  public static String normalizeSearch(final String value) {
+  public static @Nullable String normalizeSearch(final @Nullable String value) {
     if (value == null || value.isBlank()) {
       return null;
     }

@@ -9,6 +9,7 @@ import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,7 +23,7 @@ public class ListCourseTeachersUseCase {
 
   @Transactional(readOnly = true)
   public PaginatedResponse<TeacherOptionResponse> execute(
-      final UUID institutionId, final String search, final Pageable pageable) {
+      final UUID institutionId, final @Nullable String search, final Pageable pageable) {
     final var localRole =
         roleRepository.findByScopeAndCodeAndInstitution_Id(
             RoleScope.INSTITUTION, SystemRoleCode.TEACHER.name(), institutionId);

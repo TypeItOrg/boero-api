@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(
     requiredProperties = {
@@ -23,10 +24,10 @@ public record AcademicYearResponse(
     UUID institutionId,
     String institutionName,
     int year,
-    @Schema(nullable = true) LocalDate startDate,
-    @Schema(nullable = true) LocalDate endDate,
+    @Schema(nullable = true) @Nullable LocalDate startDate,
+    @Schema(nullable = true) @Nullable LocalDate endDate,
     AcademicYearStatus status,
-    @Schema(nullable = true) Instant deletedAt) {
+    @Schema(nullable = true) @Nullable Instant deletedAt) {
 
   public static AcademicYearResponse from(final AcademicYear year) {
     return new AcademicYearResponse(

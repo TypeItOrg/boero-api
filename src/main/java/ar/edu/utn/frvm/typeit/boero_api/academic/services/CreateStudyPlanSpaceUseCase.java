@@ -16,11 +16,15 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceReposi
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CreateStudyPlanSpaceRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceInstrumentOptionResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanSpaceResponse;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class CreateStudyPlanSpaceUseCase {
+  private final AcademicAccessGuard accessGuard;
   private final StudyPlanSpaceRepository studyPlanSpaceRepository;
   private final AcademicSpaceRepository academicSpaceRepository;
   private final AcademicLevelRepository academicLevelRepository;
@@ -38,6 +43,12 @@ public class CreateStudyPlanSpaceUseCase {
   @Transactional
   public StudyPlanSpaceResponse execute(
       final UUID institutionId, final UUID studyPlanId, final CreateStudyPlanSpaceRequest request) {
+    accessGuard.require(
+        PermissionCode.STUDY_PLAN_CURRICULUM_UPDATE,
+        institutionId,
+        ScopedResource.STUDY_PLAN,
+        studyPlanId);
+
     final var plan = studyPlanDraftGuard.lock(institutionId, studyPlanId);
     final var space =
         academicSpaceRepository
@@ -67,7 +78,8 @@ public class CreateStudyPlanSpaceUseCase {
     }
   }
 
-  private AcademicLevel resolveLevel(final UUID studyPlanId, final UUID academicLevelId) {
+  private @Nullable AcademicLevel resolveLevel(
+      final UUID studyPlanId, final @Nullable UUID academicLevelId) {
     if (academicLevelId == null) {
       return null;
     }
@@ -95,7 +107,7 @@ public class CreateStudyPlanSpaceUseCase {
       final var instrument =
           instrumentRepository
               .findByIdAndInstitution_Id(instrumentId, institutionId)
-              .filter(Instrument::isActive)
+              .filter(mappedInstrument -> mappedInstrument.isActive())
               .orElseThrow(
                   () -> new AcademicConflictException(AcademicMessages.INVALID_RELATIONSHIP));
       instruments.add(instrument);

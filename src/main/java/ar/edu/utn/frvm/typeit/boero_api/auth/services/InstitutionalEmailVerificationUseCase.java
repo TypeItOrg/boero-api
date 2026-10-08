@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class InstitutionalEmailVerificationUseCase {
+  private final InstitutionalHostContext hostContext;
   private final UserRepository users;
   private final InstitutionalEmailVerificationTokenRepository tokens;
   private final InstitutionalPasswordResetTokenRepository passwordResetTokens;
@@ -47,6 +48,8 @@ public class InstitutionalEmailVerificationUseCase {
 
   @Transactional
   public void resend(final ResendEmailVerificationRequest request) {
+    hostContext.requireInstitution(request.institutionId());
+
     users
         .findActiveUserId(request.documentNumber(), request.institutionId())
         .flatMap(users::findForEmailVerificationById)
@@ -55,7 +58,9 @@ public class InstitutionalEmailVerificationUseCase {
             user -> {
               final Instant now = clock.instant();
               final var existingToken = tokens.findByUser_Id(user.getId());
-              if (canResend(existingToken, now)) issue(user, now, existingToken);
+              if (canResend(existingToken, now)) {
+                issue(user, now, existingToken);
+              }
             });
   }
 
@@ -68,17 +73,21 @@ public class InstitutionalEmailVerificationUseCase {
             .findUserIdByTokenHash(hash)
             .flatMap(users::findForEmailVerificationById)
             .orElseThrow(InvalidEmailVerificationTokenException::new);
+    hostContext.requireInstitution(user.getInstitutionId());
     final var token =
         tokens.findByTokenHash(hash).orElseThrow(InvalidEmailVerificationTokenException::new);
     final Instant now = clock.instant();
-    if (!user.isAccountActive() || !user.requiresEmailVerification())
+    if (!user.isAccountActive() || !user.requiresEmailVerification()) {
       throw new InvalidEmailVerificationTokenException();
+    }
     token.consume(now);
     user.verifyEmail(now);
   }
 
   @Transactional
   public void changeEmail(final ChangePendingEmailRequest request) {
+    hostContext.requireInstitution(request.institutionId());
+
     final User user =
         users
             .findActiveUserId(request.documentNumber(), request.institutionId())
@@ -90,7 +99,9 @@ public class InstitutionalEmailVerificationUseCase {
             .orElseThrow(InvalidCredentialsException::new);
     final Instant now = clock.instant();
     final var existingToken = tokens.findByUser_Id(user.getId());
-    if (!canResend(existingToken, now)) throw new EmailVerificationCooldownException();
+    if (!canResend(existingToken, now)) {
+      throw new EmailVerificationCooldownException();
+    }
     user.getPerson().updateContact(request.email(), user.getPerson().getPhoneNumber());
     passwordResetTokens.deleteByUserId(user.getId());
     issue(user, now, existingToken);

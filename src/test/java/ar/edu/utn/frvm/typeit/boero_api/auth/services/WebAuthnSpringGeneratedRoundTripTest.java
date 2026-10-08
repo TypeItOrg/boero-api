@@ -1,5 +1,6 @@
 package ar.edu.utn.frvm.typeit.boero_api.auth.services;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ar.edu.utn.frvm.typeit.boero_api.auth.webauthn.WebAuthnOptionsCodec;
@@ -7,6 +8,7 @@ import ar.edu.utn.frvm.typeit.boero_api.auth.webauthn.WebAuthnOptionsModule;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -73,7 +75,7 @@ class WebAuthnSpringGeneratedRoundTripTest {
         public void save(final CredentialRecord credentialRecord) {}
 
         @Override
-        public CredentialRecord findByCredentialId(final Bytes credentialId) {
+        public @Nullable CredentialRecord findByCredentialId(final Bytes credentialId) {
           return null;
         }
 
@@ -143,16 +145,18 @@ class WebAuthnSpringGeneratedRoundTripTest {
     assertThat(restored.getExcludeCredentials())
         .extracting(
             descriptor ->
-                descriptor.getTransports().stream()
-                    .map(AuthenticatorTransport::getValue)
+                requireNonNull(descriptor.getTransports()).stream()
+                    .map(mappedAuthenticatorTransport -> mappedAuthenticatorTransport.getValue())
                     .sorted()
                     .toList())
         .containsExactlyElementsOf(
             generated.getExcludeCredentials().stream()
                 .map(
                     descriptor ->
-                        descriptor.getTransports().stream()
-                            .map(AuthenticatorTransport::getValue)
+                        requireNonNull(descriptor.getTransports()).stream()
+                            .map(
+                                mappedAuthenticatorTransport ->
+                                    mappedAuthenticatorTransport.getValue())
                             .sorted()
                             .toList())
                 .toList());
@@ -229,7 +233,7 @@ class WebAuthnSpringGeneratedRoundTripTest {
     assertThat(requestTree.get("rpId").asString()).isEqualTo("localhost");
     assertThat(requestTree.get("timeout").asLong()).isEqualTo(request.getTimeout().toMillis());
     assertThat(requestTree.get("userVerification").asString())
-        .isEqualTo(request.getUserVerification().getValue());
+        .isEqualTo(requireNonNull(request.getUserVerification()).getValue());
     assertThat(requestTree.get("allowCredentials")).hasSize(1);
     assertThat(requestTree.get("allowCredentials").get(0).get("id").asString())
         .isEqualTo(credentialId.toBase64UrlString());
@@ -255,9 +259,10 @@ class WebAuthnSpringGeneratedRoundTripTest {
         .isEqualTo(userHandle.toBase64UrlString());
     assertThat(creationTree.get("user").get("name").asString()).isEqualTo("user-id");
     assertThat(creationTree.get("attestation").asString())
-        .isEqualTo(creation.getAttestation().getValue());
+        .isEqualTo(requireNonNull(creation.getAttestation()).getValue());
     assertThat(creationTree.get("authenticatorSelection").get("residentKey").asString())
-        .isEqualTo(creation.getAuthenticatorSelection().getResidentKey().getValue());
+        .isEqualTo(
+            requireNonNull(creation.getAuthenticatorSelection().getResidentKey()).getValue());
     assertThat(creationTree.get("excludeCredentials")).hasSize(1);
     assertThat(creationTree.get("extensions").get("credProps").asBoolean()).isTrue();
   }

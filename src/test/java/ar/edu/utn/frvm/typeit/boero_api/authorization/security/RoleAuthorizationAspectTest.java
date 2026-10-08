@@ -34,7 +34,7 @@ class RoleAuthorizationAspectTest {
   @Test
   @DisplayName("Should deny access when platform role is not granted")
   void checkPlatformRole_deniesWhenRoleMissing() {
-    var authentication = new TestingAuthenticationToken("anonymous", null);
+    var authentication = new TestingAuthenticationToken("anonymous", "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     when(authorizationService.hasPlatformRole(authentication, PlatformRoleCode.PLATFORM_ADMIN))
         .thenReturn(false);
@@ -46,7 +46,7 @@ class RoleAuthorizationAspectTest {
   @Test
   @DisplayName("Should allow access when platform role is granted")
   void checkPlatformRole_allowsWhenRoleGranted() {
-    var authentication = new TestingAuthenticationToken("admin@plataforma.com", null);
+    var authentication = new TestingAuthenticationToken("admin@plataforma.com", "");
     SecurityContextHolder.getContext().setAuthentication(authentication);
     when(authorizationService.hasPlatformRole(authentication, PlatformRoleCode.PLATFORM_ADMIN))
         .thenReturn(true);

@@ -56,6 +56,7 @@ class InstitutionalEmailVerificationUseCaseTest {
   final Clock clock = Clock.fixed(now, ZoneOffset.UTC);
   final InstitutionalEmailVerificationUseCase useCase =
       new InstitutionalEmailVerificationUseCase(
+          org.mockito.Mockito.mock(InstitutionalHostContext.class),
           users,
           tokens,
           resets,
@@ -251,7 +252,8 @@ class InstitutionalEmailVerificationUseCaseTest {
     when(users.findAllByPersonDocumentNumberAndInstitution_Id("12345678", user.getInstitutionId()))
         .thenReturn(List.of(user));
     final var result =
-        new IdentifyLoginUseCase(users, passkeys, attempts)
+        new IdentifyLoginUseCase(
+                org.mockito.Mockito.mock(InstitutionalHostContext.class), users, passkeys, attempts)
             .execute(new IdentifyLoginRequest(user.getInstitutionId(), "12345678"));
     assertThat(result.nextStep().name()).isEqualTo("EMAIL_VERIFICATION");
     assertThat(result.loginAttemptId()).isNull();

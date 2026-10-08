@@ -5,7 +5,7 @@
 
 # Boero
 
-**Backend seguro y multiinstitucional para la plataforma de gestión académica y administrativa Boero.**
+**Backend multiinstitucional para la plataforma de gestión académica y administrativa Boero.**
 
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.6-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
@@ -24,45 +24,35 @@ _Centraliza las reglas de negocio, protege el acceso y mantiene aislada la infor
 
 </div>
 
-## Adjuntos de inscripción
+## Desarrollo local
 
-Los casos de uso dependen de `EnrollmentStorage`. `ENROLLMENT_STORAGE_PROVIDER=local`
-selecciona `LocalStorageService`; `s3` selecciona `S3EnrollmentStorage`, con el mismo
-contrato de escritura, lectura y limpieza posterior al commit. Ambas implementaciones
-comparten límites y validación de archivos.
+Preparar la configuración sin sobrescribir un archivo privado existente:
 
-Para S3, configurar `ENROLLMENT_S3_BUCKET`, `AWS_REGION` y opcionalmente
-`ENROLLMENT_S3_PREFIX` (por defecto `enrollments/`). El SDK usa su cadena estándar de
-credenciales; en AWS se recomienda un rol IAM. El bucket debe existir y permitir
-`s3:PutObject`, `s3:GetObject` y `s3:DeleteObject` en el prefijo configurado. Al arrancar
-se escribe, descarga y elimina un objeto temporal para verificar el acceso.
-Si el bucket usa SSE-KMS, el rol también necesita los permisos de la clave para
-cifrar y descifrar esos objetos.
-No se crean buckets ni se modifica su política o ACL.
+```bash
+test -f .env.dev || cp .env.dev.example .env.dev
+make dev
+```
 
-Cambiar el proveedor no migra archivos: copiar las rutas relativas existentes al
-prefijo S3 antes de activarlo, conservando el almacenamiento de origen como respaldo.
-Usar un bucket privado; no se generan URLs públicas y las descargas siguen pasando
-por la autorización de la API. Referencia: [AWS SDK para Java 2.x](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/setup-project-gradle.html).
+Los comandos Compose de Make cargan `.env.dev` tanto para interpolar `compose.yaml`
+como para definir el entorno del servicio. Si el archivo no existe, se conservan
+los defaults de Compose y del perfil `dev`.
 
-`LocalStorageService` guarda los archivos en `ENROLLMENT_STORAGE_DIR` (por defecto,
-`storage/enrollments`). Al iniciar verifica que pueda crear, escribir, leer y eliminar
-un archivo temporal; si el almacenamiento no está disponible, la API no arranca.
+La plantilla conserva `http://localhost:3000` como acceso general y
+`http://cboero.localhost:3000` para una institución con nombre público `cboero`.
+La UI debe tener la misma URL canónica y dominio base. El origen general conserva
+el selector de institución; no se redirige a un namespace local adicional.
 
-En desarrollo, Compose fija `/workspace/storage/enrollments` y monta el volumen
-`boero-api-enrollment-storage-dev`, que sobrevive a recreaciones del contenedor.
-En staging y producción, `boero-infra` monta un volumen externo propio de cada
-entorno en `/app/storage/enrollments`; `make prepare` lo crea y la imagen prepara
-la carpeta con permisos para `appuser`.
+En Chromium, los nombres terminados en `.localhost` permiten WebAuthn en HTTP,
+pero `localhost` se considera un dominio de primer nivel y no puede ser el RP común
+de sus subdominios. Con `WEBAUTHN_RP_ID=localhost` en `dev`/`test`, la API resuelve el
+RP ID institucional desde el origen validado por el BFF: `localhost` para el acceso
+general y `cboero.localhost` para el institucional. La política se aplica tanto a
+registro como a autenticación y verificación, manteniendo la validación del origen.
 
-Antes de recrear un contenedor existente que tenga adjuntos en su capa local,
-respaldar y copiar esos archivos al volumen nuevo, conservando las rutas relativas.
-El montaje no migra archivos anteriores. Los backups deben incluir tanto PostgreSQL
-como este volumen. `make reset-data` elimina los volúmenes locales, incluidos los adjuntos.
+Las passkeys son independientes por hostname local: las existentes de `localhost`
+siguen perteneciendo a ese acceso; ingresar con contraseña en `cboero.localhost`
+y registrar allí una llave propia. No borrar las anteriores ni recrear la base de
+datos. En QA/staging/producción se conserva el RP ID configurado del ambiente, común
+al dominio general y sus instituciones.
 
-Si hay varios períodos de inscripción abiertos para un ciclo lectivo, las solicitudes
-nuevas usan el de inicio más reciente; ante un empate se ordenan por UUID descendente.
-Las solicitudes existentes conservan su período.
-
-La migración de unicidad de solicitudes activas por postulante y trayecto no elimina
-duplicados previos: si existen, su aplicación falla y requieren revisión de negocio.
+Referencia: [orígenes WebAuthn admitidos por Chromium](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/content/browser/webauth/origins.md).

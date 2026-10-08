@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class RequestInstitutionalPasswordRecoveryUseCase {
+  private final InstitutionalHostContext hostContext;
   private final Clock clock;
 
   private static final int TOKEN_BYTES = 32;
@@ -35,6 +36,8 @@ public class RequestInstitutionalPasswordRecoveryUseCase {
 
   @Transactional
   public void execute(final PasswordRecoveryRequest request) {
+    hostContext.requireInstitution(request.institutionId());
+
     userRepository
         .findWithPersonAndInstitutionForPasswordRecovery(
             request.documentNumber(), request.institutionId())

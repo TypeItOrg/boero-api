@@ -16,8 +16,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Builder;
+import org.jspecify.annotations.Nullable;
 
-@Builder
+@Builder(toBuilder = true)
 @Schema(
     requiredProperties = {
       "applicationId",
@@ -27,8 +28,10 @@ import lombok.Builder;
       "applicantFirstName",
       "applicantLastName",
       "applicantDocumentNumber",
+      "trainingPathId",
       "studyPlanId",
       "studyPlanName",
+      "studyPlanVersion",
       "trainingPathName",
       "academicYearId",
       "academicYear",
@@ -42,34 +45,58 @@ import lombok.Builder;
       "resolvedByPersonId",
       "createdAt",
       "updatedAt",
-      "spaces"
+      "spaces",
+      "courses",
+      "enrollmentPeriod",
+      "periodOpen",
+      "canReadAttachments",
+      "documents",
+      "canApproveProvisionally",
+      "canConfirm",
+      "documentRequests",
+      "canRequestDocuments",
+      "admissionHistory"
     })
 public record EnrollmentApplicationResponse(
-    @Schema(nullable = true) UUID applicationId,
-    @Schema(nullable = true) UUID institutionId,
-    @Schema(nullable = true) UUID personId,
-    @Schema(nullable = true) UUID submittedByPersonId,
-    @Schema(nullable = true) String applicantFirstName,
-    @Schema(nullable = true) String applicantLastName,
-    @Schema(nullable = true) String applicantDocumentNumber,
-    @Schema(nullable = true) UUID studyPlanId,
-    @Schema(nullable = true) String studyPlanName,
-    @Schema(nullable = true) String trainingPathName,
-    @Schema(nullable = true) UUID academicYearId,
-    @Schema(nullable = true) Integer academicYear,
-    @Schema(nullable = true) UUID enrollmentPeriodId,
-    @Schema(nullable = true) EnrollmentApplicationStatus status,
+    @Schema(nullable = true) @Nullable UUID applicationId,
+    @Schema(nullable = true) @Nullable UUID institutionId,
+    @Schema(nullable = true) @Nullable UUID personId,
+    @Schema(nullable = true) @Nullable UUID submittedByPersonId,
+    @Schema(nullable = true) @Nullable String applicantFirstName,
+    @Schema(nullable = true) @Nullable String applicantLastName,
+    @Schema(nullable = true) @Nullable String applicantDocumentNumber,
+    @Schema(nullable = true) @Nullable UUID trainingPathId,
+    @Schema(nullable = true) @Nullable UUID studyPlanId,
+    @Schema(nullable = true) @Nullable String studyPlanName,
+    @Schema(nullable = true) @Nullable Integer studyPlanVersion,
+    @Schema(nullable = true) @Nullable String trainingPathName,
+    @Schema(nullable = true) @Nullable UUID academicYearId,
+    @Schema(nullable = true) @Nullable Integer academicYear,
+    @Schema(nullable = true) @Nullable UUID enrollmentPeriodId,
+    @Schema(nullable = true) @Nullable EnrollmentApplicationStatus status,
     @JsonProperty("isEditable") boolean isEditable,
-    @Schema(nullable = true) EnrollmentDraftData data,
-    @Schema(nullable = true) String secondarySchool,
-    @Schema(nullable = true) String rejectionReason,
-    @Schema(nullable = true) Instant resolvedAt,
-    @Schema(nullable = true) UUID resolvedByPersonId,
-    @Schema(nullable = true) Instant createdAt,
-    @Schema(nullable = true) Instant updatedAt,
-    @Schema(nullable = true) List<EnrollmentApplicationSpaceResponse> spaces) {
+    @Schema(nullable = true) @Nullable EnrollmentDraftData data,
+    @Schema(nullable = true) @Nullable String secondarySchool,
+    @Schema(nullable = true) @Nullable String rejectionReason,
+    @Schema(nullable = true) @Nullable Instant resolvedAt,
+    @Schema(nullable = true) @Nullable UUID resolvedByPersonId,
+    @Schema(nullable = true) @Nullable Instant createdAt,
+    @Schema(nullable = true) @Nullable Instant updatedAt,
+    @Schema(nullable = true) @Nullable List<EnrollmentApplicationSpaceResponse> spaces,
+    @Schema(nullable = true) @Nullable List<EnrollmentApplicationCourseResponse> courses,
+    @Schema(nullable = true) @Nullable EnrollmentPeriodResponse enrollmentPeriod,
+    boolean periodOpen,
+    boolean canReadAttachments,
+    List<EnrollmentDocumentRequirementResponse> documents,
+    boolean canApproveProvisionally,
+    boolean canConfirm,
+    List<EnrollmentAdmissionHistoryResponse> admissionHistory,
+    boolean canRequestDocuments,
+    List<EnrollmentDocumentRequestResponse> documentRequests) {
   public EnrollmentApplicationResponse() {
     this(
+        null,
+        null,
         null,
         null,
         null,
@@ -92,103 +119,213 @@ public record EnrollmentApplicationResponse(
         null,
         null,
         null,
-        new ArrayList<>());
+        new ArrayList<>(),
+        new ArrayList<>(),
+        null,
+        false,
+        false,
+        List.of(),
+        false,
+        false,
+        List.of(),
+        false,
+        List.of());
   }
 
   public EnrollmentApplicationResponse {
+    documents = documents == null ? List.of() : documents;
+    documentRequests = documentRequests == null ? List.of() : documentRequests;
+    admissionHistory = admissionHistory == null ? List.of() : admissionHistory;
     spaces = spaces == null ? new ArrayList<>() : spaces;
+    courses = courses == null ? new ArrayList<>() : courses;
   }
 
-  public UUID getApplicationId() {
+  public @Nullable UUID getApplicationId() {
     return applicationId;
   }
 
-  public UUID getInstitutionId() {
+  public @Nullable UUID getInstitutionId() {
     return institutionId;
   }
 
-  public UUID getPersonId() {
+  public @Nullable UUID getPersonId() {
     return personId;
   }
 
-  public UUID getSubmittedByPersonId() {
+  public @Nullable UUID getSubmittedByPersonId() {
     return submittedByPersonId;
   }
 
-  public String getApplicantFirstName() {
+  public @Nullable String getApplicantFirstName() {
     return applicantFirstName;
   }
 
-  public String getApplicantLastName() {
+  public @Nullable String getApplicantLastName() {
     return applicantLastName;
   }
 
-  public String getApplicantDocumentNumber() {
+  public @Nullable String getApplicantDocumentNumber() {
     return applicantDocumentNumber;
   }
 
-  public UUID getStudyPlanId() {
+  public @Nullable UUID getTrainingPathId() {
+    return trainingPathId;
+  }
+
+  public @Nullable UUID getStudyPlanId() {
     return studyPlanId;
   }
 
-  public String getStudyPlanName() {
+  public @Nullable String getStudyPlanName() {
     return studyPlanName;
   }
 
-  public String getTrainingPathName() {
+  public @Nullable String getTrainingPathName() {
     return trainingPathName;
   }
 
-  public UUID getAcademicYearId() {
+  public @Nullable UUID getAcademicYearId() {
     return academicYearId;
   }
 
-  public Integer getAcademicYear() {
+  public @Nullable Integer getAcademicYear() {
     return academicYear;
   }
 
-  public UUID getEnrollmentPeriodId() {
+  public @Nullable UUID getEnrollmentPeriodId() {
     return enrollmentPeriodId;
   }
 
-  public EnrollmentApplicationStatus getStatus() {
+  public @Nullable EnrollmentApplicationStatus getStatus() {
     return status;
   }
 
-  public EnrollmentDraftData getData() {
+  public @Nullable EnrollmentDraftData getData() {
     return data;
   }
 
-  public String getSecondarySchool() {
+  public @Nullable String getSecondarySchool() {
     return secondarySchool;
   }
 
-  public String getRejectionReason() {
+  public @Nullable String getRejectionReason() {
     return rejectionReason;
   }
 
-  public Instant getResolvedAt() {
+  public @Nullable Instant getResolvedAt() {
     return resolvedAt;
   }
 
-  public UUID getResolvedByPersonId() {
+  public @Nullable UUID getResolvedByPersonId() {
     return resolvedByPersonId;
   }
 
-  public Instant getCreatedAt() {
+  public @Nullable Instant getCreatedAt() {
     return createdAt;
   }
 
-  public Instant getUpdatedAt() {
+  public @Nullable Instant getUpdatedAt() {
     return updatedAt;
   }
 
-  public List<EnrollmentApplicationSpaceResponse> getSpaces() {
+  public @Nullable List<EnrollmentApplicationSpaceResponse> getSpaces() {
     return spaces;
   }
 
+  public @Nullable List<EnrollmentApplicationCourseResponse> getCourses() {
+    return courses;
+  }
+
   public static EnrollmentApplicationResponse from(final EnrollmentApplication application) {
+    return from(application, true);
+  }
+
+  public static EnrollmentApplicationResponse summary(final EnrollmentApplication application) {
+    final var trainingPath = application.getTrainingPath();
     return EnrollmentApplicationResponse.builder()
+        .applicationId(application.getId())
+        .institutionId(
+            application.getInstitution() == null ? null : application.getInstitution().getId())
+        .personId(
+            application.getApplicantPerson() == null
+                ? null
+                : application.getApplicantPerson().getId())
+        .submittedByPersonId(
+            application.getSubmittedByPerson() == null
+                ? null
+                : application.getSubmittedByPerson().getId())
+        .applicantFirstName(
+            application.getApplicantPerson() == null
+                ? null
+                : application.getApplicantPerson().getFirstName())
+        .applicantLastName(
+            application.getApplicantPerson() == null
+                ? null
+                : application.getApplicantPerson().getLastName())
+        .applicantDocumentNumber(
+            application.getApplicantPerson() == null
+                ? null
+                : application.getApplicantPerson().getDocumentNumber())
+        .trainingPathId(trainingPath == null ? null : trainingPath.getId())
+        .studyPlanId(application.getStudyPlan() == null ? null : application.getStudyPlan().getId())
+        .studyPlanName(
+            application.getStudyPlan() == null ? null : application.getStudyPlan().getName())
+        .studyPlanVersion(
+            application.getStudyPlan() == null
+                ? null
+                : application.getStudyPlan().getVersionNumber())
+        .trainingPathName(trainingPath == null ? null : trainingPath.getName())
+        .academicYearId(
+            application.commonAcademicYear() == null
+                ? null
+                : application.commonAcademicYear().getId())
+        .academicYear(
+            application.commonAcademicYear() == null
+                ? null
+                : application.commonAcademicYear().getYear())
+        .enrollmentPeriodId(
+            application.getEnrollmentPeriod() == null
+                ? null
+                : application.getEnrollmentPeriod().getId())
+        .enrollmentPeriod(
+            application.getEnrollmentPeriod() == null
+                ? null
+                : EnrollmentPeriodResponse.from(application.getEnrollmentPeriod()))
+        .periodOpen(
+            application.getEnrollmentPeriod() != null
+                && application.getEnrollmentPeriod().isOpenAt(Instant.now()))
+        .status(application.getStatus())
+        .isEditable(application.isEditable())
+        .data(
+            EnrollmentDraftData.builder()
+                .careerSelection(
+                    trainingPath == null ? null : new CareerSelectionDto(trainingPath.getId()))
+                .build())
+        .secondarySchool(
+            application.getEducationBackground() == null
+                ? null
+                : application.getEducationBackground().getSecondarySchool())
+        .rejectionReason(application.getRejectionReason())
+        .resolvedAt(application.getResolvedAt())
+        .resolvedByPersonId(application.getResolvedByPersonId())
+        .createdAt(application.getCreatedAt())
+        .updatedAt(application.getUpdatedAt())
+        .spaces(new ArrayList<>())
+        .courses(new ArrayList<>())
+        .build();
+  }
+
+  public static EnrollmentApplicationResponse from(
+      final EnrollmentApplication application, final boolean includeCourseDetails) {
+    return from(application, includeCourseDetails, false);
+  }
+
+  public static EnrollmentApplicationResponse from(
+      final EnrollmentApplication application,
+      final boolean includeCourseDetails,
+      final boolean includeAttachments) {
+    return EnrollmentApplicationResponse.builder()
+        .canReadAttachments(includeAttachments)
         .applicationId(application.getId())
         .institutionId(
             application.getInstitution() != null ? application.getInstitution().getId() : null)
@@ -212,25 +349,39 @@ public record EnrollmentApplicationResponse(
             application.getApplicantPerson() != null
                 ? application.getApplicantPerson().getDocumentNumber()
                 : null)
+        .trainingPathId(
+            application.getTrainingPath() != null ? application.getTrainingPath().getId() : null)
         .studyPlanId(application.getStudyPlan() != null ? application.getStudyPlan().getId() : null)
         .studyPlanName(
             application.getStudyPlan() != null ? application.getStudyPlan().getName() : null)
+        .studyPlanVersion(
+            application.getStudyPlan() == null
+                ? null
+                : application.getStudyPlan().getVersionNumber())
         .trainingPathName(
-            application.getStudyPlan() != null
-                    && application.getStudyPlan().getTrainingPath() != null
-                ? application.getStudyPlan().getTrainingPath().getName()
-                : null)
+            application.getTrainingPath() != null ? application.getTrainingPath().getName() : null)
         .academicYearId(
-            application.getAcademicYear() != null ? application.getAcademicYear().getId() : null)
+            application.commonAcademicYear() != null
+                ? application.commonAcademicYear().getId()
+                : null)
         .academicYear(
-            application.getAcademicYear() != null ? application.getAcademicYear().getYear() : null)
+            application.commonAcademicYear() != null
+                ? application.commonAcademicYear().getYear()
+                : null)
         .enrollmentPeriodId(
             application.getEnrollmentPeriod() != null
                 ? application.getEnrollmentPeriod().getId()
                 : null)
+        .enrollmentPeriod(
+            application.getEnrollmentPeriod() == null
+                ? null
+                : EnrollmentPeriodResponse.from(application.getEnrollmentPeriod()))
+        .periodOpen(
+            application.getEnrollmentPeriod() != null
+                && application.getEnrollmentPeriod().isOpenAt(Instant.now()))
         .status(application.getStatus())
         .isEditable(application.isEditable())
-        .data(buildDraftData(application))
+        .data(buildDraftData(application, includeAttachments))
         .secondarySchool(
             application.getEducationBackground() != null
                 ? application.getEducationBackground().getSecondarySchool()
@@ -240,7 +391,13 @@ public record EnrollmentApplicationResponse(
         .resolvedByPersonId(application.getResolvedByPersonId())
         .createdAt(application.getCreatedAt())
         .updatedAt(application.getUpdatedAt())
-        .spaces(buildSpaces(application))
+        .spaces(includeCourseDetails ? buildSpaces(application) : new ArrayList<>())
+        .courses(
+            !includeCourseDetails || application.getCourseSelections() == null
+                ? new ArrayList<>()
+                : application.getCourseSelections().stream()
+                    .map(EnrollmentApplicationCourseResponse::from)
+                    .toList())
         .build();
   }
 
@@ -266,7 +423,8 @@ public record EnrollmentApplicationResponse(
         .toList();
   }
 
-  private static EnrollmentDraftData buildDraftData(final EnrollmentApplication entity) {
+  private static EnrollmentDraftData buildDraftData(
+      final EnrollmentApplication entity, final boolean includeAttachments) {
     PersonalDataDto personalDataDto = null;
     Person applicant = entity.getApplicantPerson();
 
@@ -289,9 +447,12 @@ public record EnrollmentApplicationResponse(
       academicBgDto =
           AcademicBackgroundDto.builder()
               .secondarySchool(bg.getSecondarySchool())
+              .currentlyStudying(bg.getCurrentlyStudying())
+              .educationLevel(bg.getEducationLevel())
               .schoolOrigin(bg.getSchoolOrigin())
               .currentGradeYear(bg.getCurrentGradeYear())
-              .secondaryCompleted(bg.isSecondaryCompleted())
+              .levelCompleted(bg.getLevelCompleted())
+              .secondaryCompleted(bg.getSecondaryCompleted())
               .secondaryDegreeTitle(bg.getSecondaryDegreeTitle())
               .build();
     }
@@ -354,26 +515,23 @@ public record EnrollmentApplicationResponse(
 
     CareerSelectionDto careerDto = null;
 
-    if (entity.getStudyPlan() != null && entity.getStudyPlan().getTrainingPath() != null) {
-      careerDto = new CareerSelectionDto(entity.getStudyPlan().getTrainingPath().getId());
+    if (entity.getTrainingPath() != null) {
+      careerDto = new CareerSelectionDto(entity.getTrainingPath().getId());
     }
 
     List<AttachmentDto> attachmentsList = new ArrayList<>();
 
-    if (entity.getAttachments() != null) {
+    if (includeAttachments && entity.getAttachments() != null) {
       attachmentsList =
           entity.getAttachments().stream()
-              .filter(att -> att.getDeletedAt() == null)
+              .filter(att -> att.getDeletedAt() == null && att.isCurrent())
               .map(
                   att ->
                       AttachmentDto.builder()
                           .id(att.getId())
-                          .attachmentType(
-                              att.getAttachmentType() != null
-                                  ? att.getAttachmentType().name()
-                                  : null)
+                          .requirementId(att.getRequirement().getId())
                           .originalFileName(att.getOriginalFileName())
-                          .storagePath(att.getStoragePath())
+                          .storagePath(null)
                           .contentType(att.getContentType())
                           .fileSize(att.getFileSize())
                           .createdAt(att.getCreatedAt())
@@ -392,6 +550,18 @@ public record EnrollmentApplicationResponse(
             spaceSelectionDto != null ? spaceSelectionDto : new AcademicSpaceSelectionDto())
         .instrumentSelection(
             instrumentSelectionDto != null ? instrumentSelectionDto : new InstrumentSelectionDto())
+        .courses(
+            entity.getCourseSelections() == null
+                ? new ArrayList<>()
+                : entity.getCourseSelections().stream()
+                    .map(
+                        selection ->
+                            new CourseSelectionDto(
+                                selection.getCourse().getId(),
+                                selection.getPreferredTeacher() == null
+                                    ? null
+                                    : selection.getPreferredTeacher().getId()))
+                    .toList())
         .attachments(attachmentsList)
         .build();
   }

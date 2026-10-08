@@ -3,6 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import lombok.Builder;
+import org.jspecify.annotations.Nullable;
 
 @Builder
 @Schema(
@@ -15,37 +16,37 @@ import lombok.Builder;
       "email"
     })
 public record PersonalDataDto(
-    @Schema(nullable = true) String firstName,
-    @Schema(nullable = true) String lastName,
-    @Schema(nullable = true) String documentNumber,
-    @Schema(nullable = true) LocalDate birthDate,
-    @Schema(nullable = true) String phoneNumber,
-    @Schema(nullable = true) String email) {
+    @Schema(nullable = true) @Nullable String firstName,
+    @Schema(nullable = true) @Nullable String lastName,
+    @Schema(nullable = true) @Nullable String documentNumber,
+    @Schema(nullable = true) @Nullable LocalDate birthDate,
+    @Schema(nullable = true) @Nullable String phoneNumber,
+    @Schema(nullable = true) @Nullable String email) {
   public PersonalDataDto() {
     this(null, null, null, null, null, null);
   }
 
-  public String getFirstName() {
+  public @Nullable String getFirstName() {
     return firstName;
   }
 
-  public String getLastName() {
+  public @Nullable String getLastName() {
     return lastName;
   }
 
-  public String getDocumentNumber() {
+  public @Nullable String getDocumentNumber() {
     return documentNumber;
   }
 
-  public LocalDate getBirthDate() {
+  public @Nullable LocalDate getBirthDate() {
     return birthDate;
   }
 
-  public String getPhoneNumber() {
+  public @Nullable String getPhoneNumber() {
     return phoneNumber;
   }
 
-  public String getEmail() {
+  public @Nullable String getEmail() {
     return email;
   }
 }

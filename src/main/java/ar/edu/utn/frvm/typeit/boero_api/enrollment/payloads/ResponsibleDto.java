@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.payloads;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
+import org.jspecify.annotations.Nullable;
 
 @Builder
 @Schema(
@@ -14,37 +15,37 @@ import lombok.Builder;
       "educationLevel"
     })
 public record ResponsibleDto(
-    @Schema(nullable = true) String fullName,
-    @Schema(nullable = true) String documentNumber,
-    @Schema(nullable = true) String occupation,
-    @Schema(nullable = true) String phoneNumber,
-    @Schema(nullable = true) String email,
-    @Schema(nullable = true) String educationLevel) {
+    @Schema(nullable = true) @Nullable String fullName,
+    @Schema(nullable = true) @Nullable String documentNumber,
+    @Schema(nullable = true) @Nullable String occupation,
+    @Schema(nullable = true) @Nullable String phoneNumber,
+    @Schema(nullable = true) @Nullable String email,
+    @Schema(nullable = true) @Nullable String educationLevel) {
   public ResponsibleDto() {
     this(null, null, null, null, null, null);
   }
 
-  public String getFullName() {
+  public @Nullable String getFullName() {
     return fullName;
   }
 
-  public String getDocumentNumber() {
+  public @Nullable String getDocumentNumber() {
     return documentNumber;
   }
 
-  public String getOccupation() {
+  public @Nullable String getOccupation() {
     return occupation;
   }
 
-  public String getPhoneNumber() {
+  public @Nullable String getPhoneNumber() {
     return phoneNumber;
   }
 
-  public String getEmail() {
+  public @Nullable String getEmail() {
     return email;
   }
 
-  public String getEducationLevel() {
+  public @Nullable String getEducationLevel() {
     return educationLevel;
   }
 }

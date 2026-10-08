@@ -1,4 +1,4 @@
-# Casos Particulares
+# CASOS PARTICULARES
 
 ## ¿Por qué `UserSession` existe si Spring es stateless?
 

@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ListPersonRolesUseCase {
+  private final PersonRoleResponseFactory responseFactory;
 
   private final InstitutionPersonResolver institutionPersonResolver;
   private final PersonRoleAssignmentRepository personRoleAssignmentRepository;
@@ -22,7 +23,7 @@ public class ListPersonRolesUseCase {
     return personRoleAssignmentRepository
         .findByPerson_IdAndInstitution_Id(personId, institutionId)
         .stream()
-        .map(PersonRoleResponse::from)
+        .map(responseFactory::from)
         .toList();
   }
 }

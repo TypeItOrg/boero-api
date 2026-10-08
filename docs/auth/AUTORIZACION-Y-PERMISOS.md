@@ -1,4 +1,4 @@
-# Autorización y Permisos
+# AUTORIZACIÓN Y PERMISOS
 
 ## ¿Por qué `getAuthorities()` devuelve vacío?
 

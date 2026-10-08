@@ -26,6 +26,7 @@ class ResetInstitutionalPasswordUseCaseTest {
         Mockito.mock(SessionRevocationService.class);
     final ResetInstitutionalPasswordUseCase useCase =
         new ResetInstitutionalPasswordUseCase(
+            org.mockito.Mockito.mock(InstitutionalHostContext.class),
             Clock.systemUTC(),
             Mockito.mock(UserRepository.class),
             passwordResetTokenRepository,

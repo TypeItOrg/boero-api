@@ -1,8 +1,10 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ar.edu.utn.frvm.typeit.boero_api.DatabaseMigrationTestSupport;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicSpace;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.AcademicYear;
 import ar.edu.utn.frvm.typeit.boero_api.academic.entities.StudyPlan;
@@ -16,6 +18,7 @@ import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplication;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentApplicationSpace;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriod;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.entities.EnrollmentPeriodOffering;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentApplicationStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.enums.EnrollmentPeriodStatus;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentValidationException;
@@ -34,19 +37,14 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 /**
  * Ejercita EnrollmentApplicationService contra un Postgres real migrado con Flyway (ddl-auto
@@ -57,31 +55,14 @@ import org.testcontainers.utility.DockerImageName;
 @SpringBootTest
 @Testcontainers(disabledWithoutDocker = true)
 @IntegrationTest
-class EnrollmentApplicationPostgresIntegrationTest {
-
-  @Container
-  static final PostgreSQLContainer<?> POSTGRES =
-      new PostgreSQLContainer<>(DockerImageName.parse("postgres:18-alpine"));
-
-  @Container
-  static final GenericContainer<?> REDIS =
-      new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
+class EnrollmentApplicationPostgresIntegrationTest extends DatabaseMigrationTestSupport {
 
   @Autowired private EnrollmentApplicationService service;
   @Autowired private EntityManager entityManager;
 
-  @DynamicPropertySource
-  static void infrastructureProperties(final DynamicPropertyRegistry registry) {
-    registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-    registry.add("spring.datasource.username", POSTGRES::getUsername);
-    registry.add("spring.datasource.password", POSTGRES::getPassword);
-    registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
-    registry.add("spring.data.redis.host", REDIS::getHost);
-    registry.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
-    registry.add("spring.flyway.enabled", () -> true);
-    registry.add("spring.flyway.locations", () -> "classpath:db/migration,classpath:db/dev");
-    registry.add("spring.flyway.sql-migration-prefix", () -> "");
-    registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
+  @BeforeEach
+  void authenticateManagementOperations() {
+    authenticatePlatformAdministrator();
   }
 
   @Test
@@ -103,8 +84,11 @@ class EnrollmentApplicationPostgresIntegrationTest {
         service.updateDraft(application.getApplicantPerson().getId(), application.getId(), request);
     entityManager.flush();
 
-    assertThat(response.getData().getResponsible().getFullName()).isEqualTo("Tutor Incompleto");
-    assertThat(response.getData().getResponsible().getDocumentNumber()).isNull();
+    assertThat(requireNonNull(requireNonNull(response.getData()).getResponsible()).getFullName())
+        .isEqualTo("Tutor Incompleto");
+    assertThat(
+            requireNonNull(requireNonNull(response.getData()).getResponsible()).getDocumentNumber())
+        .isNull();
   }
 
   @Test
@@ -119,7 +103,9 @@ class EnrollmentApplicationPostgresIntegrationTest {
             applicationA.getInstitution().getId(), null, null, null, PageRequest.of(0, 10));
 
     assertThat(response.items())
-        .extracting(EnrollmentApplicationResponse::getApplicationId)
+        .extracting(
+            mappedEnrollmentApplicationResponse ->
+                mappedEnrollmentApplicationResponse.getApplicationId())
         .containsExactly(applicationA.getId())
         .doesNotContain(applicationB.getId());
   }
@@ -131,7 +117,8 @@ class EnrollmentApplicationPostgresIntegrationTest {
   void enrollmentApplicationSpace_rejectsDuplicatePairAtDatabaseLevel() {
     EnrollmentApplication application = createDraftApplication();
     StudyPlanSpace studyPlanSpace =
-        createStudyPlanSpace(application.getInstitution(), application.getStudyPlan(), 1);
+        createStudyPlanSpace(
+            application.getInstitution(), requireNonNull(application.getStudyPlan()), 1);
 
     entityManager.persist(
         EnrollmentApplicationSpace.builder()
@@ -155,9 +142,11 @@ class EnrollmentApplicationPostgresIntegrationTest {
   void updateDraft_replacingSelection_deletesDiscardedSpaceRow() {
     EnrollmentApplication application = createDraftApplication();
     StudyPlanSpace firstSpace =
-        createStudyPlanSpace(application.getInstitution(), application.getStudyPlan(), 1);
+        createStudyPlanSpace(
+            application.getInstitution(), requireNonNull(application.getStudyPlan()), 1);
     StudyPlanSpace secondSpace =
-        createStudyPlanSpace(application.getInstitution(), application.getStudyPlan(), 2);
+        createStudyPlanSpace(
+            application.getInstitution(), requireNonNull(application.getStudyPlan()), 2);
 
     service.updateDraft(
         application.getApplicantPerson().getId(),
@@ -253,6 +242,7 @@ class EnrollmentApplicationPostgresIntegrationTest {
         InstitutionalTestData.persist(
             entityManager,
             StudyPlan.create(institution, trainingPath, "Piano " + suffix, LocalDate.now(), null));
+    studyPlan.activate();
     AcademicYear academicYear =
         InstitutionalTestData.persist(
             entityManager,
@@ -269,6 +259,13 @@ class EnrollmentApplicationPostgresIntegrationTest {
                 .endDate(Instant.now().plus(30, ChronoUnit.DAYS))
                 .status(EnrollmentPeriodStatus.OPEN)
                 .build());
+
+    entityManager.flush();
+    period.markScopeConfigured();
+    final var offering = EnrollmentPeriodOffering.create(period, studyPlan);
+    offering.selectLevels(List.of(), true);
+    period.getOfferings().add(offering);
+    entityManager.persist(offering);
 
     EnrollmentApplication application =
         InstitutionalTestData.persist(

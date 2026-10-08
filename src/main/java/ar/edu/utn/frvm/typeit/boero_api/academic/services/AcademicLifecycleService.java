@@ -26,6 +26,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.ShiftRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.TrainingPathRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.AcademicLifecycleRequest;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.ScopedResource;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.logging.RequestLoggingFilter;
 import ar.edu.utn.frvm.typeit.boero_api.common.persistence.SoftDeletable;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
@@ -33,7 +36,9 @@ import java.time.Clock;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +47,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class AcademicLifecycleService {
+  private final AcademicAccessGuard accessGuard;
   private final Clock clock;
 
   private final AcademicYearRepository academicYearRepository;
@@ -54,9 +60,13 @@ public class AcademicLifecycleService {
   private final AcademicLifecycleEventRepository eventRepository;
   private final AcademicLifecycleActorResolver actorResolver;
 
+  @Autowired
+  private ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.CourseEnrollmentRepository
+      courseEnrollmentRepository;
+
   @Transactional
   public void deleteAcademicYear(
-      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+      final UUID institutionId, final UUID id, final @Nullable AcademicLifecycleRequest request) {
     final var year =
         academicYearRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
@@ -73,7 +83,7 @@ public class AcademicLifecycleService {
 
   @Transactional
   public void restoreAcademicYear(
-      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+      final UUID institutionId, final UUID id, final @Nullable AcademicLifecycleRequest request) {
     final var year =
         academicYearRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
@@ -83,7 +93,10 @@ public class AcademicLifecycleService {
 
   @Transactional
   public void deleteTrainingPath(
-      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+      final UUID institutionId, final UUID id, final @Nullable AcademicLifecycleRequest request) {
+    accessGuard.require(
+        PermissionCode.TRAINING_PATH_DELETE, institutionId, ScopedResource.TRAINING_PATH, id);
+
     final var path =
         trainingPathRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
@@ -103,7 +116,10 @@ public class AcademicLifecycleService {
 
   @Transactional
   public void restoreTrainingPath(
-      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+      final UUID institutionId, final UUID id, final @Nullable AcademicLifecycleRequest request) {
+    accessGuard.require(
+        PermissionCode.TRAINING_PATH_RESTORE, institutionId, ScopedResource.TRAINING_PATH, id);
+
     final var path =
         trainingPathRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
@@ -113,7 +129,10 @@ public class AcademicLifecycleService {
 
   @Transactional
   public void deleteStudyPlan(
-      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+      final UUID institutionId, final UUID id, final @Nullable AcademicLifecycleRequest request) {
+    accessGuard.require(
+        PermissionCode.STUDY_PLAN_DELETE, institutionId, ScopedResource.STUDY_PLAN, id);
+
     final var plan =
         studyPlanRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
@@ -130,7 +149,10 @@ public class AcademicLifecycleService {
 
   @Transactional
   public void restoreStudyPlan(
-      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+      final UUID institutionId, final UUID id, final @Nullable AcademicLifecycleRequest request) {
+    accessGuard.require(
+        PermissionCode.STUDY_PLAN_RESTORE, institutionId, ScopedResource.STUDY_PLAN, id);
+
     final var plan =
         studyPlanRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
@@ -155,7 +177,7 @@ public class AcademicLifecycleService {
 
   @Transactional
   public void deleteAcademicSpace(
-      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+      final UUID institutionId, final UUID id, final @Nullable AcademicLifecycleRequest request) {
     final var space =
         academicSpaceRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
@@ -172,7 +194,7 @@ public class AcademicLifecycleService {
 
   @Transactional
   public void restoreAcademicSpace(
-      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+      final UUID institutionId, final UUID id, final @Nullable AcademicLifecycleRequest request) {
     final var space =
         academicSpaceRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
@@ -182,7 +204,7 @@ public class AcademicLifecycleService {
 
   @Transactional
   public void deleteInstrument(
-      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+      final UUID institutionId, final UUID id, final @Nullable AcademicLifecycleRequest request) {
     final var instrument =
         instrumentRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
@@ -199,7 +221,7 @@ public class AcademicLifecycleService {
 
   @Transactional
   public void restoreInstrument(
-      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+      final UUID institutionId, final UUID id, final @Nullable AcademicLifecycleRequest request) {
     final var instrument =
         instrumentRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
@@ -210,7 +232,7 @@ public class AcademicLifecycleService {
 
   @Transactional
   public void deleteShift(
-      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+      final UUID institutionId, final UUID id, final @Nullable AcademicLifecycleRequest request) {
     final var shift =
         shiftRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
@@ -227,12 +249,18 @@ public class AcademicLifecycleService {
 
   @Transactional
   public void deleteCourse(
-      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+      final UUID institutionId, final UUID id, final @Nullable AcademicLifecycleRequest request) {
+    accessGuard.require(PermissionCode.COURSE_DELETE, institutionId, ScopedResource.COURSE, id);
+
     lockCourseParents(institutionId, id);
     final var course =
         courseRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
             .orElseThrow(CourseNotFoundException::new);
+    if (courseEnrollmentRepository != null
+        && courseEnrollmentRepository.existsByCourseIncludingHistorical(institutionId, id)) {
+      throw new AcademicConflictException(AcademicMessages.DELETE_REFERENCED_RESOURCE);
+    }
     if (course.delete(clock.instant())) {
       record(
           course.getInstitution(),
@@ -245,7 +273,7 @@ public class AcademicLifecycleService {
 
   @Transactional
   public void restoreShift(
-      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+      final UUID institutionId, final UUID id, final @Nullable AcademicLifecycleRequest request) {
     final var shift =
         shiftRepository
             .findByIdAndInstitution_IdForLifecycle(id, institutionId)
@@ -255,7 +283,9 @@ public class AcademicLifecycleService {
 
   @Transactional
   public void restoreCourse(
-      final UUID institutionId, final UUID id, final AcademicLifecycleRequest request) {
+      final UUID institutionId, final UUID id, final @Nullable AcademicLifecycleRequest request) {
+    accessGuard.require(PermissionCode.COURSE_RESTORE, institutionId, ScopedResource.COURSE, id);
+
     final var parents = lockCourseParents(institutionId, id);
     final var course =
         courseRepository
@@ -294,7 +324,7 @@ public class AcademicLifecycleService {
       final Institution institution,
       final AcademicLifecycleResource resourceType,
       final UUID resourceId,
-      final AcademicLifecycleRequest request) {
+      final @Nullable AcademicLifecycleRequest request) {
     if (!resource.restore()) {
       return;
     }
@@ -306,7 +336,7 @@ public class AcademicLifecycleService {
       final AcademicLifecycleResource resourceType,
       final UUID resourceId,
       final AcademicLifecycleAction action,
-      final AcademicLifecycleRequest request) {
+      final @Nullable AcademicLifecycleRequest request) {
     final var actor = actorResolver.resolve();
     final var now = clock.instant();
     try {
@@ -337,7 +367,8 @@ public class AcademicLifecycleService {
     }
   }
 
-  private static String normalizeReason(final AcademicLifecycleRequest request) {
+  private static @Nullable String normalizeReason(
+      final @Nullable AcademicLifecycleRequest request) {
     if (request == null || request.reason() == null || request.reason().isBlank()) {
       return null;
     }

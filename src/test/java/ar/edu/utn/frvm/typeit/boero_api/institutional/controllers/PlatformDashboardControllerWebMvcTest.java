@@ -71,7 +71,7 @@ class PlatformDashboardControllerWebMvcTest {
   void get_returnsForbiddenForInstitutionalAccount() throws Exception {
     final var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     when(authorizationService.hasPlatformRole(any(), eq(PlatformRoleCode.PLATFORM_ADMIN)))
         .thenReturn(false);
 
@@ -84,7 +84,7 @@ class PlatformDashboardControllerWebMvcTest {
   @DisplayName("Should return dashboard for platform administrator")
   void get_returnsDashboardForPlatformAdministrator() throws Exception {
     final var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     when(authorizationService.hasPlatformRole(any(), eq(PlatformRoleCode.PLATFORM_ADMIN)))
         .thenReturn(true);
     when(getPlatformDashboardUseCase.execute()).thenReturn(dashboardResponse());

@@ -130,7 +130,7 @@ public class PlatformRefreshTokenUseCase {
   private void revokeReusedFamily(final PlatformRefreshToken current) {
     final Set<UUID> sessionIds =
         platformRefreshTokenRepository.findByFamilyId(current.getFamilyId()).stream()
-            .map(PlatformRefreshToken::getPlatformSessionId)
+            .map(mappedPlatformRefreshToken -> mappedPlatformRefreshToken.getPlatformSessionId())
             .collect(Collectors.toSet());
     platformRefreshTokenRepository.revokeByFamilyId(current.getFamilyId());
     sessionRevocationService.revokePlatformSessionsByIds(sessionIds);

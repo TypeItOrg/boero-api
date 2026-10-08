@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.enrollment.controllers;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.filters.JwtAuthenticatedUser;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.RequiresInstitutionAccess;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
@@ -59,6 +61,6 @@ public class MyEnrollmentApplicationController {
   }
 
   private UUID currentPersonId(final Authentication authentication) {
-    return ((JwtAuthenticatedUser) authentication.getPrincipal()).personId();
+    return ((JwtAuthenticatedUser) requireNonNull(authentication.getPrincipal())).personId();
   }
 }

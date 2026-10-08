@@ -3,8 +3,12 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.services;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.AttachmentNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.common.storage.InvalidStorageKeyException;
+import ar.edu.utn.frvm.typeit.boero_api.common.storage.LocalStorageService;
+import ar.edu.utn.frvm.typeit.boero_api.common.storage.StorageFileNotFoundException;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.EnrollmentMessages;
 import ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions.InvalidFileException;
+import ar.edu.utn.frvm.typeit.boero_api.support.EnrollmentDocumentTestData;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,11 +35,11 @@ class LocalStorageServiceTest {
   @Test
   @DisplayName("Should successfully store a valid PDF file")
   void store_validPdf() throws Exception {
-    byte[] content = "test pdf content".getBytes();
-    MockMultipartFile file =
-        new MockMultipartFile("file", "document.pdf", "application/pdf", content);
+    MockMultipartFile file = EnrollmentDocumentTestData.pdf("document.pdf");
+    byte[] content = file.getBytes();
 
-    LocalStorageService.StoredFile stored = storageService.store(applicationId, file);
+    var stored = EnrollmentFilePolicy.prepare(applicationId, file);
+    storageService.write(stored.storagePath(), stored.contentType(), stored.size(), file);
 
     assertThat(stored).isNotNull();
     assertThat(stored.safeFileName()).endsWith(".pdf");
@@ -50,10 +54,10 @@ class LocalStorageServiceTest {
   @Test
   @DisplayName("Should successfully store a valid PNG image")
   void store_validPng() throws Exception {
-    byte[] content = new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47};
-    MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/png", content);
+    MockMultipartFile file = EnrollmentDocumentTestData.png("photo.png");
 
-    LocalStorageService.StoredFile stored = storageService.store(applicationId, file);
+    var stored = EnrollmentFilePolicy.prepare(applicationId, file);
+    storageService.write(stored.storagePath(), stored.contentType(), stored.size(), file);
 
     assertThat(stored.safeFileName()).endsWith(".png");
     assertThat(stored.contentType()).isEqualTo("image/png");
@@ -65,7 +69,7 @@ class LocalStorageServiceTest {
     MockMultipartFile file =
         new MockMultipartFile("file", "empty.pdf", "application/pdf", new byte[0]);
 
-    assertThatThrownBy(() -> storageService.store(applicationId, file))
+    assertThatThrownBy(() -> EnrollmentFilePolicy.prepare(applicationId, file))
         .isInstanceOf(InvalidFileException.class)
         .hasMessageContaining("no puede estar vacío");
   }
@@ -78,9 +82,9 @@ class LocalStorageServiceTest {
             "file",
             "large.pdf",
             "application/pdf",
-            new byte[(int) (LocalStorageService.MAX_FILE_SIZE_BYTES + 1)]);
+            new byte[(int) (EnrollmentFilePolicy.MAX_FILE_SIZE_BYTES + 1)]);
 
-    assertThatThrownBy(() -> storageService.store(applicationId, file))
+    assertThatThrownBy(() -> EnrollmentFilePolicy.prepare(applicationId, file))
         .isInstanceOf(InvalidFileException.class)
         .hasMessageContaining("no puede superar los 10MB");
   }
@@ -91,33 +95,33 @@ class LocalStorageServiceTest {
     MockMultipartFile file =
         new MockMultipartFile("file", "script.sh", "application/x-sh", "echo hi".getBytes());
 
-    assertThatThrownBy(() -> storageService.store(applicationId, file))
+    assertThatThrownBy(() -> EnrollmentFilePolicy.prepare(applicationId, file))
         .isInstanceOf(InvalidFileException.class)
-        .hasMessageContaining("Tipo de archivo no permitido");
+        .hasMessage(EnrollmentMessages.FILE_CONTENT_INVALID);
   }
 
   @Test
   @DisplayName("Should reject path traversal attempts when loading resource")
   void loadAsResource_pathTraversal() {
     assertThatThrownBy(() -> storageService.loadAsResource("../../../etc/passwd"))
-        .isInstanceOf(InvalidFileException.class)
-        .hasMessageContaining("Acceso no permitido");
+        .isInstanceOf(InvalidStorageKeyException.class);
   }
 
   @Test
-  @DisplayName("Should throw AttachmentNotFoundException for non-existent file")
+  @DisplayName("Should throw StorageFileNotFoundException for non-existent file")
   void loadAsResource_notFound() {
     assertThatThrownBy(() -> storageService.loadAsResource(applicationId + "/missing.pdf"))
-        .isInstanceOf(AttachmentNotFoundException.class);
+        .isInstanceOf(StorageFileNotFoundException.class);
   }
 
   @Test
   @DisplayName("Should read stored file as InputStream")
   void loadAsInputStream_success() throws Exception {
-    byte[] content = "sample data".getBytes();
-    MockMultipartFile file = new MockMultipartFile("file", "sample.jpg", "image/jpeg", content);
+    MockMultipartFile file = EnrollmentDocumentTestData.png("sample.png");
+    byte[] content = file.getBytes();
 
-    LocalStorageService.StoredFile stored = storageService.store(applicationId, file);
+    var stored = EnrollmentFilePolicy.prepare(applicationId, file);
+    storageService.write(stored.storagePath(), stored.contentType(), stored.size(), file);
 
     try (InputStream is = storageService.loadAsInputStream(stored.storagePath())) {
       byte[] readBytes = is.readAllBytes();
@@ -127,11 +131,11 @@ class LocalStorageServiceTest {
 
   @Test
   @DisplayName("Should delete physical file from storage")
-  void deletePhysicalFile_success() {
-    MockMultipartFile file =
-        new MockMultipartFile("file", "doc.pdf", "application/pdf", "content".getBytes());
+  void deletePhysicalFile_success() throws Exception {
+    MockMultipartFile file = EnrollmentDocumentTestData.pdf("doc.pdf");
 
-    LocalStorageService.StoredFile stored = storageService.store(applicationId, file);
+    var stored = EnrollmentFilePolicy.prepare(applicationId, file);
+    storageService.write(stored.storagePath(), stored.contentType(), stored.size(), file);
     Path filePath = tempDir.resolve(stored.storagePath());
     assertThat(Files.exists(filePath)).isTrue();
 

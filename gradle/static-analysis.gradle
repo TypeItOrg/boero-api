@@ -1,0 +1,79 @@
+configurations {
+    ecjCompiler
+}
+
+dependencies {
+    ecjCompiler 'org.eclipse.jdt:ecj:3.46.100'
+    errorprone 'com.google.errorprone:error_prone_core:2.50.0'
+    errorprone 'com.uber.nullaway:nullaway:0.14.2'
+}
+
+// Keep the application build/runtime on Java 21; the strict checker needs a modern javac.
+tasks.withType(JavaCompile).configureEach {
+    options.errorprone.enabled = false
+}
+
+sourceSets.each { sourceSet ->
+    def suffix = sourceSet.name.capitalize()
+    tasks.register("nullAway${suffix}", JavaCompile) {
+        group = 'verification'
+        description = "Checks strict JSpecify contracts in ${sourceSet.name} without running tests."
+        source = sourceSet.allJava
+        classpath = sourceSet.compileClasspath
+        destinationDirectory = layout.buildDirectory.dir("static-analysis/nullaway/${sourceSet.name}")
+        javaCompiler = javaToolchains.compilerFor {
+            languageVersion = JavaLanguageVersion.of(25)
+        }
+        options.release = 21
+        options.annotationProcessorPath = configurations[sourceSet.annotationProcessorConfigurationName]
+        options.compilerArgs += ['-Xmaxerrs', '10000']
+        inputs.file('lombok.config')
+        options.errorprone {
+            enabled = true
+            disableAllChecks = true
+            error('NullAway')
+            error('RequireExplicitNullMarking')
+            option('NullAway:OnlyNullMarked', 'true')
+            option('NullAway:JSpecifyMode', 'true')
+            if (sourceSet.name == 'test') {
+                option('NullAway:HandleTestAssertionLibraries', 'true')
+                option('NullAway:CustomInitializerAnnotations',
+                    'org.junit.jupiter.api.BeforeEach,org.junit.jupiter.api.BeforeAll')
+                option('NullAway:ExcludedFieldAnnotations',
+                    'org.mockito.Mock,org.mockito.InjectMocks,org.mockito.Spy,' +
+                    'org.springframework.beans.factory.annotation.Autowired,' +
+                    'org.springframework.test.context.bean.override.mockito.MockitoBean')
+            }
+        }
+    }
+
+    tasks.register("ecj${suffix}", JavaExec) {
+        group = 'verification'
+        description = "Checks IDE/compiler warnings in ${sourceSet.name} without running tests."
+        dependsOn sourceSet.classesTaskName
+        classpath = configurations.ecjCompiler
+        mainClass = 'org.eclipse.jdt.internal.compiler.batch.Main'
+        javaLauncher = javaToolchains.launcherFor {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+        inputs.files(sourceSet.allJava, sourceSet.compileClasspath)
+        inputs.files('config/static-analysis/ecj.properties', 'lombok.config')
+        def report = layout.buildDirectory.file("reports/static-analysis/ecj-${sourceSet.name}.xml")
+        outputs.file(report)
+        doFirst {
+            report.get().asFile.parentFile.mkdirs()
+            jvmArgs "-javaagent:${configurations.annotationProcessor.files.find { it.name ==~ /lombok-[0-9].*\.jar/ }}"
+            args '-21', '-proc:none', '-d', 'none', '-failOnWarning',
+                '-properties', file('config/static-analysis/ecj.properties').absolutePath,
+                '-log', report.get().asFile.absolutePath,
+                '-classpath', sourceSet.compileClasspath.asPath
+            args sourceSet.allJava.files.collect { it.absolutePath }.sort()
+        }
+    }
+}
+
+tasks.register('staticAnalysis') {
+    group = 'verification'
+    description = 'Checks main/test nullness and compiler warnings without executing tests.'
+    dependsOn 'nullAwayMain', 'nullAwayTest', 'ecjMain', 'ecjTest'
+}

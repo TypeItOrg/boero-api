@@ -11,4 +11,5 @@ public record SearchResultResponse(
     String title,
     @Nullable String subtitle,
     @Nullable String status,
-    @Nullable String category) {}
+    @Nullable String category,
+    @Nullable Integer studyPlanVersion) {}

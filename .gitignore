@@ -40,3 +40,6 @@ out/
 !.env.*.example
 
 /logs/
+
+.atl/
+.engram/

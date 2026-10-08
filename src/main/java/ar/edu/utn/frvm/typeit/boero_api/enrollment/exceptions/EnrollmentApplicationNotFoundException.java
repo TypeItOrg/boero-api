@@ -2,9 +2,12 @@ package ar.edu.utn.frvm.typeit.boero_api.enrollment.exceptions;
 
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ApplicationException;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorCategory;
+import java.io.Serial;
 import java.util.UUID;
 
 public class EnrollmentApplicationNotFoundException extends ApplicationException {
+
+  @Serial private static final long serialVersionUID = 1L;
 
   public EnrollmentApplicationNotFoundException() {
     super(ErrorCategory.NOT_FOUND, EnrollmentMessages.ENROLLMENT_APPLICATION_NOT_FOUND);

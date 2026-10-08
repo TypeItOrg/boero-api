@@ -6,6 +6,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequirementType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Schema(
     requiredProperties = {
@@ -26,8 +27,8 @@ public record StudyPlanSpaceResponse(
     UUID studyPlanId,
     UUID academicSpaceId,
     String academicSpaceName,
-    @Schema(nullable = true) UUID academicLevelId,
-    @Schema(nullable = true) String academicLevelName,
+    @Schema(nullable = true) @Nullable UUID academicLevelId,
+    @Schema(nullable = true) @Nullable String academicLevelName,
     RequirementType requirementType,
     int displayOrder,
     ApprovalMode approvalMode,
@@ -53,7 +54,7 @@ public record StudyPlanSpaceResponse(
         space.getRequirementType(),
         space.getDisplayOrder(),
         space.getApprovalMode(),
-        !allowedInstruments.isEmpty(),
+        space.getAcademicSpace().isInstrumental() || !allowedInstruments.isEmpty(),
         allowedInstruments);
   }
 }

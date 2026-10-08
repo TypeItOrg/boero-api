@@ -15,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @RequiredArgsConstructor
@@ -72,19 +74,36 @@ public class SessionRevocationService {
   private void deactivateInstitutionalSessions(final List<UserSession> sessions) {
     if (sessions.isEmpty()) return;
 
-    revokeInstitutionalSessionsByIds(sessions.stream().map(UserSession::getId).toList());
+    revokeInstitutionalSessionsByIds(
+        sessions.stream().map(mappedUserSession -> mappedUserSession.getId()).toList());
   }
 
   private void deactivatePlatformSessions(final List<PlatformSession> sessions) {
     if (sessions.isEmpty()) return;
 
-    revokePlatformSessionsByIds(sessions.stream().map(PlatformSession::getId).toList());
+    revokePlatformSessionsByIds(
+        sessions.stream().map(mappedPlatformSession -> mappedPlatformSession.getId()).toList());
   }
 
   private void evictSessions(final AuthRealm realm, final Collection<UUID> sessionIds) {
-    final var cache = cacheManager.getCache(realm.activeSessionsCache());
-    if (cache != null) {
-      sessionIds.forEach(cache::evict);
+    final var ids = List.copyOf(sessionIds);
+    Runnable evict =
+        () -> {
+          final var cache = cacheManager.getCache(realm.activeSessionsCache());
+          if (cache != null) {
+            ids.forEach(cache::evict);
+          }
+        };
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      TransactionSynchronizationManager.registerSynchronization(
+          new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+              evict.run();
+            }
+          });
+    } else {
+      evict.run();
     }
   }
 }

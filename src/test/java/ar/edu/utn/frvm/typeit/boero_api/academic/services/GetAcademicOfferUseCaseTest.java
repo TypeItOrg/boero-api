@@ -15,7 +15,9 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.enums.RequirementType;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.AcademicLevelRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanSpaceRepository;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.AcademicAccessGuard;
 import ar.edu.utn.frvm.typeit.boero_api.common.time.BusinessDateProvider;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.interfaces.EnrollmentPeriodRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -23,6 +25,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +43,7 @@ class GetAcademicOfferUseCaseTest {
   private static final UUID LEVEL_ID = UUID.randomUUID();
 
   @Mock private StudyPlanRepository studyPlanRepository;
+  @Mock private EnrollmentPeriodRepository enrollmentPeriodRepository;
   @Mock private AcademicLevelRepository academicLevelRepository;
   @Mock private StudyPlanSpaceRepository studyPlanSpaceRepository;
   @Mock private StudyPlan studyPlan;
@@ -74,7 +78,10 @@ class GetAcademicOfferUseCaseTest {
 
   private GetAcademicOfferUseCase useCase() {
     return new GetAcademicOfferUseCase(
+        org.mockito.Mockito.mock(AcademicAccessGuard.class),
         new BusinessDateProvider(CLOCK),
+        CLOCK,
+        enrollmentPeriodRepository,
         studyPlanRepository,
         academicLevelRepository,
         studyPlanSpaceRepository);
@@ -117,7 +124,7 @@ class GetAcademicOfferUseCaseTest {
       final AcademicSpace academicSpace,
       final UUID id,
       final String name,
-      final AcademicLevel academicLevel) {
+      final @Nullable AcademicLevel academicLevel) {
     given(planSpace.getId()).willReturn(id);
     given(planSpace.getAcademicSpace()).willReturn(academicSpace);
     given(planSpace.getAcademicLevel()).willReturn(academicLevel);

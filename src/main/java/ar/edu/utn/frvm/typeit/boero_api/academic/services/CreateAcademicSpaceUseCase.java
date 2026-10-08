@@ -38,7 +38,12 @@ public class CreateAcademicSpaceUseCase {
       final var saved =
           academicSpaceRepository.save(
               AcademicSpace.create(
-                  institution, name, request.description(), request.type(), request.format()));
+                  institution,
+                  name,
+                  request.description(),
+                  request.type(),
+                  request.format(),
+                  request.instrumental()));
       academicSpaceRepository.flush();
       return AcademicSpaceResponse.from(saved);
     } catch (DataIntegrityViolationException exception) {

@@ -15,6 +15,7 @@ import static ar.edu.utn.frvm.typeit.boero_api.auth.webauthn.WebAuthnOptionsRead
 import static ar.edu.utn.frvm.typeit.boero_api.auth.webauthn.WebAuthnOptionsReader.userEntity;
 import static ar.edu.utn.frvm.typeit.boero_api.auth.webauthn.WebAuthnOptionsReader.userVerification;
 
+import java.io.Serial;
 import org.springframework.security.web.webauthn.api.AuthenticationExtensionsClientInputs;
 import org.springframework.security.web.webauthn.api.Bytes;
 import org.springframework.security.web.webauthn.api.PublicKeyCredentialCreationOptions;
@@ -29,6 +30,8 @@ import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.module.SimpleModule;
 
 public class WebAuthnOptionsModule extends SimpleModule {
+
+  @Serial private static final long serialVersionUID = 1L;
 
   public WebAuthnOptionsModule() {
     addDeserializer(PublicKeyCredentialCreationOptions.class, new CreationOptionsDeserializer());

@@ -16,6 +16,7 @@ import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(
@@ -49,7 +50,7 @@ public class InstitutionalEmailVerificationToken {
   private Instant expiresAt;
 
   @Column(name = "used_at")
-  private Instant usedAt;
+  private @Nullable Instant usedAt;
 
   public static InstitutionalEmailVerificationToken issue(
       final User user, final String hash, final Instant now, final Duration expiration) {

@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
+import static java.util.Objects.requireNonNull;
+
 import ar.edu.utn.frvm.typeit.boero_api.auth.entities.PlatformAccount;
 import ar.edu.utn.frvm.typeit.boero_api.auth.interfaces.PlatformAccountRepository;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.config.PlatformAdminProperties;
@@ -49,7 +51,9 @@ public class PlatformAdminBootstrap implements ApplicationRunner {
                             .email(email)
                             .name(platformAdminProperties.resolvedName())
                             .lastName(platformAdminProperties.resolvedLastName())
-                            .password(passwordEncoder.encode(platformAdminProperties.password()))
+                            .password(
+                                requireNonNull(
+                                    passwordEncoder.encode(platformAdminProperties.password())))
                             .build()));
 
     assignPlatformRoleUseCase.execute(account, PlatformRoleCode.PLATFORM_ADMIN, false);

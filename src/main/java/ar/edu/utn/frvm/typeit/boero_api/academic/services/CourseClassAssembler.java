@@ -18,6 +18,7 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseClassRequest;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.CourseClassScheduleRequest;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.SystemRoleCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.interfaces.PersonRoleAssignmentRepository;
+import ar.edu.utn.frvm.typeit.boero_api.enrollment.services.CourseIndividualSlotFactory;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.exceptions.PersonNotFoundException;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.interfaces.PersonRepository;
@@ -31,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -43,6 +45,7 @@ public class CourseClassAssembler {
   private final CourseClassTeacherRepository courseClassTeacherRepository;
   private final PersonRoleAssignmentRepository personRoleAssignmentRepository;
   private final PersonRepository personRepository;
+  private final CourseIndividualSlotFactory slotFactory;
 
   public List<CourseClass> assemble(
       final Institution institution,
@@ -53,8 +56,8 @@ public class CourseClassAssembler {
     validateUniqueDays(requests);
     validateSchedules(requests);
     final List<CourseClass> classes = new ArrayList<>(requests.size());
-    for (final var request : requests) {
-      classes.add(assembleClass(institution, course, spaceFormat, request));
+    for (int index = 0; index < requests.size(); index++) {
+      classes.add(assembleClass(institution, course, spaceFormat, requests.get(index), index + 1));
     }
     return classes;
   }
@@ -63,8 +66,10 @@ public class CourseClassAssembler {
       final Institution institution,
       final Course course,
       final AcademicSpaceFormat spaceFormat,
-      final CourseClassRequest request) {
-    final var courseClass = courseClassRepository.save(CourseClass.create(institution, course));
+      final CourseClassRequest request,
+      final int classNumber) {
+    final var courseClass =
+        courseClassRepository.save(CourseClass.create(institution, course, classNumber));
     persistTeachers(institution, courseClass, request.teacherIds());
     for (final var dayRequest : request.days()) {
       assembleDay(institution, courseClass, spaceFormat, dayRequest);
@@ -87,24 +92,20 @@ public class CourseClassAssembler {
     if (request.capacity() != null && request.capacity() <= 0) {
       throw invalid(AcademicMessages.COURSE_SCHEDULE_INVALID);
     }
-    if (individual) {
-      for (final var schedule : request.schedules()) {
-        final int duration = durationMinutes(schedule.startTime(), schedule.endTime());
-        if (duration % periodDurationMinutes != 0) {
-          throw invalid(AcademicMessages.COURSE_PERIOD_DURATION_NOT_DIVISIBLE);
-        }
-      }
-    }
     final Integer capacity =
-        individual ? Integer.valueOf(totalMinutes / periodDurationMinutes) : request.capacity();
+        periodDurationMinutes != null
+            ? Integer.valueOf(totalMinutes / periodDurationMinutes)
+            : request.capacity();
     final var day =
         courseClassDayRepository.save(
             CourseClassDay.create(
                 institution, courseClass, request.dayOfWeek(), capacity, periodDurationMinutes));
     for (final var scheduleRequest : request.schedules()) {
-      courseClassScheduleRepository.save(
-          CourseClassSchedule.create(
-              institution, day, scheduleRequest.startTime(), scheduleRequest.endTime()));
+      final var schedule =
+          courseClassScheduleRepository.save(
+              CourseClassSchedule.create(
+                  institution, day, scheduleRequest.startTime(), scheduleRequest.endTime()));
+      slotFactory.createFor(schedule);
     }
   }
 
@@ -167,7 +168,7 @@ public class CourseClassAssembler {
     }
   }
 
-  private static Integer requirePeriod(final Integer periodDurationMinutes) {
+  private static Integer requirePeriod(final @Nullable Integer periodDurationMinutes) {
     if (periodDurationMinutes == null || periodDurationMinutes <= 0) {
       throw invalid(AcademicMessages.COURSE_PERIOD_DURATION_REQUIRED);
     }

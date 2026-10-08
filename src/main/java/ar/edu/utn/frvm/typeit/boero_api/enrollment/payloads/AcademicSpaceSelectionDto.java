@@ -5,10 +5,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.Builder;
+import org.jspecify.annotations.Nullable;
 
 @Builder
 @Schema(requiredProperties = {"studyPlanSpaceIds"})
-public record AcademicSpaceSelectionDto(@Schema(nullable = true) List<UUID> studyPlanSpaceIds) {
+public record AcademicSpaceSelectionDto(
+    @Schema(nullable = true) @Nullable List<UUID> studyPlanSpaceIds) {
   public AcademicSpaceSelectionDto() {
     this(new ArrayList<>());
   }
@@ -17,7 +19,7 @@ public record AcademicSpaceSelectionDto(@Schema(nullable = true) List<UUID> stud
     studyPlanSpaceIds = studyPlanSpaceIds == null ? new ArrayList<>() : studyPlanSpaceIds;
   }
 
-  public List<UUID> getStudyPlanSpaceIds() {
+  public @Nullable List<UUID> getStudyPlanSpaceIds() {
     return studyPlanSpaceIds;
   }
 }

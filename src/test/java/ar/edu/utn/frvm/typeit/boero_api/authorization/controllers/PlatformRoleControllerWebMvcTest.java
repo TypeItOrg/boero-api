@@ -73,7 +73,7 @@ class PlatformRoleControllerWebMvcTest {
   @DisplayName("Should list roles for a platform administrator")
   void list_returnsRolesForPlatformAdministrator() throws Exception {
     final var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     stubPlatformAdminAccess(true);
     when(listPlatformRolesUseCase.execute(
             eq("doc"), eq(INSTITUTION_ID), eq(true), any(Pageable.class)))
@@ -104,7 +104,7 @@ class PlatformRoleControllerWebMvcTest {
   @DisplayName("Should return role details for a platform administrator")
   void get_returnsRoleDetailsForPlatformAdministrator() throws Exception {
     final var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     stubPlatformAdminAccess(true);
     when(roleManagementService.getAsPlatformAdmin(ROLE_ID)).thenReturn(roleResponse());
 
@@ -120,7 +120,7 @@ class PlatformRoleControllerWebMvcTest {
   @DisplayName("Should create, update and delete roles for a platform administrator")
   void mutate_allowsPlatformAdministrator() throws Exception {
     final var authentication =
-        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), null);
+        new TestingAuthenticationToken(platformPrincipal(PLATFORM_ACCOUNT_ID), "");
     stubPlatformAdminAccess(true);
     when(roleManagementService.createAsPlatformAdmin(eq(INSTITUTION_ID), any()))
         .thenReturn(institutionRoleResponse());
@@ -162,7 +162,7 @@ class PlatformRoleControllerWebMvcTest {
   void list_forbidsInstitutionalAccounts() throws Exception {
     final var authentication =
         new TestingAuthenticationToken(
-            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), null);
+            institutionalPrincipal(UUID.randomUUID(), INSTITUTION_ID), "");
     stubPlatformAdminAccess(false);
 
     mockMvc

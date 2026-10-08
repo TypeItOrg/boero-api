@@ -2,6 +2,7 @@ package ar.edu.utn.frvm.typeit.boero_api.authorization.entities;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -16,6 +17,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @EqualsAndHashCode
 public class RolePermissionId implements Serializable {
+
+  @Serial private static final long serialVersionUID = 1L;
 
   @Column(name = "role_id")
   private UUID roleId;

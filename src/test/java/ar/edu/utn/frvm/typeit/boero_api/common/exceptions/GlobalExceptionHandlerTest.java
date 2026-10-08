@@ -60,7 +60,7 @@ class GlobalExceptionHandlerTest {
     ExceptionPayload payload =
         handler.handleHttpMessageNotReadable(
             new HttpMessageNotReadableException(
-                "", (org.springframework.http.HttpInputMessage) null));
+                "", org.mockito.Mockito.mock(org.springframework.http.HttpInputMessage.class)));
 
     assertThat(payload.status()).isEqualTo(400);
     assertThat(payload.message()).isEqualTo("El formato del cuerpo de la solicitud es inválido.");

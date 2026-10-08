@@ -3,16 +3,17 @@ package ar.edu.utn.frvm.typeit.boero_api.institutional.payloads.person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Address;
 import java.util.UUID;
 import lombok.Builder;
+import org.jspecify.annotations.Nullable;
 
 @Builder
 public record AddressResponse(
     UUID id,
     String street,
-    String number,
-    String floor,
-    String apartment,
-    String neighborhood,
-    String additionalInfo,
+    @Nullable String number,
+    @Nullable String floor,
+    @Nullable String apartment,
+    @Nullable String neighborhood,
+    @Nullable String additionalInfo,
     CitySummaryResponse city) {
 
   public static AddressResponse from(Address address) {

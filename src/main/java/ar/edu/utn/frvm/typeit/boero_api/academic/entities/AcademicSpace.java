@@ -24,6 +24,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(
@@ -51,7 +52,7 @@ public class AcademicSpace extends SoftDeletable {
   private String name;
 
   @Column(length = 1000)
-  private String description;
+  private @Nullable String description;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
@@ -64,12 +65,25 @@ public class AcademicSpace extends SoftDeletable {
   @Column(nullable = false)
   private boolean active;
 
+  @Column(nullable = false)
+  private boolean instrumental;
+
   public static AcademicSpace create(
       final Institution institution,
       final String name,
-      final String description,
+      final @Nullable String description,
       final AcademicSpaceType type,
       final AcademicSpaceFormat format) {
+    return create(institution, name, description, type, format, false);
+  }
+
+  public static AcademicSpace create(
+      final Institution institution,
+      final String name,
+      final @Nullable String description,
+      final AcademicSpaceType type,
+      final AcademicSpaceFormat format,
+      final boolean instrumental) {
     return AcademicSpace.builder()
         .institution(institution)
         .name(AcademicNameNormalizer.display(name))
@@ -77,18 +91,29 @@ public class AcademicSpace extends SoftDeletable {
         .type(type)
         .format(format)
         .active(true)
+        .instrumental(instrumental)
         .build();
   }
 
   public void update(
       final String name,
-      final String description,
+      final @Nullable String description,
       final AcademicSpaceType type,
       final AcademicSpaceFormat format) {
+    update(name, description, type, format, instrumental);
+  }
+
+  public void update(
+      final String name,
+      final @Nullable String description,
+      final AcademicSpaceType type,
+      final AcademicSpaceFormat format,
+      final boolean instrumental) {
     this.name = AcademicNameNormalizer.display(name);
     this.description = description;
     this.type = type;
     this.format = format;
+    this.instrumental = instrumental;
   }
 
   public void updateStatus(final boolean active) {

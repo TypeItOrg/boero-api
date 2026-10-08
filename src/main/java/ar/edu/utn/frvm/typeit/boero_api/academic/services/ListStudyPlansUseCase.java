@@ -5,6 +5,8 @@ import ar.edu.utn.frvm.typeit.boero_api.academic.enums.StudyPlanStatus;
 import ar.edu.utn.frvm.typeit.boero_api.academic.interfaces.StudyPlanRepository;
 import ar.edu.utn.frvm.typeit.boero_api.academic.payloads.StudyPlanResponse;
 import ar.edu.utn.frvm.typeit.boero_api.academic.validation.AcademicNameNormalizer;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.services.ScopedAuthorizationService;
 import ar.edu.utn.frvm.typeit.boero_api.common.search.SearchNormalization;
 import ar.edu.utn.frvm.typeit.boero_api.common.web.PaginatedResponse;
 import jakarta.persistence.criteria.Predicate;
@@ -28,14 +30,15 @@ public class ListStudyPlansUseCase {
   private static final Set<String> DATE_SORT_FIELDS = Set.of("effectiveFrom", "effectiveTo");
 
   private final StudyPlanRepository studyPlanRepository;
+  private final ScopedAuthorizationService scopedAuthorization;
 
   @Transactional(readOnly = true)
   public PaginatedResponse<StudyPlanResponse> execute(
       final @Nullable UUID institutionId,
-      final String search,
-      final StudyPlanStatus status,
-      final UUID trainingPathId,
-      final LocalDate validOn,
+      final @Nullable String search,
+      final @Nullable StudyPlanStatus status,
+      final @Nullable UUID trainingPathId,
+      final @Nullable LocalDate validOn,
       final boolean deleted,
       final Pageable pageable) {
     return PaginatedResponse.from(
@@ -54,31 +57,51 @@ public class ListStudyPlansUseCase {
 
   public PaginatedResponse<StudyPlanResponse> execute(
       final @Nullable UUID institutionId,
-      final String search,
-      final StudyPlanStatus status,
+      final @Nullable String search,
+      final @Nullable StudyPlanStatus status,
       final Pageable pageable) {
     return execute(institutionId, search, status, null, null, false, pageable);
   }
 
   public PaginatedResponse<StudyPlanResponse> execute(
       final UUID institutionId,
-      final String search,
-      final StudyPlanStatus status,
-      final UUID trainingPathId,
-      final LocalDate validOn,
+      final @Nullable String search,
+      final @Nullable StudyPlanStatus status,
+      final @Nullable UUID trainingPathId,
+      final @Nullable LocalDate validOn,
       final Pageable pageable) {
     return execute(institutionId, search, status, trainingPathId, validOn, false, pageable);
   }
 
-  private static Specification<StudyPlan> byFilters(
+  @Transactional(readOnly = true)
+  public PaginatedResponse<StudyPlanResponse> published(
       final @Nullable UUID institutionId,
-      final String search,
-      final StudyPlanStatus status,
-      final UUID trainingPathId,
-      final LocalDate validOn,
+      final @Nullable UUID trainingPathId,
+      final @Nullable String search,
+      final Pageable pageable) {
+    return PaginatedResponse.from(
+        studyPlanRepository
+            .findPublished(
+                institutionId,
+                trainingPathId,
+                search == null || search.isBlank() ? null : search.trim(),
+                pageable)
+            .map(StudyPlanResponse::from));
+  }
+
+  private Specification<StudyPlan> byFilters(
+      final @Nullable UUID institutionId,
+      final @Nullable String search,
+      final @Nullable StudyPlanStatus status,
+      final @Nullable UUID trainingPathId,
+      final @Nullable LocalDate validOn,
       final boolean deleted) {
     return (root, query, criteriaBuilder) -> {
       final List<Predicate> predicates = new ArrayList<>();
+      var access = scopedAuthorization.managementAccess(PermissionCode.STUDY_PLAN_READ);
+      if (!access.institutional()) {
+        predicates.add(root.get("trainingPath").get("id").in(access.trainingPathIds()));
+      }
       if (institutionId != null) {
         predicates.add(criteriaBuilder.equal(root.get("institution").get("id"), institutionId));
       }

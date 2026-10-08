@@ -1,6 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 
 import static ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.AuthorizationMessages.PERMISSION_NOT_SEEDED;
+import static java.util.Objects.requireNonNull;
 
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Permission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
@@ -26,10 +27,7 @@ public class InstitutionRoleProvisioner {
   private static final Map<SystemRoleCode, Set<PermissionCode>> DEFAULT_PERMISSIONS =
       Map.of(
           SystemRoleCode.APPLICANT,
-          EnumSet.of(
-              PermissionCode.ACADEMIC_OFFER_READ,
-              PermissionCode.STUDY_PLAN_READ,
-              PermissionCode.ACADEMIC_YEAR_READ),
+          EnumSet.of(PermissionCode.ACADEMIC_OFFER_READ),
           SystemRoleCode.STUDENT,
           EnumSet.of(PermissionCode.STUDY_PLAN_READ, PermissionCode.ACADEMIC_YEAR_READ),
           SystemRoleCode.GUARDIAN,
@@ -77,7 +75,7 @@ public class InstitutionRoleProvisioner {
       }
 
       if (existingRole.isEmpty() || code == SystemRoleCode.INSTITUTIONAL_AUTHORITY) {
-        assignDefaults(role, DEFAULT_PERMISSIONS.get(code));
+        assignDefaults(role, requireNonNull(DEFAULT_PERMISSIONS.get(code)));
       }
     }
   }

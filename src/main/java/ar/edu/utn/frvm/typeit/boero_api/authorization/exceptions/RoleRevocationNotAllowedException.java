@@ -4,8 +4,11 @@ import static ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.Authoriz
 
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ApplicationException;
 import ar.edu.utn.frvm.typeit.boero_api.common.exceptions.ErrorCategory;
+import java.io.Serial;
 
 public class RoleRevocationNotAllowedException extends ApplicationException {
+
+  @Serial private static final long serialVersionUID = 1L;
 
   public RoleRevocationNotAllowedException() {
     super(ErrorCategory.AUTHORIZATION, ROLE_REVOCATION_NOT_ALLOWED);

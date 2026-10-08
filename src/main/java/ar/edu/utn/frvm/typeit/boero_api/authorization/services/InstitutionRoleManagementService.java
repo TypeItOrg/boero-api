@@ -3,12 +3,14 @@ package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Permission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.RolePermission;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.AccessScope;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionScope;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.RoleScope;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.DuplicateRoleNameException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.InstitutionInactiveForRoleManagementException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.InstitutionalAuthorityRoleImmutableException;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.InvalidAccessScopeException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.PermissionDelegationNotAllowedException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.RoleManagementSelfLockoutException;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.exceptions.RoleNotFoundException;
@@ -34,6 +36,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class InstitutionRoleManagementService {
+  private final RoleAdministrationLock administrationLock;
 
   private static final Set<String> ROLE_MANAGEMENT_PERMISSIONS =
       Set.of(
@@ -50,10 +54,11 @@ public class InstitutionRoleManagementService {
   private static final Set<PermissionCode> PLATFORM_ADMIN_PERMISSIONS =
       Arrays.stream(PermissionCode.values())
           .filter(permission -> permission.getScope() == PermissionScope.INSTITUTION)
-          .filter(PermissionCode::isConfigurable)
+          .filter(mappedPermissionCode -> mappedPermissionCode.isConfigurable())
           .collect(Collectors.toUnmodifiableSet());
 
   private final RoleRepository roleRepository;
+  private final ScopedAuthorizationService scopedAuthorization;
   private final PermissionRepository permissionRepository;
   private final RolePermissionRepository rolePermissionRepository;
   private final PersonRoleAssignmentRepository assignmentRepository;
@@ -112,6 +117,12 @@ public class InstitutionRoleManagementService {
   @Transactional
   public InstitutionRoleResponse create(
       UUID institutionId, InstitutionRoleRequest request, Set<PermissionCode> actorPermissions) {
+    administrationLock.lock(institutionId);
+    if (!scopedAuthorization.isPlatformAdministrator()) {
+      scopedAuthorization.requireDelegation(
+          PermissionCode.INSTITUTION_ROLE_CREATE, PermissionAccess.institution());
+      actorPermissions = scopedAuthorization.freshPermissions();
+    }
     String name = normalizedName(request.name());
     ensureUniqueName(institutionId, name, null);
     var institution =
@@ -129,6 +140,7 @@ public class InstitutionRoleManagementService {
   @Transactional
   public InstitutionRoleResponse createAsPlatformAdmin(
       UUID institutionId, InstitutionRoleRequest request) {
+    administrationLock.lock(institutionId);
     ensureActiveInstitution(institutionId);
     return create(institutionId, request, PLATFORM_ADMIN_PERMISSIONS);
   }
@@ -140,6 +152,10 @@ public class InstitutionRoleManagementService {
       InstitutionRoleRequest request,
       UUID actorPersonId,
       Set<PermissionCode> actorPermissions) {
+    administrationLock.lock(institutionId);
+    scopedAuthorization.requireDelegation(
+        PermissionCode.INSTITUTION_ROLE_UPDATE, PermissionAccess.institution());
+    actorPermissions = scopedAuthorization.freshPermissions();
     Role role = requireRole(institutionId, roleId);
     if (isAuthority(role)) {
       throw new InstitutionalAuthorityRoleImmutableException();
@@ -149,6 +165,28 @@ public class InstitutionRoleManagementService {
     role.rename(name);
     ensureActorRetainsRoleManagementPermissions(
         role, institutionId, actorPersonId, request.permissions());
+    var requestedCodes = expandPermissionCodes(request.permissions());
+    var existingCodes = permissionsFor(role);
+    var changedCodes = new HashSet<>(requestedCodes);
+    changedCodes.addAll(existingCodes);
+    changedCodes.removeIf(code -> requestedCodes.contains(code) == existingCodes.contains(code));
+    for (var assignment : assignmentRepository.findByRole_Id(roleId)) {
+      for (var code : changedCodes) {
+        var permission = PermissionCode.fromCode(code);
+        if (assignment.getAccessScope() == AccessScope.INSTITUTION
+            || permission.supportsTrainingPaths()) {
+          scopedAuthorization.requireDelegation(
+              permission,
+              new PermissionAccess(assignment.getAccessScope(), assignment.getTrainingPathIds()));
+        }
+      }
+      if (assignment.getAccessScope() == AccessScope.TRAINING_PATHS
+          && requestedCodes.stream()
+              .map(PermissionCode::fromCode)
+              .noneMatch(mappedPermissionCode -> mappedPermissionCode.supportsTrainingPaths())) {
+        throw new InvalidAccessScopeException();
+      }
+    }
     replacePermissions(role, request.permissions(), actorPermissions, true);
     authorizationCacheInvalidator.evictPeopleForRole(role.getId(), institutionId);
     return toResponse(role);
@@ -157,6 +195,7 @@ public class InstitutionRoleManagementService {
   @Transactional
   public InstitutionRoleResponse updateAsPlatformAdmin(
       UUID institutionId, UUID roleId, InstitutionRoleRequest request) {
+    administrationLock.lock(institutionId);
     Role role = requireRole(institutionId, roleId);
     ensureActiveInstitution(role);
     if (isAuthority(role)) {
@@ -172,6 +211,11 @@ public class InstitutionRoleManagementService {
 
   @Transactional
   public void delete(UUID institutionId, UUID roleId) {
+    administrationLock.lock(institutionId);
+    if (!scopedAuthorization.isPlatformAdministrator()) {
+      scopedAuthorization.requireDelegation(
+          PermissionCode.INSTITUTION_ROLE_DELETE, PermissionAccess.institution());
+    }
     Role role = requireRole(institutionId, roleId);
     if (role.isSystem()) {
       throw new SystemRoleNotDeletableException();
@@ -185,6 +229,7 @@ public class InstitutionRoleManagementService {
 
   @Transactional
   public void deleteAsPlatformAdmin(UUID institutionId, UUID roleId) {
+    administrationLock.lock(institutionId);
     Role role = requireRole(institutionId, roleId);
     ensureActiveInstitution(role);
     delete(institutionId, roleId);
@@ -196,11 +241,18 @@ public class InstitutionRoleManagementService {
       Set<PermissionCode> actorPermissions,
       boolean preserveUnmanageable) {
     Set<String> expandedRequestedCodes = expandPermissionCodes(requestedCodes);
+    if (expandedRequestedCodes.stream()
+            .map(PermissionCode::fromCode)
+            .noneMatch(mappedPermissionCode -> mappedPermissionCode.supportsTrainingPaths())
+        && assignmentRepository.findByRole_Id(role.getId()).stream()
+            .anyMatch(assignment -> assignment.getAccessScope() == AccessScope.TRAINING_PATHS)) {
+      throw new InvalidAccessScopeException();
+    }
     Set<String> grantableCodes =
         actorPermissions.stream()
             .filter(permission -> permission.getScope() == PermissionScope.INSTITUTION)
-            .filter(PermissionCode::isConfigurable)
-            .map(PermissionCode::getCode)
+            .filter(mappedPermissionCode -> mappedPermissionCode.isConfigurable())
+            .map(mappedPermissionCode -> mappedPermissionCode.getCode())
             .collect(Collectors.toSet());
     if (!grantableCodes.containsAll(expandedRequestedCodes)) {
       throw new PermissionDelegationNotAllowedException();
@@ -234,7 +286,7 @@ public class InstitutionRoleManagementService {
     Set<PermissionCode> requestedPermissions =
         permissionCodes.stream().map(PermissionCode::fromCode).collect(Collectors.toSet());
     return PermissionCode.withRequiredPermissions(requestedPermissions).stream()
-        .map(PermissionCode::getCode)
+        .map(mappedPermissionCode -> mappedPermissionCode.getCode())
         .collect(Collectors.toUnmodifiableSet());
   }
 
@@ -276,7 +328,7 @@ public class InstitutionRoleManagementService {
   private List<InstitutionRoleResponse> toResponses(final List<Role> roles) {
     if (roles.isEmpty()) return List.of();
 
-    final List<UUID> roleIds = roles.stream().map(Role::getId).toList();
+    final List<UUID> roleIds = roles.stream().map(mappedRole -> mappedRole.getId()).toList();
     final Map<UUID, Long> assignmentCounts =
         assignmentRepository.countByRoleIds(roleIds).stream()
             .collect(Collectors.toMap(row -> row.getRoleId(), row -> row.getAssignmentCount()));
@@ -339,7 +391,7 @@ public class InstitutionRoleManagementService {
     }
   }
 
-  private void ensureUniqueName(UUID institutionId, String name, UUID excludedId) {
+  private void ensureUniqueName(UUID institutionId, String name, @Nullable UUID excludedId) {
     boolean exists =
         excludedId == null
             ? roleRepository.existsByScopeAndInstitution_IdAndNameIgnoreCase(

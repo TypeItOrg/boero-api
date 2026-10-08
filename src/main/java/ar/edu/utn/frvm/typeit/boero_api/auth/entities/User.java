@@ -21,6 +21,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.io.Serial;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Collection;
@@ -49,6 +50,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 public class User extends Auditable implements UserDetails {
+
+  @Serial private static final long serialVersionUID = 1L;
 
   @Id
   @GeneratedUUIDv7
@@ -79,7 +82,7 @@ public class User extends Auditable implements UserDetails {
   private @Nullable Instant emailVerifiedAt;
 
   @Column(name = "webauthn_user_handle")
-  private @Nullable byte[] webauthnUserHandle;
+  private byte @Nullable [] webauthnUserHandle;
 
   @Override
   public String getUsername() {

@@ -15,6 +15,7 @@ import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.io.Serial;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -36,6 +37,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 public class PlatformAccount extends Auditable implements UserDetails {
+
+  @Serial private static final long serialVersionUID = 1L;
 
   @Id
   @GeneratedUUIDv7
