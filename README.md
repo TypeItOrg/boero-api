@@ -24,6 +24,11 @@ _Centraliza las reglas de negocio, protege el acceso y mantiene aislada la infor
 
 </div>
 
+## Calidad del código
+
+[Responsabilidades, legibilidad y presupuesto de tamaño](docs/code-quality.md).
+Verificación de estructura sin ejecutar tests: `./gradlew codeStructureCheck`.
+
 ## Desarrollo local
 
 Preparar la configuración sin sobrescribir un archivo privado existente:

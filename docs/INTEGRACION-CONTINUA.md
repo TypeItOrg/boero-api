@@ -63,6 +63,11 @@ Garantiza que el comportamiento del sistema y los contratos HTTP e institucional
     ./gradlew --no-daemon spotlessCheck test
     ```
 
+#### Fixtures y contratos de error
+
+- Las entidades creadas con fábricas de dominio no reciben un UUID hasta su persistencia. En tests unitarios que simulan entidades persistidas, usar un `spy` con `doReturn(id).when(entity).getId()` cuando el caso de uso consulta ese identificador; mantener los argumentos exactos de los mocks y la validación estricta de Mockito.
+- La validación de logos distingue archivos que superan los 2 MiB (`InstitutionLogoTooLargeException`) de contenido inválido, vacío, truncado o con dimensiones excesivas (`InvalidInstitutionLogoException`). Verificar estos contratos por separado.
+
 ### C. Trabajo: Construcción y Publicación de Imágenes (`publish-image`)
 
 Se ejecuta únicamente tras aprobar el trabajo de pruebas en pushes a `staging` o `main`.
