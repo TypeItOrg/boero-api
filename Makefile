@@ -20,7 +20,7 @@ endif
 
 .PHONY: seed-demo
 seed-demo:
-	@bash scripts/seed/run.sh
+	@bash src/main/resources/db/seed/run.sh
 
 dev:
 	@$(COMPOSE) rm --stop --force dev
