@@ -40,7 +40,7 @@ Este trabajo valida la calidad del código, contratos de nulidad y detección te
      - Inspecciona el 100% de las clases de producción y pruebas (`@NullMarked`).
      - Rechaza cualquier asignación o desreferenciación potencialmente nula que no esté explícitamente declarada con `@Nullable`.
   2. **Eclipse Compiler for Java (ECJ)**:
-     - Configurado en `config/static-analysis/ecj.properties`.
+     - Configurado en `ecj.properties`.
      - Trata cualquier advertencia como error bloqueante: imports o miembros no utilizados, conversiones inseguras (raw types), deprecaciones y fugas de recursos cerrables.
 - **Artefactos**: En caso de fallo o advertencia, los informes XML de diagnóstico (`build/reports/static-analysis/`) se suben como artefactos de GitHub Actions para su inspección.
 
