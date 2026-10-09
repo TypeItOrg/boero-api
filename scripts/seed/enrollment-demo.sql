@@ -1,5 +1,4 @@
 -- Enrollment dataset loader. Configuration and fixtures are supplied by run.sh.
--- See docs/enrollment/FUENTES-OFERTA-ACADEMICA.md for sources and explicit operational assumptions.
 -- Atomic, explicit execution only. No Flyway migration and no startup hook.
 -- Run with the shared IDs and catalog scripts through make seed-demo.
 DO $$
@@ -10,7 +9,7 @@ BEGIN
                   WHERE p.institution_id = (SELECT institution_id FROM seed_context))
        OR EXISTS (SELECT 1 FROM study_plans WHERE institution_id = (SELECT institution_id FROM seed_context) AND study_plan_id IN (
                   md5('boero:enrollment-demo:v1:plan:1')::uuid, md5('boero:enrollment-demo:v1:plan:2')::uuid)) THEN
-        RAISE EXCEPTION 'Hay IDs del seed anterior. Respaldar y ejecutar make seed-demo-repair-ids antes de cargar.';
+        RAISE EXCEPTION 'Hay IDs del seed anterior. Se requiere revisar y migrar esos identificadores antes de cargar; no se modificaron datos.';
     END IF;
 END $$;
 
