@@ -94,3 +94,4 @@ tasks.register('integrationTest', Test) {
 }
 
 apply from: "gradle/static-analysis.gradle"
+apply from: "gradle/code-structure.gradle"

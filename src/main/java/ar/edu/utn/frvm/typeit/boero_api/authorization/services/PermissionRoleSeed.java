@@ -3,6 +3,7 @@ package ar.edu.utn.frvm.typeit.boero_api.authorization.services;
 import static java.util.Objects.requireNonNull;
 
 import ar.edu.utn.frvm.typeit.boero_api.authorization.cache.AuthorizationCacheNames;
+import ar.edu.utn.frvm.typeit.boero_api.authorization.config.DefaultRolePermissions;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Permission;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.Role;
 import ar.edu.utn.frvm.typeit.boero_api.authorization.entities.RolePermission;
@@ -221,11 +222,15 @@ public class PermissionRoleSeed implements ApplicationRunner {
 
   private void syncInstitutionalRoles(Map<PermissionCode, Permission> permissions) {
     for (SystemRoleCode roleCode : SystemRoleCode.values()) {
+      final Set<PermissionCode> rolePermissions =
+          roleCode == SystemRoleCode.GUARDIAN
+              ? INSTITUTIONAL_ROLE_PERMISSIONS.get(roleCode)
+              : DefaultRolePermissions.institutional(roleCode);
       syncScopedRole(
           RoleScope.INSTITUTION,
           roleCode.name(),
           roleCode.getDisplayName(),
-          INSTITUTIONAL_ROLE_PERMISSIONS.getOrDefault(roleCode, Set.of()),
+          rolePermissions == null ? Set.of() : rolePermissions,
           permissions);
     }
   }

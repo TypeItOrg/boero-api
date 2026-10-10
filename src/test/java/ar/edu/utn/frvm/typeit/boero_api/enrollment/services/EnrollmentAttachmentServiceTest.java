@@ -84,24 +84,26 @@ class EnrollmentAttachmentServiceTest {
 
   @BeforeEach
   void setUp() {
+    final var authorization =
+        new EnrollmentDocumentAuthorization(
+            authorityResolver, authorizationService, audit, applicationRepository);
+    final var documents =
+        new EnrollmentDocumentRequirementsService(
+            definitions, attachmentRepository, authorization, periods);
+    final var access =
+        new EnrollmentDocumentAccess(
+            applicationRepository, authorization, institutionLock, entityManager, documents);
     service =
         new EnrollmentAttachmentService(
-            applicationRepository,
             attachmentRepository,
             storage,
-            new EnrollmentDocumentAuthorization(
-                authorityResolver, authorizationService, audit, applicationRepository),
+            authorization,
             audit,
-            journal,
             Clock.systemUTC(),
-            institutionLock,
-            entityManager,
-            new EnrollmentDocumentRequirementsService(
-                definitions,
-                attachmentRepository,
-                new EnrollmentDocumentAuthorization(
-                    authorityResolver, authorizationService, audit, applicationRepository),
-                periods));
+            documents,
+            access,
+            new UploadEnrollmentAttachmentUseCase(
+                access, attachmentRepository, storage, authorization, audit, journal, documents));
 
     Institution institution = Mockito.mock(Institution.class);
     Mockito.lenient().when(institution.getId()).thenReturn(institutionId);
