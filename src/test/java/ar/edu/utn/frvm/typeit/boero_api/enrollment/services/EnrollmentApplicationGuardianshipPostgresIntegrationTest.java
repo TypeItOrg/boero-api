@@ -369,7 +369,9 @@ class EnrollmentApplicationGuardianshipPostgresIntegrationTest {
     assertThat(
             getMine
                 .execute(
-                    scenario.institution().getId(), otherTutor.getId(), started.applicationId())
+                    scenario.institution().getId(),
+                    otherTutor.getId(),
+                    requireNonNull(started.applicationId()))
                 .applicationId())
         .isEqualTo(started.applicationId());
   }
