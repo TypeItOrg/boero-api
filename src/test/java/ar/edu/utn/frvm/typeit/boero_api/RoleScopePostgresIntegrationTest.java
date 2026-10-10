@@ -108,7 +108,7 @@ class RoleScopePostgresIntegrationTest extends DatabaseMigrationTestSupport {
     assertThat(page.getContent()).extracting(p -> p.getId()).containsExactly(allowed);
     var searchResults =
         search.institutionalSummary(
-            institution, "Migration", 1, Set.of(PermissionCode.TRAINING_PATH_READ));
+            institution, person, "Migration", 1, Set.of(PermissionCode.TRAINING_PATH_READ));
     assertThat(searchResults.groups())
         .flatExtracting(group -> group.items())
         .extracting(result -> result.id())
@@ -492,9 +492,8 @@ class RoleScopePostgresIntegrationTest extends DatabaseMigrationTestSupport {
 
   @Test
   void preceptorCannotReadForeignApplicationsAttachmentsOrEnrollmentsAndOwnerKeepsOwnAccess() {
-    UUID institution = fixtures.firstInstitutionId(),
-        actor = UUID.randomUUID(),
-        applicant = UUID.randomUUID();
+    UUID institution = UUID.randomUUID(), actor = UUID.randomUUID(), applicant = UUID.randomUUID();
+    fixtures.insertTestInstitution(institution);
     UUID allowed = UUID.randomUUID(), hidden = UUID.randomUUID(), application = UUID.randomUUID();
     fixtures.insertPerson(actor, institution, "99110011", false);
     fixtures.insertPerson(applicant, institution, "99110012", false);

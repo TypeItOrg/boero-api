@@ -16,16 +16,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class ListMyEnrollmentApplicationsUseCase {
 
   private final EnrollmentApplicationRepository enrollmentApplicationRepository;
-  private final EnrollmentApplicationResponseFactory responses;
 
   @Transactional(readOnly = true)
   public Page<EnrollmentApplicationResponse> execute(
       final UUID institutionId,
       final UUID personId,
-      final @Nullable EnrollmentApplicationStatus status,
+      @Nullable final UUID dependentPersonId,
+      @Nullable final EnrollmentApplicationStatus status,
       final Pageable pageable) {
     return enrollmentApplicationRepository
-        .findMyApplications(institutionId, personId, status, pageable)
-        .map(application -> responses.summary(application));
+        .findMyApplications(institutionId, personId, dependentPersonId, status, pageable)
+        .map(EnrollmentApplicationResponse::summary);
   }
 }

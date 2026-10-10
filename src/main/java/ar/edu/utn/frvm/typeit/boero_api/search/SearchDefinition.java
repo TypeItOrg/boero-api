@@ -1,5 +1,7 @@
 package ar.edu.utn.frvm.typeit.boero_api.search;
 
+import static ar.edu.utn.frvm.typeit.boero_api.search.SearchMessages.INVALID_ENTITY_TYPE;
+
 import ar.edu.utn.frvm.typeit.boero_api.authorization.enums.PermissionCode;
 import java.util.Arrays;
 import java.util.List;
@@ -112,21 +114,26 @@ SELECT e.academic_space_id AS id, e.institution_id, i.name AS institution_name,
       SearchEntityType.COURSE,
       PermissionCode.COURSE_READ,
       """
-SELECT c.course_id AS id, c.institution_id, i.name AS institution_name,
-       i.active AS institution_active, e.name AS title, p.name AS subtitle,
-       c.status,
-       NULL::text AS category,
-       boero_search_rank(e.name || ' ' || p.name, :query, :normalized) AS score, p.version_number AS study_plan_version
-  FROM courses c
-  JOIN institutions i ON i.institution_id = c.institution_id
-  JOIN academic_spaces e ON e.academic_space_id = c.academic_space_id
-  JOIN study_plan_spaces s ON s.study_plan_space_id = c.study_plan_space_id
-  JOIN study_plans p ON p.study_plan_id = s.study_plan_id
- WHERE c.deleted_at IS NULL
-   AND e.deleted_at IS NULL
-   AND p.deleted_at IS NULL
-   AND boero_search_vector(e.name || ' ' || p.name) @@ to_tsquery('simple', :query)
-""");
+      SELECT c.course_id AS id, c.institution_id, i.name AS institution_name,
+             i.active AS institution_active, e.name AS title, p.name AS subtitle,
+             c.status,
+             NULL::text AS category,
+             boero_search_rank(e.name || ' ' || p.name, :query, :normalized) AS score, p.version_number AS study_plan_version
+        FROM courses c
+        JOIN institutions i ON i.institution_id = c.institution_id
+        JOIN academic_spaces e ON e.academic_space_id = c.academic_space_id
+        JOIN study_plan_spaces s ON s.study_plan_space_id = c.study_plan_space_id
+        JOIN study_plans p ON p.study_plan_id = s.study_plan_id
+       WHERE c.deleted_at IS NULL
+         AND e.deleted_at IS NULL
+         AND p.deleted_at IS NULL
+         AND boero_search_vector(e.name || ' ' || p.name) @@ to_tsquery('simple', :query)
+       """),
+  // Scoped to the caller's own dependents through :personId, so it is institutional-only.
+  GUARDIAN_DEPENDENT(
+      SearchEntityType.GUARDIAN_DEPENDENT,
+      PermissionCode.GUARDIAN_DEPENDENT_MANAGE,
+      guardianDependents());
 
   private final SearchEntityType type;
   private final @Nullable PermissionCode permission;
@@ -149,6 +156,10 @@ SELECT c.course_id AS id, c.institution_id, i.name AS institution_name,
     return permission != null && permissions.contains(permission);
   }
 
+  boolean requiresPerson() {
+    return type == SearchEntityType.GUARDIAN_DEPENDENT;
+  }
+
   @Nullable PermissionCode permission() {
     return permission;
   }
@@ -158,7 +169,7 @@ SELECT c.course_id AS id, c.institution_id, i.name AS institution_name,
   }
 
   static List<SearchDefinition> all() {
-    return List.of(values());
+    return Arrays.stream(values()).filter(definition -> !definition.requiresPerson()).toList();
   }
 
   static List<SearchDefinition> institutionalFor(final Set<PermissionCode> permissions) {
@@ -168,10 +179,30 @@ SELECT c.course_id AS id, c.institution_id, i.name AS institution_name,
   }
 
   static SearchDefinition fromType(final SearchEntityType entityType) {
-    return Arrays.stream(values())
+    return all().stream()
         .filter(definition -> definition.type == entityType)
         .findFirst()
-        .orElseThrow();
+        .orElseThrow(() -> new IllegalArgumentException(INVALID_ENTITY_TYPE));
+  }
+
+  private static String guardianDependents() {
+    final String searchText =
+        "p.first_name || ' ' || p.last_name || ' ' || p.last_name || ' ' || p.first_name"
+            + " || ' ' || p.document_number || ' ' || coalesce(p.email, '')";
+    return """
+        SELECT p.person_id AS id, p.institution_id, i.name AS institution_name,
+               i.active AS institution_active, p.first_name || ' ' || p.last_name AS title,
+               p.document_number AS subtitle, NULL::text AS status, NULL::text AS category,
+               boero_search_rank(%1$s, :query, :normalized) AS score, NULL::integer AS study_plan_version
+          FROM person_guardians g
+          JOIN people p ON p.institution_id = g.institution_id AND p.person_id = g.dependent_person_id
+          JOIN institutions i ON i.institution_id = p.institution_id
+         WHERE g.tutor_person_id = :personId
+           AND g.status = 'ACTIVE'
+           AND NOT p.deleted
+           AND boero_search_vector(%1$s) @@ to_tsquery('simple', :query)
+        """
+        .formatted(searchText);
   }
 
   private static String namedEntity(final String table, final String idColumn) {

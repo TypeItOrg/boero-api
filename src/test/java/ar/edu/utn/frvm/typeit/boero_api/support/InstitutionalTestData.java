@@ -7,9 +7,11 @@ import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Institution;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Person;
 import ar.edu.utn.frvm.typeit.boero_api.institutional.entities.Province;
 import jakarta.persistence.EntityManager;
+import java.time.LocalDate;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.jspecify.annotations.Nullable;
 
 public final class InstitutionalTestData {
 
@@ -42,10 +44,16 @@ public final class InstitutionalTestData {
   }
 
   public static Person person(Institution institution, String documentNumber) {
+    return person(institution, documentNumber, null);
+  }
+
+  public static Person person(
+      Institution institution, String documentNumber, @Nullable LocalDate birthDate) {
     return Person.builder()
         .institution(institution)
         .firstName("Ana")
         .lastName("Garcia")
+        .birthDate(birthDate != null ? birthDate : LocalDate.of(2000, 1, 1))
         .documentNumber(documentNumber)
         .email(documentNumber + "@example.com")
         .build();
