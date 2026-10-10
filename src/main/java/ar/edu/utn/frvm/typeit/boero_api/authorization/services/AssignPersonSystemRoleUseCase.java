@@ -75,7 +75,7 @@ public class AssignPersonSystemRoleUseCase {
   private void assign(
       Person person,
       Role role,
-      SystemRoleCode technicalCode,
+      @Nullable SystemRoleCode technicalCode,
       boolean revokeSessions,
       boolean applyRolePolicy) {
     Institution institution = person.getInstitution();

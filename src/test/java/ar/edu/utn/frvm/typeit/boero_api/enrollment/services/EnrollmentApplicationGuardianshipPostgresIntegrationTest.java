@@ -88,6 +88,7 @@ import org.testcontainers.utility.DockerImageName;
 @SpringBootTest
 @Testcontainers(disabledWithoutDocker = true)
 @IntegrationTest
+@SuppressWarnings({"null", "resource"})
 class EnrollmentApplicationGuardianshipPostgresIntegrationTest {
 
   @Container

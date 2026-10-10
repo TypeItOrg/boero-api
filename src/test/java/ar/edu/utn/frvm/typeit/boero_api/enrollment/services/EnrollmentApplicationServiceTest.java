@@ -83,6 +83,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("null")
 class EnrollmentApplicationServiceTest {
 
   @Mock private EnrollmentApplicationRepository applicationRepository;
@@ -754,7 +755,6 @@ class EnrollmentApplicationServiceTest {
             .status(EnrollmentApplicationStatus.DRAFT)
             .build();
     StudyPlanSpace selectedStudyPlanSpace = Mockito.mock(StudyPlanSpace.class);
-    AcademicSpace selectedAcademicSpace = Mockito.mock(AcademicSpace.class);
     application.addSelectedSpace(
         EnrollmentApplicationSpace.builder().studyPlanSpace(selectedStudyPlanSpace).build());
 
