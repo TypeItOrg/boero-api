@@ -61,6 +61,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -387,6 +388,7 @@ class EnrollmentApplicationGuardianshipPostgresIntegrationTest {
             scenario.institution().getId(),
             scenario.tutor().getId(),
             startRequest(scenario, dependent.dependentPersonId()));
+    final UUID startedId = requireNonNull(started.applicationId());
     final Person stranger = person(scenario.institution());
 
     assertThatThrownBy(
@@ -399,19 +401,14 @@ class EnrollmentApplicationGuardianshipPostgresIntegrationTest {
             UnauthorizedGuardianshipException.class,
             exception -> assertThat(exception.code()).isEqualTo("GUARDIANSHIP_UNAUTHORIZED"));
     assertThatThrownBy(
-            () ->
-                getMine.execute(
-                    scenario.institution().getId(), stranger.getId(), started.applicationId()))
+            () -> getMine.execute(scenario.institution().getId(), stranger.getId(), startedId))
         .isInstanceOf(EnrollmentApplicationNotFoundException.class);
     assertThatThrownBy(
             () ->
                 service.updateDraft(
-                    stranger.getId(),
-                    started.applicationId(),
-                    UpdateEnrollmentDraftRequest.builder().build()))
+                    stranger.getId(), startedId, UpdateEnrollmentDraftRequest.builder().build()))
         .isInstanceOf(EnrollmentApplicationNotFoundException.class);
-    assertThatThrownBy(
-            () -> service.getApplicationById(null, stranger.getId(), started.applicationId()))
+    assertThatThrownBy(() -> service.getApplicationById(null, stranger.getId(), startedId))
         .isInstanceOf(EnrollmentApplicationNotFoundException.class);
   }
 
@@ -427,21 +424,21 @@ class EnrollmentApplicationGuardianshipPostgresIntegrationTest {
             scenario.institution().getId(),
             scenario.tutor().getId(),
             startRequest(scenario, dependent.dependentPersonId()));
+    final UUID startedId = requireNonNull(started.applicationId());
     final Authentication tutor = authentication(scenario, scenario.tutor());
 
     final EnrollmentAttachmentResponse uploaded =
         attachmentService.uploadAttachment(
-            started.applicationId(), pdf(), started.documents().getFirst().id(), tutor);
-    assertThat(attachmentService.listAttachments(started.applicationId(), tutor))
+            startedId, pdf(), started.documents().getFirst().id(), tutor);
+    assertThat(attachmentService.listAttachments(startedId, tutor))
         .extracting(EnrollmentAttachmentResponse::id)
         .containsExactly(uploaded.id());
-    attachmentService.deleteAttachment(started.applicationId(), uploaded.id(), tutor);
-    assertThat(attachmentService.listAttachments(started.applicationId(), tutor)).isEmpty();
+    attachmentService.deleteAttachment(startedId, uploaded.id(), tutor);
+    assertThat(attachmentService.listAttachments(startedId, tutor)).isEmpty();
 
     // The draft is incomplete, so a validation error proves the tutor got past the access check
     // (a stranger gets "not found" instead, see unrelatedTutorCannotSubmitOrTouchAttachments).
-    assertThatThrownBy(
-            () -> service.submitApplication(scenario.tutor().getId(), started.applicationId()))
+    assertThatThrownBy(() -> service.submitApplication(scenario.tutor().getId(), startedId))
         .isInstanceOf(EnrollmentValidationException.class);
   }
 
@@ -457,21 +454,18 @@ class EnrollmentApplicationGuardianshipPostgresIntegrationTest {
             scenario.institution().getId(),
             scenario.tutor().getId(),
             startRequest(scenario, dependent.dependentPersonId()));
+    final UUID startedId = requireNonNull(started.applicationId());
     final Person stranger = person(scenario.institution());
     final Authentication strangerAuth = authentication(scenario, stranger);
 
-    assertThatThrownBy(() -> service.submitApplication(stranger.getId(), started.applicationId()))
+    assertThatThrownBy(() -> service.submitApplication(stranger.getId(), startedId))
         .isInstanceOf(EnrollmentApplicationNotFoundException.class);
     assertThatThrownBy(
             () ->
                 attachmentService.uploadAttachment(
-                    started.applicationId(),
-                    pdf(),
-                    started.documents().getFirst().id(),
-                    strangerAuth))
+                    startedId, pdf(), started.documents().getFirst().id(), strangerAuth))
         .isInstanceOf(AccessDeniedException.class);
-    assertThatThrownBy(
-            () -> attachmentService.listAttachments(started.applicationId(), strangerAuth))
+    assertThatThrownBy(() -> attachmentService.listAttachments(startedId, strangerAuth))
         .isInstanceOf(AccessDeniedException.class);
   }
 
@@ -571,7 +565,9 @@ class EnrollmentApplicationGuardianshipPostgresIntegrationTest {
 
     assertThat(started.personId()).isEqualTo(scenario.tutor().getId());
     assertThat(started.submittedByPersonId()).isEqualTo(scenario.tutor().getId());
-    assertThat(started.data().getResponsible().getFullName()).isNull();
+    final var startData = requireNonNull(started.data());
+    final var startResp = requireNonNull(startData.getResponsible());
+    assertThat(startResp.getFullName()).isNull();
   }
 
   private void actAs(final Authentication authentication) {
@@ -626,7 +622,7 @@ class EnrollmentApplicationGuardianshipPostgresIntegrationTest {
   }
 
   private StartEnrollmentApplicationRequest startRequest(
-      final Scenario scenario, final UUID applicantPersonId) {
+      final Scenario scenario, final @Nullable UUID applicantPersonId) {
     return StartEnrollmentApplicationRequest.builder()
         .trainingPathId(scenario.plan().getTrainingPath().getId())
         .studyPlanId(scenario.plan().getId())
